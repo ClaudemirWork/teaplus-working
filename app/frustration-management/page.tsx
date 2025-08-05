@@ -41,14 +41,7 @@ const exercises: FrustrationExercise =
     type: "reflection",
     description: "Transformar pensamentos negativos em perspectivas mais equilibradas",
     instruction: "Agora vamos praticar como reescrever nossos pensamentos de forma mais realista e equilibrada.",
-    questions: [
-      "Qual situação te causou frustração recentemente?",
-      "Qual foi seu primeiro pensamento sobre essa situação?",
-      "Que evidências você tem de que esse pensamento é verdadeiro?",
-      "Que evidências contradizem esse pensamento?",
-      "Como um amigo querido veria essa situação?",
-      "Qual seria uma forma mais equilibrada de pensar sobre isso?"
-    ]
+    questions:
   },
   {
     id: 4,
@@ -58,10 +51,10 @@ const exercises: FrustrationExercise =
     instruction: "Quando sentir raiva ou frustração crescendo, use esta técnica:",
     steps:
   }
-]; // CORRIGIDO: Adicionado ']' para fechar o array
+]; // CORRIGIDO: Fechamento correto do array
 
 // DEFINIÇÃO COMPLETA E CORRETA DO ARRAY 'frustratingScenarios'
-const frustratingScenarios =; // CORRIGIDO: Adicionado ']' para fechar o array
+const frustratingScenarios =; // CORRIGIDO: Fechamento correto do array
 
 export default function FrustrationManagement() {
   const [currentExercise, setCurrentExercise] = useState(0);
@@ -176,7 +169,7 @@ export default function FrustrationManagement() {
 
   const handleInputChange = (questionIndex: number, value: string) => {
     setUserResponses(prev => ({
-   ...prev,
+     ...prev,
       [`${currentExercise}-${questionIndex}`]: value
     }));
   };
@@ -374,7 +367,7 @@ export default function FrustrationManagement() {
               color: '#374151',
               marginBottom: '16px',
               lineHeight: '1.6',
-              fontSize: windowWidth <= 768? '14px' : '16px' // USANDO windowWidth
+              fontSize: windowWidth <= 768? '14px' : '16px', // USANDO windowWidth
             }}>
               A frustração é uma emoção natural, mas quando não gerenciada pode levar a explosões de raiva,
               decisões impulsivas e relacionamentos prejudicados. Essas técnicas te ajudam a:
@@ -442,7 +435,7 @@ export default function FrustrationManagement() {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              fontSize: windowWidth <= 768? '16px' : '18px' // USANDO windowWidth
+              fontSize: windowWidth <= 768? '16px' : '18px', // USANDO windowWidth
             }}>
               🔧 Quando Usar Essas Técnicas
             </h3>
@@ -503,7 +496,7 @@ export default function FrustrationManagement() {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              fontSize: windowWidth <= 768? '16px' : '18px' // USANDO windowWidth
+              fontSize: windowWidth <= 768? '16px' : '18px', // USANDO windowWidth
             }}>
               🏃‍♂️ Exercícios Práticos
             </h3>
@@ -551,7 +544,7 @@ export default function FrustrationManagement() {
             <button
               onClick={() => setGameStarted(true)}
               style={{
-             ...buttonStyle,
+               ...buttonStyle,
                 background: 'linear-gradient(135deg, #0d9488, #06b6d4)',
                 fontSize: windowWidth <= 768? '16px' : '18px', // USANDO windowWidth
                 padding: windowWidth <= 768? '14px 28px' : '16px 32px' // USANDO windowWidth
@@ -635,7 +628,7 @@ export default function FrustrationManagement() {
               <p style={{
                 color: '#6b7280',
                 margin: 0,
-                fontSize: windowWidth <= 768? '12px' : '14px' // USANDO windowWidth
+                fontSize: windowWidth <= 768? '12px' : '14px', // USANDO windowWidth
               }}>
                 Exercício {currentExercise + 1} de {exercises.length}
               </p>
@@ -677,7 +670,7 @@ export default function FrustrationManagement() {
               <p style={{
                 color: '#6b7280',
                 margin: 0,
-                fontSize: windowWidth <= 768? '12px' : '14px' // USANDO windowWidth
+                fontSize: windowWidth <= 768? '12px' : '14px', // USANDO windowWidth
               }}>
                 {exercise.description}
               </p>
@@ -688,7 +681,7 @@ export default function FrustrationManagement() {
             color: '#374151',
             marginBottom: '24px',
             lineHeight: '1.6',
-            fontSize: windowWidth <= 768? '14px' : '16px' // USANDO windowWidth
+            fontSize: windowWidth <= 768? '14px' : '16px', // USANDO windowWidth
           }}>
             {exercise.instruction}
           </p>
@@ -720,13 +713,13 @@ export default function FrustrationManagement() {
                   <p style={{
                     color: '#374151',
                     marginBottom: '8px',
-                    fontSize: windowWidth <= 768? '14px' : '16px' // USANDO windowWidth
+                    fontSize: windowWidth <= 768? '14px' : '16px', // USANDO windowWidth
                   }}>
                     Ciclo: {currentCycle + 1}/4
                   </p>
                   <p style={{
                     color: '#6b7280',
-                    fontSize: windowWidth <= 768? '12px' : '14px' // USANDO windowWidth
+                    fontSize: windowWidth <= 768? '12px' : '14px', // USANDO windowWidth
                   }}>
                     Tempo restante: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                   </p>
@@ -759,7 +752,7 @@ export default function FrustrationManagement() {
                   <h4 style={{
                     color: '#0f766e',
                     marginBottom: '12px',
-                    fontSize: windowWidth <= 768? '14px' : '16px' // USANDO windowWidth
+                    fontSize: windowWidth <= 768? '14px' : '16px', // USANDO windowWidth
                   }}>
                     Passos:
                   </h4>
@@ -767,7 +760,7 @@ export default function FrustrationManagement() {
                     color: '#134e4a',
                     margin: 0,
                     paddingLeft: '20px',
-                    fontSize: windowWidth <= 768? '13px' : '14px' // USANDO windowWidth
+                    fontSize: windowWidth <= 768? '13px' : '14px', // USANDO windowWidth
                   }}>
                     {exercise.steps.map((step, index) => (
                       <li key={index} style={{ marginBottom: '4px' }}>{step}</li>
@@ -784,7 +777,7 @@ export default function FrustrationManagement() {
               <h4 style={{
                 color: '#374151',
                 marginBottom: '16px',
-                fontSize: windowWidth <= 768? '14px' : '16px' // USANDO windowWidth
+                fontSize: windowWidth <= 768? '14px' : '16px', // USANDO windowWidth
               }}>
                 Exemplos de Reframing:
               </h4>
@@ -800,7 +793,7 @@ export default function FrustrationManagement() {
                       color: '#0c4a6e',
                       margin: 0,
                       lineHeight: '1.5',
-                      fontSize: windowWidth <= 768? '13px' : '14px' // USANDO windowWidth
+                      fontSize: windowWidth <= 768? '13px' : '14px', // USANDO windowWidth
                     }}>
                       {example}
                     </p>
@@ -813,7 +806,7 @@ export default function FrustrationManagement() {
                   onClick={completeCurrentExercise}
                   disabled={isCompleted}
                   style={{
-                 ...buttonStyle,
+                   ...buttonStyle,
                     backgroundColor: isCompleted? '#10b981' : '#3b82f6'
                   }}
                 >
@@ -833,7 +826,7 @@ export default function FrustrationManagement() {
                     color: '#374151',
                     marginBottom: '8px',
                     fontWeight: '500',
-                    fontSize: windowWidth <= 768? '14px' : '16px' // USANDO windowWidth
+                    fontSize: windowWidth <= 768? '14px' : '16px', // USANDO windowWidth
                   }}>
                     {index + 1}. {question}
                   </label>
@@ -871,7 +864,7 @@ export default function FrustrationManagement() {
                 <h4 style={{
                   color: '#0f766e',
                   marginBottom: '12px',
-                  fontSize: windowWidth <= 768? '14px' : '16px' // USANDO windowWidth
+                  fontSize: windowWidth <= 768? '14px' : '16px', // USANDO windowWidth
                 }}>
                   💡 Exemplo Prático:
                 </h4>
@@ -879,21 +872,21 @@ export default function FrustrationManagement() {
                   <p style={{
                     color: '#134e4a',
                     marginBottom: '8px',
-                    fontSize: windowWidth <= 768? '12px' : '14px' // USANDO windowWidth
+                    fontSize: windowWidth <= 768? '12px' : '14px', // USANDO windowWidth
                   }}>
                     <strong>Situação:</strong> {frustratingScenarios.situation}
                   </p>
                   <p style={{
                     color: '#134e4a',
                     marginBottom: '8px',
-                    fontSize: windowWidth <= 768? '12px' : '14px' // USANDO windowWidth
+                    fontSize: windowWidth <= 768? '12px' : '14px', // USANDO windowWidth
                   }}>
                     <strong>Pensamento Distorcido:</strong> "{frustratingScenarios.distortedThought}"
                   </p>
                   <p style={{
                     color: '#134e4a',
                     margin: 0,
-                    fontSize: windowWidth <= 768? '12px' : '14px' // USANDO windowWidth
+                    fontSize: windowWidth <= 768? '12px' : '14px', // USANDO windowWidth
                   }}>
                     <strong>Pensamento Reframado:</strong> "{frustratingScenarios.reframedThought}"
                   </p>
@@ -901,7 +894,7 @@ export default function FrustrationManagement() {
                 <button
                   onClick={() => setCurrentScenario((prev) => (prev + 1) % frustratingScenarios.length)}
                   style={{
-                 ...buttonStyle,
+                   ...buttonStyle,
                     backgroundColor: '#14b8a6',
                     fontSize: windowWidth <= 768? '12px' : '14px', // USANDO windowWidth
                     padding: windowWidth <= 768? '6px 12px' : '8px 16px', // USANDO windowWidth
@@ -917,7 +910,7 @@ export default function FrustrationManagement() {
                   onClick={completeCurrentExercise}
                   disabled={isCompleted}
                   style={{
-                 ...buttonStyle,
+                   ...buttonStyle,
                     backgroundColor: isCompleted? '#10b981' : '#3b82f6'
                   }}
                 >
@@ -940,7 +933,7 @@ export default function FrustrationManagement() {
                   color: '#a16207',
                   marginBottom: '16px',
                   textAlign: 'center',
-                  fontSize: windowWidth <= 768? '16px' : '18px' // USANDO windowWidth
+                  fontSize: windowWidth <= 768? '16px' : '18px', // USANDO windowWidth
                 }}>
                   ⚡ Técnica STOP
                 </h4>
@@ -990,7 +983,7 @@ export default function FrustrationManagement() {
                 <h4 style={{
                   color: '#0c4a6e',
                   marginBottom: '8px',
-                  fontSize: windowWidth <= 768? '14px' : '16px' // USANDO windowWidth
+                  fontSize: windowWidth <= 768? '14px' : '16px', // USANDO windowWidth
                 }}>
                   🎯 Pratique Agora:
                 </h4>
@@ -998,7 +991,7 @@ export default function FrustrationManagement() {
                   color: '#0369a1',
                   margin: 0,
                   lineHeight: '1.5',
-                  fontSize: windowWidth <= 768? '13px' : '14px' // USANDO windowWidth
+                  fontSize: windowWidth <= 768? '13px' : '14px', // USANDO windowWidth
                 }}>
                   Pense em uma situação que te deixa frustrado. Mentalmente, pratique usar a técnica STOP.
                   Como seria pausar, respirar, observar e escolher conscientemente sua resposta?
@@ -1010,7 +1003,7 @@ export default function FrustrationManagement() {
                   onClick={completeCurrentExercise}
                   disabled={isCompleted}
                   style={{
-                 ...buttonStyle,
+                   ...buttonStyle,
                     backgroundColor: isCompleted? '#10b981' : '#3b82f6'
                   }}
                 >
@@ -1032,7 +1025,7 @@ export default function FrustrationManagement() {
             onClick={prevExercise}
             disabled={currentExercise === 0}
             style={{
-           ...buttonStyle,
+             ...buttonStyle,
               backgroundColor: currentExercise === 0? '#f3f4f6' : 'white',
               color: currentExercise === 0? '#9ca3af' : '#374151',
               border: '1px solid #d1d5db',
@@ -1047,7 +1040,7 @@ export default function FrustrationManagement() {
             <button
               onClick={handleBackToTEA}
               style={{
-             ...buttonStyle,
+               ...buttonStyle,
                 flex: windowWidth <= 768? '1' : 'auto' // USANDO windowWidth
               }}
             >
@@ -1058,7 +1051,7 @@ export default function FrustrationManagement() {
               onClick={nextExercise}
               disabled={!isCompleted}
               style={{
-             ...buttonStyle,
+               ...buttonStyle,
                 backgroundColor: isCompleted? '#14b8a6' : '#f3f4f6',
                 color: isCompleted? 'white' : '#9ca3af',
                 cursor: isCompleted? 'pointer' : 'not-allowed',
@@ -1075,7 +1068,7 @@ export default function FrustrationManagement() {
           <h3 style={{
             color: '#374151',
             marginBottom: '16px',
-            fontSize: windowWidth <= 768? '16px' : '18px' // USANDO windowWidth
+            fontSize: windowWidth <= 768? '16px' : '18px', // USANDO windowWidth
           }}>
             📊 Seu Progresso
           </h3>
