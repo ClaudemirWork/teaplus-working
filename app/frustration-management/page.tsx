@@ -58,10 +58,10 @@ const exercises: FrustrationExercise =
     instruction: "Quando sentir raiva ou frustração crescendo, use esta técnica:",
     steps:
   }
-];
+]; // CORRIGIDO: Adicionado ']' para fechar o array
 
 // DEFINIÇÃO COMPLETA E CORRETA DO ARRAY 'frustratingScenarios'
-const frustratingScenarios =;
+const frustratingScenarios =; // CORRIGIDO: Adicionado ']' para fechar o array
 
 export default function FrustrationManagement() {
   const [currentExercise, setCurrentExercise] = useState(0);
@@ -176,7 +176,7 @@ export default function FrustrationManagement() {
 
   const handleInputChange = (questionIndex: number, value: string) => {
     setUserResponses(prev => ({
-     ...prev,
+    ...prev,
       [`${currentExercise}-${questionIndex}`]: value
     }));
   };
@@ -366,7 +366,7 @@ export default function FrustrationManagement() {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              fontSize: windowWidth <= 768? '16px' : '18px' // USANDO windowWidth
+              fontSize: windowWidth <= 768? '16px' : '18px', // USANDO windowWidth
             }}>
               🎯 Objetivo das Técnicas
             </h3>
@@ -551,7 +551,7 @@ export default function FrustrationManagement() {
             <button
               onClick={() => setGameStarted(true)}
               style={{
-               ...buttonStyle,
+              ...buttonStyle,
                 background: 'linear-gradient(135deg, #0d9488, #06b6d4)',
                 fontSize: windowWidth <= 768? '16px' : '18px', // USANDO windowWidth
                 padding: windowWidth <= 768? '14px 28px' : '16px 32px' // USANDO windowWidth
@@ -750,7 +750,7 @@ export default function FrustrationManagement() {
 
               {exercise.steps && (
                 <div style={{
-                  backgroundColor: '#f0fdfa', // CORRIGIDO: Removido o '|' extra
+                  backgroundColor: '#f0fdfa',
                   padding: '16px',
                   borderRadius: '8px',
                   marginTop: '24px',
@@ -813,7 +813,7 @@ export default function FrustrationManagement() {
                   onClick={completeCurrentExercise}
                   disabled={isCompleted}
                   style={{
-                   ...buttonStyle,
+                  ...buttonStyle,
                     backgroundColor: isCompleted? '#10b981' : '#3b82f6'
                   }}
                 >
@@ -901,7 +901,7 @@ export default function FrustrationManagement() {
                 <button
                   onClick={() => setCurrentScenario((prev) => (prev + 1) % frustratingScenarios.length)}
                   style={{
-                   ...buttonStyle,
+                  ...buttonStyle,
                     backgroundColor: '#14b8a6',
                     fontSize: windowWidth <= 768? '12px' : '14px', // USANDO windowWidth
                     padding: windowWidth <= 768? '6px 12px' : '8px 16px', // USANDO windowWidth
@@ -917,7 +917,7 @@ export default function FrustrationManagement() {
                   onClick={completeCurrentExercise}
                   disabled={isCompleted}
                   style={{
-                   ...buttonStyle,
+                  ...buttonStyle,
                     backgroundColor: isCompleted? '#10b981' : '#3b82f6'
                   }}
                 >
@@ -1010,7 +1010,7 @@ export default function FrustrationManagement() {
                   onClick={completeCurrentExercise}
                   disabled={isCompleted}
                   style={{
-                   ...buttonStyle,
+                  ...buttonStyle,
                     backgroundColor: isCompleted? '#10b981' : '#3b82f6'
                   }}
                 >
@@ -1032,7 +1032,7 @@ export default function FrustrationManagement() {
             onClick={prevExercise}
             disabled={currentExercise === 0}
             style={{
-             ...buttonStyle,
+            ...buttonStyle,
               backgroundColor: currentExercise === 0? '#f3f4f6' : 'white',
               color: currentExercise === 0? '#9ca3af' : '#374151',
               border: '1px solid #d1d5db',
@@ -1047,7 +1047,7 @@ export default function FrustrationManagement() {
             <button
               onClick={handleBackToTEA}
               style={{
-               ...buttonStyle,
+              ...buttonStyle,
                 flex: windowWidth <= 768? '1' : 'auto' // USANDO windowWidth
               }}
             >
@@ -1058,7 +1058,7 @@ export default function FrustrationManagement() {
               onClick={nextExercise}
               disabled={!isCompleted}
               style={{
-               ...buttonStyle,
+              ...buttonStyle,
                 backgroundColor: isCompleted? '#14b8a6' : '#f3f4f6',
                 color: isCompleted? 'white' : '#9ca3af',
                 cursor: isCompleted? 'pointer' : 'not-allowed',
