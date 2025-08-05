@@ -5,9 +5,6 @@ const nextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
-  },
-  experimental: {
-    ssr: false
   }
 }
 
