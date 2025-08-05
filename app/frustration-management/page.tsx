@@ -1,4 +1,4 @@
-// app/frustration-management/page.js
+// app/frustration-management/page.tsx
 
 "use client"; // ESSENCIAL: Esta diretiva informa ao Next.js que este é um Client Component.
               // Isso permite o uso de hooks de estado e efeito, e acesso a APIs do navegador. [1, 2]
@@ -6,22 +6,22 @@
 import React, { useState, useEffect } from 'react';
 
 interface FrustrationExercise {
-  id: number
-  title: string
-  type: 'breathing' | 'reframing' | 'reflection' | 'action-plan'
-  description: string
-  instruction: string
-  duration?: number
-  steps?: string // CORRIGIDO: Agora é um array de strings
-  questions?: string // CORRIGIDO: Agora é um array de strings
-  examples?: string // CORRIGIDO: Agora é um array de strings
+  id: number;
+  title: string;
+  type: 'breathing' | 'reframing' | 'reflection' | 'action-plan';
+  description: string;
+  instruction: string;
+  duration?: number;
+  steps?: string; // CORRIGIDO: Agora é um array de strings
+  questions?: string; // CORRIGIDO: Agora é um array de strings
+  examples?: string; // CORRIGIDO: Agora é um array de strings
 }
 
 interface UserResponse {
-  exerciseId: number
-  responses: { [key: string]: string }
-  completed: boolean
-  timestamp: Date
+  exerciseId: number;
+  responses: { [key: string]: string };
+  completed: boolean;
+  timestamp: Date;
 }
 
 // DEFINIÇÃO COMPLETA E CORRETA DO ARRAY 'exercises'
@@ -58,22 +58,22 @@ const exercises: FrustrationExercise =
     instruction: "Quando sentir raiva ou frustração crescendo, use esta técnica:",
     steps:
   }
-]
+];
 
 // DEFINIÇÃO COMPLETA E CORRETA DO ARRAY 'frustratingScenarios'
-const frustratingScenarios =
+const frustratingScenarios =;
 
 export default function FrustrationManagement() {
-  const [currentExercise, setCurrentExercise] = useState(0)
-  const [isActive, setIsActive] = useState(false)
-  const = useState(0) // CORRIGIDO: Nome da variável
-  const = useState<'inhale' | 'hold' | 'exhale' | 'rest'>('rest') // CORRIGIDO: Nome da variável
-  const = useState(0) // CORRIGIDO: Nome da variável
-  const [currentCycle, setCurrentCycle] = useState(0)
-  const = useState<{ [key: string]: string }>({}) // CORRIGIDO: Nome da variável
-  const [completedExercises, setCompletedExercises] = useState<number>() // CORRIGIDO: Tipo e inicialização
-  const = useState(0) // CORRIGIDO: Nome da variável
-  const = useState(false) // CORRIGIDO: Nome da variável
+  const [currentExercise, setCurrentExercise] = useState(0);
+  const [isActive, setIsActive] = useState(false);
+  const = useState(0); // CORRIGIDO: Nome da variável
+  const = useState<'inhale' | 'hold' | 'exhale' | 'rest'>('rest'); // CORRIGIDO: Nome da variável
+  const = useState(0); // CORRIGIDO: Nome da variável
+  const [currentCycle, setCurrentCycle] = useState(0);
+  const = useState<{ [key: string]: string }>({}); // CORRIGIDO: Nome da variável
+  const [completedExercises, setCompletedExercises] = useState<number>(); // CORRIGIDO: Tipo e inicialização como array vazio
+  const = useState(0); // CORRIGIDO: Nome da variável
+  const = useState(false); // CORRIGIDO: Nome da variável
 
   // NOVO ESTADO: Para armazenar a largura da janela de forma segura no cliente
   const = useState(0); // CORRIGIDO: Nome da variável e inicialização segura
@@ -100,125 +100,125 @@ export default function FrustrationManagement() {
 
 
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
+    let interval: NodeJS.Timeout | null = null;
 
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft(timeLeft - 1)
-      }, 1000)
+        setTimeLeft(timeLeft - 1);
+      }, 1000);
     } else if (timeLeft === 0 && isActive) {
-      setIsActive(false)
+      setIsActive(false);
       if (exercises[currentExercise].type === 'breathing') {
-        setCompletedExercises(prev => [...prev, exercises[currentExercise].id])
+        setCompletedExercises(prev => [...prev, exercises[currentExercise].id]);
       }
     }
 
     return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [isActive, timeLeft, currentExercise])
+      if (interval) clearInterval(interval);
+    };
+  }, [isActive, timeLeft, currentExercise]);
 
   // Breathing exercise timer logic
   useEffect(() => {
-    let breathTimer: NodeJS.Timeout | null = null
+    let breathTimer: NodeJS.Timeout | null = null;
 
     if (isActive && exercises[currentExercise].type === 'breathing') {
       breathTimer = setInterval(() => {
         setBreathingCount(prev => {
-          const newCount = prev + 1
+          const newCount = prev + 1;
 
           if (breathingPhase === 'inhale' && newCount >= 4) {
-            setBreathingPhase('hold')
-            return 0
+            setBreathingPhase('hold');
+            return 0;
           } else if (breathingPhase === 'hold' && newCount >= 7) {
-            setBreathingPhase('exhale')
-            return 0
+            setBreathingPhase('exhale');
+            return 0;
           } else if (breathingPhase === 'exhale' && newCount >= 8) {
             setCurrentCycle(cycle => {
-              const newCycle = cycle + 1
+              const newCycle = cycle + 1;
               if (newCycle >= 4) {
-                setIsActive(false)
-                setBreathingPhase('rest')
-                setCompletedExercises(prev => [...prev, exercises[currentExercise].id])
-                return 0
+                setIsActive(false);
+                setBreathingPhase('rest');
+                setCompletedExercises(prev => [...prev, exercises[currentExercise].id]);
+                return 0;
               }
-              setBreathingPhase('inhale')
-              return newCycle
-            })
-            return 0
+              setBreathingPhase('inhale');
+              return newCycle;
+            });
+            return 0;
           }
 
-          return newCount
-        })
-      }, 1000)
+          return newCount;
+        });
+      }, 1000);
     }
 
     return () => {
-      if (breathTimer) clearInterval(breathTimer)
-    }
-  }, [isActive, breathingPhase, currentExercise])
+      if (breathTimer) clearInterval(breathTimer);
+    };
+  }, [isActive, breathingPhase, currentExercise]);
 
   const startBreathing = () => {
-    setIsActive(true)
-    setTimeLeft(180) // 3 minutes
-    setBreathingPhase('inhale')
-    setBreathingCount(0)
-    setCurrentCycle(0)
-  }
+    setIsActive(true);
+    setTimeLeft(180); // 3 minutes
+    setBreathingPhase('inhale');
+    setBreathingCount(0);
+    setCurrentCycle(0);
+  };
 
   const stopExercise = () => {
-    setIsActive(false)
-    setTimeLeft(0)
-    setBreathingPhase('rest')
-    setBreathingCount(0)
-    setCurrentCycle(0)
-  }
+    setIsActive(false);
+    setTimeLeft(0);
+    setBreathingPhase('rest');
+    setBreathingCount(0);
+    setCurrentCycle(0);
+  };
 
   const handleInputChange = (questionIndex: number, value: string) => {
     setUserResponses(prev => ({
      ...prev,
       [`${currentExercise}-${questionIndex}`]: value
-    }))
-  }
+    }));
+  };
 
   const completeCurrentExercise = () => {
-    setCompletedExercises(prev => [...prev, exercises[currentExercise].id])
-  }
+    setCompletedExercises(prev => [...prev, exercises[currentExercise].id]);
+  };
 
   const nextExercise = () => {
     if (currentExercise < exercises.length - 1) {
-      setCurrentExercise(currentExercise + 1)
+      setCurrentExercise(currentExercise + 1);
     }
-  }
+  };
 
   const prevExercise = () => {
     if (currentExercise > 0) {
-      setCurrentExercise(currentExercise - 1)
+      setCurrentExercise(currentExercise - 1);
     }
-  }
+  };
 
   const handleBackToTEA = () => {
     // window.history.back() é seguro aqui pois é um event handler
-    window.history.back()
-  }
+    window.history.back();
+  };
 
   const getBreathingInstruction = () => {
     switch (breathingPhase) {
-      case 'inhale': return `Inspire... ${breathingCount + 1}/4`
-      case 'hold': return `Segure... ${breathingCount + 1}/7`
-      case 'exhale': return `Expire... ${breathingCount + 1}/8`
-      default: return 'Pronto para começar'
+      case 'inhale': return `Inspire... ${breathingCount + 1}/4`;
+      case 'hold': return `Segure... ${breathingCount + 1}/7`;
+      case 'exhale': return `Expire... ${breathingCount + 1}/8`;
+      default: return 'Pronto para começar';
     }
-  }
+  };
 
   const getBreathingColor = () => {
     switch (breathingPhase) {
-      case 'inhale': return '#3b82f6'
-      case 'hold': return '#8b5cf6'
-      case 'exhale': return '#06b6d4'
-      default: return '#e5e7eb'
+      case 'inhale': return '#3b82f6';
+      case 'hold': return '#8b5cf6';
+      case 'exhale': return '#06b6d4';
+      default: return '#e5e7eb';
     }
-  }
+  };
 
   // ESTILOS: Agora usando 'windowWidth' do estado, que é seguro no cliente
   const cardStyle = {
@@ -228,7 +228,7 @@ export default function FrustrationManagement() {
     marginBottom: windowWidth <= 768? '16px' : '24px', // USANDO windowWidth
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
     border: '1px solid #e5e7eb'
-  }
+  };
 
   const buttonStyle = {
     backgroundColor: '#3b82f6',
@@ -245,7 +245,7 @@ export default function FrustrationManagement() {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px'
-  }
+  };
 
   const progressStyle = {
     width: '100%',
@@ -254,14 +254,14 @@ export default function FrustrationManagement() {
     borderRadius: '4px',
     overflow: 'hidden',
     marginBottom: '24px'
-  }
+  };
 
   const progressBarStyle = {
     height: '100%',
     backgroundColor: '#14b8a6',
     width: `${((currentExercise + 1) / exercises.length) * 100}%`,
     transition: 'width 0.3s ease'
-  }
+  };
 
   if (!gameStarted) {
     return (
@@ -290,8 +290,8 @@ export default function FrustrationManagement() {
                 transition: 'all 0.2s',
                 minHeight: '44px'
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(13, 148, 136, 0.1)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(13, 148, 136, 0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               ← Voltar para TEA
             </button>
@@ -300,26 +300,32 @@ export default function FrustrationManagement() {
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
             <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap',
-              width: windowWidth <= 768? '40px' : '48px', // USANDO windowWidth
-              height: windowWidth <= 768? '40px' : '48px', // USANDO windowWidth
-              background: 'linear-gradient(135deg, #0d9488, #06b6d4)',
-              borderRadius: '50%',
-              fontSize: windowWidth <= 768? '20px' : '24px' // USANDO windowWidth
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap'
             }}>
-              😤
+              <div style={{
+                width: windowWidth <= 768? '40px' : '48px', // USANDO windowWidth
+                height: windowWidth <= 768? '40px' : '48px', // USANDO windowWidth
+                background: 'linear-gradient(135deg, #0d9488, #06b6d4)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: windowWidth <= 768? '20px' : '24px' // USANDO windowWidth
+              }}>
+                😤
+              </div>
+              <h1 style={{
+                fontSize: windowWidth <= 768? '1.8rem' : '2.5rem', // USANDO windowWidth
+                fontWeight: 'bold',
+                background: 'linear-gradient(135deg, #0d9488, #06b6d4)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                margin: 0,
+                textAlign: 'center'
+              }}>
+                Lidando com Frustrações
+              </h1>
             </div>
-            <h1 style={{
-              fontSize: windowWidth <= 768? '1.8rem' : '2.5rem', // USANDO windowWidth
-              fontWeight: 'bold',
-              background: 'linear-gradient(135deg, #0d9488, #06b6d4)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              margin: 0,
-              textAlign: 'center'
-            }}>
-              Lidando com Frustrações
-            </h1>
             <p style={{
               fontSize: windowWidth <= 768? '1rem' : '1.25rem', // USANDO windowWidth
               color: '#6b7280',
@@ -327,7 +333,7 @@ export default function FrustrationManagement() {
               margin: '0 auto',
               padding: windowWidth <= 768? '0 16px' : '0' // USANDO windowWidth
             }}>
-              Aprenda técnicas para <strong>lidar com críticas e gerenciar raiva</strong> através de respiração e reframing cognitivo
+              Aprenda técnicas para **lidar com críticas e gerenciar raiva** através de respiração e reframing cognitivo
             </p>
           </div>
 
@@ -360,7 +366,7 @@ export default function FrustrationManagement() {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              fontSize: windowWidth <= 768? '16px' : '18px', // USANDO windowWidth
+              fontSize: windowWidth <= 768? '16px' : '18px' // USANDO windowWidth
             }}>
               🎯 Objetivo das Técnicas
             </h3>
@@ -556,11 +562,11 @@ export default function FrustrationManagement() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
-  const exercise = exercises[currentExercise]
-  const isCompleted = completedExercises.includes(exercise.id)
+  const exercise = exercises[currentExercise];
+  const isCompleted = completedExercises.includes(exercise.id);
 
   return (
     <div style={{
@@ -588,8 +594,8 @@ export default function FrustrationManagement() {
               transition: 'all 0.2s',
               minHeight: '44px'
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(13, 148, 136, 0.1)'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(13, 148, 136, 0.1)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
             ← Voltar para TEA
           </button>
@@ -1127,5 +1133,5 @@ export default function FrustrationManagement() {
         </div>
       </div>
     </div>
-  )
+  );
 }
