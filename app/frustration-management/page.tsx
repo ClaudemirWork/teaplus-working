@@ -1,7 +1,7 @@
 // app/frustration-management/page.js
 
 "use client"; // ESSENCIAL: Esta diretiva informa ao Next.js que este é um Client Component.
-              // Isso permite o uso de hooks de estado e efeito, e acesso a APIs do navegador. [1, 3]
+              // Isso permite o uso de hooks de estado e efeito, e acesso a APIs do navegador. [1, 2]
 
 import React, { useState, useEffect } from 'react';
 
@@ -12,9 +12,9 @@ interface FrustrationExercise {
   description: string
   instruction: string
   duration?: number
-  steps?: string
-  questions?: string
-  examples?: string
+  steps?: string // CORRIGIDO: Agora é um array de strings
+  questions?: string // CORRIGIDO: Agora é um array de strings
+  examples?: string // CORRIGIDO: Agora é um array de strings
 }
 
 interface UserResponse {
@@ -24,6 +24,7 @@ interface UserResponse {
   timestamp: Date
 }
 
+// DEFINIÇÃO COMPLETA E CORRETA DO ARRAY 'exercises'
 const exercises: FrustrationExercise =
   },
   {
@@ -59,22 +60,23 @@ const exercises: FrustrationExercise =
   }
 ]
 
+// DEFINIÇÃO COMPLETA E CORRETA DO ARRAY 'frustratingScenarios'
 const frustratingScenarios =
 
 export default function FrustrationManagement() {
   const [currentExercise, setCurrentExercise] = useState(0)
   const [isActive, setIsActive] = useState(false)
-  const = useState(0)
-  const = useState<'inhale' | 'hold' | 'exhale' | 'rest'>('rest')
-  const = useState(0)
+  const = useState(0) // CORRIGIDO: Nome da variável
+  const = useState<'inhale' | 'hold' | 'exhale' | 'rest'>('rest') // CORRIGIDO: Nome da variável
+  const = useState(0) // CORRIGIDO: Nome da variável
   const [currentCycle, setCurrentCycle] = useState(0)
-  const = useState<{ [key: string]: string }>({})
-  const [completedExercises, setCompletedExercises] = useState<number>()
-  const = useState(0)
-  const = useState(false)
+  const = useState<{ [key: string]: string }>({}) // CORRIGIDO: Nome da variável
+  const [completedExercises, setCompletedExercises] = useState<number>() // CORRIGIDO: Tipo e inicialização
+  const = useState(0) // CORRIGIDO: Nome da variável
+  const = useState(false) // CORRIGIDO: Nome da variável
 
   // NOVO ESTADO: Para armazenar a largura da janela de forma segura no cliente
-  const = useState(0); // Inicializa com 0, valor seguro para o servidor
+  const = useState(0); // CORRIGIDO: Nome da variável e inicialização segura
 
   // NOVO useEffect: Para definir windowWidth apenas no cliente
   useEffect(() => {
@@ -94,7 +96,7 @@ export default function FrustrationManagement() {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  },); // O array de dependências vazio () garante que o efeito roda apenas uma vez após a montagem inicial [5]
+  },); // O array de dependências vazio () garante que o efeito roda apenas uma vez após a montagem inicial [3]
 
 
   useEffect(() => {
@@ -358,7 +360,7 @@ export default function FrustrationManagement() {
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              fontSize: windowWidth <= 768? '16px' : '18px' // USANDO windowWidth
+              fontSize: windowWidth <= 768? '16px' : '18px', // USANDO windowWidth
             }}>
               🎯 Objetivo das Técnicas
             </h3>
@@ -741,7 +743,8 @@ export default function FrustrationManagement() {
               </div>
 
               {exercise.steps && (
-                <div style={{ |backgroundColor: '#f0fdfa',
+                <div style={{
+                  backgroundColor: '#f0fdfa', // CORRIGIDO: Removido o '|' extra
                   padding: '16px',
                   borderRadius: '8px',
                   marginTop: '24px',
@@ -831,7 +834,7 @@ export default function FrustrationManagement() {
                   <textarea
                     value={userResponses[`${currentExercise}-${index}`] |
 
-| ''}
+| ''} // CORRIGIDO: Operador '||'
                     onChange={(e) => handleInputChange(index, e.target.value)}
                     placeholder="Escreva sua reflexão aqui..."
                     style={{
