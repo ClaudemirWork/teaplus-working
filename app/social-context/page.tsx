@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 export default function SocialContextPage() {
@@ -118,9 +119,11 @@ export default function SocialContextPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-100">
+      {/* Header Mobile */}
       <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
+            {/* Botão Voltar */}
             <a 
               href="/tea" 
               className="flex items-center text-purple-600 hover:text-purple-700 transition-colors min-h-[44px] px-2 -ml-2"
@@ -129,11 +132,13 @@ export default function SocialContextPage() {
               <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
             </a>
             
+            {/* Título */}
             <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex-1 mx-4 flex items-center justify-center gap-2">
               <span className="text-xl sm:text-2xl">🏢</span>
               <span>Contexto Social</span>
             </h1>
             
+            {/* Info do Jogo */}
             <div className="text-right">
               {gameStarted && (
                 <div className="text-xs sm:text-sm text-gray-600">
@@ -149,6 +154,7 @@ export default function SocialContextPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         {!gameStarted ? (
           <div>
+            {/* Info Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
               <div className="bg-white rounded-lg border-l-4 border-red-400 p-4 sm:p-6">
                 <div className="flex items-center mb-3">
@@ -196,6 +202,7 @@ export default function SocialContextPage() {
               </div>
             </div>
 
+            {/* Start Button */}
             <div className="text-center mb-6 sm:mb-8">
               <button
                 onClick={handleStartGame}
@@ -205,6 +212,7 @@ export default function SocialContextPage() {
               </button>
             </div>
 
+            {/* Base Científica */}
             <div className="bg-white rounded-lg p-4 sm:p-6">
               <div className="flex items-center mb-4">
                 <span className="text-xl mr-2">🧠</span>
@@ -250,13 +258,14 @@ export default function SocialContextPage() {
                     </p>
                   </div>
 
+                  {/* Answer Options */}
                   <div className="grid grid-cols-1 gap-3 sm:gap-4">
                     {currentEx.options.map((option) => (
                       <button
                         key={option.id}
                         onClick={() => handleAnswerSelect(option.id)}
                         disabled={showFeedback}
-                        className={`p-4 rounded-xl border-2 text-left transition-all duration-200 min-h-[56px] touch-manipulation flex items-start gap-2 ${
+                        className={`p-4 rounded-xl border-2 text-left transition-all duration-200 min-h-[56px] touch-manipulation text-gray-800 ${
                           selectedAnswer === option.id
                             ? showFeedback
                               ? option.correct
@@ -265,27 +274,24 @@ export default function SocialContextPage() {
                               : 'border-blue-500 bg-blue-50 text-blue-800'
                             : showFeedback && option.correct
                             ? 'border-green-500 bg-green-50 text-green-800'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 active:bg-gray-100 text-gray-800'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 active:bg-gray-100'
                         }`}
                       >
-                        <div className="flex-shrink-0">
+                        <div className="w-8 inline-block">
                           <span className="font-medium text-base">{option.id.toUpperCase()})</span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-base leading-6 block">{option.text}</span>
-                        </div>
-                        <div className="flex-shrink-0">
-                          {showFeedback && option.correct && (
-                            <span className="ml-2 text-green-600 text-lg">✓</span>
-                          )}
-                          {showFeedback && selectedAnswer === option.id && !option.correct && (
-                            <span className="ml-2 text-red-600 text-lg">✗</span>
-                          )}
-                        </div>
+                        <span className="text-base">{option.text}</span>
+                        {showFeedback && option.correct && (
+                          <span className="ml-2 text-green-600 text-lg">✓</span>
+                        )}
+                        {showFeedback && selectedAnswer === option.id && !option.correct && (
+                          <span className="ml-2 text-red-600 text-lg">✗</span>
+                        )}
                       </button>
                     ))}
                   </div>
 
+                  {/* Submit Button */}
                   {!showFeedback && selectedAnswer && (
                     <div className="text-center">
                       <button
@@ -297,6 +303,7 @@ export default function SocialContextPage() {
                     </div>
                   )}
 
+                  {/* Feedback */}
                   {showFeedback && (
                     <div className={`p-4 sm:p-6 rounded-xl ${
                       isCorrect 
@@ -317,6 +324,7 @@ export default function SocialContextPage() {
                     </div>
                   )}
 
+                  {/* Navigation */}
                   {showFeedback && (
                     <div className="flex justify-center">
                       {currentExercise < exercises.length - 1 ? (
@@ -337,6 +345,7 @@ export default function SocialContextPage() {
                     </div>
                   )}
 
+                  {/* Voltar para Menu durante o jogo */}
                   <div className="text-center mt-6">
                     <button
                       onClick={() => setGameStarted(false)}
