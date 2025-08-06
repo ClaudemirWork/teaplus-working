@@ -1,474 +1,363 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, RotateCcw, CheckCircle2, XCircle, MessageCircle, Home, Book, Target, Star } from 'lucide-react';
-
-// Dados dos exercícios
-const exercises = [
-  {
-    id: 1,
-    title: "Situação: Na escola - Hora do recreio",
-    description: "João vê um grupo de colegas brincando de futebol no pátio. Ele gostaria de participar da brincadeira.",
-    image: "⚽",
-    situation: "playground",
-    question: "Qual seria a melhor forma de João se juntar à brincadeira?",
-    options: [
-      {
-        id: 'a',
-        text: "Entrar no campo e começar a jogar sem falar nada",
-        feedback: "Isso pode incomodar os outros jogadores. É melhor perguntar primeiro.",
-        correct: false
-      },
-      {
-        id: 'b',
-        text: "Perguntar: 'Posso jogar com vocês?'",
-        feedback: "Excelente! Pedir permissão mostra respeito e educação.",
-        correct: true
-      },
-      {
-        id: 'c',
-        text: "Ficar esperando alguém chamá-lo",
-        feedback: "Às vezes é bom tomar iniciativa. Perguntar educadamente funciona melhor.",
-        correct: false
-      },
-      {
-        id: 'd',
-        text: "Gritar para chamar atenção dos colegas",
-        feedback: "Gritar não é apropriado. Uma abordagem mais calma é melhor.",
-        correct: false
-      }
-    ]
-  },
-  {
-    id: 2,
-    title: "Situação: Em casa - Jantar em família",
-    description: "Durante o jantar, Maria quer contar sobre algo interessante que aconteceu na escola, mas seus pais estão conversando.",
-    image: "🍽️",
-    situation: "family_dinner",
-    question: "Como Maria deveria agir nesta situação?",
-    options: [
-      {
-        id: 'a',
-        text: "Interromper a conversa falando alto",
-        feedback: "Interromper não é educado. É melhor esperar uma pausa.",
-        correct: false
-      },
-      {
-        id: 'b',
-        text: "Esperar uma pausa na conversa e dizer 'Com licença, posso contar algo?'",
-        feedback: "Perfeito! Esperar uma pausa e pedir licença mostra boas maneiras.",
-        correct: true
-      },
-      {
-        id: 'c',
-        text: "Sair da mesa sem falar nada",
-        feedback: "Não é necessário sair. É melhor aguardar o momento certo para falar.",
-        correct: false
-      },
-      {
-        id: 'd',
-        text: "Continuar falando mesmo se ninguém estiver prestando atenção",
-        feedback: "Se ninguém está prestando atenção, é melhor aguardar o momento adequado.",
-        correct: false
-      }
-    ]
-  },
-  {
-    id: 3,
-    title: "Situação: Na loja - Pedindo ajuda",
-    description: "Pedro está em uma loja com sua mãe e não consegue encontrar um brinquedo que quer comprar.",
-    image: "🏪",
-    situation: "store",
-    question: "Qual a melhor maneira de Pedro pedir ajuda?",
-    options: [
-      {
-        id: 'a',
-        text: "Procurar um funcionário e perguntar educadamente onde encontrar o brinquedo",
-        feedback: "Excelente! Pedir ajuda educadamente aos funcionários é apropriado.",
-        correct: true
-      },
-      {
-        id: 'b',
-        text: "Mexer em todos os produtos até encontrar",
-        feedback: "Mexer em tudo pode bagunçar a loja. É melhor pedir ajuda.",
-        correct: false
-      },
-      {
-        id: 'c',
-        text: "Gritar 'Mãe, não acho!' bem alto",
-        feedback: "Gritar em público não é apropriado. Falar em tom normal é melhor.",
-        correct: false
-      },
-      {
-        id: 'd',
-        text: "Desistir e sair da loja chateado",
-        feedback: "Não precisa desistir! Pedir ajuda pode resolver o problema.",
-        correct: false
-      }
-    ]
-  },
-  {
-    id: 4,
-    title: "Situação: Na sala de aula - Trabalho em grupo",
-    description: "Ana foi escolhida para fazer um trabalho em grupo, mas tem uma ideia diferente dos colegas sobre como fazer.",
-    image: "📚",
-    situation: "classroom",
-    question: "Como Ana deveria expressar sua ideia?",
-    options: [
-      {
-        id: 'a',
-        text: "Insistir que sua ideia é a melhor e que os outros estão errados",
-        feedback: "Insistir não ajuda o trabalho em equipe. É melhor explicar a ideia calmamente.",
-        correct: false
-      },
-      {
-        id: 'b',
-        text: "Não falar nada e aceitar as ideias dos outros sem contribuir",
-        feedback: "Sua contribuição é importante! Compartilhar ideias enriquece o trabalho.",
-        correct: false
-      },
-      {
-        id: 'c',
-        text: "Dizer: 'Eu tenho uma ideia diferente, posso compartilhar?'",
-        feedback: "Perfeito! Pedir para compartilhar sua ideia mostra respeito e colaboração.",
-        correct: true
-      },
-      {
-        id: 'd',
-        text: "Fazer o trabalho sozinha do seu jeito",
-        feedback: "Trabalho em grupo requer colaboração. É melhor discutir as ideias juntos.",
-        correct: false
-      }
-    ]
-  },
-  {
-    id: 5,
-    title: "Situação: Festa de aniversário - Chegada",
-    description: "Carlos chega à festa de aniversário de um colega e vê muitas pessoas que não conhece bem.",
-    image: "🎉",
-    situation: "party",
-    question: "Qual seria uma boa forma de Carlos se integrar à festa?",
-    options: [
-      {
-        id: 'a',
-        text: "Ficar num canto sozinho o tempo todo",
-        feedback: "Ficar sozinho não ajuda a se integrar. Tente uma abordagem mais social.",
-        correct: false
-      },
-      {
-        id: 'b',
-        text: "Cumprimentar o aniversariante e se apresentar para algumas pessoas",
-        feedback: "Excelente! Cumprimentar o aniversariante e se apresentar é muito apropriado.",
-        correct: true
-      },
-      {
-        id: 'c',
-        text: "Criticar a decoração ou a comida da festa",
-        feedback: "Críticas em festas são inadequadas. É melhor focar nos aspectos positivos.",
-        correct: false
-      },
-      {
-        id: 'd',
-        text: "Tentar ser o centro das atenções o tempo todo",
-        feedback: "A festa é do aniversariante. É melhor ser sociável sem exagerar.",
-        correct: false
-      }
-    ]
-  }
-];
+import { useState } from 'react';
 
 export default function SocialContextPage() {
+  const [gameStarted, setGameStarted] = useState(false);
   const [currentExercise, setCurrentExercise] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string>('');
+  const [points, setPoints] = useState(0);
+  const [exerciseStarted, setExerciseStarted] = useState(false);
+  const [selectedAnswer, setSelectedAnswer] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
-  const [score, setScore] = useState(0);
-  const [completedExercises, setCompletedExercises] = useState<number[]>([]);
-  const [showAllFeedback, setShowAllFeedback] = useState(false);
+
+  const exercises = [
+    {
+      title: 'Contexto Escolar vs Social',
+      scenario: 'Você está na escola durante uma aula e depois vai para uma festa de aniversário com os mesmos colegas. Na aula, todo mundo está quieto e prestando atenção. Na festa, as mesmas pessoas estão falando alto, rindo e brincando.',
+      question: 'Por que o comportamento das pessoas muda tanto entre esses dois contextos?',
+      options: [
+        { id: 'a', text: 'As pessoas são falsas e fingem na escola', correct: false },
+        { id: 'b', text: 'Cada contexto tem regras sociais e expectativas diferentes', correct: true },
+        { id: 'c', text: 'Na festa elas estão mal-educadas', correct: false },
+        { id: 'd', text: 'Não há diferença real no comportamento', correct: false }
+      ],
+      explanation: 'Cada ambiente social tem suas próprias regras não-escritas. Na escola é esperado silêncio e atenção, na festa é normal ser mais expressivo!'
+    },
+    {
+      title: 'Linguagem Formal vs Informal',
+      scenario: 'João fala "E aí, beleza?" para seu melhor amigo, mas diz "Bom dia, como está?" para o diretor da escola.',
+      question: 'Por que João muda sua forma de falar?',
+      options: [
+        { id: 'a', text: 'Ele está sendo falso com o diretor', correct: false },
+        { id: 'b', text: 'Ele adapta a linguagem ao nível de formalidade do contexto', correct: true },
+        { id: 'c', text: 'Ele não gosta do diretor', correct: false },
+        { id: 'd', text: 'Ele esqueceu como falar normalmente', correct: false }
+      ],
+      explanation: 'Adaptar a linguagem ao contexto é uma habilidade social importante. Contextos formais pedem linguagem mais respeitosa!'
+    },
+    {
+      title: 'Volume de Voz Contextual',
+      scenario: 'Marina fala baixinho na biblioteca, em volume normal na cantina, e mais alto na quadra de esportes.',
+      question: 'O que determina o volume da voz de Marina?',
+      options: [
+        { id: 'a', text: 'Seu humor do momento', correct: false },
+        { id: 'b', text: 'As normas sonoras apropriadas para cada ambiente', correct: true },
+        { id: 'c', text: 'A quantidade de pessoas no local', correct: false },
+        { id: 'd', text: 'Ela tem problemas de audição', correct: false }
+      ],
+      explanation: 'Diferentes ambientes têm expectativas diferentes sobre ruído. Bibliotecas pedem silêncio, quadras permitem mais volume!'
+    },
+    {
+      title: 'Vestimenta e Contexto',
+      scenario: 'Pedro usa uniforme na escola, roupa casual no shopping, roupa social em um casamento, e roupa de banho na praia.',
+      question: 'O que isso demonstra sobre as regras sociais?',
+      options: [
+        { id: 'a', text: 'Pedro gosta de variedade na roupa', correct: false },
+        { id: 'b', text: 'Cada contexto social tem códigos de vestimenta apropriados', correct: true },
+        { id: 'c', text: 'Pedro está sempre tentando impressionar', correct: false },
+        { id: 'd', text: 'Não importa o que vestir em cada lugar', correct: false }
+      ],
+      explanation: 'A vestimenta adequada varia conforme o contexto social. Cada ambiente tem expectativas sobre aparência apropriada!'
+    },
+    {
+      title: 'Tópicos de Conversa Contextuais',
+      scenario: 'Ana fala sobre desenhos animados com crianças de 6 anos, sobre estudos com colegas da escola, sobre trabalho com adultos, e sobre música com amigos próximos.',
+      question: 'Por que Ana muda os assuntos conforme as pessoas?',
+      options: [
+        { id: 'a', text: 'Ela é uma pessoa muito confusa', correct: false },
+        { id: 'b', text: 'Ela adapta os tópicos aos interesses e idade do grupo', correct: true },
+        { id: 'c', text: 'Ela não tem personalidade própria', correct: false },
+        { id: 'd', text: 'Ela quer agradar todo mundo', correct: false }
+      ],
+      explanation: 'Escolher tópicos apropriados para cada grupo é sensibilidade social. Diferentes pessoas têm diferentes interesses e capacidades!'
+    }
+  ];
 
   const currentEx = exercises[currentExercise];
-  const progress = ((currentExercise + 1) / exercises.length) * 100;
 
-  useEffect(() => {
+  const handleStartGame = () => {
+    setGameStarted(true);
+    setCurrentExercise(0);
+    setPoints(0);
+    setExerciseStarted(false);
     setSelectedAnswer('');
     setShowFeedback(false);
-    setShowAllFeedback(false);
-  }, [currentExercise]);
+  };
 
-  const handleAnswerSelect = (answerId: string) => {
-    if (showFeedback) return;
-    
+  const handleStartExercise = () => {
+    setExerciseStarted(true);
+    setSelectedAnswer('');
+    setShowFeedback(false);
+  };
+
+  const handleAnswerSelect = (answerId) => {
     setSelectedAnswer(answerId);
-    setShowFeedback(true);
-    setShowAllFeedback(true);
+  };
 
-    const isCorrect = currentEx.options.find(opt => opt.id === answerId)?.correct;
-    if (isCorrect && !completedExercises.includes(currentEx.id)) {
-      setScore(score + 20);
-      setCompletedExercises([...completedExercises, currentEx.id]);
+  const handleSubmit = () => {
+    if (!selectedAnswer) return;
+    
+    setShowFeedback(true);
+    const isCorrect = currentEx.options.find(opt => opt.id === selectedAnswer)?.correct;
+    
+    if (isCorrect) {
+      setPoints(points + 10);
     }
   };
 
   const handleNext = () => {
     if (currentExercise < exercises.length - 1) {
       setCurrentExercise(currentExercise + 1);
+      setExerciseStarted(false);
+      setSelectedAnswer('');
+      setShowFeedback(false);
     }
-  };
-
-  const handlePrevious = () => {
-    if (currentExercise > 0) {
-      setCurrentExercise(currentExercise - 1);
-    }
-  };
-
-  const handleReset = () => {
-    setCurrentExercise(0);
-    setSelectedAnswer('');
-    setShowFeedback(false);
-    setShowAllFeedback(false);
-    setScore(0);
-    setCompletedExercises([]);
   };
 
   const isCorrect = selectedAnswer && currentEx.options.find(opt => opt.id === selectedAnswer)?.correct;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-100">
+      {/* Header Mobile */}
       <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/tea" className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors">
-                <ArrowLeft className="w-5 h-5" />
-                <span className="hidden sm:inline">Voltar para TEA</span>
-              </Link>
-              <div className="flex items-center gap-2">
-                <MessageCircle className="w-6 h-6 text-purple-600" />
-                <h1 className="text-lg sm:text-xl font-bold text-gray-800">
-                  Contexto Social
-                </h1>
-              </div>
+            {/* Botão Voltar */}
+            <a 
+              href="/tea" 
+              className="flex items-center text-purple-600 hover:text-purple-700 transition-colors min-h-[44px] px-2 -ml-2"
+            >
+              <span className="text-xl mr-2">←</span>
+              <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
+            </a>
+            
+            {/* Título */}
+            <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex-1 mx-4 flex items-center justify-center gap-2">
+              <span className="text-xl sm:text-2xl">🏢</span>
+              <span>Contexto Social</span>
+            </h1>
+            
+            {/* Info do Jogo */}
+            <div className="text-right">
+              {gameStarted && (
+                <div className="text-xs sm:text-sm text-gray-600">
+                  <div>Pontos: {points}</div>
+                  <div>{currentExercise + 1}/{exercises.length}</div>
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-green-100 px-3 py-1 rounded-full">
-                <Star className="w-4 h-4 text-green-600" />
-                <span className="font-semibold text-green-700 text-sm">{score}</span>
-              </div>
-              <button
-                onClick={handleReset}
-                className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                title="Reiniciar"
-              >
-                <RotateCcw className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-          
-          {/* Barra de Progresso */}
-          <div className="mt-4 bg-gray-200 rounded-full h-2 overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-sm text-gray-600 mt-1">
-            <span>Exercício {currentExercise + 1} de {exercises.length}</span>
-            <span>{Math.round(progress)}% concluído</span>
           </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        {/* Card Principal */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-          {/* Header do Exercício */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-purple-100 rounded-full mb-4">
-              <span className="text-4xl" role="img" aria-label="Situação">
-                {currentEx.image}
-              </span>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              {currentEx.title}
-            </h2>
-            <p className="text-gray-600 text-lg leading-relaxed max-w-2xl mx-auto">
-              {currentEx.description}
-            </p>
-          </div>
-
-          {/* Pergunta */}
-          <div className="bg-blue-50 rounded-xl p-6 mb-8">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">?</span>
-              </div>
-              <h3 className="text-lg font-semibold text-blue-800">
-                Pergunta:
-              </h3>
-            </div>
-            <p className="text-blue-700 text-lg pl-11">
-              {currentEx.question}
-            </p>
-          </div>
-
-          {/* Opções de Resposta */}
-          <div className="space-y-4 mb-8">
-            {currentEx.options.map((option, index) => {
-              const isSelected = selectedAnswer === option.id;
-              const isCorrectOption = option.correct;
-              const shouldShowFeedback = showAllFeedback;
-              
-              let buttonStyle = "border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50";
-              let iconColor = "text-gray-400";
-              let icon = null;
-              
-              if (shouldShowFeedback) {
-                if (isCorrectOption) {
-                  buttonStyle = "border-2 border-green-500 bg-green-50";
-                  iconColor = "text-green-600";
-                  icon = <CheckCircle2 className={`w-6 h-6 ${iconColor}`} />;
-                } else if (isSelected && !isCorrectOption) {
-                  buttonStyle = "border-2 border-red-500 bg-red-50";
-                  iconColor = "text-red-600";
-                  icon = <XCircle className={`w-6 h-6 ${iconColor}`} />;
-                }
-              } else if (isSelected) {
-                buttonStyle = "border-2 border-purple-500 bg-purple-50";
-                iconColor = "text-purple-600";
-              }
-
-              return (
-                <div key={option.id} className="space-y-3">
-                  <button
-                    onClick={() => handleAnswerSelect(option.id)}
-                    disabled={showFeedback}
-                    className={`w-full p-4 rounded-xl text-left transition-all duration-300 ${buttonStyle} ${
-                      showFeedback ? 'cursor-default' : 'cursor-pointer hover:shadow-md active:scale-[0.98]'
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full border-2 border-current flex items-center justify-center">
-                        {icon || (
-                          <span className={`font-bold ${iconColor}`}>
-                            {String.fromCharCode(65 + index)}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-gray-800 font-medium leading-relaxed">
-                        {option.text}
-                      </span>
-                    </div>
-                  </button>
-
-                  {/* Balão de Feedback - SEMPRE VISÍVEL quando showAllFeedback for true */}
-                  {shouldShowFeedback && (
-                    <div className={`ml-12 p-4 rounded-lg border-l-4 animate-fade-in ${
-                      isCorrectOption 
-                        ? 'bg-green-50 border-green-400' 
-                        : isSelected 
-                          ? 'bg-red-50 border-red-400'
-                          : 'bg-gray-50 border-gray-300'
-                    }`}>
-                      <div className="flex items-start gap-2">
-                        <MessageCircle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                          isCorrectOption 
-                            ? 'text-green-600' 
-                            : isSelected 
-                              ? 'text-red-600'
-                              : 'text-gray-500'
-                        }`} />
-                        <p className={`text-sm leading-relaxed ${
-                          isCorrectOption 
-                            ? 'text-green-700' 
-                            : isSelected 
-                              ? 'text-red-700'
-                              : 'text-gray-600'
-                        }`}>
-                          {option.feedback}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+        {!gameStarted ? (
+          <div>
+            {/* Info Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
+              <div className="bg-white rounded-lg border-l-4 border-red-400 p-4 sm:p-6">
+                <div className="flex items-center mb-3">
+                  <span className="text-xl mr-2">🎯</span>
+                  <h3 className="text-base sm:text-lg font-semibold text-red-600">Objetivo:</h3>
                 </div>
-              );
-            })}
-          </div>
+                <p className="text-gray-700 text-sm sm:text-base">
+                  Compreender como diferentes contextos sociais exigem adaptações no comportamento, 
+                  linguagem e apresentação pessoal
+                </p>
+              </div>
 
-          {/* Botões de Navegação */}
-          <div className="flex justify-between items-center pt-6 border-t border-gray-200">
-            <button
-              onClick={handlePrevious}
-              disabled={currentExercise === 0}
-              className="px-6 py-3 bg-gray-100 text-gray-600 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors"
-            >
-              Anterior
-            </button>
-            
-            <div className="text-center">
-              <p className="text-sm text-gray-500">
-                {showFeedback && isCorrect ? (
-                  <span className="text-green-600 font-medium">✓ Resposta correta!</span>
-                ) : showFeedback && !isCorrect ? (
-                  <span className="text-red-600 font-medium">✗ Tente novamente na próxima vez!</span>
-                ) : (
-                  'Selecione uma opção'
-                )}
+              <div className="bg-white rounded-lg border-l-4 border-blue-400 p-4 sm:p-6">
+                <div className="flex items-center mb-3">
+                  <span className="text-xl mr-2">👑</span>
+                  <h3 className="text-base sm:text-lg font-semibold text-blue-600">Pontuação:</h3>
+                </div>
+                <p className="text-gray-700 text-sm sm:text-base">
+                  Cada adaptação correta = +10 pontos. Você precisa de 50 pontos 
+                  para completar a atividade com sucesso
+                </p>
+              </div>
+
+              <div className="bg-white rounded-lg border-l-4 border-purple-400 p-4 sm:p-6">
+                <div className="flex items-center mb-3">
+                  <span className="text-xl mr-2">📊</span>
+                  <h3 className="text-base sm:text-lg font-semibold text-purple-600">Níveis:</h3>
+                </div>
+                <div className="text-gray-700 text-sm sm:text-base">
+                  <p><strong className="text-purple-600">Nível 1:</strong> Contextos básicos (escola vs social)</p>
+                  <p><strong className="text-purple-600">Nível 2:</strong> Linguagem e comunicação adaptativa</p>
+                  <p><strong className="text-purple-600">Nível 3:</strong> Vestimenta e tópicos contextuais</p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg border-l-4 border-green-400 p-4 sm:p-6">
+                <div className="flex items-center mb-3">
+                  <span className="text-xl mr-2">🏁</span>
+                  <h3 className="text-base sm:text-lg font-semibold text-green-600">Final:</h3>
+                </div>
+                <p className="text-gray-700 text-sm sm:text-base">
+                  Complete os 3 níveis com 50 pontos para finalizar a atividade 
+                  e dominar a adaptação contextual
+                </p>
+              </div>
+            </div>
+
+            {/* Start Button */}
+            <div className="text-center mb-6 sm:mb-8">
+              <button
+                onClick={handleStartGame}
+                className="bg-gradient-to-r from-purple-400 to-blue-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-medium hover:shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 min-h-[48px] touch-manipulation"
+              >
+                Começar Atividade
+              </button>
+            </div>
+
+            {/* Base Científica */}
+            <div className="bg-white rounded-lg p-4 sm:p-6">
+              <div className="flex items-center mb-4">
+                <span className="text-xl mr-2">🧠</span>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-800">Base Científica:</h3>
+              </div>
+              <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
+                Este exercício é baseado na Teoria dos Scripts Sociais e pesquisas sobre cognição social contextual. 
+                A capacidade de adaptar comportamentos a diferentes contextos é fundamental para a competência social 
+                e é especialmente importante para pessoas com TEA desenvolverem flexibilidade comportamental.
               </p>
             </div>
-
-            <button
-              onClick={handleNext}
-              disabled={currentExercise === exercises.length - 1}
-              className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700 transition-colors"
-            >
-              Próximo
-            </button>
           </div>
-        </div>
+        ) : (
+          <div className="bg-white rounded-xl sm:rounded-3xl shadow-xl p-4 sm:p-8">
+            <div className="text-center mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
+                {currentEx.title}
+              </h2>
+              
+              {!exerciseStarted ? (
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-4 sm:p-6 rounded-lg">
+                    <p className="text-gray-700 text-base sm:text-lg leading-relaxed">
+                      {currentEx.scenario}
+                    </p>
+                  </div>
+                  
+                  <button
+                    onClick={handleStartExercise}
+                    className="bg-gradient-to-r from-purple-400 to-blue-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-medium hover:shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 min-h-[48px] touch-manipulation"
+                  >
+                    Iniciar Exercício
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-4 sm:p-6 rounded-lg mb-4 sm:mb-6">
+                    <p className="text-gray-700 text-base sm:text-lg leading-relaxed mb-4">
+                      {currentEx.scenario}
+                    </p>
+                    <p className="text-gray-800 font-semibold text-base sm:text-lg">
+                      {currentEx.question}
+                    </p>
+                  </div>
 
-        {/* Navegação Rápida */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <Target className="w-5 h-5 text-purple-600" />
-            Navegação Rápida
-          </h3>
-          <div className="grid grid-cols-5 gap-3">
-            {exercises.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentExercise(index)}
-                className={`aspect-square rounded-lg font-semibold transition-all duration-200 ${
-                  index === currentExercise
-                    ? 'bg-purple-600 text-white shadow-lg'
-                    : completedExercises.includes(exercises[index].id)
-                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {index + 1}
-              </button>
-            ))}
+                  {/* Answer Options */}
+                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                    {currentEx.options.map((option) => (
+                      <button
+                        key={option.id}
+                        onClick={() => handleAnswerSelect(option.id)}
+                        disabled={showFeedback}
+                        className={`p-3 sm:p-4 rounded-xl border-2 text-left transition-all duration-200 min-h-[48px] touch-manipulation ${
+                          selectedAnswer === option.id
+                            ? showFeedback
+                              ? option.correct
+                                ? 'border-green-500 bg-green-50 text-green-800'
+                                : 'border-red-500 bg-red-50 text-red-800'
+                              : 'border-blue-500 bg-blue-50 text-blue-800'
+                            : showFeedback && option.correct
+                            ? 'border-green-500 bg-green-50 text-green-800'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 active:bg-gray-100'
+                        }`}
+                      >
+                        <span className="font-medium text-sm sm:text-base">{option.id.toUpperCase()}) </span>
+                        <span className="text-sm sm:text-base">{option.text}</span>
+                        {showFeedback && option.correct && (
+                          <span className="ml-2 text-green-600">✓</span>
+                        )}
+                        {showFeedback && selectedAnswer === option.id && !option.correct && (
+                          <span className="ml-2 text-red-600">✗</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Submit Button */}
+                  {!showFeedback && selectedAnswer && (
+                    <div className="text-center">
+                      <button
+                        onClick={handleSubmit}
+                        className="bg-gradient-to-r from-purple-400 to-blue-500 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-200 active:scale-95 min-h-[48px] touch-manipulation"
+                      >
+                        Confirmar Resposta
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Feedback */}
+                  {showFeedback && (
+                    <div className={`p-4 sm:p-6 rounded-xl ${
+                      isCorrect 
+                        ? 'bg-green-50 border-l-4 border-green-400' 
+                        : 'bg-yellow-50 border-l-4 border-yellow-400'
+                    }`}>
+                      <div className="flex items-center space-x-2 mb-3">
+                        <span className="text-xl sm:text-2xl">
+                          {isCorrect ? '🎉' : '💡'}
+                        </span>
+                        <h3 className="text-base sm:text-lg font-semibold">
+                          {isCorrect ? 'Excelente adaptação contextual! +10 pontos' : 'Vamos entender melhor!'}
+                        </h3>
+                      </div>
+                      <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
+                        {currentEx.explanation}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Navigation */}
+                  {showFeedback && (
+                    <div className="flex justify-center">
+                      {currentExercise < exercises.length - 1 ? (
+                        <button
+                          onClick={handleNext}
+                          className="bg-gradient-to-r from-purple-400 to-blue-500 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-200 active:scale-95 min-h-[48px] touch-manipulation"
+                        >
+                          Próximo Exercício →
+                        </button>
+                      ) : (
+                        <a
+                          href="/tea"
+                          className="bg-gradient-to-r from-purple-400 to-blue-500 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-200 active:scale-95 min-h-[48px] touch-manipulation inline-block"
+                        >
+                          Finalizar Atividade ✓
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Voltar para Menu durante o jogo */}
+                  <div className="text-center mt-6">
+                    <button
+                      onClick={() => setGameStarted(false)}
+                      className="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors min-h-[44px] touch-manipulation"
+                    >
+                      ← Voltar ao Menu
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
-
-      {/* CSS para animações */}
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-out forwards;
-        }
-      `}</style>
     </div>
   );
 }
