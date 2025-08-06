@@ -238,9 +238,9 @@ export default function SocialContextPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors">
+              <Link href="/tea" className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors">
                 <ArrowLeft className="w-5 h-5" />
-                <span className="hidden sm:inline">Voltar</span>
+                <span className="hidden sm:inline">Voltar para TEA</span>
               </Link>
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-6 h-6 text-purple-600" />
@@ -421,7 +421,7 @@ export default function SocialContextPage() {
               disabled={currentExercise === exercises.length - 1}
               className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-700 transition-colors"
             >
-              {currentExercise === exercises.length - 1 ? 'Finalizar' : 'Próximo'}
+              Próximo
             </button>
           </div>
         </div>
