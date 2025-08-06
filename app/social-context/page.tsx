@@ -274,7 +274,7 @@ export default function SocialContextPage() {
                               : 'border-blue-500 bg-blue-50 text-blue-800'
                             : showFeedback && option.correct
                             ? 'border-green-500 bg-green-50 text-green-800'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 active:bg-gray-100'
+                            : 'border-gray-200 bg-white text-gray-800 hover:border-gray-300 hover:bg-gray-50 active:bg-gray-100'
                         }`}
                       >
                         <div className="w-full">
