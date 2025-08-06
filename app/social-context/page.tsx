@@ -265,7 +265,7 @@ export default function SocialContextPage() {
                         key={option.id}
                         onClick={() => handleAnswerSelect(option.id)}
                         disabled={showFeedback}
-                        className={`p-3 sm:p-4 rounded-xl border-2 text-left transition-all duration-200 min-h-[48px] touch-manipulation ${
+                        className={`w-full p-3 sm:p-4 rounded-xl border-2 text-left transition-all duration-200 min-h-[48px] touch-manipulation flex items-center ${
                           selectedAnswer === option.id
                             ? showFeedback
                               ? option.correct
@@ -277,14 +277,16 @@ export default function SocialContextPage() {
                             : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 active:bg-gray-100'
                         }`}
                       >
-                        <span className="font-medium text-sm sm:text-base">{option.id.toUpperCase()}) </span>
-                        <span className="text-sm sm:text-base">{option.text}</span>
-                        {showFeedback && option.correct && (
-                          <span className="ml-2 text-green-600">✓</span>
-                        )}
-                        {showFeedback && selectedAnswer === option.id && !option.correct && (
-                          <span className="ml-2 text-red-600">✗</span>
-                        )}
+                        <div className="w-full">
+                          <span className="font-medium text-sm sm:text-base">{option.id.toUpperCase()}) </span>
+                          <span className="text-sm sm:text-base">{option.text}</span>
+                          {showFeedback && option.correct && (
+                            <span className="ml-2 text-green-600">✓</span>
+                          )}
+                          {showFeedback && selectedAnswer === option.id && !option.correct && (
+                            <span className="ml-2 text-red-600">✗</span>
+                          )}
+                        </div>
                       </button>
                     ))}
                   </div>
