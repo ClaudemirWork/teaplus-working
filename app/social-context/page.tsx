@@ -265,7 +265,7 @@ export default function SocialContextPage() {
                         key={option.id}
                         onClick={() => handleAnswerSelect(option.id)}
                         disabled={showFeedback}
-                        className={`p-4 rounded-xl border-2 text-left transition-all duration-200 min-h-[56px] touch-manipulation text-gray-800 ${
+                        className={`p-4 rounded-xl border-2 text-left transition-all duration-200 min-h-[56px] touch-manipulation text-gray-800 bg-white ${
                           selectedAnswer === option.id
                             ? showFeedback
                               ? option.correct
