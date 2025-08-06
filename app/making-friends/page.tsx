@@ -305,7 +305,7 @@ export default function MakingFriendsPage() {
                       </p>
                     </div>
 
-                    {/* Opções de Resposta */}
+                    {/* Opções de Resposta - CORRIGIDO APENAS A VISIBILIDADE */}
                     <div className="grid grid-cols-1 gap-4">
                       {currentExerciseData.options.map((option) => (
                         <button
@@ -321,7 +321,7 @@ export default function MakingFriendsPage() {
                                 : 'border-blue-500 bg-blue-50 text-blue-800'
                               : showFeedback && option.correct
                               ? 'border-green-500 bg-green-50 text-green-800'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-800 bg-white'
                           }`}
                         >
                           <span className="font-medium">{option.id.toUpperCase()}) </span>
