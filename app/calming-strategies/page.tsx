@@ -337,7 +337,7 @@ export default function CalmingStrategiesPage() {
                             className={`p-3 rounded-lg text-left transition-colors text-sm md:text-base ${
                               selectedItems.includes(item)
                                 ? 'bg-green-100 text-green-800 border-green-300 border'
-                                : 'bg-white hover:bg-gray-50 border border-gray-200'
+                                : 'text-gray-800 bg-white hover:bg-gray-50 border border-gray-200'
                             }`}
                           >
                             {selectedItems.includes(item) && '✓ '}{item}
@@ -355,7 +355,7 @@ export default function CalmingStrategiesPage() {
                             className={`p-3 rounded-lg text-left transition-colors text-sm md:text-base ${
                               selectedItems.includes(option)
                                 ? 'bg-blue-100 text-blue-800 border-blue-300 border'
-                                : 'bg-white hover:bg-gray-50 border border-gray-200'
+                                : 'text-gray-800 bg-white hover:bg-gray-50 border border-gray-200'
                             }`}
                           >
                             {selectedItems.includes(option) && '✓ '}{option}
