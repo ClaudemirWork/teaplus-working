@@ -57,7 +57,7 @@ export default function LoginPage() {
           localStorage.setItem('teaplus_session', 'active');
           
           showMessage('success', `Bem-vindo de volta, ${userData.name}!`);
-          router.push('/profileselection');
+          router.replace('/profileselection');
         } else {
           showMessage('error', `Dados incorretos! Verifique seu email e senha.`);
         }
@@ -101,7 +101,7 @@ export default function LoginPage() {
       localStorage.setItem('teaplus_session', 'active');
       
       showMessage('success', `Conta criada com sucesso para ${userData.name}!`);
-      router.push('/profileselection');
+      router.replace('/profileselection');
     } catch (error) {
       showMessage('error', 'Erro ao salvar conta. Tente novamente.');
     }
@@ -128,14 +128,12 @@ export default function LoginPage() {
           <p className="text-slate-600 text-sm">Aplicativo de apoio ao paciente com TEA, TDAH</p>
         </div>
 
-        {/* Message Box */}
         {message && (
           <div className={`p-4 mb-4 text-center rounded-lg ${messageType === 'success' ? 'bg-emerald-100 text-emerald-800' : messageType === 'error' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
             {message}
           </div>
         )}
 
-        {/* Toggles de Entrar/Criar Conta */}
         <div className="flex justify-center mb-6">
           <button
             onClick={() => { setIsLogin(true); setMessage(''); }}
