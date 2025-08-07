@@ -90,9 +90,8 @@ const App = () => {
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-sm">T+</span>
-            </div>
+            {/* LOGOTIPO NO HEADER */}
+            <img src="/images/Teaplus-logo.png" alt="TeaPlus Logo" className="w-10 h-10" />
             <div>
               <span className="text-xl font-bold text-slate-800">TeaPlus</span>
               <div className="text-xs text-slate-500">TEA + TDAH</div>
@@ -202,9 +201,8 @@ const App = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div>
               <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-sm">T+</span>
-                </div>
+                {/* LOGOTIPO NO RODAPÉ */}
+                <img src="/images/Teaplus-logo.png" alt="TeaPlus Logo" className="w-8 h-8" />
                 <span className="text-xl font-bold text-white">TeaPlus</span>
               </div>
               <p className="text-sm">
