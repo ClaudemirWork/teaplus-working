@@ -65,7 +65,7 @@ export default function TeaDashboard() {
         { name: 'Diário Emocional', path: '/emotion-diary', description: 'Registro e reflexão sobre suas emoções diárias' },
         { name: 'Espelho de Emoções', path: '/emotion-mirror', description: 'Reflexão e autoconhecimento' },
         { name: 'Jogo do Semáforo', path: '/traffic-light-game', description: 'Para, pensa e age - controle de impulsos' },
-        { name: 'Diário de Reflexão Guiada', path: '/guided-reflection', description: 'Pensar antes de agir, desenvolvimento do autocontrole' },
+        { name: 'Diário de Reflexão Guiada', path: '/reflection-diary', description: 'Pensar antes de agir, desenvolvimento do autocontrole' },
         { name: 'Treino de Assertividade', path: '/assertiveness-training', description: 'Defender opiniões, dizer não, expressar necessidades' },
         { name: 'Lidando com Frustrações', path: '/frustration-management', description: 'Lidar com críticas e gerenciar sentimentos de raiva' },
         { name: 'Missões Sociais', path: '/social-missions', description: 'Desafios de interação social' },
