@@ -41,7 +41,7 @@ export default function ProfileSelection() {
       const checkLogin = () => {
         try {
           const userData = localStorage.getItem('teaplus_user');
-          const isLoggedIn = localStorage.getItem('teaplus_session');
+          const isLoggedIn = sessionStorage.getItem('teaplus_session'); // Lendo do sessionStorage
           
           if (isMounted) {
             if (userData && isLoggedIn === 'active') {
@@ -74,9 +74,9 @@ export default function ProfileSelection() {
 
   const handleLogout = () => {
     if (window.confirm('Deseja realmente sair do aplicativo?')) {
-      localStorage.removeItem('teaplus_session');
+      sessionStorage.removeItem('teaplus_session'); // Removendo do sessionStorage
       window.alert('Logout realizado! Sua conta foi mantida para próximos acessos.');
-      router.replace('/'); // Redireciona para a landing page (rota raiz)
+      router.replace('/');
     }
   };
 
