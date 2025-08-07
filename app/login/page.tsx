@@ -160,7 +160,7 @@ export default function LoginPage() {
                 placeholder="Nome completo"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           )}
@@ -173,7 +173,7 @@ export default function LoginPage() {
               placeholder="Digite seu e-mail"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
@@ -185,7 +185,7 @@ export default function LoginPage() {
               placeholder="Digite sua senha"
               value={formData.password}
               onChange={handleInputChange}
-              className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           {!isLogin && (
@@ -198,7 +198,7 @@ export default function LoginPage() {
                 placeholder="Confirme sua senha"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           )}
