@@ -19,8 +19,8 @@ export default function ProfileSelection() {
     },
     {
       key: 'tdah',
-      title: 'TDAH (Transtorno do D\u00E9ficit de Aten\u00e7\u00e3o)',
-      description: 'Focado em aten\u00e7\u00e3o, mem\u00f3ria e organiza\u00e7\u00e3o',
+      title: 'TDAH (Transtorno do Déficit de Atenção)',
+      description: 'Focado em atenção, memória e organização',
       icon: '⚡',
       color: '#F5A623',
       route: '/tdah'
@@ -103,13 +103,13 @@ export default function ProfileSelection() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">TeaPlus</h1>
           <p className="text-sm sm:text-base text-gray-600">Aplicativo de apoio ao paciente com TEA, TDAH</p>
           <p className="text-sm text-slate-500 mt-2">
-            Olá, <strong className="text-slate-800">{userInfo?.name || 'Usu\u00e1rio'}</strong>
+            Olá, <strong className="text-slate-800">{userInfo?.name || 'Usuário'}</strong>
           </p>
         </div>
 
         <div className="space-y-4 mb-6 sm:mb-8">
           <h2 className="text-base sm:text-lg font-semibold text-center text-gray-700 mb-4 sm:mb-6">
-            O que voc\u00ea gostaria de acompanhar hoje?
+            O que você gostaria de acompanhar hoje?
           </h2>
           
           {profiles.map((profile) => (
@@ -139,27 +139,27 @@ export default function ProfileSelection() {
 
         <div className="text-center">
           <p className="text-xs text-slate-400 mb-4">
-            Selecione uma op\u00e7\u00e3o para come\u00e7ar
+            Selecione uma opção para começar
           </p>
           
           <div className="border-t pt-4 mt-4 mb-6">
             <p className="text-xs text-slate-500 leading-relaxed">
-              🔒 <strong className="text-slate-800">Seus dados est\u00e3o protegidos</strong><br/>
-              Este aplicativo segue a LGPD (Lei Geral de Prote\u00e7\u00e3o de Dados). 
-              Todas as informa\u00e7\u00f5es s\u00e3o criptografadas e utilizadas exclusivamente 
-              para seu desenvolvimento terap\u00eautico.
+              🔒 <strong className="text-slate-800">Seus dados estão protegidos</strong><br/>
+              Este aplicativo segue a LGPD (Lei Geral de Proteção de Dados). 
+              Todas as informações são criptografadas e utilizadas exclusivamente 
+              para seu desenvolvimento terapêutico.
             </p>
             <p className="text-xs text-slate-400 mt-2">
-              Vers\u00e3o 1.0 • Desenvolvido para fins terap\u00eauticos
+              Versão 1.0 • Desenvolvido para fins terapêuticos
             </p>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <p className="text-xs text-blue-700 mb-2">
-              👤 Sess\u00e3o de <strong className="text-slate-800">{userInfo?.name || 'Usu\u00e1rio'}</strong>
+              👤 Sessão de <strong className="text-slate-800">{userInfo?.name || 'Usuário'}</strong>
             </p>
             <p className="text-xs text-blue-600 mb-3 break-all">
-              📧 {userInfo?.email || 'email@exemplo.com'}
+              � {userInfo?.email || 'email@exemplo.com'}
             </p>
             <button
               onClick={handleLogout}
@@ -174,3 +174,4 @@ export default function ProfileSelection() {
     </div>
   );
 }
+�
