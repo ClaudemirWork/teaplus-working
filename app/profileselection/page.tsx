@@ -13,7 +13,7 @@ export default function ProfileSelection() {
       key: 'tea',
       title: 'TEA (Transtorno do Espectro Autista)',
       description: 'Focado em comunicação social e interação',
-      icon: '🧩',
+      icon: '�',
       color: '#4A90E2',
       route: '/tea'
     },
@@ -84,7 +84,6 @@ export default function ProfileSelection() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
         <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 text-center w-full max-w-sm">
-          {/* LOGOTIPO MAIOR NA TELA DE CARREGAMENTO */}
           <img src="/images/Teaplus-logo.png" alt="TeaPlus Logo" className="w-40 h-40 mx-auto mb-4" />
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">TeaPlus</h1>
           <p className="text-sm sm:text-base text-gray-600">Verificando acesso...</p>
@@ -100,7 +99,6 @@ export default function ProfileSelection() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full">
         <div className="text-center mb-6 sm:mb-8">
-            {/* LOGOTIPO MAIOR NO TOPO */}
             <img src="/images/Teaplus-logo.png" alt="TeaPlus Logo" className="w-40 h-40 mx-auto mb-4" />
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">TeaPlus</h1>
           <p className="text-sm sm:text-base text-gray-600">Aplicativo de apoio ao paciente com TEA, TDAH</p>
