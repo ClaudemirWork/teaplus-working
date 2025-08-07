@@ -54,7 +54,8 @@ export default function LoginPage() {
           userData.loginTime = new Date().toISOString();
           localStorage.setItem('teaplus_user', JSON.stringify(userData));
           
-          localStorage.setItem('teaplus_session', 'active');
+          // Use sessionStorage para persistência da sessão no iOS
+          sessionStorage.setItem('teaplus_session', 'active');
           
           showMessage('success', `Bem-vindo de volta, ${userData.name}!`);
           router.replace('/profileselection');
@@ -98,7 +99,9 @@ export default function LoginPage() {
     
     try {
       localStorage.setItem('teaplus_user', JSON.stringify(userData));
-      localStorage.setItem('teaplus_session', 'active');
+      
+      // Use sessionStorage para persistência da sessão no iOS
+      sessionStorage.setItem('teaplus_session', 'active');
       
       showMessage('success', `Conta criada com sucesso para ${userData.name}!`);
       router.replace('/profileselection');
