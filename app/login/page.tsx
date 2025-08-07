@@ -54,7 +54,6 @@ export default function LoginPage() {
           userData.loginTime = new Date().toISOString();
           localStorage.setItem('teaplus_user', JSON.stringify(userData));
           
-          // Use sessionStorage para persistência da sessão no iOS
           sessionStorage.setItem('teaplus_session', 'active');
           
           showMessage('success', `Bem-vindo de volta, ${userData.name}!`);
@@ -100,7 +99,6 @@ export default function LoginPage() {
     try {
       localStorage.setItem('teaplus_user', JSON.stringify(userData));
       
-      // Use sessionStorage para persistência da sessão no iOS
       sessionStorage.setItem('teaplus_session', 'active');
       
       showMessage('success', `Conta criada com sucesso para ${userData.name}!`);
@@ -122,9 +120,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="max-w-md w-full bg-white rounded-3xl p-8 sm:p-12 shadow-lg">
         <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md">
-            <Brain className="text-blue-500 w-8 h-8" />
-          </div>
+            <img src="/images/Teaplus-logo.png" alt="TeaPlus Logo" className="w-16 h-16" />
         </div>
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-slate-900">TeaPlus Suite</h2>
