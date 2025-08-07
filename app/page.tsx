@@ -1,24 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Brain,
-  Target,
   Users,
-  Puzzle,
-  Bolt,
-  Zap,
   CheckCircle,
   ChevronRight,
   Sparkles,
   HeartHandshake
 } from 'lucide-react';
 
-// Tailwind CSS is assumed to be available.
-// This is a self-contained React component for the landing page.
-
 const App = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isLoggedIn = localStorage.getItem('teaplus_session');
+      if (isLoggedIn === 'active') {
+        router.replace('/profileselection');
+      }
+    }
+  }, [router]);
 
   const features = [
     {
@@ -40,7 +43,7 @@ const App = () => {
 
   const modules = [
     {
-      icon: <Puzzle className="text-blue-500 w-8 h-8" />,
+      icon: <CheckCircle className="text-blue-500 w-8 h-8" />,
       title: "Módulo TEA",
       subtitle: "Habilidades sociais e comunicação",
       items: ["Comunicação visual", "Interação social", "Rotinas estruturadas"],
@@ -48,7 +51,7 @@ const App = () => {
       dotColor: "bg-blue-500"
     },
     {
-      icon: <Zap className="text-orange-500 w-8 h-8" />,
+      icon: <Sparkles className="text-orange-500 w-8 h-8" />,
       title: "Módulo TDAH",
       subtitle: "Funções executivas",
       items: ["Atenção e foco", "Memória de trabalho", "Controle inibitório"],
@@ -56,7 +59,7 @@ const App = () => {
       dotColor: "bg-orange-500"
     },
     {
-      icon: <Sparkles className="text-emerald-500 w-8 h-8" />,
+      icon: <Brain className="text-emerald-500 w-8 h-8" />,
       title: "Interseção",
       subtitle: "Atividades integradas",
       items: ["Regulação emocional", "Autoconhecimento", "Tomada de decisão"],
@@ -84,8 +87,6 @@ const App = () => {
 
   return (
     <div className="font-sans antialiased bg-slate-50 text-slate-700">
-      
-      {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-3">
@@ -97,15 +98,12 @@ const App = () => {
               <div className="text-xs text-slate-500">TEA + TDAH</div>
             </div>
           </div>
-          {/* O botão "Entrar" agora direciona para a seção de login nesta mesma página */}
-          <a href="#login-section" className="bg-slate-900 text-white px-6 py-2 rounded-full font-medium hover:bg-slate-700 transition-colors shadow-lg">
+          <a href="/login" className="bg-slate-900 text-white px-6 py-2 rounded-full font-medium hover:bg-slate-700 transition-colors shadow-lg">
             Entrar
           </a>
         </div>
       </header>
-
       <main>
-        {/* Hero Section */}
         <section className="bg-gradient-to-br from-blue-100 to-white py-20 animate-fade-in">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 mb-4 leading-tight drop-shadow-sm">
@@ -115,22 +113,19 @@ const App = () => {
               A primeira plataforma brasileira integrada para o desenvolvimento de habilidades em pessoas com TEA e TDAH, com foco na individualidade e no aprendizado divertido.
             </p>
             <div className="flex justify-center">
-              <button className="bg-blue-600 text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-transform transform hover:-translate-y-1">
+              <a href="/login" className="bg-blue-600 text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-transform transform hover:-translate-y-1">
                 Leia abaixo para conhecer mais
                 <ChevronRight className="inline-block ml-2 w-5 h-5" />
-              </button>
+              </a>
             </div>
           </div>
         </section>
-
-        {/* Features Section */}
-        <section className="py-20 bg-white">
+        <section id="features-section" className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-4xl font-bold text-slate-900 mb-4">Por que escolher o TeaPlus?</h2>
               <p className="text-xl text-slate-600 max-w-2xl mx-auto">Uma abordagem única e integrada para o desenvolvimento neurodivergente.</p>
             </div>
-            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
               {features.map((feature, index) => (
                 <div key={index} className="text-center p-8 bg-slate-50 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
@@ -144,8 +139,6 @@ const App = () => {
             </div>
           </div>
         </section>
-
-        {/* How It Works Section */}
         <section className="py-20 bg-slate-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
@@ -154,7 +147,6 @@ const App = () => {
                 Três módulos integrados para um desenvolvimento completo, com atividades que se conectam.
               </p>
             </div>
-            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
               {modules.map((module, index) => (
                 <div key={index} className={`rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 ${module.bgColor}`}>
@@ -178,8 +170,6 @@ const App = () => {
             </div>
           </div>
         </section>
-
-        {/* Stats Section */}
         <section className="py-20 bg-white">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-4xl font-bold text-slate-900 mb-12">Dados que importam</h2>
@@ -193,87 +183,20 @@ const App = () => {
             </div>
           </div>
         </section>
-
-        {/* Login/Signup Section */}
-        {/* Adicionado o ID para que o botão "Entrar" no cabeçalho possa direcionar para cá */}
-        <section id="login-section" className="bg-slate-50 py-24">
-          <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-lg">
-              <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md">
-                  <Brain className="text-blue-500 w-8 h-8" />
-                </div>
-              </div>
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-slate-900">TeaPlus Suite</h2>
-                <p className="text-slate-600 text-sm">Aplicativo de apoio ao paciente com TEA, TDAH</p>
-              </div>
-
-              {/* Login/Signup Toggles */}
-              <div className="flex justify-center mb-6">
-                <button
-                  onClick={() => setIsLogin(true)}
-                  className={`py-2 px-6 rounded-full font-medium ${isLogin ? 'bg-blue-600 text-white' : 'text-slate-600'}`}
-                >
-                  Entrar
-                </button>
-                <button
-                  onClick={() => setIsLogin(false)}
-                  className={`py-2 px-6 rounded-full font-medium ${!isLogin ? 'bg-blue-600 text-white' : 'text-slate-600'}`}
-                >
-                  Criar Conta
-                </button>
-              </div>
-
-              <form className="space-y-4">
-                {!isLogin && (
-                  <div>
-                    <label htmlFor="name" className="sr-only">Nome</label>
-                    <input
-                      type="text"
-                      id="name"
-                      placeholder="Nome completo"
-                      className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                )}
-                <div>
-                  <label htmlFor="email" className="sr-only">E-mail</label>
-                  <input
-                    type="email"
-                    id="email"
-                    placeholder="Digite seu e-mail"
-                    className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="password" className="sr-only">Senha</label>
-                  <input
-                    type="password"
-                    id="password"
-                    placeholder="Digite sua senha"
-                    className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 text-white px-5 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-colors transform hover:-translate-y-0.5"
-                >
-                  {isLogin ? 'Entrar' : 'Criar Conta'}
-                </button>
-              </form>
-
-              {isLogin && (
-                <div className="text-center mt-4 text-sm">
-                  <a href="#" className="text-slate-500 hover:text-blue-600 transition-colors">Esqueceu a senha?</a>
-                </div>
-              )}
-            </div>
+        <section className="bg-gradient-to-r from-blue-600 to-blue-800 py-24">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-4 leading-tight drop-shadow-sm">
+              Comece sua jornada hoje
+            </h2>
+            <p className="text-xl mb-10 max-w-2xl mx-auto">
+              Junte-se às famílias e profissionais que confiam no TeaPlus.
+            </p>
+            <a href="/login" className="bg-white text-blue-600 px-8 py-4 rounded-full font-bold shadow-lg hover:bg-blue-50 transition-transform transform hover:-translate-y-1">
+              Testar Gratuitamente
+            </a>
           </div>
         </section>
       </main>
-
-      {/* Footer */}
       <footer className="bg-slate-900 text-slate-400 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
@@ -313,7 +236,6 @@ const App = () => {
               </ul>
             </div>
           </div>
-          
           <div className="border-t border-slate-700 pt-8 text-center">
             <h3 className="font-bold text-white mb-4">Bibliografia Completa</h3>
             <ul className="text-sm space-y-2 text-slate-500 list-none">
