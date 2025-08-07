@@ -76,7 +76,7 @@ export default function ProfileSelection() {
     if (window.confirm('Deseja realmente sair do aplicativo?')) {
       localStorage.removeItem('teaplus_session');
       window.alert('Logout realizado! Sua conta foi mantida para próximos acessos.');
-      router.replace('/login');
+      router.replace('/'); // Redireciona para a landing page (rota raiz)
     }
   };
 
