@@ -120,7 +120,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="max-w-md w-full bg-white rounded-3xl p-8 sm:p-12 shadow-lg">
         <div className="flex justify-center mb-6">
-            <img src="/images/Teaplus-logo.png" alt="TeaPlus Logo" className="w-16 h-16" />
+            <img src="/images/Teaplus-logo.png" alt="TeaPlus Logo" className="w-40 h-40" />
         </div>
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-slate-900">TeaPlus Suite</h2>
