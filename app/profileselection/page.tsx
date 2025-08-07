@@ -36,59 +36,48 @@ export default function ProfileSelection() {
   ];
 
   useEffect(() => {
-    let isMounted = true;
-    
-    const checkLogin = () => {
-      try {
-        const userData = localStorage.getItem('teaplus_user');
-        const isLoggedIn = localStorage.getItem('teaplus_session');
-        
-        console.log('=== VERIFICAÇÃO DE ACESSO ===');
-        console.log('Dados da conta:', userData);
-        console.log('Sessão ativa:', isLoggedIn);
-        
-        if (isMounted) {
-          if (userData && isLoggedIn === 'active') {
-            const parsedData = JSON.parse(userData);
-            console.log('Usuário logado:', parsedData);
-            setUserInfo(parsedData);
-            setIsLoading(false);
-          } else {
-            console.log('Redirecionando para login - Sessão inativa');
-            window.location.replace('/login');
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao verificar login:', error);
-        if (isMounted) {
-          window.location.replace('/login');
-        }
-      }
-    };
+    if (typeof window !== 'undefined') {
+      let isMounted = true;
+      const checkLogin = () => {
+        try {
+          const userData = localStorage.getItem('teaplus_user');
+          const isLoggedIn = localStorage.getItem('teaplus_session');
+          
+          if (isMounted) {
+            if (userData && isLoggedIn === 'active') {
+              const parsedData = JSON.parse(userData);
+              setUserInfo(parsedData);
+              setIsLoading(false);
+            } else {
+              router.replace('/login');
+            }
+          }
+        } catch (error) {
+          if (isMounted) {
+            router.replace('/login');
+          }
+        }
+      };
 
-    const timeoutId = setTimeout(checkLogin, 100);
+      const timeoutId = setTimeout(checkLogin, 100);
 
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-    };
-  }, []);
+      return () => {
+        isMounted = false;
+        clearTimeout(timeoutId);
+      };
+    }
+  }, [router]);
 
   const handleProfileSelect = (route: string) => {
     router.push(route);
   };
 
   const handleLogout = () => {
-    if (window.confirm('Deseja realmente sair do aplicativo?')) {
-      console.log('=== FAZENDO LOGOUT ===');
-      localStorage.removeItem('teaplus_session');
-      
-      const userData = localStorage.getItem('teaplus_user');
-      console.log('Dados da conta após logout:', userData ? 'Mantidos' : 'Removidos');
-      
-      window.alert('Logout realizado! Sua conta foi mantida para próximos acessos.');
-      window.location.replace('/login');
-    }
+    if (window.confirm('Deseja realmente sair do aplicativo?')) {
+      localStorage.removeItem('teaplus_session');
+      window.alert('Logout realizado! Sua conta foi mantida para próximos acessos.');
+      router.replace('/login');
+    }
   };
 
   if (isLoading) {
@@ -185,4 +174,3 @@ export default function ProfileSelection() {
     </div>
   );
 }
-
