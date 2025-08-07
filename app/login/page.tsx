@@ -7,31 +7,111 @@ import { Brain } from 'lucide-react';
 export default function LoginPage() {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState(''); // 'success', 'error', 'warning'
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const showMessage = (type: string, text: string) => {
+    setMessageType(type);
+    setMessage(text);
+    setTimeout(() => {
+      setMessage('');
+      setMessageType('');
+    }, 5000);
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simula uma autenticação bem-sucedida.
-    // Em um ambiente de produção, esta lógica deve ser substituída por uma chamada de API.
-    if (email && password) {
-      const userData = { name: 'Usuário', email: email };
-      localStorage.setItem('teaplus_user', JSON.stringify(userData));
-      localStorage.setItem('teaplus_session', 'active');
-      router.push('/profileselection');
+    
+    if (!formData.email || !formData.password) {
+      showMessage('error', 'Por favor, preencha email e senha.');
+      return;
+    }
+    
+    const emailDigitado = formData.email.trim().toLowerCase();
+    const senhaDigitada = formData.password;
+    
+    const savedUser = localStorage.getItem('teaplus_user');
+    
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser);
+        
+        if (userData.email === emailDigitado && userData.password === senhaDigitada) {
+          userData.loginTime = new Date().toISOString();
+          localStorage.setItem('teaplus_user', JSON.stringify(userData));
+          
+          localStorage.setItem('teaplus_session', 'active');
+          
+          showMessage('success', `Bem-vindo de volta, ${userData.name}!`);
+          router.push('/profileselection');
+        } else {
+          showMessage('error', `Dados incorretos! Verifique seu email e senha.`);
+        }
+      } catch (error) {
+        showMessage('error', 'Dados da conta corrompidos. Tente criar uma nova conta.');
+      }
+    } else {
+      showMessage('warning', 'Nenhuma conta encontrada. Crie uma nova conta primeiro.');
     }
   };
 
   const handleCreateAccount = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simula a criação de uma conta.
-    // Em um ambiente de produção, esta lógica deve ser substituída por uma chamada de API.
-    if (name && email && password) {
-      const userData = { name: name, email: email };
+    
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+      showMessage('error', 'Por favor, preencha todos os campos.');
+      return;
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      showMessage('error', 'As senhas não coincidem.');
+      return;
+    }
+    
+    if (formData.password.length < 6) {
+      showMessage('warning', 'A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    
+    const emailNormalizado = formData.email.trim().toLowerCase();
+    const userData = {
+      name: formData.name.trim(),
+      email: emailNormalizado,
+      password: formData.password,
+      loginTime: new Date().toISOString(),
+      created: new Date().toISOString()
+    };
+    
+    try {
       localStorage.setItem('teaplus_user', JSON.stringify(userData));
       localStorage.setItem('teaplus_session', 'active');
+      
+      showMessage('success', `Conta criada com sucesso para ${userData.name}!`);
       router.push('/profileselection');
+    } catch (error) {
+      showMessage('error', 'Erro ao salvar conta. Tente novamente.');
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    if (isLogin) {
+      handleLogin(e);
+    } else {
+      handleCreateAccount(e);
     }
   };
 
@@ -48,32 +128,40 @@ export default function LoginPage() {
           <p className="text-slate-600 text-sm">Aplicativo de apoio ao paciente com TEA, TDAH</p>
         </div>
 
+        {/* Message Box */}
+        {message && (
+          <div className={`p-4 mb-4 text-center rounded-lg ${messageType === 'success' ? 'bg-emerald-100 text-emerald-800' : messageType === 'error' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+            {message}
+          </div>
+        )}
+
         {/* Toggles de Entrar/Criar Conta */}
         <div className="flex justify-center mb-6">
           <button
-            onClick={() => setIsLogin(true)}
+            onClick={() => { setIsLogin(true); setMessage(''); }}
             className={`py-2 px-6 rounded-full font-medium transition-colors duration-200 ${isLogin ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600'}`}
           >
             Entrar
           </button>
           <button
-            onClick={() => setIsLogin(false)}
+            onClick={() => { setIsLogin(false); setMessage(''); }}
             className={`py-2 px-6 rounded-full font-medium transition-colors duration-200 ${!isLogin ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600'}`}
           >
             Criar Conta
           </button>
         </div>
 
-        <form className="space-y-4" onSubmit={isLogin ? handleLogin : handleCreateAccount}>
+        <form className="space-y-4" onSubmit={handleSubmit}>
           {!isLogin && (
             <div>
               <label htmlFor="name" className="sr-only">Nome</label>
               <input
                 type="text"
                 id="name"
+                name="name"
                 placeholder="Nome completo"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={formData.name}
+                onChange={handleInputChange}
                 className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -83,9 +171,10 @@ export default function LoginPage() {
             <input
               type="email"
               id="email"
+              name="email"
               placeholder="Digite seu e-mail"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={formData.email}
+              onChange={handleInputChange}
               className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -94,12 +183,27 @@ export default function LoginPage() {
             <input
               type="password"
               id="password"
+              name="password"
               placeholder="Digite sua senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={formData.password}
+              onChange={handleInputChange}
               className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          {!isLogin && (
+            <div>
+              <label htmlFor="confirmPassword" className="sr-only">Confirmar Senha</label>
+              <input
+                type="password"
+                id="confirmPassword"
+                name="confirmPassword"
+                placeholder="Confirme sua senha"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
           <button
             type="submit"
             className="w-full bg-blue-600 text-white px-5 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-colors transform hover:-translate-y-0.5"
