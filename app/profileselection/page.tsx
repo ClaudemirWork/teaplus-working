@@ -49,6 +49,8 @@ export default function ProfileSelection() {
               setUserInfo(parsedData);
               setIsLoading(false);
             } else {
+              // Correção de segurança: usar 'replace' em vez de 'push'
+              // para impedir que o usuário volte para a página de seleção sem autenticação.
               router.replace('/login');
             }
           }
@@ -69,13 +71,16 @@ export default function ProfileSelection() {
   }, [router]);
 
   const handleProfileSelect = (route: string) => {
-    router.push(route);
+    // Correção de segurança: usar 'replace' para não deixar a página de seleção
+    // no histórico do navegador.
+    router.replace(route);
   };
 
   const handleLogout = () => {
     if (window.confirm('Deseja realmente sair do aplicativo?')) {
       sessionStorage.removeItem('teaplus_session');
       window.alert('Logout realizado! Sua conta foi mantida para próximos acessos.');
+      // Correção de segurança: usar 'replace' para não permitir voltar à sessão anterior.
       router.replace('/');
     }
   };
