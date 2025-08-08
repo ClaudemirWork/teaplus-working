@@ -1,14 +1,12 @@
-'use client';
+
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, ExternalLink } from 'lucide-react';
 
 export default function TeaDashboard() {
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // ✅ MÓDULOS PRINCIPAIS - ARRAYS NA ORDEM ORIGINAL (como TDAH/Combined)
   const mainModules = {
     communication: {
       icon: '🗣️',
@@ -16,6 +14,7 @@ export default function TeaDashboard() {
       description: 'Desenvolva habilidades essenciais de comunicação e interação',
       color: '#4A90E2',
       activities: [
+        { name: 'Comunicação Aumentativa e Alternativa (CAA)', path: '/caa', description: 'Expresse necessidades e emoções com símbolos visuais' },
         { name: 'Contato Visual Progressivo', path: '/eye-contact', description: 'Pratique o contato visual de forma gradual' },
         { name: 'Expressões Faciais', path: '/facial-expressions', description: 'Reconheça e interprete emoções' },
         { name: 'Tom de Voz', path: '/tone-of-voice', description: 'Exercícios de entonação' },
@@ -76,7 +75,6 @@ export default function TeaDashboard() {
     }
   };
 
-  // 🔧 ESTRUTURA IDÊNTICA AO TDAH (que funciona)
   const ModuleCard = ({ moduleKey, module }: { moduleKey: string, module: any }) => (
     <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
       <div className="p-4 sm:p-6">
@@ -136,7 +134,6 @@ export default function TeaDashboard() {
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="p-3 sm:p-4">
           <div className="flex items-center justify-between">
-            {/* CORREÇÃO AQUI */}
             <Link 
               href="/profileselection" 
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
