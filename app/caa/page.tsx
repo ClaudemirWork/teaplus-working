@@ -10,8 +10,7 @@ export default function CAAActivityPage() {
     const [selectedCategory, setSelectedCategory] = useState('necessidades');
     const [message, setMessage] = useState('');
     const [selectedSymbols, setSelectedSymbols] = useState([]);
-    const [showInstructions, setShowInstructions] = useState(false);
-
+    
     // Estrutura de dados para os símbolos organizada por categorias
     const symbols = {
         necessidades: [
@@ -50,6 +49,16 @@ export default function CAAActivityPage() {
     const activityInfo = {
         title: 'Comunicação Aumentativa e Alternativa (CAA)',
         objective: 'Praticar a comunicação de necessidades e sentimentos usando símbolos visuais e frases curtas.',
+        levels: [
+            'Nível 1: Símbolos básicos',
+            'Nível 2: Mais símbolos e conceitos',
+            'Nível 3: Símbolos com frases curtas'
+        ],
+        howToPlay: [
+            'Selecione uma categoria para ver os símbolos.',
+            'Clique nos ícones para adicionar palavras à sua frase.',
+            'Use os botões abaixo para falar, desfazer ou limpar a frase.'
+        ],
         scientificBase: 'Este exercício é baseado em princípios de Comunicação Aumentativa e Alternativa (CAA) e PECS (Picture Exchange Communication System), comprovados cientificamente para o desenvolvimento da linguagem e redução da frustração.'
     };
 
@@ -101,39 +110,12 @@ export default function CAAActivityPage() {
                         <span className="text-sm font-semibold text-gray-800">
                             {activityInfo.title}
                         </span>
-                        <button
-                            onClick={() => setShowInstructions(!showInstructions)}
-                            className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-                        >
-                            <HelpCircle size={20} />
-                        </button>
                     </div>
                 </div>
             </header>
 
             <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
-                {/* Instruções de "Como Jogar" */}
-                {showInstructions && (
-                    <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-6">
-                        <h2 className="text-xl font-bold text-gray-800 mb-2">Como Jogar</h2>
-                        <ul className="list-disc list-inside text-sm text-gray-600 space-y-2">
-                            <li>**Selecione uma Categoria** para ver os símbolos disponíveis.</li>
-                            <li>Clique nos **ícones** para adicionar as palavras à sua frase.</li>
-                            <li>A frase que você está construindo aparecerá na **barra verde** no topo.</li>
-                            <li>Use o botão **Falar Frase** para ouvir a frase completa.</li>
-                            <li>Use o botão **Limpar** para começar uma nova frase.</li>
-                            <li>Use o botão **Desfazer** para remover a última palavra adicionada.</li>
-                        </ul>
-                        <button
-                            onClick={() => setShowInstructions(false)}
-                            className="mt-4 text-sm text-blue-600 font-semibold hover:underline"
-                        >
-                            Entendi, fechar instruções
-                        </button>
-                    </div>
-                )}
-
-                {/* Cabeçalho da Atividade */}
+                {/* Cabeçalho da Atividade (Objetivo, Como se Joga, Níveis) */}
                 <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-6">
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">{activityInfo.title}</h1>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -142,8 +124,20 @@ export default function CAAActivityPage() {
                             <p className="text-sm text-gray-600">{activityInfo.objective}</p>
                         </div>
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <h3 className="font-semibold text-gray-800 mb-1">👩‍🔬 Base Científica:</h3>
-                            <p className="text-sm text-gray-600">{activityInfo.scientificBase}</p>
+                            <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como se Joga:</h3>
+                            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                                {activityInfo.howToPlay.map((instruction, index) => (
+                                    <li key={index}>{instruction}</li>
+                                ))}
+                            </ul>
+                        </div>
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <h3 className="font-semibold text-gray-800 mb-1">⭐ Níveis:</h3>
+                            <ul className="list-disc list-inside text-sm text-gray-600">
+                                {activityInfo.levels.map((level, index) => (
+                                    <li key={index}>{level}</li>
+                                ))}
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -222,6 +216,11 @@ export default function CAAActivityPage() {
                             </button>
                         ))}
                     </div>
+                </div>
+                {/* Base Científica - no final da página */}
+                <div className="mt-6 bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                     <h3 className="text-xl font-bold text-gray-800 mb-2">👩‍🔬 Base Científica:</h3>
+                     <p className="text-sm text-gray-600">{activityInfo.scientificBase}</p>
                 </div>
             </main>
         </div>
