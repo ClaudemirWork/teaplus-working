@@ -44,6 +44,40 @@ export default function CAAActivityPage() {
             { text: 'Professor', icon: '🧑‍🏫' },
             { text: 'Eu', icon: '🙋' },
         ],
+        lugares: [
+            { text: 'Sala', icon: '🛋️' },
+            { text: 'Quarto', icon: '🛏️' },
+            { text: 'Carro', icon: '🚗' },
+            { text: 'Supermercado', icon: '🛒' },
+            { text: 'Parque', icon: '🌳' },
+            { text: 'Brinquedo', icon: '🧸' },
+            { text: 'Celular', icon: '📱' },
+        ],
+        comidas: [
+            { text: 'Maçã', icon: '🍎' },
+            { text: 'Banana', icon: '🍌' },
+            { text: 'Leite', icon: '🥛' },
+            { text: 'Pão', icon: '🍞' },
+            { text: 'Pizza', icon: '🍕' },
+            { text: 'Doce', icon: '🍬' },
+            { text: 'Água', icon: '💧' },
+        ],
+        saude: [
+            { text: 'Banho', icon: '🚿' },
+            { text: 'Escovar os dentes', icon: '🦷' },
+            { text: 'Remédio', icon: '💊' },
+            { text: 'Febre', icon: '🌡️' },
+            { text: 'Dormir', icon: '😴' },
+            { text: 'Curativo', icon: '🩹' },
+        ],
+        tempo: [
+            { text: 'Sol', icon: '☀️' },
+            { text: 'Lua', icon: '🌙' },
+            { text: 'Relógio', icon: '⏰' },
+            { text: 'Calendário', icon: '🗓️' },
+            { text: 'Escola', icon: '🏫' },
+            { text: 'Família', icon: '👨‍👩‍👧‍👦' },
+        ],
     };
 
     const activityInfo = {
