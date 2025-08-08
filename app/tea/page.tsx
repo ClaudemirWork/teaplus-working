@@ -1,4 +1,4 @@
-
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -6,7 +6,9 @@ import { ChevronLeft, ExternalLink } from 'lucide-react';
 
 export default function TeaDashboard() {
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  // ✅ MÓDULOS PRINCIPAIS - ARRAYS NA ORDEM ORIGINAL (como TDAH/Combined)
   const mainModules = {
     communication: {
       icon: '🗣️',
@@ -134,6 +136,7 @@ export default function TeaDashboard() {
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="p-3 sm:p-4">
           <div className="flex items-center justify-between">
+            {/* CORREÇÃO AQUI */}
             <Link 
               href="/profileselection" 
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
