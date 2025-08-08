@@ -13,7 +13,7 @@ export default function ProfileSelection() {
       key: 'tea',
       title: 'TEA (Transtorno do Espectro Autista)',
       description: 'Focado em comunicação social e interação',
-      icon: '�',
+      icon: '🧩',
       color: '#4A90E2',
       route: '/tea'
     },
@@ -49,8 +49,6 @@ export default function ProfileSelection() {
               setUserInfo(parsedData);
               setIsLoading(false);
             } else {
-              // Correção de segurança: usar 'replace' em vez de 'push'
-              // para impedir que o usuário volte para a página de seleção sem autenticação.
               router.replace('/login');
             }
           }
@@ -71,8 +69,6 @@ export default function ProfileSelection() {
   }, [router]);
 
   const handleProfileSelect = (route: string) => {
-    // Correção de segurança: usar 'replace' para não deixar a página de seleção
-    // no histórico do navegador.
     router.replace(route);
   };
 
@@ -80,7 +76,6 @@ export default function ProfileSelection() {
     if (window.confirm('Deseja realmente sair do aplicativo?')) {
       sessionStorage.removeItem('teaplus_session');
       window.alert('Logout realizado! Sua conta foi mantida para próximos acessos.');
-      // Correção de segurança: usar 'replace' para não permitir voltar à sessão anterior.
       router.replace('/');
     }
   };
