@@ -14,7 +14,7 @@ export default function ProfileSelection() {
       key: 'tea',
       title: 'TEA (Transtorno do Espectro Autista)',
       description: 'Focado em comunicação social e interação',
-      icon: '🧩',
+      icon: '�',
       color: '#4A90E2',
       route: '/tea'
     },
@@ -30,7 +30,7 @@ export default function ProfileSelection() {
       key: 'combined',
       title: 'TEA e TDAH',
       description: 'Desenvolvimento geral integrado',
-      icon: '�',
+      icon: '🎯',
       color: '#8E44AD',
       route: '/combined'
     },
