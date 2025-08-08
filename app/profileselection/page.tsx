@@ -3,10 +3,16 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs'; // LINHA ADICIONADA
+// ATENÇÃO: A importação mudou para a versão correta da biblioteca
+import { createBrowserClient } from '@supabase/ssr';
 
 export default function ProfileSelection() {
-  const supabase = createPagesBrowserClient(); // LINHA ADICIONADA
+  // ATENÇÃO: A forma de criar o conector também mudou para a versão correta
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+  
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -60,7 +66,7 @@ export default function ProfileSelection() {
               setUserInfo(parsedData);
               setIsLoading(false);
 
-              // ===== NOSSO CÓDIGO DE TESTE PARA LER O BANCO DE DADOS ===== // BLOCO ADICIONADO
+              // ===== NOSSO CÓDIGO DE TESTE PARA LER O BANCO DE DADOS =====
               const fetchPacientes = async () => {
                 console.log("Tentando buscar dados da tabela 'pacientes'...");
                 const { data, error } = await supabase.from('pacientes').select('*');
@@ -180,7 +186,7 @@ export default function ProfileSelection() {
               Versão 1.0 • Desenvolvido para fins terapêuticos
             </p>
           </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+    _          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <p className="text-xs text-blue-700 mb-2">
                👤  Sessão de <strong className="text-slate-800">{userInfo?.name || 'Usuário'}</strong>
             </p>
