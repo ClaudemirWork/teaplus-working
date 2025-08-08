@@ -14,7 +14,7 @@ export default function ProfileSelection() {
       key: 'tea',
       title: 'TEA (Transtorno do Espectro Autista)',
       description: 'Focado em comunicação social e interação',
-      icon: '�',
+      icon: ' 🧩 ',
       color: '#4A90E2',
       route: '/tea'
     },
@@ -22,7 +22,7 @@ export default function ProfileSelection() {
       key: 'tdah',
       title: 'TDAH (Transtorno do Déficit de Atenção)',
       description: 'Focado em atenção, memória e organização',
-      icon: '⚡',
+      icon: ' ⚡ ',
       color: '#F5A623',
       route: '/tdah'
     },
@@ -30,7 +30,7 @@ export default function ProfileSelection() {
       key: 'combined',
       title: 'TEA e TDAH',
       description: 'Desenvolvimento geral integrado',
-      icon: '🎯',
+      icon: ' 🎯 ',
       color: '#8E44AD',
       route: '/combined'
     },
@@ -38,7 +38,7 @@ export default function ProfileSelection() {
       key: 'progress',
       title: 'Progresso do Paciente',
       description: 'Acompanhe a evolução de habilidades e metas',
-      icon: '📈',
+      icon: ' 📈 ',
       color: '#1abc9c',
       route: '/progress-dashboard'
     }
@@ -122,9 +122,9 @@ export default function ProfileSelection() {
           </h2>
           
           {profiles.map((profile) => (
-            <Link
+            <button
               key={profile.key}
-              href={profile.route}
+              onClick={() => router.push(profile.route)}
               className="w-full p-5 sm:p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 touch-manipulation min-h-[80px] sm:min-h-[auto]"
               style={{ 
                 borderColor: profile.color,
@@ -142,7 +142,7 @@ export default function ProfileSelection() {
                   </div>
               </div>
               </div>
-            </Link>
+            </button>
           ))}
         </div>
 
