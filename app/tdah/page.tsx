@@ -137,8 +137,9 @@ export default function TdahDashboard() {
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="p-3 sm:p-4">
           <div className="flex items-center justify-between">
+            {/* CORREÇÃO AQUI */}
             <Link 
-              href="/" 
+              href="/profileselection" 
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
             >
               <ChevronLeft size={20} />
