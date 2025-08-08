@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, X, Volume2, Plus, CornerLeftUp } from 'lucide-react';
+import { ChevronLeft, X, Volume2, CornerLeftUp, HelpCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function CAAActivityPage() {
@@ -10,6 +10,7 @@ export default function CAAActivityPage() {
     const [selectedCategory, setSelectedCategory] = useState('necessidades');
     const [message, setMessage] = useState('');
     const [selectedSymbols, setSelectedSymbols] = useState([]);
+    const [showInstructions, setShowInstructions] = useState(false);
 
     // Estrutura de dados para os símbolos organizada por categorias
     const symbols = {
@@ -61,7 +62,6 @@ export default function CAAActivityPage() {
     };
 
     const handleSymbolClick = (symbol) => {
-        // Constrói a frase com base nos símbolos selecionados
         setSelectedSymbols(prevSymbols => [...prevSymbols, symbol]);
         speakText(symbol.text);
     };
@@ -73,12 +73,17 @@ export default function CAAActivityPage() {
 
     const handleSpeakSentence = () => {
         if (selectedSymbols.length > 0) {
-            const sentence = selectedSymbols.map(s => s.text).join(', ');
+            const sentence = selectedSymbols.map(s => s.text).join(' ');
             speakText(sentence);
             setMessage(`Frase: ${sentence}`);
         } else {
             setMessage('Selecione um símbolo primeiro.');
         }
+    };
+
+    const handleUndo = () => {
+        setSelectedSymbols(prevSymbols => prevSymbols.slice(0, -1));
+        setMessage('');
     };
 
     return (
@@ -96,11 +101,38 @@ export default function CAAActivityPage() {
                         <span className="text-sm font-semibold text-gray-800">
                             {activityInfo.title}
                         </span>
+                        <button
+                            onClick={() => setShowInstructions(!showInstructions)}
+                            className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                        >
+                            <HelpCircle size={20} />
+                        </button>
                     </div>
                 </div>
             </header>
 
             <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+                {/* Instruções de "Como Jogar" */}
+                {showInstructions && (
+                    <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-6">
+                        <h2 className="text-xl font-bold text-gray-800 mb-2">Como Jogar</h2>
+                        <ul className="list-disc list-inside text-sm text-gray-600 space-y-2">
+                            <li>**Selecione uma Categoria** para ver os símbolos disponíveis.</li>
+                            <li>Clique nos **ícones** para adicionar as palavras à sua frase.</li>
+                            <li>A frase que você está construindo aparecerá na **barra verde** no topo.</li>
+                            <li>Use o botão **Falar Frase** para ouvir a frase completa.</li>
+                            <li>Use o botão **Limpar** para começar uma nova frase.</li>
+                            <li>Use o botão **Desfazer** para remover a última palavra adicionada.</li>
+                        </ul>
+                        <button
+                            onClick={() => setShowInstructions(false)}
+                            className="mt-4 text-sm text-blue-600 font-semibold hover:underline"
+                        >
+                            Entendi, fechar instruções
+                        </button>
+                    </div>
+                )}
+
                 {/* Cabeçalho da Atividade */}
                 <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-6">
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">{activityInfo.title}</h1>
@@ -137,6 +169,13 @@ export default function CAAActivityPage() {
                         >
                             <Volume2 size={20} />
                             <span>Falar Frase</span>
+                        </button>
+                        <button
+                            onClick={handleUndo}
+                            className="flex items-center space-x-2 px-4 py-2 rounded-full bg-gray-500 text-white font-medium hover:bg-gray-600 transition-colors"
+                        >
+                            <CornerLeftUp size={20} />
+                            <span>Desfazer</span>
                         </button>
                         <button
                             onClick={handleClearSentence}
