@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, X, Volume2, CornerLeftUp, HelpCircle, Save } from 'lucide-react';
+import { ChevronLeft, X, Volume2, CornerLeftUp, HelpCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 
 export default function CAAActivityPage() {
     const router = useRouter();
@@ -18,11 +17,6 @@ export default function CAAActivityPage() {
     const [simbolosUnicos, setSimbolosUnicos] = useState(new Set());
     const [inicioSessao] = useState(new Date());
     const [sequenciaTemporal, setSequenciaTemporal] = useState([]);
-    const [sessaoSalva, setSessaoSalva] = useState(false);
-    const [salvandoSessao, setSalvandoSessao] = useState(false);
-    
-    // Cliente Supabase
-    const supabase = createClient();
     
     // Estrutura de dados para os símbolos organizada por categorias
     const symbols = {
@@ -180,54 +174,6 @@ export default function CAAActivityPage() {
         setMessage('');
     };
 
-    // Função para salvar sessão no Supabase
-    const salvarSessao = async () => {
-        if (sessaoSalva || totalAtosComunicativos === 0) return;
-        
-        setSalvandoSessao(true);
-        
-        try {
-            const agora = new Date();
-            const duracaoSegundos = Math.floor((agora - inicioSessao) / 1000);
-            const atosPorMinuto = duracaoSegundos > 0 ? (totalAtosComunicativos / (duracaoSegundos / 60)).toFixed(2) : 0;
-            
-            const { data, error } = await supabase
-                .from('sessoes')
-                .insert([
-                    {
-                        paciente_id: 1, // TODO: Implementar seleção de paciente
-                        atividade: 'CAA - Comunicação Aumentativa e Alternativa',
-                        pontuacao: totalAtosComunicativos,
-                        duracao_segundos: duracaoSegundos,
-                        detalhes: {
-                            atos_comunicativos: totalAtosComunicativos,
-                            atos_por_minuto: parseFloat(atosPorMinuto),
-                            categorias_exploradas: Array.from(categoriasUtilizadas),
-                            simbolos_unicos: Array.from(simbolosUnicos),
-                            sequencia_temporal: sequenciaTemporal,
-                            metricas_cientificas: {
-                                baseline_51_percent: totalAtosComunicativos >= 1.51 ? 'atingido' : 'nao_atingido',
-                                diversidade_categorica: categoriasUtilizadas.size,
-                                complexidade_comunicativa: simbolosUnicos.size
-                            }
-                        },
-                        concluida_em: agora.toISOString()
-                    }
-                ]);
-            
-            if (error) throw error;
-            
-            setSessaoSalva(true);
-            setMessage('✅ Sessão salva com sucesso! Dados científicos registrados.');
-            
-        } catch (error) {
-            console.error('Erro ao salvar sessão:', error);
-            setMessage('❌ Erro ao salvar sessão. Tente novamente.');
-        } finally {
-            setSalvandoSessao(false);
-        }
-    };
-
     return (
         <div className="min-h-screen bg-gray-50">
             <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
@@ -277,9 +223,9 @@ export default function CAAActivityPage() {
 
                 {/* Painel de Métricas em Tempo Real */}
                 <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-                    <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
                         📊 Progresso da Sessão
-                        {sessaoSalva && <span className="text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full">✅ Salva no Banco</span>}
+                        <span className="ml-3 text-sm bg-orange-100 text-orange-800 px-3 py-1 rounded-full">⚡ Modo Local - Integração em desenvolvimento</span>
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
@@ -299,13 +245,6 @@ export default function CAAActivityPage() {
                             <div className="text-xs text-orange-600">Símbolos Únicos</div>
                         </div>
                     </div>
-                    {totalAtosComunicativos > 0 && !sessaoSalva && (
-                        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-                            <p className="text-sm text-yellow-800">
-                                💾 Lembre-se de finalizar e salvar sua sessão para registrar o progresso!
-                            </p>
-                        </div>
-                    )}
                 </div>
 
                 {/* Área de construção da frase e controles */}
@@ -343,22 +282,6 @@ export default function CAAActivityPage() {
                         >
                             <X size={20} />
                             <span>Limpar</span>
-                        </button>
-                        <button
-                            onClick={salvarSessao}
-                            disabled={sessaoSalva || totalAtosComunicativos === 0 || salvandoSessao}
-                            className={`flex items-center space-x-2 px-4 py-2 rounded-full font-medium transition-colors ${
-                                sessaoSalva 
-                                    ? 'bg-green-500 text-white cursor-not-allowed' 
-                                    : totalAtosComunicativos === 0
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-purple-600 text-white hover:bg-purple-700'
-                            }`}
-                        >
-                            <Save size={20} />
-                            <span>
-                                {salvandoSessao ? 'Salvando...' : sessaoSalva ? 'Sessão Salva' : 'Finalizar Sessão'}
-                            </span>
                         </button>
                     </div>
                     {message && (
