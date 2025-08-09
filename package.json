@@ -13,7 +13,6 @@
     "@radix-ui/react-slot": "^1.2.2",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
-    "axios": "^1.7.2",
     "chart.js": "^4.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -23,7 +22,6 @@
     "react": "^19.0.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.0.0",
-    "socket.io-client": "^4.7.2",
     "tailwind-merge": "^3.3.0"
   },
   "devDependencies": {
@@ -36,7 +34,6 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
     "postcss": "^8",
-    "postcss-import": "^15.1.0",
     "tailwindcss": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5",
