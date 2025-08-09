@@ -1,17 +1,26 @@
 "use client";
 
-// CORREÇÃO: Apontando para os novos locais dos arquivos
-import { cn } from "app/utils/utils";
-import { createClient } from "app/utils/supabaseClient";
+// CORREÇÃO: Usando o alias '@' para encontrar os arquivos no novo local central
+import { cn } from "@/app/utils/utils";
+import { createClient } from "@/app/utils/supabaseClient";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
 
-export function ForgotPasswordForm({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
+export function ForgotPasswordForm({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<"div">) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -24,6 +33,7 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
     setError(null);
 
     try {
+      // The url which will be included in the email. This URL needs to be configured in your redirect URLs in the Supabase dashboard at https://supabase.com/dashboard/project/_/auth/url-configuration
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/update-password`,
       });
@@ -46,7 +56,7 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Um email para redefinição de senha foi enviado para você.
+              Se você se cadastrou usando seu email e senha, receberá um email para redefinição.
             </p>
           </CardContent>
         </Card>
@@ -63,7 +73,14 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
               <div className="flex flex-col gap-6">
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="m@exemplo.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="m@exemplo.com"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -72,7 +89,10 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
               </div>
               <div className="mt-4 text-center text-sm">
                 Lembrou a senha?{" "}
-                <Link href="/auth/login" className="underline underline-offset-4">
+                <Link
+                  href="/auth/login"
+                  className="underline underline-offset-4"
+              _ >
                   Login
                 </Link>
               </div>
