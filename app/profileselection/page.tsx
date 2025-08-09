@@ -3,16 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-// ATENÇÃO: A importação mudou para a versão correta da biblioteca
-import { createBrowserClient } from '@supabase/ssr';
 
 export default function ProfileSelection() {
-  // ATENÇÃO: A forma de criar o conector também mudou para a versão correta
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-  
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -65,22 +57,6 @@ export default function ProfileSelection() {
               const parsedData = JSON.parse(userData);
               setUserInfo(parsedData);
               setIsLoading(false);
-
-              // ===== NOSSO CÓDIGO DE TESTE PARA LER O BANCO DE DADOS =====
-              const fetchPacientes = async () => {
-                console.log("Tentando buscar dados da tabela 'pacientes'...");
-                const { data, error } = await supabase.from('pacientes').select('*');
-                
-                if (error) {
-                  console.error("ERRO ao buscar pacientes:", error);
-                } else {
-                  console.log("SUCESSO! Pacientes encontrados:", data);
-                }
-              };
-
-              fetchPacientes();
-              // =================== FIM DO CÓDIGO DE TESTE ===================
-
             } else {
               router.replace('/login');
             }
@@ -146,10 +122,14 @@ export default function ProfileSelection() {
           </h2>
           
           {profiles.map((profile) => (
-            <button
+          // AQUI ESTÁ A CORREÇÃO: Troquei <button> por <div> e adicionei role e tabIndex
+            <div
               key={profile.key}
+            role="button"
+            tabIndex={0}
               onClick={() => router.push(profile.route)}
-              className="w-full p-5 sm:p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 touch-manipulation min-h-[80px] sm:min-h-[auto]"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') router.push(profile.route); }} // Melhora a acessibilidade
+              className="w-full p-5 sm:p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 touch-manipulation min-h-[80px] sm:min-h-[auto] cursor-pointer"
               style={{ 
                 borderColor: profile.color,
                 background: `linear-gradient(135deg, ${profile.color}15, ${profile.color}05)`
@@ -157,8 +137,7 @@ export default function ProfileSelection() {
             >
               <div className="flex items-center justify-center space-x-3">
                 <span className="text-3xl sm:text-2xl flex-shrink-0">{profile.icon}</span>
-                {/* A CORREÇÃO ESTÁ NA LINHA ABAIXO. Adicionei a classe "text-gray-800" */}
-                <div className="text-left flex-grow text-gray-800">
+                <div className="text-left flex-grow">
                   <div className="font-semibold text-sm sm:text-base text-slate-900">
                     {profile.title}
                   </div>
@@ -167,7 +146,7 @@ export default function ProfileSelection() {
                   </div>
                 </div>
               </div>
-            </button>
+            </div>
           ))}
         </div>
 
