@@ -50,7 +50,7 @@ export default function ProfileSelection() {
       description: 'Acompanhe a evolução de habilidades e metas',
       icon: ' 📈 ',
       color: '#1abc9c',
-      route: '/progress-dashboard'
+      route: '/dashboard' // 🔧 ROTA CORRIGIDA
     }
   ];
 
