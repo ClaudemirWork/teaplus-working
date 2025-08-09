@@ -122,28 +122,29 @@ export default function ProfileSelection() {
           </h2>
           
           {profiles.map((profile) => (
-          // AQUI ESTÁ A CORREÇÃO, SEGUINDO SUA SUGESTÃO
-            <div
+            <button
               key={profile.key}
-            role="button"
-            tabIndex={0}
               onClick={() => router.push(profile.route)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') router.push(profile.route); }}
-              className="w-full p-5 sm:p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 touch-manipulation min-h-[80px] sm:min-h-[auto] cursor-pointer bg-white text-gray-800"
-              style={{ borderColor: profile.color }}
+              className="w-full p-5 sm:p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 touch-manipulation min-h-[80px] sm:min-h-[auto]"
+              style={{
+                borderColor: profile.color,
+                background: `linear-gradient(135deg, ${profile.color}15, ${profile.color}05)`
+              }}
             >
               <div className="flex items-center justify-center space-x-3">
                 <span className="text-3xl sm:text-2xl flex-shrink-0">{profile.icon}</span>
                 <div className="text-left flex-grow">
-                  <div className="font-semibold text-sm sm:text-base">
+                  {/* CORREÇÃO: Removi a classe de cor e adicionei o estilo 'inline' */}
+                  <div className="font-semibold text-sm sm:text-base" style={{ color: '#1e293b' }}>
                     {profile.title}
                   </div>
-                  <div className="text-xs sm:text-sm text-slate-600 mt-1">
+                  {/* CORREÇÃO: Removi a classe de cor e adicionei o estilo 'inline' */}
+                  <div className="text-xs sm:text-sm mt-1" style={{ color: '#475569' }}>
                     {profile.description}
                   </div>
                 </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
 
