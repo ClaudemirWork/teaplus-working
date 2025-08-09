@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, 'useState', { useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, X, Volume2, CornerLeftUp, HelpCircle, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-// CORREÇÃO: Apontando para o novo local centralizado com o caminho relativo correto
-import { createClient } from '../../utils/supabaseClient';
+// CORREÇÃO: Usando o alias '@' para encontrar o arquivo no novo local central
+import { createClient } from '@/app/utils/supabaseClient';
 
 export default function CAAActivityPage() {
     const supabase = createClient();
@@ -137,7 +137,7 @@ export default function CAAActivityPage() {
                     <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-gray-100 rounded-lg min-h-[64px]">
                         {selectedSymbols.length === 0 ? ( <span className="text-gray-400 italic">Selecione os símbolos para montar sua frase...</span> ) : ( selectedSymbols.map((symbol, index) => ( <div key={index} className="flex items-center space-x-1 p-2 bg-white rounded-md border border-gray-200"> <span className="text-xl">{symbol.icon}</span> <span className="text-sm text-gray-800">{symbol.text}</span> </div> )) )}
                     </div>
-                    <div className="flex flex-wrap gap-2 justify-end">
+              _       <div className="flex flex-wrap gap-2 justify-end">
                         <button onClick={handleSpeakSentence} className="flex items-center space-x-2 px-4 py-2 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"> <Volume2 size={20} /> <span>Falar Frase</span> </button>
                         <button onClick={handleUndo} className="flex items-center space-x-2 px-4 py-2 rounded-full bg-gray-500 text-white font-medium hover:bg-gray-600 transition-colors"> <CornerLeftUp size={20} /> <span>Desfazer</span> </button>
                         <button onClick={handleClearSentence} className="flex items-center space-x-2 px-4 py-2 rounded-full bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"> <X size={20} /> <span>Limpar</span> </button>
@@ -146,7 +146,7 @@ export default function CAAActivityPage() {
                 </div>
                 <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
                     <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">Selecione uma categoria e depois os ícones</h2>
-                    <div className="flex flex-wrap justify-center gap-2 mb-4">
+                  _ <div className="flex flex-wrap justify-center gap-2 mb-4">
                         {Object.keys(symbols).map(category => ( <button key={category} onClick={() => setSelectedCategory(category)} className={`px-4 py-2 rounded-full font-medium transition-colors ${selectedCategory === category ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}> {category.charAt(0).toUpperCase() + category.slice(1)} {categoriasUtilizadas.has(category) && <span className="ml-2 text-xs">✓</span>} </button> ))}
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
