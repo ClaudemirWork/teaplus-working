@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, X, Volume2, CornerLeftUp, HelpCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '../../../../lib/supabase/client';
 
 export default function CAAActivityPage() {
     const router = useRouter();
@@ -17,6 +18,9 @@ export default function CAAActivityPage() {
     const [simbolosUnicos, setSimbolosUnicos] = useState(new Set());
     const [inicioSessao] = useState(new Date());
     const [sequenciaTemporal, setSequenciaTemporal] = useState([]);
+    
+    // Teste Supabase com caminho relativo
+    const supabase = createClient();
     
     // Estrutura de dados para os símbolos organizada por categorias
     const symbols = {
