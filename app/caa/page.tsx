@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, X, Volume2, CornerLeftUp, HelpCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '../../../../lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 
 export default function CAAActivityPage() {
     const router = useRouter();
@@ -19,7 +19,7 @@ export default function CAAActivityPage() {
     const [inicioSessao] = useState(new Date());
     const [sequenciaTemporal, setSequenciaTemporal] = useState([]);
     
-    // Teste Supabase com caminho relativo
+    // Teste Supabase com alias @/ (recomendado)
     const supabase = createClient();
     
     // Estrutura de dados para os símbolos organizada por categorias
@@ -229,7 +229,7 @@ export default function CAAActivityPage() {
                 <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
                     <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
                         📊 Progresso da Sessão
-                        <span className="ml-3 text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full">✅ Sistema Estável - Integração Supabase em standby</span>
+                        <span className="ml-3 text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full">✅ Sistema Estável - Aguardando logs de erro</span>
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
