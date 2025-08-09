@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, ExternalLink } from 'lucide-react';
 
 export default function TeaDashboard() {
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
@@ -16,6 +16,7 @@ export default function TeaDashboard() {
       description: 'Desenvolva habilidades essenciais de comunicação e interação',
       color: '#4A90E2',
       activities: [
+        { name: 'Comunicação Aumentativa e Alternativa (CAA)', path: '/caa', description: 'Expresse necessidades e emoções com símbolos visuais' },
         { name: 'Contato Visual Progressivo', path: '/eye-contact', description: 'Pratique o contato visual de forma gradual' },
         { name: 'Expressões Faciais', path: '/facial-expressions', description: 'Reconheça e interprete emoções' },
         { name: 'Tom de Voz', path: '/tone-of-voice', description: 'Exercícios de entonação' },
@@ -65,7 +66,7 @@ export default function TeaDashboard() {
         { name: 'Diário Emocional', path: '/emotion-diary', description: 'Registro e reflexão sobre suas emoções diárias' },
         { name: 'Espelho de Emoções', path: '/emotion-mirror', description: 'Reflexão e autoconhecimento' },
         { name: 'Jogo do Semáforo', path: '/traffic-light-game', description: 'Para, pensa e age - controle de impulsos' },
-        { name: 'Diário de Reflexão Guiada', path: '/guided-reflection', description: 'Pensar antes de agir, desenvolvimento do autocontrole' },
+        { name: 'Diário de Reflexão Guiada', path: '/reflection-diary', description: 'Pensar antes de agir, desenvolvimento do autocontrole' },
         { name: 'Treino de Assertividade', path: '/assertiveness-training', description: 'Defender opiniões, dizer não, expressar necessidades' },
         { name: 'Lidando com Frustrações', path: '/frustration-management', description: 'Lidar com críticas e gerenciar sentimentos de raiva' },
         { name: 'Missões Sociais', path: '/social-missions', description: 'Desafios de interação social' },
@@ -76,7 +77,6 @@ export default function TeaDashboard() {
     }
   };
 
-  // 🔧 ESTRUTURA IDÊNTICA AO TDAH (que funciona)
   const ModuleCard = ({ moduleKey, module }: { moduleKey: string, module: any }) => (
     <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
       <div className="p-4 sm:p-6">
@@ -136,8 +136,9 @@ export default function TeaDashboard() {
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="p-3 sm:p-4">
           <div className="flex items-center justify-between">
+            {/* CORREÇÃO AQUI */}
             <Link 
-              href="/" 
+              href="/profileselection" 
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
             >
               <ChevronLeft size={20} />

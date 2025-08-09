@@ -1,39 +1,40 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 
 interface FrustrationExercise {
-  id: number
-  title: string
-  type: 'breathing' | 'reframing' | 'reflection' | 'action-plan'
-  description: string
-  instruction: string
-  duration?: number
-  steps?: string[]
-  questions?: string[]
-  examples?: string[]
+  id: number;
+  title: string;
+  type: 'breathing' | 'reframing' | 'reflection' | 'action-plan';
+  description: string;
+  instruction: string;
+  duration?: number;
+  steps?: string[];
+  questions?: string[];
+  examples?: string[];
 }
 
 interface UserResponse {
-  exerciseId: number
-  responses: { [key: string]: string }
-  completed: boolean
-  timestamp: Date
+  exerciseId: number;
+  responses: { [key: string]: string };
+  completed: boolean;
+  timestamp: Date;
 }
 
+// ARRAY COMPLETO DOS EXERCÍCIOS
 const exercises: FrustrationExercise[] = [
   {
     id: 1,
-    title: "Respiração para Acalmar",
+    title: "Respiração 4-7-8",
     type: "breathing",
-    description: "Técnica de respiração 4-7-8 para reduzir a intensidade da raiva e frustração",
-    instruction: "Quando sentimos raiva, nossa respiração fica acelerada. Vamos usar uma técnica simples para nos acalmar.",
-    duration: 180, // 3 minutos
+    description: "Técnica de respiração para acalmar o sistema nervoso",
+    instruction: "Respire seguindo o ritmo 4-7-8 para ativar a resposta de relaxamento.",
+    duration: 180,
     steps: [
       "Inspire pelo nariz contando até 4",
       "Segure a respiração contando até 7", 
       "Expire pela boca contando até 8",
-      "Repita o ciclo 4 vezes"
+      "Repita 4 ciclos completos"
     ]
   },
   {
@@ -43,10 +44,9 @@ const exercises: FrustrationExercise[] = [
     description: "Reconhecer padrões de pensamento que intensificam a frustração",
     instruction: "Quando estamos frustrados, nossos pensamentos podem ficar distorcidos. Vamos identificar esses padrões.",
     examples: [
-      "Tudo ou Nada: 'Eu sempre estrago tudo' → 'Cometi um erro, mas posso aprender'",
-      "Catastrofização: 'Isso vai arruinar minha vida' → 'É um contratempo, mas vou superar'",
-      "Leitura Mental: 'Todos acham que sou incompetente' → 'Não sei o que outros pensam'",
-      "Personalização: 'É tudo culpa minha' → 'Vários fatores contribuíram para isso'"
+      "💭 Pensamento Tudo ou Nada: 'Sempre dá errado comigo' → 'Às vezes as coisas não saem como planejado, mas já resolvi problemas antes'",
+      "💭 Catastrofização: 'Isso vai arruinar tudo' → 'É um contratempo, mas posso encontrar uma solução'",
+      "💭 Leitura Mental: 'Ele fez isso de propósito' → 'Não sei suas intenções, pode ter sido um mal-entendido'"
     ]
   },
   {
@@ -58,7 +58,7 @@ const exercises: FrustrationExercise[] = [
     questions: [
       "Qual situação te causou frustração recentemente?",
       "Qual foi seu primeiro pensamento sobre essa situação?",
-      "Que evidências você tem de que esse pensamento é verdadeiro?", 
+      "Que evidências você tem de que esse pensamento é verdadeiro?",
       "Que evidências contradizem esse pensamento?",
       "Como um amigo querido veria essa situação?",
       "Qual seria uma forma mais equilibrada de pensar sobre isso?"
@@ -71,181 +71,205 @@ const exercises: FrustrationExercise[] = [
     description: "Estratégia prática para usar no momento da frustração",
     instruction: "Quando sentir raiva ou frustração crescendo, use esta técnica:",
     steps: [
-      "PARE: Reconheça que está se sentindo frustrado",
-      "RESPIRE: Faça 3 respirações profundas",
-      "OBSERVE: Notice seus pensamentos e sensações corporais",
-      "ESCOLHA: Decida conscientemente como responder"
+      "S - PARE o que está fazendo",
+      "T - RESPIRE fundo 3 vezes",
+      "O - OBSERVE seus pensamentos e sentimentos",
+      "P - PROSSIGA com uma ação mais consciente"
     ]
   }
-]
+];
 
+// ARRAY COMPLETO DOS CENÁRIOS
 const frustratingScenarios = [
   {
-    situation: "Você está no trânsito há 45 minutos por causa de um acidente",
-    distortedThought: "Meu dia está arruinado! Sempre acontece isso comigo!",
-    reframedThought: "Acidentes acontecem e não posso controlar o trânsito. Posso usar esse tempo para ouvir música ou praticar respiração."
+    situation: "Seu chefe criticou seu trabalho na frente dos colegas",
+    distortedThought: "Ele me odeia e quer me demitir. Sou um fracasso.",
+    reframedThought: "Ele pode estar estressado ou ter um estilo de comunicação direto. Posso aprender com o feedback e conversar em particular."
   },
   {
-    situation: "Seu chefe criticou um projeto em que você trabalhou muito",
-    distortedThought: "Sou um fracasso! Nunca vou ser bom o suficiente!",
-    reframedThought: "Receber feedback é parte do crescimento profissional. Posso usar essas informações para melhorar."
+    situation: "Você perdeu uma oportunidade importante por 5 minutos de atraso",
+    distortedThought: "Sempre acontece isso comigo. Nunca vou conseguir nada.",
+    reframedThought: "Foi frustrante, mas imprevistos acontecem. Posso me preparar melhor para próximas oportunidades."
   },
   {
-    situation: "Sua internet caiu bem na hora de uma reunião importante",
-    distortedThought: "Que azar! Todo mundo vai pensar que sou desorganizado!",
-    reframedThought: "Problemas técnicos acontecem com todos. Posso explicar a situação e remarcar quando necessário."
+    situation: "Alguém cortou sua fila no supermercado",
+    distortedThought: "As pessoas são sempre desrespeitosas comigo. Ninguém me respeita.",
+    reframedThought: "Pode ter sido um mal-entendido ou a pessoa pode estar com pressa por alguma emergência."
   }
-]
+];
 
 export default function FrustrationManagement() {
-  const [currentExercise, setCurrentExercise] = useState(0)
-  const [isActive, setIsActive] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(0)
-  const [breathingPhase, setBreathingPhase] = useState<'inhale' | 'hold' | 'exhale' | 'rest'>('rest')
-  const [breathingCount, setBreathingCount] = useState(0)
-  const [currentCycle, setCurrentCycle] = useState(0)
-  const [userResponses, setUserResponses] = useState<{ [key: string]: string }>({})
-  const [completedExercises, setCompletedExercises] = useState<number[]>([])
-  const [currentScenario, setCurrentScenario] = useState(0)
-  const [gameStarted, setGameStarted] = useState(false)
+  const [currentExercise, setCurrentExercise] = useState(0);
+  const [isActive, setIsActive] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [breathingPhase, setBreathingPhase] = useState<'inhale' | 'hold' | 'exhale' | 'rest'>('rest');
+  const [breathingCount, setBreathingCount] = useState(0);
+  const [currentCycle, setCurrentCycle] = useState(0);
+  const [userResponses, setUserResponses] = useState<{ [key: string]: string }>({});
+  const [completedExercises, setCompletedExercises] = useState<number[]>([]);
+  const [currentScenario, setCurrentScenario] = useState(0);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(0);
+
+  // useEffect para definir windowWidth apenas no cliente
+  useEffect(() => {
+    function handleResize() {
+      if (typeof window !== 'undefined') {
+        setWindowWidth(window.innerWidth);
+      }
+    }
+
+    handleResize();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => {
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+  }, []);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
-    
+    let interval: NodeJS.Timeout | null = null;
+
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft(timeLeft - 1)
-      }, 1000)
+        setTimeLeft(timeLeft - 1);
+      }, 1000);
     } else if (timeLeft === 0 && isActive) {
-      setIsActive(false)
+      setIsActive(false);
       if (exercises[currentExercise].type === 'breathing') {
-        setCompletedExercises(prev => [...prev, exercises[currentExercise].id])
+        setCompletedExercises(prev => [...prev, exercises[currentExercise].id]);
       }
     }
 
     return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [isActive, timeLeft, currentExercise])
+      if (interval) clearInterval(interval);
+    };
+  }, [isActive, timeLeft, currentExercise]);
 
   // Breathing exercise timer logic
   useEffect(() => {
-    let breathTimer: NodeJS.Timeout | null = null
-    
+    let breathTimer: NodeJS.Timeout | null = null;
+
     if (isActive && exercises[currentExercise].type === 'breathing') {
       breathTimer = setInterval(() => {
         setBreathingCount(prev => {
-          const newCount = prev + 1
-          
+          const newCount = prev + 1;
+
           if (breathingPhase === 'inhale' && newCount >= 4) {
-            setBreathingPhase('hold')
-            return 0
+            setBreathingPhase('hold');
+            return 0;
           } else if (breathingPhase === 'hold' && newCount >= 7) {
-            setBreathingPhase('exhale')
-            return 0
+            setBreathingPhase('exhale');
+            return 0;
           } else if (breathingPhase === 'exhale' && newCount >= 8) {
             setCurrentCycle(cycle => {
-              const newCycle = cycle + 1
+              const newCycle = cycle + 1;
               if (newCycle >= 4) {
-                setIsActive(false)
-                setBreathingPhase('rest')
-                setCompletedExercises(prev => [...prev, exercises[currentExercise].id])
-                return 0
+                setIsActive(false);
+                setBreathingPhase('rest');
+                setCompletedExercises(prev => [...prev, exercises[currentExercise].id]);
+                return 0;
               }
-              setBreathingPhase('inhale')
-              return newCycle
-            })
-            return 0
+              setBreathingPhase('inhale');
+              return newCycle;
+            });
+            return 0;
           }
-          
-          return newCount
-        })
-      }, 1000)
+
+          return newCount;
+        });
+      }, 1000);
     }
 
     return () => {
-      if (breathTimer) clearInterval(breathTimer)
-    }
-  }, [isActive, breathingPhase, currentExercise])
+      if (breathTimer) clearInterval(breathTimer);
+    };
+  }, [isActive, breathingPhase, currentExercise]);
 
   const startBreathing = () => {
-    setIsActive(true)
-    setTimeLeft(180) // 3 minutes
-    setBreathingPhase('inhale')
-    setBreathingCount(0)
-    setCurrentCycle(0)
-  }
+    setIsActive(true);
+    setTimeLeft(180); // 3 minutes
+    setBreathingPhase('inhale');
+    setBreathingCount(0);
+    setCurrentCycle(0);
+  };
 
   const stopExercise = () => {
-    setIsActive(false)
-    setTimeLeft(0)
-    setBreathingPhase('rest')
-    setBreathingCount(0)
-    setCurrentCycle(0)
-  }
+    setIsActive(false);
+    setTimeLeft(0);
+    setBreathingPhase('rest');
+    setBreathingCount(0);
+    setCurrentCycle(0);
+  };
 
   const handleInputChange = (questionIndex: number, value: string) => {
     setUserResponses(prev => ({
       ...prev,
       [`${currentExercise}-${questionIndex}`]: value
-    }))
-  }
+    }));
+  };
 
   const completeCurrentExercise = () => {
-    setCompletedExercises(prev => [...prev, exercises[currentExercise].id])
-  }
+    setCompletedExercises(prev => [...prev, exercises[currentExercise].id]);
+  };
 
   const nextExercise = () => {
     if (currentExercise < exercises.length - 1) {
-      setCurrentExercise(currentExercise + 1)
+      setCurrentExercise(currentExercise + 1);
     }
-  }
+  };
 
   const prevExercise = () => {
     if (currentExercise > 0) {
-      setCurrentExercise(currentExercise - 1)
+      setCurrentExercise(currentExercise - 1);
     }
-  }
+  };
 
   const handleBackToTEA = () => {
-    window.history.back()
-  }
+    // Verificação segura para window
+    if (typeof window !== 'undefined') {
+      window.history.back();
+    }
+  };
 
   const getBreathingInstruction = () => {
     switch (breathingPhase) {
-      case 'inhale': return `Inspire... ${breathingCount + 1}/4`
-      case 'hold': return `Segure... ${breathingCount + 1}/7`
-      case 'exhale': return `Expire... ${breathingCount + 1}/8`
-      default: return 'Pronto para começar'
+      case 'inhale': return `Inspire... ${breathingCount + 1}/4`;
+      case 'hold': return `Segure... ${breathingCount + 1}/7`;
+      case 'exhale': return `Expire... ${breathingCount + 1}/8`;
+      default: return 'Pronto para começar';
     }
-  }
+  };
 
   const getBreathingColor = () => {
     switch (breathingPhase) {
-      case 'inhale': return '#3b82f6'
-      case 'hold': return '#8b5cf6'
-      case 'exhale': return '#06b6d4'
-      default: return '#e5e7eb'
+      case 'inhale': return '#3b82f6';
+      case 'hold': return '#8b5cf6';
+      case 'exhale': return '#06b6d4';
+      default: return '#e5e7eb';
     }
-  }
+  };
 
+  // Estilos responsivos
   const cardStyle = {
     backgroundColor: 'white',
     borderRadius: '12px',
-    padding: window.innerWidth <= 768 ? '16px' : '24px',
-    marginBottom: window.innerWidth <= 768 ? '16px' : '24px',
+    padding: windowWidth <= 768 ? '16px' : '24px',
+    marginBottom: windowWidth <= 768 ? '16px' : '24px',
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
     border: '1px solid #e5e7eb'
-  }
+  };
 
   const buttonStyle = {
     backgroundColor: '#3b82f6',
     color: 'white',
-    padding: window.innerWidth <= 768 ? '10px 20px' : '12px 24px',
+    padding: windowWidth <= 768 ? '10px 20px' : '12px 24px',
     borderRadius: '8px',
     border: 'none',
     cursor: 'pointer',
-    fontSize: window.innerWidth <= 768 ? '14px' : '16px',
+    fontSize: windowWidth <= 768 ? '14px' : '16px',
     fontWeight: '600',
     transition: 'all 0.2s',
     minHeight: '44px',
@@ -253,7 +277,7 @@ export default function FrustrationManagement() {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px'
-  }
+  };
 
   const progressStyle = {
     width: '100%',
@@ -262,44 +286,44 @@ export default function FrustrationManagement() {
     borderRadius: '4px',
     overflow: 'hidden',
     marginBottom: '24px'
-  }
+  };
 
   const progressBarStyle = {
     height: '100%',
     backgroundColor: '#14b8a6',
     width: `${((currentExercise + 1) / exercises.length) * 100}%`,
     transition: 'width 0.3s ease'
-  }
+  };
 
   if (!gameStarted) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
+      <div style={{
+        minHeight: '100vh',
         background: 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 50%, #99f6e4 100%)',
-        padding: window.innerWidth <= 768 ? '16px' : '20px'
+        padding: windowWidth <= 768 ? '16px' : '20px'
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           {/* Back Button */}
           <div style={{ marginBottom: '20px' }}>
-            <button 
+            <button
               onClick={handleBackToTEA}
               style={{
                 backgroundColor: 'transparent',
                 border: 'none',
                 color: '#0d9488',
-                fontSize: window.innerWidth <= 768 ? '14px' : '16px',
+                fontSize: windowWidth <= 768 ? '14px' : '16px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                padding: window.innerWidth <= 768 ? '8px' : '12px',
+                padding: windowWidth <= 768 ? '8px' : '12px',
                 borderRadius: '8px',
                 transition: 'all 0.2s',
                 minHeight: '44px'
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(13, 148, 136, 0.1)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(13, 148, 136, 0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               ← Voltar para TEA
             </button>
@@ -307,21 +331,23 @@ export default function FrustrationManagement() {
 
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
-              <div style={{ 
-                width: window.innerWidth <= 768 ? '40px' : '48px', 
-                height: window.innerWidth <= 768 ? '40px' : '48px', 
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap'
+            }}>
+              <div style={{
+                width: windowWidth <= 768 ? '40px' : '48px',
+                height: windowWidth <= 768 ? '40px' : '48px',
                 background: 'linear-gradient(135deg, #0d9488, #06b6d4)',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: window.innerWidth <= 768 ? '20px' : '24px'
+                fontSize: windowWidth <= 768 ? '20px' : '24px'
               }}>
                 😤
               </div>
-              <h1 style={{ 
-                fontSize: window.innerWidth <= 768 ? '1.8rem' : '2.5rem', 
+              <h1 style={{
+                fontSize: windowWidth <= 768 ? '1.8rem' : '2.5rem',
                 fontWeight: 'bold',
                 background: 'linear-gradient(135deg, #0d9488, #06b6d4)',
                 WebkitBackgroundClip: 'text',
@@ -332,235 +358,48 @@ export default function FrustrationManagement() {
                 Lidando com Frustrações
               </h1>
             </div>
-            <p style={{ 
-              fontSize: window.innerWidth <= 768 ? '1rem' : '1.25rem', 
-              color: '#6b7280', 
-              maxWidth: '600px', 
+            <p style={{
+              fontSize: windowWidth <= 768 ? '1rem' : '1.25rem',
+              color: '#6b7280',
+              maxWidth: '600px',
               margin: '0 auto',
-              padding: window.innerWidth <= 768 ? '0 16px' : '0'
+              padding: windowWidth <= 768 ? '0 16px' : '0'
             }}>
-              Aprenda técnicas para <strong>lidar com críticas e gerenciar raiva</strong> através de respiração e reframing cognitivo
+              Aprenda técnicas para lidar com críticas e gerenciar raiva através de respiração e reframing cognitivo
             </p>
           </div>
 
           {/* Módulo Info */}
-          <div style={{ ...cardStyle, borderLeft: '4px solid #0d9488' }}>
-            <h3 style={{ 
-              color: '#0f766e', 
-              marginBottom: '8px', 
-              display: 'flex', 
-              alignItems: 'center', 
+          <div style={{...cardStyle, borderLeft: '4px solid #0d9488' }}>
+            <h3 style={{
+              color: '#0f766e',
+              marginBottom: '8px',
+              display: 'flex',
+              alignItems: 'center',
               gap: '8px',
-              fontSize: window.innerWidth <= 768 ? '16px' : '18px',
+              fontSize: windowWidth <= 768 ? '16px' : '18px',
               flexWrap: 'wrap'
             }}>
               ❤️ MÓDULO 3: REGULAÇÃO EMOCIONAL
             </h3>
-            <p style={{ 
-              color: '#6b7280', 
+            <p style={{
+              color: '#6b7280',
               margin: 0,
-              fontSize: window.innerWidth <= 768 ? '14px' : '16px'
+              fontSize: windowWidth <= 768 ? '14px' : '16px'
             }}>
               Base: Controle de Impulsos + Assertividade | Técnicas de Respiração e Reframing
             </p>
           </div>
 
-          {/* Objetivo */}
-          <div style={cardStyle}>
-            <h3 style={{ 
-              marginBottom: '16px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px',
-              fontSize: window.innerWidth <= 768 ? '16px' : '18px'
-            }}>
-              🎯 Objetivo das Técnicas
-            </h3>
-            <p style={{ 
-              color: '#374151', 
-              marginBottom: '16px', 
-              lineHeight: '1.6',
-              fontSize: window.innerWidth <= 768 ? '14px' : '16px'
-            }}>
-              A frustração é uma emoção natural, mas quando não gerenciada pode levar a explosões de raiva, 
-              decisões impulsivas e relacionamentos prejudicados. Essas técnicas te ajudam a:
-            </p>
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : 'repeat(auto-fit, minmax(250px, 1fr))', 
-              gap: '16px' 
-            }}>
-              <div style={{ backgroundColor: '#f0fdfa', padding: '16px', borderRadius: '8px', border: '1px solid #5eead4' }}>
-                <h4 style={{ 
-                  color: '#0f766e', 
-                  marginBottom: '8px', 
-                  fontSize: window.innerWidth <= 768 ? '14px' : '16px' 
-                }}>
-                  🫁 Técnicas de Respiração
-                </h4>
-                <p style={{ 
-                  fontSize: window.innerWidth <= 768 ? '12px' : '14px', 
-                  color: '#134e4a', 
-                  margin: 0 
-                }}>
-                  Acalmar o sistema nervoso rapidamente
-                </p>
-              </div>
-              <div style={{ backgroundColor: '#f0f9ff', padding: '16px', borderRadius: '8px', border: '1px solid #7dd3fc' }}>
-                <h4 style={{ 
-                  color: '#0c4a6e', 
-                  marginBottom: '8px', 
-                  fontSize: window.innerWidth <= 768 ? '14px' : '16px' 
-                }}>
-                  🧠 Reframing Cognitivo
-                </h4>
-                <p style={{ 
-                  fontSize: window.innerWidth <= 768 ? '12px' : '14px', 
-                  color: '#0369a1', 
-                  margin: 0 
-                }}>
-                  Mudar perspectivas sobre situações frustrantes
-                </p>
-              </div>
-              <div style={{ backgroundColor: '#fefce8', padding: '16px', borderRadius: '8px', border: '1px solid #fde047' }}>
-                <h4 style={{ 
-                  color: '#a16207', 
-                  marginBottom: '8px', 
-                  fontSize: window.innerWidth <= 768 ? '14px' : '16px' 
-                }}>
-                  ⚡ Estratégias Práticas
-                </h4>
-                <p style={{ 
-                  fontSize: window.innerWidth <= 768 ? '12px' : '14px', 
-                  color: '#ca8a04', 
-                  margin: 0 
-                }}>
-                  Ferramentas para usar no momento da frustração
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quando Usar */}
-          <div style={cardStyle}>
-            <h3 style={{ 
-              marginBottom: '16px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px',
-              fontSize: window.innerWidth <= 768 ? '16px' : '18px'
-            }}>
-              🔧 Quando Usar Essas Técnicas
-            </h3>
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', 
-              gap: '16px' 
-            }}>
-              <div>
-                <h4 style={{ 
-                  color: '#374151', 
-                  marginBottom: '12px', 
-                  fontSize: window.innerWidth <= 768 ? '14px' : '16px' 
-                }}>
-                  🚗 Situações Cotidianas:
-                </h4>
-                <ul style={{ 
-                  color: '#6b7280', 
-                  margin: 0, 
-                  paddingLeft: '20px', 
-                  lineHeight: '1.6',
-                  fontSize: window.innerWidth <= 768 ? '13px' : '14px'
-                }}>
-                  <li>Trânsito intenso</li>
-                  <li>Tecnologia que não funciona</li>
-                  <li>Atrasos e imprevistos</li>
-                  <li>Filas longas</li>
-                </ul>
-              </div>
-              <div>
-                <h4 style={{ 
-                  color: '#374151', 
-                  marginBottom: '12px', 
-                  fontSize: window.innerWidth <= 768 ? '14px' : '16px' 
-                }}>
-                  👥 Situações Sociais:
-                </h4>
-                <ul style={{ 
-                  color: '#6b7280', 
-                  margin: 0, 
-                  paddingLeft: '20px', 
-                  lineHeight: '1.6',
-                  fontSize: window.innerWidth <= 768 ? '13px' : '14px'
-                }}>
-                  <li>Críticas no trabalho</li>
-                  <li>Conflitos familiares</li>
-                  <li>Mal-entendidos</li>
-                  <li>Competição desleal</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Exercícios */}
-          <div style={cardStyle}>
-            <h3 style={{ 
-              marginBottom: '16px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px',
-              fontSize: window.innerWidth <= 768 ? '16px' : '18px'
-            }}>
-              🏃‍♂️ Exercícios Práticos
-            </h3>
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : 'repeat(auto-fit, minmax(250px, 1fr))', 
-              gap: '16px' 
-            }}>
-              {exercises.map((exercise, index) => (
-                <div key={exercise.id} style={{ 
-                  backgroundColor: '#f9fafb', 
-                  padding: '16px', 
-                  borderRadius: '8px',
-                  border: '2px solid #e5e7eb'
-                }}>
-                  <div style={{ fontSize: window.innerWidth <= 768 ? '20px' : '24px', marginBottom: '8px', textAlign: 'center' }}>
-                    {exercise.type === 'breathing' ? '🫁' : 
-                     exercise.type === 'reframing' ? '🧠' :
-                     exercise.type === 'reflection' ? '🤔' : '⚡'}
-                  </div>
-                  <h4 style={{ 
-                    color: '#374151', 
-                    margin: '0 0 8px 0', 
-                    fontSize: window.innerWidth <= 768 ? '14px' : '16px', 
-                    textAlign: 'center' 
-                  }}>
-                    {exercise.title}
-                  </h4>
-                  <p style={{ 
-                    color: '#6b7280', 
-                    margin: 0, 
-                    fontSize: window.innerWidth <= 768 ? '12px' : '14px', 
-                    textAlign: 'center', 
-                    lineHeight: '1.4' 
-                  }}>
-                    {exercise.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Botão Iniciar */}
           <div style={{ textAlign: 'center' }}>
-            <button 
-              onClick={() => setGameStarted(true)} 
+            <button
+              onClick={() => setGameStarted(true)}
               style={{
                 ...buttonStyle,
                 background: 'linear-gradient(135deg, #0d9488, #06b6d4)',
-                fontSize: window.innerWidth <= 768 ? '16px' : '18px',
-                padding: window.innerWidth <= 768 ? '14px 28px' : '16px 32px'
+                fontSize: windowWidth <= 768 ? '16px' : '18px',
+                padding: windowWidth <= 768 ? '14px 28px' : '16px 32px'
               }}
             >
               😤 Começar Treinamento
@@ -568,80 +407,54 @@ export default function FrustrationManagement() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
-  const exercise = exercises[currentExercise]
-  const isCompleted = completedExercises.includes(exercise.id)
+  const exercise = exercises[currentExercise];
+  const isCompleted = completedExercises.includes(exercise.id);
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
+    <div style={{
+      minHeight: '100vh',
       background: 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 50%, #99f6e4 100%)',
-      padding: window.innerWidth <= 768 ? '16px' : '20px'
+      padding: windowWidth <= 768 ? '16px' : '20px'
     }}>
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-        {/* Back Button */}
-        <div style={{ marginBottom: '20px' }}>
-          <button 
-            onClick={handleBackToTEA}
-            style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#0d9488',
-              fontSize: window.innerWidth <= 768 ? '14px' : '16px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: window.innerWidth <= 768 ? '8px' : '12px',
-              borderRadius: '8px',
-              transition: 'all 0.2s',
-              minHeight: '44px'
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(13, 148, 136, 0.1)'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            ← Voltar para TEA
-          </button>
-        </div>
-
         {/* Header */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          marginBottom: '24px', 
-          flexWrap: 'wrap', 
-          gap: '16px' 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '24px',
+          flexWrap: 'wrap',
+          gap: '16px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-            <div style={{ 
-              width: window.innerWidth <= 768 ? '32px' : '40px', 
-              height: window.innerWidth <= 768 ? '32px' : '40px', 
+            <div style={{
+              width: windowWidth <= 768 ? '32px' : '40px',
+              height: windowWidth <= 768 ? '32px' : '40px',
               background: 'linear-gradient(135deg, #0d9488, #06b6d4)',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: window.innerWidth <= 768 ? '16px' : '20px'
+              fontSize: windowWidth <= 768 ? '16px' : '20px'
             }}>
               😤
             </div>
             <div style={{ minWidth: 0 }}>
-              <h1 style={{ 
-                fontSize: window.innerWidth <= 768 ? '1.2rem' : '1.5rem', 
-                fontWeight: 'bold', 
+              <h1 style={{
+                fontSize: windowWidth <= 768 ? '1.2rem' : '1.5rem',
+                fontWeight: 'bold',
                 margin: 0,
                 wordBreak: 'break-word'
               }}>
                 Lidando com Frustrações
               </h1>
-              <p style={{ 
-                color: '#6b7280', 
+              <p style={{
+                color: '#6b7280',
                 margin: 0,
-                fontSize: window.innerWidth <= 768 ? '12px' : '14px'
+                fontSize: windowWidth <= 768 ? '12px' : '14px',
               }}>
                 Exercício {currentExercise + 1} de {exercises.length}
               </p>
@@ -658,43 +471,43 @@ export default function FrustrationManagement() {
         <div style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
             <div style={{
-              width: window.innerWidth <= 768 ? '40px' : '48px',
-              height: window.innerWidth <= 768 ? '40px' : '48px',
+              width: windowWidth <= 768 ? '40px' : '48px',
+              height: windowWidth <= 768 ? '40px' : '48px',
               backgroundColor: '#14b8a6',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: window.innerWidth <= 768 ? '20px' : '24px'
+              fontSize: windowWidth <= 768 ? '20px' : '24px'
             }}>
-              {exercise.type === 'breathing' ? '🫁' : 
-               exercise.type === 'reframing' ? '🧠' :
-               exercise.type === 'reflection' ? '🤔' : '⚡'}
+              {exercise.type === 'breathing' ? '🫁' :
+                exercise.type === 'reframing' ? '🧠' :
+                exercise.type === 'reflection' ? '🤔' : '⚡'}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <h2 style={{ 
-                color: '#374151', 
-                margin: 0, 
-                fontSize: window.innerWidth <= 768 ? '1.2rem' : '1.5rem',
+              <h2 style={{
+                color: '#374151',
+                margin: 0,
+                fontSize: windowWidth <= 768 ? '1.2rem' : '1.5rem',
                 wordBreak: 'break-word'
               }}>
                 {exercise.title}
               </h2>
-              <p style={{ 
-                color: '#6b7280', 
+              <p style={{
+                color: '#6b7280',
                 margin: 0,
-                fontSize: window.innerWidth <= 768 ? '12px' : '14px'
+                fontSize: windowWidth <= 768 ? '12px' : '14px',
               }}>
                 {exercise.description}
               </p>
             </div>
           </div>
 
-          <p style={{ 
-            color: '#374151', 
-            marginBottom: '24px', 
+          <p style={{
+            color: '#374151',
+            marginBottom: '24px',
             lineHeight: '1.6',
-            fontSize: window.innerWidth <= 768 ? '14px' : '16px'
+            fontSize: windowWidth <= 768 ? '14px' : '16px',
           }}>
             {exercise.instruction}
           </p>
@@ -703,8 +516,8 @@ export default function FrustrationManagement() {
           {exercise.type === 'breathing' && (
             <div style={{ textAlign: 'center' }}>
               <div style={{
-                width: window.innerWidth <= 768 ? '150px' : '200px',
-                height: window.innerWidth <= 768 ? '150px' : '200px',
+                width: windowWidth <= 768 ? '150px' : '200px',
+                height: windowWidth <= 768 ? '150px' : '200px',
                 margin: '0 auto 24px',
                 borderRadius: '50%',
                 backgroundColor: getBreathingColor(),
@@ -712,7 +525,7 @@ export default function FrustrationManagement() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'white',
-                fontSize: window.innerWidth <= 768 ? '14px' : '18px',
+                fontSize: windowWidth <= 768 ? '14px' : '18px',
                 fontWeight: '600',
                 transition: 'all 1s ease',
                 transform: breathingPhase === 'inhale' ? 'scale(1.2)' : breathingPhase === 'hold' ? 'scale(1.2)' : 'scale(1)',
@@ -721,101 +534,55 @@ export default function FrustrationManagement() {
                 {getBreathingInstruction()}
               </div>
 
-              {isActive && (
-                <div style={{ marginBottom: '24px' }}>
-                  <p style={{ 
-                    color: '#374151', 
-                    marginBottom: '8px',
-                    fontSize: window.innerWidth <= 768 ? '14px' : '16px'
-                  }}>
-                    Ciclo: {currentCycle + 1}/4
-                  </p>
-                  <p style={{ 
-                    color: '#6b7280', 
-                    fontSize: window.innerWidth <= 768 ? '12px' : '14px'
-                  }}>
-                    Tempo restante: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-                  </p>
-                </div>
-              )}
-
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 {!isActive ? (
                   <button onClick={startBreathing} style={buttonStyle}>
                     🫁 Começar Respiração
                   </button>
                 ) : (
-                  <button 
+                  <button
                     onClick={stopExercise}
-                    style={{ ...buttonStyle, backgroundColor: '#ef4444' }}
+                    style={{...buttonStyle, backgroundColor: '#ef4444' }}
                   >
                     ⏹️ Parar
                   </button>
                 )}
               </div>
-
-              {exercise.steps && (
-                <div style={{ 
-                  backgroundColor: '#f0fdfa', 
-                  padding: '16px', 
-                  borderRadius: '8px', 
-                  marginTop: '24px',
-                  textAlign: 'left'
-                }}>
-                  <h4 style={{ 
-                    color: '#0f766e', 
-                    marginBottom: '12px',
-                    fontSize: window.innerWidth <= 768 ? '14px' : '16px'
-                  }}>
-                    Passos:
-                  </h4>
-                  <ol style={{ 
-                    color: '#134e4a', 
-                    margin: 0, 
-                    paddingLeft: '20px',
-                    fontSize: window.innerWidth <= 768 ? '13px' : '14px'
-                  }}>
-                    {exercise.steps.map((step, index) => (
-                      <li key={index} style={{ marginBottom: '4px' }}>{step}</li>
-                    ))}
-                  </ol>
-                </div>
-              )}
             </div>
           )}
 
           {/* Reframing Exercise */}
           {exercise.type === 'reframing' && (
             <div>
-              <h4 style={{ 
-                color: '#374151', 
+              <h4 style={{
+                color: '#374151',
                 marginBottom: '16px',
-                fontSize: window.innerWidth <= 768 ? '14px' : '16px'
+                fontSize: windowWidth <= 768 ? '14px' : '16px',
               }}>
                 Exemplos de Reframing:
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {exercise.examples?.map((example, index) => (
-                  <div key={index} style={{ 
-                    backgroundColor: '#f0f9ff', 
-                    padding: '16px', 
-                    borderRadius: '8px', 
-                    border: '1px solid #bae6fd' 
+                  <div key={index} style={{
+                    backgroundColor: '#f0f9ff',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    border: '1px solid #bae6fd'
                   }}>
-                    <p style={{ 
-                      color: '#0c4a6e', 
-                      margin: 0, 
+                    <p style={{
+                      color: '#0c4a6e',
+                      margin: 0,
                       lineHeight: '1.5',
-                      fontSize: window.innerWidth <= 768 ? '13px' : '14px'
+                      fontSize: windowWidth <= 768 ? '13px' : '14px',
                     }}>
                       {example}
                     </p>
                   </div>
                 ))}
               </div>
-              
+
               <div style={{ marginTop: '24px', textAlign: 'center' }}>
-                <button 
+                <button
                   onClick={completeCurrentExercise}
                   disabled={isCompleted}
                   style={{
@@ -834,12 +601,12 @@ export default function FrustrationManagement() {
             <div>
               {exercise.questions?.map((question, index) => (
                 <div key={index} style={{ marginBottom: '24px' }}>
-                  <label style={{ 
-                    display: 'block', 
-                    color: '#374151', 
+                  <label style={{
+                    display: 'block',
+                    color: '#374151',
                     marginBottom: '8px',
                     fontWeight: '500',
-                    fontSize: window.innerWidth <= 768 ? '14px' : '16px'
+                    fontSize: windowWidth <= 768 ? '14px' : '16px',
                   }}>
                     {index + 1}. {question}
                   </label>
@@ -849,55 +616,55 @@ export default function FrustrationManagement() {
                     placeholder="Escreva sua reflexão aqui..."
                     style={{
                       width: '100%',
-                      minHeight: window.innerWidth <= 768 ? '60px' : '80px',
+                      minHeight: windowWidth <= 768 ? '60px' : '80px',
                       padding: '12px',
                       borderRadius: '8px',
                       border: '2px solid #e5e7eb',
-                      fontSize: window.innerWidth <= 768 ? '14px' : '16px',
+                      fontSize: windowWidth <= 768 ? '14px' : '16px',
                       lineHeight: '1.5',
                       resize: 'vertical',
                       outline: 'none',
                       transition: 'border-color 0.2s',
                       boxSizing: 'border-box'
                     }}
-                    onFocus={(e) => e.target.style.borderColor = '#14b8a6'}
-                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#14b8a6'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
                   />
                 </div>
               ))}
 
-              <div style={{ 
-                backgroundColor: '#f0fdfa', 
-                padding: '16px', 
-                borderRadius: '8px', 
-                marginBottom: '24px' 
+              <div style={{
+                backgroundColor: '#f0fdfa',
+                padding: '16px',
+                borderRadius: '8px',
+                marginBottom: '24px'
               }}>
-                <h4 style={{ 
-                  color: '#0f766e', 
+                <h4 style={{
+                  color: '#0f766e',
                   marginBottom: '12px',
-                  fontSize: window.innerWidth <= 768 ? '14px' : '16px'
+                  fontSize: windowWidth <= 768 ? '14px' : '16px',
                 }}>
                   💡 Exemplo Prático:
                 </h4>
                 <div style={{ marginBottom: '12px' }}>
-                  <p style={{ 
-                    color: '#134e4a', 
+                  <p style={{
+                    color: '#134e4a',
                     marginBottom: '8px',
-                    fontSize: window.innerWidth <= 768 ? '12px' : '14px'
+                    fontSize: windowWidth <= 768 ? '12px' : '14px',
                   }}>
                     <strong>Situação:</strong> {frustratingScenarios[currentScenario].situation}
                   </p>
-                  <p style={{ 
-                    color: '#134e4a', 
+                  <p style={{
+                    color: '#134e4a',
                     marginBottom: '8px',
-                    fontSize: window.innerWidth <= 768 ? '12px' : '14px'
+                    fontSize: windowWidth <= 768 ? '12px' : '14px',
                   }}>
                     <strong>Pensamento Distorcido:</strong> "{frustratingScenarios[currentScenario].distortedThought}"
                   </p>
-                  <p style={{ 
-                    color: '#134e4a', 
+                  <p style={{
+                    color: '#134e4a',
                     margin: 0,
-                    fontSize: window.innerWidth <= 768 ? '12px' : '14px'
+                    fontSize: windowWidth <= 768 ? '12px' : '14px',
                   }}>
                     <strong>Pensamento Reframado:</strong> "{frustratingScenarios[currentScenario].reframedThought}"
                   </p>
@@ -907,8 +674,8 @@ export default function FrustrationManagement() {
                   style={{
                     ...buttonStyle,
                     backgroundColor: '#14b8a6',
-                    fontSize: window.innerWidth <= 768 ? '12px' : '14px',
-                    padding: window.innerWidth <= 768 ? '6px 12px' : '8px 16px',
+                    fontSize: windowWidth <= 768 ? '12px' : '14px',
+                    padding: windowWidth <= 768 ? '6px 12px' : '8px 16px',
                     minHeight: 'auto'
                   }}
                 >
@@ -917,7 +684,7 @@ export default function FrustrationManagement() {
               </div>
 
               <div style={{ textAlign: 'center' }}>
-                <button 
+                <button
                   onClick={completeCurrentExercise}
                   disabled={isCompleted}
                   style={{
@@ -934,49 +701,50 @@ export default function FrustrationManagement() {
           {/* Action Plan Exercise */}
           {exercise.type === 'action-plan' && (
             <div>
-              <div style={{ 
-                backgroundColor: '#fefce8', 
-                padding: '20px', 
-                borderRadius: '8px', 
-                marginBottom: '24px' 
+              <div style={{
+                backgroundColor: '#fefce8',
+                padding: '20px',
+                borderRadius: '8px',
+                marginBottom: '24px'
               }}>
-                <h4 style={{ 
-                  color: '#a16207', 
-                  marginBottom: '16px', 
+                <h4 style={{
+                  color: '#a16207',
+                  marginBottom: '16px',
                   textAlign: 'center',
-                  fontSize: window.innerWidth <= 768 ? '16px' : '18px'
+                  fontSize: windowWidth <= 768 ? '16px' : '18px',
                 }}>
                   ⚡ Técnica STOP
                 </h4>
                 <div style={{ display: 'grid', gap: '16px' }}>
                   {exercise.steps?.map((step, index) => (
-                    <div key={index} style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: window.innerWidth <= 768 ? '12px' : '16px',
-                      flexWrap: window.innerWidth <= 768 ? 'wrap' : 'nowrap'
+                    <div key={index} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      backgroundColor: 'white',
+                      padding: '16px',
+                      borderRadius: '8px',
+                      border: '2px solid #fde047'
                     }}>
                       <div style={{
-                        width: window.innerWidth <= 768 ? '32px' : '40px',
-                        height: window.innerWidth <= 768 ? '32px' : '40px',
-                        backgroundColor: '#f59e0b',
-                        color: 'white',
+                        width: '32px',
+                        height: '32px',
+                        backgroundColor: '#eab308',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        color: 'white',
                         fontWeight: 'bold',
-                        fontSize: window.innerWidth <= 768 ? '14px' : '18px',
-                        flexShrink: 0
+                        fontSize: '14px'
                       }}>
                         {index + 1}
                       </div>
-                      <p style={{ 
-                        color: '#92400e', 
-                        margin: 0, 
-                        fontSize: window.innerWidth <= 768 ? '14px' : '16px', 
-                        fontWeight: '500',
-                        flex: 1
+                      <p style={{
+                        color: '#92400e',
+                        margin: 0,
+                        fontSize: windowWidth <= 768 ? '14px' : '16px',
+                        fontWeight: '500'
                       }}>
                         {step}
                       </p>
@@ -985,32 +753,8 @@ export default function FrustrationManagement() {
                 </div>
               </div>
 
-              <div style={{ 
-                backgroundColor: '#f0f9ff', 
-                padding: '16px', 
-                borderRadius: '8px', 
-                marginBottom: '24px' 
-              }}>
-                <h4 style={{ 
-                  color: '#0c4a6e', 
-                  marginBottom: '8px',
-                  fontSize: window.innerWidth <= 768 ? '14px' : '16px'
-                }}>
-                  🎯 Pratique Agora:
-                </h4>
-                <p style={{ 
-                  color: '#0369a1', 
-                  margin: 0, 
-                  lineHeight: '1.5',
-                  fontSize: window.innerWidth <= 768 ? '13px' : '14px'
-                }}>
-                  Pense em uma situação que te deixa frustrado. Mentalmente, pratique usar a técnica STOP. 
-                  Como seria pausar, respirar, observar e escolher conscientemente sua resposta?
-                </p>
-              </div>
-
               <div style={{ textAlign: 'center' }}>
-                <button 
+                <button
                   onClick={completeCurrentExercise}
                   disabled={isCompleted}
                   style={{
@@ -1018,7 +762,7 @@ export default function FrustrationManagement() {
                     backgroundColor: isCompleted ? '#10b981' : '#3b82f6'
                   }}
                 >
-                  {isCompleted ? '✅ Concluído' : 'Entendi a Técnica'}
+                  {isCompleted ? '✅ Concluído' : 'Técnica Aprendida'}
                 </button>
               </div>
             </div>
@@ -1026,116 +770,58 @@ export default function FrustrationManagement() {
         </div>
 
         {/* Navigation */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          gap: '16px', 
-          flexWrap: 'wrap' 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '16px',
+          flexWrap: 'wrap'
         }}>
           <button
             onClick={prevExercise}
             disabled={currentExercise === 0}
             style={{
               ...buttonStyle,
-              backgroundColor: currentExercise === 0 ? '#f3f4f6' : 'white',
-              color: currentExercise === 0 ? '#9ca3af' : '#374151',
-              border: '1px solid #d1d5db',
-              cursor: currentExercise === 0 ? 'not-allowed' : 'pointer',
-              flex: window.innerWidth <= 768 ? '1' : 'auto'
+              backgroundColor: currentExercise === 0 ? '#9ca3af' : '#6b7280',
+              cursor: currentExercise === 0 ? 'not-allowed' : 'pointer'
             }}
           >
-            ← {window.innerWidth <= 768 ? 'Anterior' : 'Exercício Anterior'}
+            ← Anterior
           </button>
 
-          {currentExercise === exercises.length - 1 ? (
-            <button 
-              onClick={handleBackToTEA}
-              style={{
-                ...buttonStyle,
-                flex: window.innerWidth <= 768 ? '1' : 'auto'
-              }}
-            >
-              🏁 {window.innerWidth <= 768 ? 'Finalizar' : 'Finalizar Treinamento'}
-            </button>
-          ) : (
-            <button
-              onClick={nextExercise}
-              disabled={!isCompleted}
-              style={{
-                ...buttonStyle,
-                backgroundColor: isCompleted ? '#14b8a6' : '#f3f4f6',
-                color: isCompleted ? 'white' : '#9ca3af',
-                cursor: isCompleted ? 'pointer' : 'not-allowed',
-                flex: window.innerWidth <= 768 ? '1' : 'auto'
-              }}
-            >
-              {window.innerWidth <= 768 ? 'Próximo' : 'Próximo Exercício'} →
-            </button>
-          )}
-        </div>
-
-        {/* Progress Summary */}
-        <div style={{ ...cardStyle, marginTop: '24px', textAlign: 'center' }}>
-          <h3 style={{ 
-            color: '#374151', 
-            marginBottom: '16px',
-            fontSize: window.innerWidth <= 768 ? '16px' : '18px'
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            justifyContent: 'center',
+            flex: 1
           }}>
-            📊 Seu Progresso
-          </h3>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: window.innerWidth <= 768 ? '1fr 1fr' : 'repeat(auto-fit, minmax(150px, 1fr))', 
-            gap: '16px' 
-          }}>
-            <div>
-              <div style={{ 
-                fontSize: window.innerWidth <= 768 ? '1.5rem' : '2rem', 
-                fontWeight: 'bold', 
-                color: '#14b8a6' 
-              }}>
-                {completedExercises.length}
-              </div>
-              <div style={{ 
-                fontSize: window.innerWidth <= 768 ? '12px' : '14px', 
-                color: '#6b7280' 
-              }}>
-                Exercícios Concluídos
-              </div>
-            </div>
-            <div>
-              <div style={{ 
-                fontSize: window.innerWidth <= 768 ? '1.5rem' : '2rem', 
-                fontWeight: 'bold', 
-                color: '#f59e0b' 
-              }}>
-                {exercises.length - completedExercises.length}
-              </div>
-              <div style={{ 
-                fontSize: window.innerWidth <= 768 ? '12px' : '14px', 
-                color: '#6b7280' 
-              }}>
-                Exercícios Restantes
-              </div>
-            </div>
-            <div style={{ gridColumn: window.innerWidth <= 768 ? 'span 2' : 'auto' }}>
-              <div style={{ 
-                fontSize: window.innerWidth <= 768 ? '1.5rem' : '2rem', 
-                fontWeight: 'bold', 
-                color: '#8b5cf6' 
-              }}>
-                {Math.round((completedExercises.length / exercises.length) * 100)}%
-              </div>
-              <div style={{ 
-                fontSize: window.innerWidth <= 768 ? '12px' : '14px', 
-                color: '#6b7280' 
-              }}>
-                Progresso Total
-              </div>
-            </div>
+            {exercises.map((_, index) => (
+              <div
+                key={index}
+                style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  backgroundColor: index === currentExercise ? '#14b8a6' : '#e5e7eb',
+                  transition: 'background-color 0.2s'
+                }}
+              />
+            ))}
           </div>
+
+          <button
+            onClick={nextExercise}
+            disabled={currentExercise === exercises.length - 1}
+            style={{
+              ...buttonStyle,
+              backgroundColor: currentExercise === exercises.length - 1 ? '#9ca3af' : '#14b8a6',
+              cursor: currentExercise === exercises.length - 1 ? 'not-allowed' : 'pointer'
+            }}
+          >
+            Próximo →
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }

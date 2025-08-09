@@ -276,7 +276,7 @@ export default function BodyLanguagePage() {
                     </p>
                   </div>
 
-                  {/* Opções de resposta */}
+                  {/* Opções de resposta - CORRIGIDO APENAS A VISIBILIDADE */}
                   <div className="grid grid-cols-1 gap-3 sm:gap-4">
                     {currentEx.options.map((option) => (
                       <button
@@ -292,7 +292,7 @@ export default function BodyLanguagePage() {
                               : 'border-blue-500 bg-blue-50 text-blue-800'
                             : showFeedback && option.correct
                             ? 'border-green-500 bg-green-50 text-green-800'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-800 bg-white'
                         }`}
                       >
                         <span className="font-medium">{option.id.toUpperCase()}) </span>

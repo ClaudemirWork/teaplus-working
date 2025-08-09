@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface ReflectionEntry {
   id: string
@@ -75,12 +76,17 @@ const reflectionPrompts: ReflectionPrompt[] = [
 ]
 
 export default function ReflectionDiary() {
+  const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [showHistory, setShowHistory] = useState(false)
   const [entries, setEntries] = useState<ReflectionEntry[]>([])
   const [currentEntry, setCurrentEntry] = useState<Partial<ReflectionEntry>>({
     emotions: []
   })
+
+  const goBackToTEA = () => {
+    router.push('/tea')
+  }
 
   useEffect(() => {
     // Simular carregamento de entradas salvas
@@ -173,7 +179,7 @@ export default function ReflectionDiary() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
               <button 
-                onClick={() => window.history.back()}
+                onClick={goBackToTEA}
                 className="mr-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
               >
                 ← Voltar para TEA
@@ -261,7 +267,7 @@ export default function ReflectionDiary() {
         {/* Header com navegação */}
         <div className="flex items-center mb-6">
           <button 
-            onClick={() => window.history.back()}
+            onClick={goBackToTEA}
             className="mr-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
           >
             ← Voltar para TEA

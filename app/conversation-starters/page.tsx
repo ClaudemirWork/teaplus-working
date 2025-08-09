@@ -336,6 +336,25 @@ const gameData: Record<number, LevelData> = {
   }
 };
 
+const mobileStyles = `
+  @media (max-width: 640px) {
+    .conversation-option {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      min-height: 60px !important;
+      padding: 16px !important;
+      margin-bottom: 12px !important;
+    }
+    
+    .conversation-button {
+      min-height: 56px !important;
+      padding: 16px 24px !important;
+      font-size: 16px !important;
+    }
+  }
+`;
+
 export default function ConversationStarters() {
   const [currentScreen, setCurrentScreen] = useState<'explanation' | 'level-selection' | 'game' | 'results'>('explanation');
   const [currentLevel, setCurrentLevel] = useState<number>(1);
@@ -393,344 +412,385 @@ export default function ConversationStarters() {
   const progress = currentLevelData ? ((currentSituation + 1) / currentLevelData.situations.length) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500">
-      {/* Header Mobile */}
-      {currentScreen !== 'explanation' && (
-        <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-            <div className="flex items-center justify-between">
-              <a 
-                href="/tea" 
-                className="flex items-center text-indigo-600 hover:text-indigo-700 transition-colors min-h-[44px] px-2 -ml-2"
-              >
-                <span className="text-xl mr-2">←</span>
-                <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
-              </a>
-              
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex-1 mx-4 flex items-center justify-center gap-2">
-                <span className="text-xl sm:text-2xl">💬</span>
-                <span>Iniciando Conversas</span>
-              </h1>
-              
-              <div className="w-20"></div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-5xl mx-auto p-4">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-          
-          {currentScreen === 'explanation' && (
-            <div className="p-4 sm:p-8">
-              {/* Header com seta voltar */}
-              <div className="flex items-center mb-6">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: mobileStyles }} />
+      <div className="min-h-screen bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500">
+        {/* Header Mobile */}
+        {currentScreen !== 'explanation' && (
+          <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+              <div className="flex items-center justify-between">
                 <a 
                   href="/tea" 
-                  className="flex items-center text-indigo-600 hover:text-indigo-700 transition-colors min-h-[44px] px-2 -ml-2 mr-4"
+                  className="flex items-center text-indigo-600 hover:text-indigo-700 transition-colors min-h-[44px] px-2 -ml-2"
                 >
                   <span className="text-xl mr-2">←</span>
                   <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
                 </a>
-              </div>
-
-              <div className="text-center mb-6 sm:mb-8">
-                <h1 className="text-3xl sm:text-5xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-2 sm:gap-4">
-                  <span className="text-4xl sm:text-6xl">💬</span>
+                
+                <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex-1 mx-4 flex items-center justify-center gap-2">
+                  <span className="text-xl sm:text-2xl">💬</span>
                   <span>Iniciando Conversas</span>
                 </h1>
-                <p className="text-lg sm:text-xl text-gray-600">Desenvolvendo habilidades de comunicação social</p>
-              </div>
-
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-8 rounded-2xl mb-6 sm:mb-8 border-l-4 border-blue-500">
-                <h2 className="text-xl sm:text-2xl font-bold text-blue-800 mb-4 flex items-center gap-2">
-                  🎯 Objetivo da Atividade
-                </h2>
-                <p className="text-blue-700 text-base sm:text-lg leading-relaxed mb-4">
-                  Aprender estratégias eficazes para iniciar conversas em diferentes situações sociais, 
-                  desenvolvendo scripts sociais estruturados e aumentando a confiança na comunicação interpessoal.
-                </p>
                 
-                <div className="bg-white p-3 sm:p-4 rounded-xl border border-blue-200">
-                  <p className="text-blue-800 font-semibold mb-2 text-sm sm:text-base">📚 O que você vai aprender:</p>
-                  <div className="text-blue-700 space-y-1 text-xs sm:text-sm">
-                    <p>• Como começar uma conversa de forma natural</p>
-                    <p>• Frases e scripts sociais para diferentes contextos</p>
-                    <p>• Leitura de sinais sociais e momento adequado</p>
-                    <p>• Técnicas de manutenção do diálogo</p>
-                    <p>• Estratégias para superar a ansiedade social</p>
-                  </div>
-                </div>
-              </div>
-
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-700 text-center mb-4 sm:mb-6">🎮 Níveis de Dificuldade</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl border-l-4 border-green-500 transform hover:scale-105 transition-transform">
-                  <h3 className="text-lg sm:text-xl font-bold text-green-700 mb-3 flex items-center gap-2">
-                    🟢 Nível 1: Básico
-                  </h3>
-                  <p className="text-green-600 text-sm">Situações simples do cotidiano com pessoas conhecidas. Foco em cumprimentos e frases de abertura básicas.</p>
-                </div>
-                
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 sm:p-6 rounded-xl border-l-4 border-orange-500 transform hover:scale-105 transition-transform">
-                  <h3 className="text-lg sm:text-xl font-bold text-orange-700 mb-3 flex items-center gap-2">
-                    🟡 Nível 2: Intermediário
-                  </h3>
-                  <p className="text-orange-600 text-sm">Conversas em grupos pequenos e situações semi-estruturadas. Introdução de tópicos e perguntas abertas.</p>
-                </div>
-                
-                <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl border-l-4 border-red-500 transform hover:scale-105 transition-transform">
-                  <h3 className="text-lg sm:text-xl font-bold text-red-700 mb-3 flex items-center gap-2">
-                    🔴 Nível 3: Avançado
-                  </h3>
-                  <p className="text-red-600 text-sm">Situações sociais complexas, grupos maiores e conversas espontâneas. Habilidades avançadas de interação.</p>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 p-4 sm:p-6 rounded-xl border-l-4 border-purple-500 mb-6 sm:mb-8">
-                <h3 className="text-lg sm:text-xl font-bold text-purple-700 mb-3 flex items-center gap-2">
-                  🔬 Base Científica
-                </h3>
-                <p className="text-gray-700 leading-relaxed text-sm mb-3">
-                  Esta atividade baseia-se em técnicas de <strong>Análise do Comportamento Aplicada (ABA)</strong> e 
-                  <strong> Treino de Habilidades Sociais</strong>, métodos comprovados para desenvolvimento de competências 
-                  comunicativas em pessoas com TEA.
-                </p>
-                <p className="text-gray-700 text-sm">
-                  Utilizamos <strong>scripts sociais estruturados</strong>, progressão em níveis de dificuldade e 
-                  sistema de reforçamento positivo, conforme as melhores práticas da literatura científica atual.
-                </p>
-              </div>
-
-              <div className="flex justify-center">
-                <button 
-                  onClick={() => showScreen('level-selection')}
-                  className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-2xl text-base sm:text-lg font-bold hover:from-indigo-600 hover:to-purple-700 transform hover:-translate-y-1 transition-all shadow-lg flex items-center gap-2 min-h-[48px] touch-manipulation"
-                >
-                  Começar Atividade 🚀
-                </button>
+                <div className="w-20"></div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {currentScreen === 'level-selection' && (
-            <div className="p-4 sm:p-8">
-              <div className="text-center mb-6 sm:mb-8">
-                <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-2 sm:gap-4">
-                  <span className="text-3xl sm:text-5xl">💬</span>
-                  <span>Escolha seu Nível</span>
-                </h1>
-                <p className="text-lg sm:text-xl text-gray-600">Selecione o nível adequado para você</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8 mb-6 sm:mb-8">
-                <button 
-                  onClick={() => startLevel(1)}
-                  className="bg-white border-4 border-gray-200 rounded-2xl p-6 sm:p-8 hover:border-green-400 hover:bg-green-50 transform hover:-translate-y-2 transition-all shadow-lg text-center group min-h-[48px] touch-manipulation"
-                >
-                  <div className="text-4xl sm:text-6xl mb-4 text-green-500">🟢</div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-700 mb-3 group-hover:text-green-600">Nível 1 - Básico</h3>
-                  <p className="text-gray-600 text-sm">Conversas simples com pessoas próximas</p>
-                </button>
-
-                <button 
-                  onClick={() => startLevel(2)}
-                  className="bg-white border-4 border-gray-200 rounded-2xl p-6 sm:p-8 hover:border-orange-400 hover:bg-orange-50 transform hover:-translate-y-2 transition-all shadow-lg text-center group min-h-[48px] touch-manipulation"
-                >
-                  <div className="text-4xl sm:text-6xl mb-4 text-orange-500">🟡</div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-700 mb-3 group-hover:text-orange-600">Nível 2 - Intermediário</h3>
-                  <p className="text-gray-600 text-sm">Situações sociais estruturadas</p>
-                </button>
-
-                <button 
-                  onClick={() => startLevel(3)}
-                  className="bg-white border-4 border-gray-200 rounded-2xl p-6 sm:p-8 hover:border-red-400 hover:bg-red-50 transform hover:-translate-y-2 transition-all shadow-lg text-center group min-h-[48px] touch-manipulation"
-                >
-                  <div className="text-4xl sm:text-6xl mb-4 text-red-500">🔴</div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-700 mb-3 group-hover:text-red-600">Nível 3 - Avançado</h3>
-                  <p className="text-gray-600 text-sm">Interações sociais complexas</p>
-                </button>
-              </div>
-
-              <div className="flex justify-center">
-                <button 
-                  onClick={() => showScreen('explanation')}
-                  className="bg-gray-500 hover:bg-gray-600 text-white px-4 sm:px-6 py-3 rounded-xl font-semibold transition-colors min-h-[48px] touch-manipulation"
-                >
-                  ← Voltar
-                </button>
-              </div>
-            </div>
-          )}
-
-          {currentScreen === 'game' && currentSituationData && (
-            <div className="p-4 sm:p-8">
-              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 sm:p-6 rounded-2xl mb-6 sm:mb-8">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
-                  <span className="text-base sm:text-lg font-semibold mb-2 sm:mb-0">Situação {currentSituation + 1} de {currentLevelData.situations.length}</span>
-                  <span className="text-base sm:text-lg font-semibold">Nível {currentLevel}</span>
-                </div>
-                <div className="flex-1 mx-0 sm:mx-6 bg-white/30 h-2 sm:h-3 rounded-full overflow-hidden mb-4">
-                  <div 
-                    className="bg-green-400 h-full transition-all duration-500 rounded-full"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-center">{currentLevelData.title}</h2>
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 border border-gray-100">
-                <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 sm:p-6 rounded-xl mb-6 sm:mb-8 border-l-4 border-green-500">
-                  <h3 className="text-lg sm:text-xl font-bold text-green-700 mb-3 flex items-center gap-2">
-                    📍 Situação
-                  </h3>
-                  <p className="text-green-800 text-base sm:text-lg leading-relaxed">{currentSituationData.situation}</p>
+        <div className="max-w-5xl mx-auto p-4">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+            
+            {currentScreen === 'explanation' && (
+              <div className="p-4 sm:p-8">
+                {/* Header com seta voltar */}
+                <div className="flex items-center mb-6">
+                  <a 
+                    href="/tea" 
+                    className="flex items-center text-indigo-600 hover:text-indigo-700 transition-colors min-h-[44px] px-2 -ml-2 mr-4"
+                  >
+                    <span className="text-xl mr-2">←</span>
+                    <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
+                  </a>
                 </div>
 
-                <h3 className="text-lg sm:text-xl font-bold text-gray-700 mb-4 sm:mb-6 flex items-center gap-2">
-                  💭 Como você iniciaria a conversa?
-                </h3>
-                
-                <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-                  {currentSituationData.options.map((option, index) => (
-                    <button
-                      key={index}
-                      onClick={() => selectOption(index, option)}
-                      disabled={answered}
-                      className={`w-full text-left p-4 sm:p-6 rounded-xl border-2 transition-all font-medium min-h-[48px] touch-manipulation ${
-                        answered
-                          ? option.correct
-                            ? 'border-green-500 bg-green-50 text-green-800'
-                            : selectedOption === index
-                            ? 'border-red-500 bg-red-50 text-red-800'
-                            : 'border-gray-200 bg-gray-50 text-gray-600'
-                          : 'border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 active:bg-indigo-100 active:transform active:translate-x-1'
-                      }`}
-                    >
-                      <div className="text-sm sm:text-lg">{option.text}</div>
-                    </button>
-                  ))}
+                <div className="text-center mb-6 sm:mb-8">
+                  <h1 className="text-3xl sm:text-5xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-2 sm:gap-4">
+                    <span className="text-4xl sm:text-6xl">💬</span>
+                    <span>Iniciando Conversas</span>
+                  </h1>
+                  <p className="text-lg sm:text-xl text-gray-600">Desenvolvendo habilidades de comunicação social</p>
                 </div>
 
-                {showFeedback && selectedOption !== null && (
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-4 sm:p-6 mb-6">
-                    <h4 className="text-base sm:text-lg font-bold text-blue-700 mb-3 flex items-center gap-2">
-                      💡 Explicação
-                    </h4>
-                    <p className="text-blue-800 leading-relaxed text-sm sm:text-base">
-                      {currentSituationData.options[selectedOption].feedback}
-                    </p>
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-8 rounded-2xl mb-6 sm:mb-8 border-l-4 border-blue-500">
+                  <h2 className="text-xl sm:text-2xl font-bold text-blue-800 mb-4 flex items-center gap-2">
+                    🎯 Objetivo da Atividade
+                  </h2>
+                  <p className="text-blue-700 text-base sm:text-lg leading-relaxed mb-4">
+                    Aprender estratégias eficazes para iniciar conversas em diferentes situações sociais, 
+                    desenvolvendo scripts sociais estruturados e aumentando a confiança na comunicação interpessoal.
+                  </p>
+                  
+                  <div className="bg-white p-3 sm:p-4 rounded-xl border border-blue-200">
+                    <p className="text-blue-800 font-semibold mb-2 text-sm sm:text-base">📚 O que você vai aprender:</p>
+                    <div className="text-blue-700 space-y-1 text-xs sm:text-sm">
+                      <p>• Como começar uma conversa de forma natural</p>
+                      <p>• Frases e scripts sociais para diferentes contextos</p>
+                      <p>• Leitura de sinais sociais e momento adequado</p>
+                      <p>• Técnicas de manutenção do diálogo</p>
+                      <p>• Estratégias para superar a ansiedade social</p>
+                    </div>
                   </div>
-                )}
+                </div>
 
-                <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-6 sm:mt-8">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-700 text-center mb-4 sm:mb-6">🎮 Níveis de Dificuldade</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl border-l-4 border-green-500 transform hover:scale-105 transition-transform">
+                    <h3 className="text-lg sm:text-xl font-bold text-green-700 mb-3 flex items-center gap-2">
+                      🟢 Nível 1: Básico
+                    </h3>
+                    <p className="text-green-600 text-sm">Situações simples do cotidiano com pessoas conhecidas. Foco em cumprimentos e frases de abertura básicas.</p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 sm:p-6 rounded-xl border-l-4 border-orange-500 transform hover:scale-105 transition-transform">
+                    <h3 className="text-lg sm:text-xl font-bold text-orange-700 mb-3 flex items-center gap-2">
+                      🟡 Nível 2: Intermediário
+                    </h3>
+                    <p className="text-orange-600 text-sm">Conversas em grupos pequenos e situações semi-estruturadas. Introdução de tópicos e perguntas abertas.</p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl border-l-4 border-red-500 transform hover:scale-105 transition-transform">
+                    <h3 className="text-lg sm:text-xl font-bold text-red-700 mb-3 flex items-center gap-2">
+                      🔴 Nível 3: Avançado
+                    </h3>
+                    <p className="text-red-600 text-sm">Situações sociais complexas, grupos maiores e conversas espontâneas. Habilidades avançadas de interação.</p>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 sm:p-6 rounded-xl border-l-4 border-purple-500 mb-6 sm:mb-8">
+                  <h3 className="text-lg sm:text-xl font-bold text-purple-700 mb-3 flex items-center gap-2">
+                    🔬 Base Científica
+                  </h3>
+                  <p className="text-gray-700 leading-relaxed text-sm mb-3">
+                    Esta atividade baseia-se em técnicas de <strong>Análise do Comportamento Aplicada (ABA)</strong> e 
+                    <strong> Treino de Habilidades Sociais</strong>, métodos comprovados para desenvolvimento de competências 
+                    comunicativas em pessoas com TEA.
+                  </p>
+                  <p className="text-gray-700 text-sm">
+                    Utilizamos <strong>scripts sociais estruturados</strong>, progressão em níveis de dificuldade e 
+                    sistema de reforçamento positivo, conforme as melhores práticas da literatura científica atual.
+                  </p>
+                </div>
+
+                <div className="flex justify-center">
                   <button 
                     onClick={() => showScreen('level-selection')}
-                    className="bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white px-4 sm:px-6 py-3 rounded-xl font-semibold transition-colors min-h-[48px] touch-manipulation order-2 sm:order-1"
+                    className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-2xl text-base sm:text-lg font-bold hover:from-indigo-600 hover:to-purple-700 transform hover:-translate-y-1 transition-all shadow-lg flex items-center gap-2 min-h-[48px] touch-manipulation"
                   >
-                    ← Níveis
+                    Começar Atividade 🚀
                   </button>
+                </div>
+              </div>
+            )}
+
+            {currentScreen === 'level-selection' && (
+              <div className="p-4 sm:p-8">
+                <div className="text-center mb-6 sm:mb-8">
+                  <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-2 sm:gap-4">
+                    <span className="text-3xl sm:text-5xl">💬</span>
+                    <span>Escolha seu Nível</span>
+                  </h1>
+                  <p className="text-lg sm:text-xl text-gray-600">Selecione o nível adequado para você</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8 mb-6 sm:mb-8">
+                  <button 
+                    onClick={() => startLevel(1)}
+                    className="bg-white border-4 border-gray-200 rounded-2xl p-6 sm:p-8 hover:border-green-400 hover:bg-green-50 transform hover:-translate-y-2 transition-all shadow-lg text-center group min-h-[48px] touch-manipulation"
+                  >
+                    <div className="text-4xl sm:text-6xl mb-4 text-green-500">🟢</div>
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-700 mb-3 group-hover:text-green-600">Nível 1 - Básico</h3>
+                    <p className="text-gray-600 text-sm">Conversas simples com pessoas próximas</p>
+                  </button>
+
+                  <button 
+                    onClick={() => startLevel(2)}
+                    className="bg-white border-4 border-gray-200 rounded-2xl p-6 sm:p-8 hover:border-orange-400 hover:bg-orange-50 transform hover:-translate-y-2 transition-all shadow-lg text-center group min-h-[48px] touch-manipulation"
+                  >
+                    <div className="text-4xl sm:text-6xl mb-4 text-orange-500">🟡</div>
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-700 mb-3 group-hover:text-orange-600">Nível 2 - Intermediário</h3>
+                    <p className="text-gray-600 text-sm">Situações sociais estruturadas</p>
+                  </button>
+
+                  <button 
+                    onClick={() => startLevel(3)}
+                    className="bg-white border-4 border-gray-200 rounded-2xl p-6 sm:p-8 hover:border-red-400 hover:bg-red-50 transform hover:-translate-y-2 transition-all shadow-lg text-center group min-h-[48px] touch-manipulation"
+                  >
+                    <div className="text-4xl sm:text-6xl mb-4 text-red-500">🔴</div>
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-700 mb-3 group-hover:text-red-600">Nível 3 - Avançado</h3>
+                    <p className="text-gray-600 text-sm">Interações sociais complexas</p>
+                  </button>
+                </div>
+
+                <div className="flex justify-center">
+                  <button 
+                    onClick={() => showScreen('explanation')}
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 sm:px-6 py-3 rounded-xl font-semibold transition-colors min-h-[48px] touch-manipulation"
+                  >
+                    ← Voltar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {currentScreen === 'game' && currentSituationData && (
+              <div className="p-4 sm:p-8">
+                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 sm:p-6 rounded-2xl mb-6 sm:mb-8">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
+                    <span className="text-base sm:text-lg font-semibold mb-2 sm:mb-0">Situação {currentSituation + 1} de {currentLevelData.situations.length}</span>
+                    <span className="text-base sm:text-lg font-semibold">Nível {currentLevel}</span>
+                  </div>
+                  <div className="flex-1 mx-0 sm:mx-6 bg-white/30 h-2 sm:h-3 rounded-full overflow-hidden mb-4">
+                    <div 
+                      className="bg-green-400 h-full transition-all duration-500 rounded-full"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-center">{currentLevelData.title}</h2>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 border border-gray-100">
+                  <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 sm:p-6 rounded-xl mb-6 sm:mb-8 border-l-4 border-green-500">
+                    <h3 className="text-lg sm:text-xl font-bold text-green-700 mb-3 flex items-center gap-2">
+                      📍 Situação
+                    </h3>
+                    <p className="text-green-800 text-base sm:text-lg leading-relaxed">{currentSituationData.situation}</p>
+                  </div>
+
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-700 mb-4 sm:mb-6 flex items-center gap-2">
+                    💭 Como você iniciaria a conversa?
+                  </h3>
                   
-                  {answered && (
+                  <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+                    {currentSituationData.options.map((option, index) => (
+                      <button
+                        key={index}
+                        onClick={() => selectOption(index, option)}
+                        disabled={answered}
+                        className={`
+                          conversation-option
+                          w-full text-left 
+                          p-4 sm:p-6 
+                          rounded-xl border-2 
+                          transition-all duration-300
+                          font-medium 
+                          min-h-[60px] sm:min-h-[48px]
+                          flex items-center
+                          touch-manipulation
+                          active:scale-[0.98]
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500
+                          ${answered
+                            ? option.correct
+                              ? 'border-green-500 bg-green-50 text-green-800 shadow-lg'
+                              : selectedOption === index
+                              ? 'border-red-500 bg-red-50 text-red-800 shadow-lg'
+                              : 'border-gray-300 bg-gray-100 text-gray-600 opacity-60'
+                            : 'border-gray-300 bg-white text-gray-800 hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-md active:bg-indigo-100 shadow-sm'
+                          }
+                        `}
+                      >
+                        <div className="text-base sm:text-lg leading-relaxed w-full py-2">
+                          {option.text}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {showFeedback && selectedOption !== null && (
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-4 sm:p-6 mb-6">
+                      <h4 className="text-base sm:text-lg font-bold text-blue-700 mb-3 flex items-center gap-2">
+                        💡 Explicação
+                      </h4>
+                      <p className="text-blue-800 leading-relaxed text-sm sm:text-base">
+                        {currentSituationData.options[selectedOption].feedback}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row justify-center gap-4 mt-6 sm:mt-8">
                     <button 
-                      onClick={nextSituation}
-                      className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:from-indigo-700 active:to-purple-800 text-white px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all min-h-[48px] touch-manipulation order-1 sm:order-2"
+                      onClick={() => showScreen('level-selection')}
+                      className="
+                        conversation-button
+                        bg-gray-500 hover:bg-gray-600 active:bg-gray-700 
+                        text-white px-6 py-4 rounded-xl 
+                        font-semibold transition-all duration-200
+                        min-h-[56px] touch-manipulation
+                        active:scale-[0.98]
+                        focus:outline-none focus:ring-2 focus:ring-gray-400
+                        shadow-lg hover:shadow-xl
+                        text-base sm:text-lg
+                        order-2 sm:order-1
+                      "
                     >
-                      {currentSituation < currentLevelData.situations.length - 1 ? 'Próxima Situação →' : 'Ver Resultados 🎯'}
+                      ← Níveis
                     </button>
-                  )}
+                    
+                    {answered && (
+                      <button 
+                        onClick={nextSituation}
+                        className="
+                          conversation-button
+                          bg-gradient-to-r from-indigo-500 to-purple-600 
+                          hover:from-indigo-600 hover:to-purple-700 
+                          active:from-indigo-700 active:to-purple-800 
+                          text-white px-6 py-4 rounded-xl 
+                          font-semibold transition-all duration-200
+                          min-h-[56px] touch-manipulation
+                          active:scale-[0.98]
+                          focus:outline-none focus:ring-2 focus:ring-indigo-400
+                          shadow-lg hover:shadow-xl
+                          text-base sm:text-lg
+                          order-1 sm:order-2
+                        "
+                      >
+                        {currentSituation < currentLevelData.situations.length - 1 ? 'Próxima Situação →' : 'Ver Resultados 🎯'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {currentScreen === 'results' && (
-            <div className="p-4 sm:p-8 text-center">
-              <div className="mb-6 sm:mb-8">
-                <h2 className="text-3xl sm:text-4xl font-bold text-green-600 mb-4">🎉 Parabéns!</h2>
-                <p className="text-lg sm:text-xl text-gray-600">Você completou o nível!</p>
-              </div>
-
-              <div className="bg-gradient-to-r from-green-400 to-green-600 text-white p-6 sm:p-8 rounded-2xl mb-6 sm:mb-8 shadow-lg">
-                <div className="text-4xl sm:text-5xl mb-4">⭐</div>
-                <div className="text-2xl sm:text-3xl font-bold mb-2">
-                  Sua pontuação: {score}/{currentLevelData.situations.length}
+            {currentScreen === 'results' && (
+              <div className="p-4 sm:p-8 text-center">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-3xl sm:text-4xl font-bold text-green-600 mb-4">🎉 Parabéns!</h2>
+                  <p className="text-lg sm:text-xl text-gray-600">Você completou o nível!</p>
                 </div>
-                <div className="text-base sm:text-lg">
-                  {score >= currentLevelData.situations.length * 0.8 ? 'Excelente trabalho!' : 
-                   score >= currentLevelData.situations.length * 0.6 ? 'Muito bom! Continue praticando!' : 
-                   'Bom trabalho! Pratique mais para melhorar!'}
+
+                <div className="bg-gradient-to-r from-green-400 to-green-600 text-white p-6 sm:p-8 rounded-2xl mb-6 sm:mb-8 shadow-lg">
+                  <div className="text-4xl sm:text-5xl mb-4">⭐</div>
+                  <div className="text-2xl sm:text-3xl font-bold mb-2">
+                    Sua pontuação: {score}/{currentLevelData.situations.length}
+                  </div>
+                  <div className="text-base sm:text-lg">
+                    {score >= currentLevelData.situations.length * 0.8 ? 'Excelente trabalho!' : 
+                     score >= currentLevelData.situations.length * 0.6 ? 'Muito bom! Continue praticando!' : 
+                     'Bom trabalho! Pratique mais para melhorar!'}
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 sm:p-8 rounded-2xl mb-6 sm:mb-8 text-left">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-700 mb-4 flex items-center gap-2">
+                    📝 Dicas para Aplicar no Dia a Dia
+                  </h3>
+                  <ul className="text-gray-600 space-y-2 sm:space-y-3 text-sm sm:text-base">
+                    {currentLevel === 1 && (
+                      <>
+                        <li className="flex items-start gap-2"><span>•</span> Pratique cumprimentos simples no dia a dia</li>
+                        <li className="flex items-start gap-2"><span>•</span> Observe situações compartilhadas para iniciar conversas</li>
+                        <li className="flex items-start gap-2"><span>•</span> Use elogios sinceros como abridores de conversa</li>
+                        <li className="flex items-start gap-2"><span>•</span> Lembre-se: simplicidade é eficaz em conversas básicas</li>
+                      </>
+                    )}
+                    {currentLevel === 2 && (
+                      <>
+                        <li className="flex items-start gap-2"><span>•</span> Desenvolva a habilidade de fazer perguntas abertas</li>
+                        <li className="flex items-start gap-2"><span>•</span> Pratique se juntar a grupos de forma educada</li>
+                        <li className="flex items-start gap-2"><span>•</span> Trabalhe na escuta ativa durante conversas</li>
+                        <li className="flex items-start gap-2"><span>•</span> Aprenda a identificar momentos apropriados para falar</li>
+                      </>
+                    )}
+                    {currentLevel === 3 && (
+                      <>
+                        <li className="flex items-start gap-2"><span>•</span> Refine suas habilidades de mediação de conflitos</li>
+                        <li className="flex items-start gap-2"><span>•</span> Pratique networking profissional</li>
+                        <li className="flex items-start gap-2"><span>•</span> Desenvolva argumentação respeitosa em debates</li>
+                        <li className="flex items-start gap-2"><span>•</span> Trabalhe na adaptação a diferentes contextos sociais</li>
+                      </>
+                    )}
+                  </ul>
+                </div>
+
+                <div className="bg-gray-50 p-4 sm:p-6 rounded-xl border-l-4 border-purple-500 mb-6 sm:mb-8 text-left">
+                  <h3 className="text-lg sm:text-xl font-bold text-purple-700 mb-3 flex items-center gap-2">
+                    🧠 Você Aprendeu
+                  </h3>
+                  <p className="text-gray-700 text-sm sm:text-base">
+                    Através desta atividade, você desenvolveu habilidades essenciais de comunicação social 
+                    baseadas em evidências científicas. Continue praticando essas estratégias em diferentes 
+                    contextos para fortalecer suas competências sociais!
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 flex-wrap">
+                  <button 
+                    onClick={() => showScreen('level-selection')}
+                    className="bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white px-4 sm:px-6 py-3 rounded-xl font-semibold transition-colors min-h-[48px] touch-manipulation"
+                  >
+                    ← Outros Níveis
+                  </button>
+                  <button 
+                    onClick={restartLevel}
+                    className="bg-green-500 hover:bg-green-600 active:bg-green-700 text-white px-4 sm:px-6 py-3 rounded-xl font-semibold transition-colors min-h-[48px] touch-manipulation"
+                  >
+                    🔄 Tentar Novamente
+                  </button>
+                  <button 
+                    onClick={() => showScreen('explanation')}
+                    className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:from-indigo-700 active:to-purple-800 text-white px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all min-h-[48px] touch-manipulation"
+                  >
+                    🏠 Menu Principal
+                  </button>
                 </div>
               </div>
-
-              <div className="bg-gray-50 p-4 sm:p-8 rounded-2xl mb-6 sm:mb-8 text-left">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-700 mb-4 flex items-center gap-2">
-                  📝 Dicas para Aplicar no Dia a Dia
-                </h3>
-                <ul className="text-gray-600 space-y-2 sm:space-y-3 text-sm sm:text-base">
-                  {currentLevel === 1 && (
-                    <>
-                      <li className="flex items-start gap-2"><span>•</span> Pratique cumprimentos simples no dia a dia</li>
-                      <li className="flex items-start gap-2"><span>•</span> Observe situações compartilhadas para iniciar conversas</li>
-                      <li className="flex items-start gap-2"><span>•</span> Use elogios sinceros como abridores de conversa</li>
-                      <li className="flex items-start gap-2"><span>•</span> Lembre-se: simplicidade é eficaz em conversas básicas</li>
-                    </>
-                  )}
-                  {currentLevel === 2 && (
-                    <>
-                      <li className="flex items-start gap-2"><span>•</span> Desenvolva a habilidade de fazer perguntas abertas</li>
-                      <li className="flex items-start gap-2"><span>•</span> Pratique se juntar a grupos de forma educada</li>
-                      <li className="flex items-start gap-2"><span>•</span> Trabalhe na escuta ativa durante conversas</li>
-                      <li className="flex items-start gap-2"><span>•</span> Aprenda a identificar momentos apropriados para falar</li>
-                    </>
-                  )}
-                  {currentLevel === 3 && (
-                    <>
-                      <li className="flex items-start gap-2"><span>•</span> Refine suas habilidades de mediação de conflitos</li>
-                      <li className="flex items-start gap-2"><span>•</span> Pratique networking profissional</li>
-                      <li className="flex items-start gap-2"><span>•</span> Desenvolva argumentação respeitosa em debates</li>
-                      <li className="flex items-start gap-2"><span>•</span> Trabalhe na adaptação a diferentes contextos sociais</li>
-                    </>
-                  )}
-                </ul>
-              </div>
-
-              <div className="bg-gray-50 p-4 sm:p-6 rounded-xl border-l-4 border-purple-500 mb-6 sm:mb-8 text-left">
-                <h3 className="text-lg sm:text-xl font-bold text-purple-700 mb-3 flex items-center gap-2">
-                  🧠 Você Aprendeu
-                </h3>
-                <p className="text-gray-700 text-sm sm:text-base">
-                  Através desta atividade, você desenvolveu habilidades essenciais de comunicação social 
-                  baseadas em evidências científicas. Continue praticando essas estratégias em diferentes 
-                  contextos para fortalecer suas competências sociais!
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 flex-wrap">
-                <button 
-                  onClick={() => showScreen('level-selection')}
-                  className="bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white px-4 sm:px-6 py-3 rounded-xl font-semibold transition-colors min-h-[48px] touch-manipulation"
-                >
-                  ← Outros Níveis
-                </button>
-                <button 
-                  onClick={restartLevel}
-                  className="bg-green-500 hover:bg-green-600 active:bg-green-700 text-white px-4 sm:px-6 py-3 rounded-xl font-semibold transition-colors min-h-[48px] touch-manipulation"
-                >
-                  🔄 Tentar Novamente
-                </button>
-                <button 
-                  onClick={() => showScreen('explanation')}
-                  className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:from-indigo-700 active:to-purple-800 text-white px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all min-h-[48px] touch-manipulation"
-                >
-                  🏠 Menu Principal
-                </button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
-}
+  }

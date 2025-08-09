@@ -357,7 +357,8 @@ export default function JogoSemaforo() {
                     fontWeight: '600',
                     minWidth: '20px',
                     textAlign: 'center',
-                    flexShrink: 0
+                    flexShrink: 0,
+                    color: '#374151'
                   }}>
                     {index + 1}
                   </span>
@@ -659,13 +660,13 @@ export default function JogoSemaforo() {
 
         {/* Cenário */}
         <div style={cardStyle}>
-          <h3 style={{ marginBottom: '16px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>🎭 Situação</h3>
-          <p style={{ fontSize: 'clamp(1rem, 4vw, 1.125rem)', lineHeight: '1.6' }}>{scenario.situation}</p>
+          <h3 style={{ marginBottom: '16px', fontSize: 'clamp(1rem, 4vw, 1.125rem)', color: '#374151' }}>🎭 Situação</h3>
+          <p style={{ fontSize: 'clamp(1rem, 4vw, 1.125rem)', lineHeight: '1.6', color: '#374151' }}>{scenario.situation}</p>
         </div>
 
         {/* Opções */}
         <div style={{ marginBottom: 'clamp(24px, 6vw, 32px)' }}>
-          <h3 style={{ fontSize: 'clamp(1rem, 4vw, 1.125rem)', fontWeight: '600', marginBottom: '16px' }}>Como você reagiria?</h3>
+          <h3 style={{ fontSize: 'clamp(1rem, 4vw, 1.125rem)', fontWeight: '600', marginBottom: '16px', color: '#374151' }}>Como você reagiria?</h3>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {([
@@ -734,7 +735,7 @@ export default function JogoSemaforo() {
             <h3 style={{ color: '#1e40af', marginBottom: '16px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>
               {selectedOption === scenario.correctAnswer ? '🎉 Correto!' : '💭 Vamos Refletir'}
             </h3>
-            <p style={{ marginBottom: '16px', lineHeight: '1.6', fontSize: 'clamp(14px, 3vw, 16px)' }}>{scenario.explanation}</p>
+            <p style={{ marginBottom: '16px', lineHeight: '1.6', fontSize: 'clamp(14px, 3vw, 16px)', color: '#374151' }}>{scenario.explanation}</p>
             <button 
               onClick={nextScenario} 
               style={{ ...buttonStyle, width: '100%' }}

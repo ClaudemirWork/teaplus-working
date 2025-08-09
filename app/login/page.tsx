@@ -1,15 +1,117 @@
 'use client';
+
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const [isNewUser, setIsNewUser] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const router = useRouter();
+  const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('');
+
+  // 🔧 SOLUÇÃO: Sistema de storage compatível com iOS
+  const storage = {
+    // Detecta se localStorage está disponível
+    isLocalStorageAvailable: () => {
+      try {
+        const test = '__test__';
+        localStorage.setItem(test, test);
+        localStorage.removeItem(test);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    // Detecta se é iOS
+    isIOS: () => {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    },
+
+    // Salva dados com fallback para cookies no iOS
+    setItem: (key: string, value: string) => {
+      try {
+        if (storage.isLocalStorageAvailable()) {
+          localStorage.setItem(key, value);
+          console.log('✅ Salvo no localStorage');
+        } else {
+          // Fallback para cookies no iOS
+          const expires = new Date();
+          expires.setTime(expires.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 dias
+          document.cookie = `${key}=${encodeURIComponent(value)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+          console.log('✅ Salvo em cookies (iOS fallback)');
+        }
+        return true;
+      } catch (error) {
+        console.error('❌ Erro ao salvar:', error);
+        return false;
+      }
+    },
+
+    // Lê dados com fallback para cookies no iOS
+    getItem: (key: string) => {
+      try {
+        if (storage.isLocalStorageAvailable()) {
+          return localStorage.getItem(key);
+        } else {
+          // Fallback para cookies no iOS
+          const nameEQ = key + "=";
+          const ca = document.cookie.split(';');
+          for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) {
+              return decodeURIComponent(c.substring(nameEQ.length, c.length));
+            }
+          }
+          return null;
+        }
+      } catch (error) {
+        console.error('❌ Erro ao ler:', error);
+        return null;
+      }
+    },
+
+    // Session storage com fallback
+    setSession: (key: string, value: string) => {
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(key, value);
+        }
+        // Para iOS, também salva em localStorage como backup
+        if (storage.isIOS()) {
+          storage.setItem(`session_${key}`, value);
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    // Verifica session com fallback
+    getSession: (key: string) => {
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          const sessionValue = sessionStorage.getItem(key);
+          if (sessionValue) return sessionValue;
+        }
+        // Fallback para iOS
+        if (storage.isIOS()) {
+          return storage.getItem(`session_${key}`);
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -19,414 +121,212 @@ export default function LoginPage() {
     }));
   };
 
+  const showMessage = (type: string, text: string) => {
+    setMessageType(type);
+    setMessage(text);
+    setTimeout(() => {
+      setMessage('');
+      setMessageType('');
+    }, 5000);
+  };
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isNewUser) {
-      // Criação de nova conta
-      if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-        alert('Por favor, preencha todos os campos.');
-        return;
-      }
-      
-      if (formData.password !== formData.confirmPassword) {
-        alert('As senhas não coincidem.');
-        return;
-      }
-      
-      if (formData.password.length < 6) {
-        alert('A senha deve ter pelo menos 6 caracteres.');
-        return;
-      }
-      
-      // Preparar dados da conta
-      const emailNormalizado = formData.email.trim().toLowerCase();
-      const userData = {
-        name: formData.name.trim(),
-        email: emailNormalizado,
-        password: formData.password,
-        loginTime: new Date().toISOString(),
-        created: new Date().toISOString()
-      };
-      
-      console.log('=== CRIANDO NOVA CONTA ===');
-      console.log('Dados a serem salvos:', userData);
-      
-      try {
-        // Salvar conta permanente
-        localStorage.setItem('teaplus_user', JSON.stringify(userData));
-        
-        // Criar sessão ativa
-        localStorage.setItem('teaplus_session', 'active');
-        
-        // Verificar se foi salvo corretamente
-        const verificacao = localStorage.getItem('teaplus_user');
-        const sessao = localStorage.getItem('teaplus_session');
-        
-        console.log('Conta salva:', verificacao);
-        console.log('Sessão criada:', sessao);
-        
-        if (verificacao && sessao) {
-          alert(`Conta criada com sucesso para ${userData.name}!\nEmail: ${userData.email}`);
-          window.location.href = '/';
-        } else {
-          alert('Erro ao salvar conta. Tente novamente.');
-        }
-      } catch (error) {
-        console.error('Erro ao criar conta:', error);
-        alert('Erro ao criar conta. Tente novamente.');
-      }
-      
-    } else {
-      // Login existente
-      if (!formData.email || !formData.password) {
-        alert('Por favor, preencha email e senha.');
-        return;
-      }
-      
-      const emailDigitado = formData.email.trim().toLowerCase();
-      const senhaDigitada = formData.password;
-      
-      console.log('=== TENTATIVA DE LOGIN ===');
-      console.log('Email digitado:', emailDigitado);
-      console.log('Senha digitada:', senhaDigitada);
-      
-      const savedUser = localStorage.getItem('teaplus_user');
-      console.log('Dados da conta:', savedUser);
-      
-      if (savedUser) {
-        try {
-          const userData = JSON.parse(savedUser);
-          console.log('Dados parsados:', userData);
-          console.log('Email salvo:', userData.email);
-          console.log('Senha salva:', userData.password);
-          
-          console.log('=== COMPARAÇÃO ===');
-          console.log('Email match:', userData.email === emailDigitado);
-          console.log('Senha match:', userData.password === senhaDigitada);
-          
-          if (userData.email === emailDigitado && userData.password === senhaDigitada) {
-            console.log('=== LOGIN SUCESSO ===');
-            
-            // Atualizar último login
-            userData.loginTime = new Date().toISOString();
-            localStorage.setItem('teaplus_user', JSON.stringify(userData));
-            
-            // Criar sessão ativa
-            localStorage.setItem('teaplus_session', 'active');
-            
-            alert(`Bem-vindo de volta, ${userData.name}!`);
-            window.location.href = '/';
-          } else {
-            console.log('=== LOGIN FALHOU ===');
-            alert(`Dados incorretos!\n\nVerifique:\n• Email: ${emailDigitado}\n• Senha digitada\n\nTente novamente.`);
-          }
-        } catch (error) {
-          console.error('Erro ao fazer parse dos dados:', error);
-          alert('Dados corrompidos. Crie uma nova conta.');
-        }
-      } else {
-        console.log('=== NENHUMA CONTA ENCONTRADA ===');
-        alert('Nenhuma conta encontrada. Crie uma nova conta primeiro.');
-      }
-    }
-  };
-
-  const handleForgotPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.email) {
-      alert('Por favor, digite seu email.');
+    if (!formData.email || !formData.password) {
+      showMessage('error', 'Por favor, preencha email e senha.');
       return;
     }
     
     const emailDigitado = formData.email.trim().toLowerCase();
-    const savedUser = localStorage.getItem('teaplus_user');
+    const senhaDigitada = formData.password;
+    
+    // 🔧 CORREÇÃO: Usa o storage compatível com iOS
+    const savedUser = storage.getItem('teaplus_user');
     
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser);
-        if (userData.email === emailDigitado) {
-          const newPassword = prompt('Digite sua nova senha (mínimo 6 caracteres):');
-          if (newPassword && newPassword.length >= 6) {
-            userData.password = newPassword;
-            localStorage.setItem('teaplus_user', JSON.stringify(userData));
-            alert('Senha alterada com sucesso! Faça login com a nova senha.');
-            setShowForgotPassword(false);
-            setFormData({ name: '', email: formData.email, password: '', confirmPassword: '' });
+        
+        if (userData.email === emailDigitado && userData.password === senhaDigitada) {
+          userData.loginTime = new Date().toISOString();
+          
+          // 🔧 CORREÇÃO: Salva com fallback para iOS
+          const saved = storage.setItem('teaplus_user', JSON.stringify(userData));
+          const sessionSet = storage.setSession('teaplus_session', 'active');
+          
+          if (saved) {
+            showMessage('success', `Bem-vindo de volta, ${userData.name}!`);
+            setTimeout(() => {
+              router.replace('/profileselection');
+            }, 1000);
           } else {
-            alert('Senha deve ter pelo menos 6 caracteres.');
+            showMessage('error', 'Erro ao salvar sessão. Tente novamente.');
           }
         } else {
-          alert(`Email "${emailDigitado}" não encontrado.`);
+          showMessage('error', `Dados incorretos! Verifique seu email e senha.`);
         }
       } catch (error) {
-        alert('Erro ao processar solicitação.');
+        showMessage('error', 'Dados da conta corrompidos. Tente criar uma nova conta.');
+        console.error('Erro ao processar dados:', error);
       }
     } else {
-      alert('Nenhuma conta encontrada. Crie uma nova conta.');
+      showMessage('warning', 'Nenhuma conta encontrada. Crie uma nova conta primeiro.');
     }
   };
 
-  // Função para mostrar dados salvos (para debug)
-  const showSavedData = () => {
-    const savedUser = localStorage.getItem('teaplus_user');
-    const session = localStorage.getItem('teaplus_session');
+  const handleCreateAccount = (e: React.FormEvent) => {
+    e.preventDefault();
     
-    console.log('=== DEBUG INFO ===');
-    console.log('Conta salva:', savedUser);
-    console.log('Sessão ativa:', session);
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+      showMessage('error', 'Por favor, preencha todos os campos.');
+      return;
+    }
     
-    if (savedUser || session) {
-      alert(`Dados no storage:\n\nConta: ${savedUser ? 'EXISTE' : 'NÃO EXISTE'}\nSessão: ${session || 'INATIVA'}\n\nVeja console (F12) para detalhes.`);
+    if (formData.password !== formData.confirmPassword) {
+      showMessage('error', 'As senhas não coincidem.');
+      return;
+    }
+    
+    if (formData.password.length < 6) {
+      showMessage('warning', 'A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    
+    const emailNormalizado = formData.email.trim().toLowerCase();
+    const userData = {
+      name: formData.name.trim(),
+      email: emailNormalizado,
+      password: formData.password,
+      loginTime: new Date().toISOString(),
+      created: new Date().toISOString(),
+      platform: storage.isIOS() ? 'iOS' : 'other' // Identifica plataforma
+    };
+    
+    // 🔧 CORREÇÃO: Usa o storage compatível com iOS
+    const saved = storage.setItem('teaplus_user', JSON.stringify(userData));
+    const sessionSet = storage.setSession('teaplus_session', 'active');
+    
+    if (saved) {
+      showMessage('success', `Conta criada com sucesso para ${userData.name}!`);
+      setTimeout(() => {
+        router.replace('/profileselection');
+      }, 1000);
     } else {
-      alert('Nenhum dado encontrado no localStorage');
+      showMessage('error', 'Erro ao salvar conta. Verifique se o navegador permite armazenamento.');
     }
   };
 
-  if (showForgotPassword) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ width: '100%', maxWidth: 400, background: '#fff', borderRadius: 8, padding: 32, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div style={{ width: 80, height: 80, margin: '0 auto 16px', background: '#fff3cd', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 40 }}>🔑</span>
-              </div>
-              <h1 style={{ fontSize: 24, fontWeight: 700, color: '#856404', marginBottom: 8 }}>Recuperar Senha</h1>
-              <p style={{ color: '#555', fontSize: 14 }}>Digite seu email para redefinir a senha</p>
-            </div>
-            
-            <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>E-mail</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #ccc' }}
-                  placeholder="Digite seu e-mail"
-                  required
-                />
-              </div>
-              
-              <button
-                type="submit"
-                style={{
-                  width: '100%',
-                  background: '#ffc107',
-                  color: '#000',
-                  fontWeight: 600,
-                  padding: 12,
-                  border: 'none',
-                  borderRadius: 6,
-                  marginTop: 8,
-                  cursor: 'pointer'
-                }}
-              >
-                Redefinir Senha
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setShowForgotPassword(false)}
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  color: '#6c757d',
-                  fontWeight: 500,
-                  padding: 8,
-                  border: '1px solid #dee2e6',
-                  borderRadius: 6,
-                  cursor: 'pointer'
-                }}
-              >
-                ← Voltar ao Login
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleSubmit = (e: React.FormEvent) => {
+    if (isLogin) {
+      handleLogin(e);
+    } else {
+      handleCreateAccount(e);
+    }
+  };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <div style={{ width: '100%', maxWidth: 400, background: '#fff', borderRadius: 8, padding: 32, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ width: 80, height: 80, margin: '0 auto 16px', background: '#e3f2fd', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 40 }}>🧠</span>
-            </div>
-            <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1976d2', marginBottom: 8 }}>TeaPlus Suite</h1>
-            <p style={{ color: '#555', fontSize: 16 }}>Aplicativo de apoio ao paciente com TEA, TDAH</p>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="max-w-md w-full bg-white rounded-3xl p-8 sm:p-12 shadow-lg">
+        <div className="flex justify-center mb-6">
+            <img src="/images/Teaplus-logo.png" alt="TeaPlus Logo" className="w-40 h-40" />
+        </div>
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-slate-900">TeaPlus Suite</h2>
+          <p className="text-slate-600 text-sm">Aplicativo de apoio ao paciente com TEA, TDAH</p>
+          {/* 🔧 ADIÇÃO: Indicador de plataforma para debug */}
+          {storage.isIOS() && (
+            <p className="text-xs text-blue-600 mt-1">📱 Otimizado para iOS</p>
+          )}
+        </div>
+
+        {message && (
+          <div className={`p-4 mb-4 text-center rounded-lg ${messageType === 'success' ? 'bg-emerald-100 text-emerald-800' : messageType === 'error' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+            {message}
           </div>
-          
-          {/* Botão de Debug */}
-          <div style={{ textAlign: 'center', marginBottom: 16 }}>
-            <button
-              type="button"
-              onClick={showSavedData}
-              style={{
-                padding: '4px 8px',
-                fontSize: 10,
-                background: '#ffc107',
-                border: 'none',
-                borderRadius: 4,
-                cursor: 'pointer'
-              }}
-            >
-              🔍 Ver Status (Debug)
-            </button>
-          </div>
-          
-          {/* Toggle entre Login e Criar Conta */}
-          <div style={{ display: 'flex', marginBottom: 20, background: '#f8f9fa', borderRadius: 6, padding: 4 }}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsNewUser(false);
-                setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-              }}
-              style={{
-                flex: 1,
-                padding: 8,
-                border: 'none',
-                borderRadius: 4,
-                background: !isNewUser ? '#1976d2' : 'transparent',
-                color: !isNewUser ? '#fff' : '#6c757d',
-                fontWeight: 500,
-                cursor: 'pointer'
-              }}
-            >
-              Entrar
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsNewUser(true);
-                setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-              }}
-              style={{
-                flex: 1,
-                padding: 8,
-                border: 'none',
-                borderRadius: 4,
-                background: isNewUser ? '#1976d2' : 'transparent',
-                color: isNewUser ? '#fff' : '#6c757d',
-                fontWeight: 500,
-                cursor: 'pointer'
-              }}
-            >
-              Criar Conta
-            </button>
-          </div>
-          
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {isNewUser && (
-              <div>
-                <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Nome Completo</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #ccc' }}
-                  placeholder="Digite seu nome completo"
-                  required={isNewUser}
-                />
-              </div>
-            )}
-            
+        )}
+
+        <div className="flex justify-center mb-6">
+          <button
+            onClick={() => { setIsLogin(true); setMessage(''); }}
+            className={`py-2 px-6 rounded-full font-medium transition-colors duration-200 ${isLogin ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600'}`}
+          >
+            Entrar
+          </button>
+          <button
+            onClick={() => { setIsLogin(false); setMessage(''); }}
+            className={`py-2 px-6 rounded-full font-medium transition-colors duration-200 ${!isLogin ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600'}`}
+          >
+            Criar Conta
+          </button>
+        </div>
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          {!isLogin && (
             <div>
-              <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>E-mail</label>
+              <label htmlFor="name" className="sr-only">Nome</label>
               <input
-                type="email"
-                name="email"
-                value={formData.email}
+                type="text"
+                id="name"
+                name="name"
+                placeholder="Nome completo"
+                value={formData.name}
                 onChange={handleInputChange}
-                style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #ccc' }}
-                placeholder="Digite seu e-mail"
-                required
+                className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            
+          )}
+          <div>
+            <label htmlFor="email" className="sr-only">E-mail</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="Digite seu e-mail"
+              value={formData.email}
+              onChange={handleInputChange}
+              className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="sr-only">Senha</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Digite sua senha"
+              value={formData.password}
+              onChange={handleInputChange}
+              className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          {!isLogin && (
             <div>
-              <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Senha</label>
+              <label htmlFor="confirmPassword" className="sr-only">Confirmar Senha</label>
               <input
                 type="password"
-                name="password"
-                value={formData.password}
+                id="confirmPassword"
+                name="confirmPassword"
+                placeholder="Confirme sua senha"
+                value={formData.confirmPassword}
                 onChange={handleInputChange}
-                style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #ccc' }}
-                placeholder="Digite sua senha"
-                required
+                className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            
-            {isNewUser && (
-              <div>
-                <label style={{ fontWeight: 500, marginBottom: 4, display: 'block' }}>Confirmar Senha</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #ccc' }}
-                  placeholder="Confirme sua senha"
-                  required={isNewUser}
-                />
-              </div>
-            )}
-            
-            <button
-              type="submit"
-              style={{
-                width: '100%',
-                background: '#1976d2',
-                color: '#fff',
-                fontWeight: 600,
-                padding: 12,
-                border: 'none',
-                borderRadius: 6,
-                marginTop: 8,
-                cursor: 'pointer'
-              }}
-            >
-              {isNewUser ? 'Criar Conta' : 'Entrar'}
-            </button>
-            
-            {!isNewUser && (
-              <button
-                type="button"
-                onClick={() => setShowForgotPassword(true)}
-                style={{
-                  width: '100%',
-                  background: 'transparent',
-                  color: '#1976d2',
-                  fontWeight: 500,
-                  padding: 8,
-                  border: 'none',
-                  cursor: 'pointer',
-                  textDecoration: 'underline'
-                }}
-              >
-                Esqueceu a senha?
-              </button>
-            )}
-          </form>
-          
-          {/* Informação adicional */}
-          <div style={{ marginTop: 20, padding: 12, background: '#f0f8ff', borderRadius: 6, border: '1px solid #e3f2fd' }}>
-            <p style={{ fontSize: 12, color: '#1976d2', textAlign: 'center', margin: 0 }}>
-              🔐 <strong>Acesso Seguro:</strong> Sua conta fica salva mesmo após logout
-            </p>
+          )}
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white px-5 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-colors transform hover:-translate-y-0.5"
+          >
+            {isLogin ? 'Entrar' : 'Criar Conta'}
+          </button>
+        </form>
+
+        {isLogin && (
+          <div className="text-center mt-4 text-sm">
+            <a href="#" className="text-slate-500 hover:text-blue-600 transition-colors">Esqueceu a senha?</a>
           </div>
-        </div>
-      </div>
-      <div style={{ background: '#f0f0f0', padding: 12, textAlign: 'center', fontSize: 12, color: '#888' }}>
-        <strong>Disclaimer LGPD:</strong> Seus dados pessoais são coletados e tratados em conformidade com a Lei Geral de Proteção de Dados (LGPD). As informações fornecidas serão utilizadas exclusivamente para personalizar sua experiência no aplicativo e acompanhar seu progresso.
+        )}
       </div>
     </div>
   );
