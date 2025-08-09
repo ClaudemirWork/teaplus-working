@@ -7,12 +7,12 @@ import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 
 export default function ProfileSelection() {
-  // ATENÇÃO: A forma de criar o conector também mudou para a versão correta
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-  
+  // ATENÇÃO: A forma de criar o conector também mudou para a versão correta
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+  
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -157,7 +157,8 @@ export default function ProfileSelection() {
             >
               <div className="flex items-center justify-center space-x-3">
                 <span className="text-3xl sm:text-2xl flex-shrink-0">{profile.icon}</span>
-                <div className="text-left flex-grow">
+                {/* A CORREÇÃO ESTÁ NA LINHA ABAIXO. Adicionei a classe "text-gray-800" */}
+                <div className="text-left flex-grow text-gray-800">
                   <div className="font-semibold text-sm sm:text-base text-slate-900">
                     {profile.title}
                   </div>
@@ -186,7 +187,7 @@ export default function ProfileSelection() {
               Versão 1.0 • Desenvolvido para fins terapêuticos
             </p>
           </div>
-    _          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <p className="text-xs text-blue-700 mb-2">
                👤  Sessão de <strong className="text-slate-800">{userInfo?.name || 'Usuário'}</strong>
             </p>
