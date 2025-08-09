@@ -122,31 +122,28 @@ export default function ProfileSelection() {
           </h2>
           
           {profiles.map((profile) => (
-          // CORREÇÃO "À PROVA DE BALAS" ABAIXO:
-            <div
+            <button
               key={profile.key}
-            role="button"
-            tabIndex={0}
               onClick={() => router.push(profile.route)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') router.push(profile.route); }}
-            // Adicionado bg-white para um fundo sólido
-              className="w-full p-5 sm:p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 touch-manipulation min-h-[80px] sm:min-h-[auto] cursor-pointer bg-white"
-              style={{ borderColor: profile.color }}
+              className="w-full p-5 sm:p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 touch-manipulation min-h-[80px] sm:min-h-[auto]"
+              style={{
+                borderColor: profile.color,
+                background: `linear-gradient(135deg, ${profile.color}15, ${profile.color}05)`
+              }}
             >
               <div className="flex items-center justify-center space-x-3">
                 <span className="text-3xl sm:text-2xl flex-shrink-0">{profile.icon}</span>
                 <div className="text-left flex-grow">
-                  {/* Forçando a cor do texto com estilo inline (prioridade máxima) */}
-                  <div className="font-semibold text-sm sm:text-base" style={{ color: '#1E293B' }}>
+                {/* CORREÇÃO FINAL: Troquei os <div>'s por <span>'s e adicionei 'block' para manter o layout */}
+                  <span className="font-semibold text-sm sm:text-base text-slate-900 block">
                     {profile.title}
-                  </div>
-                  {/* Forçando a cor do texto com estilo inline (prioridade máxima) */}
-                  <div className="text-xs sm:text-sm mt-1" style={{ color: '#475569' }}>
+                  </span>
+                  <span className="text-xs sm:text-sm text-slate-600 mt-1 block">
                     {profile.description}
-                  </div>
+                  </span>
                 </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
 
