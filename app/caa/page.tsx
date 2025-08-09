@@ -225,7 +225,7 @@ export default function CAAActivityPage() {
                 <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
                     <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
                         📊 Progresso da Sessão
-                        <span className="ml-3 text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full">✅ Sistema Produção Estável</span>
+                        <span className="ml-3 text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full">✅ Sistema Estável - Integração Supabase em standby</span>
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
