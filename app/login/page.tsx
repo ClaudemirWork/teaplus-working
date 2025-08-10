@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '../utils/supabaseClient';
 
 export default function LoginPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
@@ -14,104 +16,7 @@ export default function LoginPage() {
   });
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
-
-  // 🔧 SOLUÇÃO: Sistema de storage compatível com iOS
-  const storage = {
-    // Detecta se localStorage está disponível
-    isLocalStorageAvailable: () => {
-      try {
-        const test = '__test__';
-        localStorage.setItem(test, test);
-        localStorage.removeItem(test);
-        return true;
-      } catch {
-        return false;
-      }
-    },
-
-    // Detecta se é iOS
-    isIOS: () => {
-      return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    },
-
-    // Salva dados com fallback para cookies no iOS
-    setItem: (key: string, value: string) => {
-      try {
-        if (storage.isLocalStorageAvailable()) {
-          localStorage.setItem(key, value);
-          console.log('✅ Salvo no localStorage');
-        } else {
-          // Fallback para cookies no iOS
-          const expires = new Date();
-          expires.setTime(expires.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 dias
-          document.cookie = `${key}=${encodeURIComponent(value)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
-          console.log('✅ Salvo em cookies (iOS fallback)');
-        }
-        return true;
-      } catch (error) {
-        console.error('❌ Erro ao salvar:', error);
-        return false;
-      }
-    },
-
-    // Lê dados com fallback para cookies no iOS
-    getItem: (key: string) => {
-      try {
-        if (storage.isLocalStorageAvailable()) {
-          return localStorage.getItem(key);
-        } else {
-          // Fallback para cookies no iOS
-          const nameEQ = key + "=";
-          const ca = document.cookie.split(';');
-          for (let i = 0; i < ca.length; i++) {
-            let c = ca[i];
-            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-            if (c.indexOf(nameEQ) === 0) {
-              return decodeURIComponent(c.substring(nameEQ.length, c.length));
-            }
-          }
-          return null;
-        }
-      } catch (error) {
-        console.error('❌ Erro ao ler:', error);
-        return null;
-      }
-    },
-
-    // Session storage com fallback
-    setSession: (key: string, value: string) => {
-      try {
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem(key, value);
-        }
-        // Para iOS, também salva em localStorage como backup
-        if (storage.isIOS()) {
-          storage.setItem(`session_${key}`, value);
-        }
-        return true;
-      } catch {
-        return false;
-      }
-    },
-
-    // Verifica session com fallback
-    getSession: (key: string) => {
-      try {
-        if (typeof sessionStorage !== 'undefined') {
-          const sessionValue = sessionStorage.getItem(key);
-          if (sessionValue) return sessionValue;
-        }
-        // Fallback para iOS
-        if (storage.isIOS()) {
-          return storage.getItem(`session_${key}`);
-        }
-        return null;
-      } catch {
-        return null;
-      }
-    }
-  };
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -127,93 +32,108 @@ export default function LoginPage() {
     setTimeout(() => {
       setMessage('');
       setMessageType('');
-    }, 5000);
+    }, 8000); // Mais tempo para ler mensagens de email
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
     if (!formData.email || !formData.password) {
       showMessage('error', 'Por favor, preencha email e senha.');
+      setIsLoading(false);
       return;
     }
     
-    const emailDigitado = formData.email.trim().toLowerCase();
-    const senhaDigitada = formData.password;
-    
-    // 🔧 CORREÇÃO: Usa o storage compatível com iOS
-    const savedUser = storage.getItem('teaplus_user');
-    
-    if (savedUser) {
-      try {
-        const userData = JSON.parse(savedUser);
-        
-        if (userData.email === emailDigitado && userData.password === senhaDigitada) {
-          userData.loginTime = new Date().toISOString();
-          
-          // 🔧 CORREÇÃO: Salva com fallback para iOS
-          const saved = storage.setItem('teaplus_user', JSON.stringify(userData));
-          const sessionSet = storage.setSession('teaplus_session', 'active');
-          
-          if (saved) {
-            showMessage('success', `Bem-vindo de volta, ${userData.name}!`);
-            setTimeout(() => {
-              router.replace('/profileselection');
-            }, 1000);
-          } else {
-            showMessage('error', 'Erro ao salvar sessão. Tente novamente.');
-          }
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+      });
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          showMessage('error', 'Email ou senha incorretos. Verifique seus dados.');
+        } else if (error.message.includes('Email not confirmed')) {
+          showMessage('warning', 'Você precisa confirmar seu email antes de fazer login. Verifique sua caixa de entrada.');
         } else {
-          showMessage('error', `Dados incorretos! Verifique seu email e senha.`);
+          showMessage('error', `Erro no login: ${error.message}`);
         }
-      } catch (error) {
-        showMessage('error', 'Dados da conta corrompidos. Tente criar uma nova conta.');
-        console.error('Erro ao processar dados:', error);
+      } else if (data.user) {
+        // Verificar se o email foi confirmado
+        if (!data.user.email_confirmed_at) {
+          showMessage('warning', 'Você precisa confirmar seu email antes de continuar. Verifique sua caixa de entrada.');
+        } else {
+          showMessage('success', `Bem-vindo de volta, ${data.user.user_metadata?.name || data.user.email}!`);
+          setTimeout(() => {
+            router.replace('/profileselection');
+          }, 1500);
+        }
       }
-    } else {
-      showMessage('warning', 'Nenhuma conta encontrada. Crie uma nova conta primeiro.');
+    } catch (error) {
+      console.error('Erro no login:', error);
+      showMessage('error', 'Erro inesperado. Tente novamente.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleCreateAccount = (e: React.FormEvent) => {
+  const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
       showMessage('error', 'Por favor, preencha todos os campos.');
+      setIsLoading(false);
       return;
     }
     
     if (formData.password !== formData.confirmPassword) {
       showMessage('error', 'As senhas não coincidem.');
+      setIsLoading(false);
       return;
     }
     
     if (formData.password.length < 6) {
       showMessage('warning', 'A senha deve ter pelo menos 6 caracteres.');
+      setIsLoading(false);
       return;
     }
     
-    const emailNormalizado = formData.email.trim().toLowerCase();
-    const userData = {
-      name: formData.name.trim(),
-      email: emailNormalizado,
-      password: formData.password,
-      loginTime: new Date().toISOString(),
-      created: new Date().toISOString(),
-      platform: storage.isIOS() ? 'iOS' : 'other' // Identifica plataforma
-    };
-    
-    // 🔧 CORREÇÃO: Usa o storage compatível com iOS
-    const saved = storage.setItem('teaplus_user', JSON.stringify(userData));
-    const sessionSet = storage.setSession('teaplus_session', 'active');
-    
-    if (saved) {
-      showMessage('success', `Conta criada com sucesso para ${userData.name}!`);
-      setTimeout(() => {
-        router.replace('/profileselection');
-      }, 1000);
-    } else {
-      showMessage('error', 'Erro ao salvar conta. Verifique se o navegador permite armazenamento.');
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name.trim(),
+          }
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('User already registered')) {
+          showMessage('warning', 'Este email já está cadastrado. Tente fazer login ou use outro email.');
+        } else {
+          showMessage('error', `Erro no cadastro: ${error.message}`);
+        }
+      } else if (data.user) {
+        showMessage('success', `Conta criada com sucesso! Enviamos um email de confirmação para ${formData.email}. Verifique sua caixa de entrada e spam.`);
+        // Limpar formulário
+        setFormData({
+          name: '',
+          email: '',
+          password: '',
+          confirmPassword: ''
+        });
+        // Trocar para tela de login
+        setIsLogin(true);
+      }
+    } catch (error) {
+      console.error('Erro no cadastro:', error);
+      showMessage('error', 'Erro inesperado. Tente novamente.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -234,14 +154,17 @@ export default function LoginPage() {
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-slate-900">TeaPlus Suite</h2>
           <p className="text-slate-600 text-sm">Aplicativo de apoio ao paciente com TEA, TDAH</p>
-          {/* 🔧 ADIÇÃO: Indicador de plataforma para debug */}
-          {storage.isIOS() && (
-            <p className="text-xs text-blue-600 mt-1">📱 Otimizado para iOS</p>
-          )}
+          <p className="text-xs text-green-600 mt-1">🔒 Autenticação Segura</p>
         </div>
 
         {message && (
-          <div className={`p-4 mb-4 text-center rounded-lg ${messageType === 'success' ? 'bg-emerald-100 text-emerald-800' : messageType === 'error' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
+          <div className={`p-4 mb-4 text-center rounded-lg text-sm ${
+            messageType === 'success' 
+              ? 'bg-emerald-100 text-emerald-800' 
+              : messageType === 'error' 
+              ? 'bg-red-100 text-red-800' 
+              : 'bg-amber-100 text-amber-800'
+          }`}>
             {message}
           </div>
         )}
@@ -249,13 +172,17 @@ export default function LoginPage() {
         <div className="flex justify-center mb-6">
           <button
             onClick={() => { setIsLogin(true); setMessage(''); }}
-            className={`py-2 px-6 rounded-full font-medium transition-colors duration-200 ${isLogin ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600'}`}
+            className={`py-2 px-6 rounded-full font-medium transition-colors duration-200 ${
+              isLogin ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600'
+            }`}
           >
             Entrar
           </button>
           <button
             onClick={() => { setIsLogin(false); setMessage(''); }}
-            className={`py-2 px-6 rounded-full font-medium transition-colors duration-200 ${!isLogin ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600'}`}
+            className={`py-2 px-6 rounded-full font-medium transition-colors duration-200 ${
+              !isLogin ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600'
+            }`}
           >
             Criar Conta
           </button>
@@ -272,7 +199,8 @@ export default function LoginPage() {
                 placeholder="Nome completo"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isLoading}
+                className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               />
             </div>
           )}
@@ -285,7 +213,8 @@ export default function LoginPage() {
               placeholder="Digite seu e-mail"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isLoading}
+              className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
             />
           </div>
           <div>
@@ -297,7 +226,8 @@ export default function LoginPage() {
               placeholder="Digite sua senha"
               value={formData.password}
               onChange={handleInputChange}
-              className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isLoading}
+              className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
             />
           </div>
           {!isLogin && (
@@ -310,15 +240,20 @@ export default function LoginPage() {
                 placeholder="Confirme sua senha"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isLoading}
+                className="w-full px-5 py-3 rounded-full bg-slate-100 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               />
             </div>
           )}
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white px-5 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-colors transform hover:-translate-y-0.5"
+            disabled={isLoading}
+            className="w-full bg-blue-600 text-white px-5 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-colors transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
-            {isLogin ? 'Entrar' : 'Criar Conta'}
+            {isLoading 
+              ? (isLogin ? 'Entrando...' : 'Criando conta...') 
+              : (isLogin ? 'Entrar' : 'Criar Conta')
+            }
           </button>
         </form>
 
