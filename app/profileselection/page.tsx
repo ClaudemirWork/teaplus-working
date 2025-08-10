@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { createClient } from '../utils/supabaseClient';
 
 export default function ProfileSelection() {
   const router = useRouter();
+  const supabase = createClient();
   const [isLoading, setIsLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
 
@@ -50,52 +51,57 @@ export default function ProfileSelection() {
       description: 'Acompanhe a evolução de habilidades e metas',
       icon: ' 📈 ',
       color: '#1abc9c',
-      route: '/dashboard' // 🔧 ROTA CORRIGIDA
+      route: '/dashboard'
     }
   ];
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      let isMounted = true;
-      const checkLogin = () => {
-        try {
-          const userData = localStorage.getItem('teaplus_user');
-          const isLoggedIn = sessionStorage.getItem('teaplus_session');
-          
-          if (isMounted) {
-            if (userData && isLoggedIn === 'active') {
-              const parsedData = JSON.parse(userData);
-              setUserInfo(parsedData);
-              setIsLoading(false);
-            } else {
-              router.replace('/login');
-            }
-          }
-        } catch (error) {
-          if (isMounted) {
-            router.replace('/login');
-          }
+    const checkAuth = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error || !user) {
+          console.log('Usuário não autenticado:', error);
+          router.replace('/login');
+          return;
         }
-      };
 
-      const timeoutId = setTimeout(checkLogin, 100);
+        // Verificar se email foi confirmado
+        if (!user.email_confirmed_at) {
+          router.replace('/login');
+          return;
+        }
 
-      return () => {
-        isMounted = false;
-        clearTimeout(timeoutId);
-      };
-    }
-  }, [router]);
+        // Usuário autenticado e confirmado
+        setUserInfo({
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
+          email: user.email
+        });
+        setIsLoading(false);
+
+      } catch (error) {
+        console.error('Erro ao verificar autenticação:', error);
+        router.replace('/login');
+      }
+    };
+
+    checkAuth();
+  }, [router, supabase]);
 
   const handleProfileSelect = (route: string) => {
     router.push(route);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm('Deseja realmente sair do aplicativo?')) {
-      sessionStorage.removeItem('teaplus_session');
-      window.alert('Logout realizado! Sua conta foi mantida para próximos acessos.');
-      router.replace('/');
+      try {
+        await supabase.auth.signOut();
+        window.alert('Logout realizado com sucesso!');
+        router.replace('/login');
+      } catch (error) {
+        console.error('Erro no logout:', error);
+        router.replace('/login');
+      }
     }
   };
 
@@ -122,6 +128,7 @@ export default function ProfileSelection() {
           <div className="mt-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
           </div>
+          <p className="text-xs text-green-600 mt-2">🔒 Autenticação Supabase</p>
         </div>
       </div>
     );
@@ -179,7 +186,7 @@ export default function ProfileSelection() {
               para seu desenvolvimento terapêutico.
             </p>
             <p className="text-xs text-slate-400 mt-2">
-              Versão 1.0 • Desenvolvido para fins terapêuticos
+              Versão 1.0 • Desenvolvido para fins terapêuticos • Supabase Auth
             </p>
           </div>
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
