@@ -9,6 +9,7 @@ export default function ProfileSelection() {
   const supabase = createClient();
   const [isLoading, setIsLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [authStatus, setAuthStatus] = useState('Verificando acesso...');
 
   // Função para converter hex para RGB
   const hexToRgb = (hex: string) => {
@@ -57,35 +58,84 @@ export default function ProfileSelection() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error || !user) {
-          console.log('Usuário não autenticado:', error);
-          router.replace('/login');
-          return;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          setAuthStatus(`Verificando sessão... (${retryCount + 1}/${maxRetries})`);
+          
+          // MÉTODO MAIS ROBUSTO: Verificar sessão primeiro
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError) {
+            console.log('Erro ao obter sessão:', sessionError);
+            throw sessionError;
+          }
+
+          if (!session) {
+            console.log('Nenhuma sessão ativa encontrada');
+            setAuthStatus('Redirecionando para login...');
+            router.replace('/login');
+            return;
+          }
+
+          // Se há sessão, verificar dados do usuário
+          setAuthStatus('Sessão encontrada, verificando usuário...');
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          
+          if (userError) {
+            console.log('Erro ao obter usuário:', userError);
+            throw userError;
+          }
+
+          if (!user) {
+            console.log('Usuário não encontrado apesar de sessão ativa');
+            setAuthStatus('Redirecionando para login...');
+            router.replace('/login');
+            return;
+          }
+
+          // Verificar se email foi confirmado
+          if (!user.email_confirmed_at) {
+            console.log('Email não confirmado');
+            setAuthStatus('Email não confirmado, redirecionando...');
+            router.replace('/login');
+            return;
+          }
+
+          // Usuário autenticado e confirmado - SUCESSO!
+          console.log('Usuário autenticado com sucesso:', user.email);
+          setAuthStatus('Acesso autorizado!');
+          
+          setUserInfo({
+            name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
+            email: user.email
+          });
+          
+          setIsLoading(false);
+          return; // Sucesso - sair do loop
+
+        } catch (error) {
+          console.error(`Tentativa ${retryCount + 1} falhou:`, error);
+          retryCount++;
+          
+          if (retryCount < maxRetries) {
+            setAuthStatus(`Erro na verificação, tentando novamente... (${retryCount}/${maxRetries})`);
+            // Aguardar 1 segundo antes de tentar novamente
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          } else {
+            console.error('Todas as tentativas de autenticação falharam:', error);
+            setAuthStatus('Erro de autenticação, redirecionando...');
+            router.replace('/login');
+          }
         }
-
-        // Verificar se email foi confirmado
-        if (!user.email_confirmed_at) {
-          router.replace('/login');
-          return;
-        }
-
-        // Usuário autenticado e confirmado
-        setUserInfo({
-          name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
-          email: user.email
-        });
-        setIsLoading(false);
-
-      } catch (error) {
-        console.error('Erro ao verificar autenticação:', error);
-        router.replace('/login');
       }
     };
 
-    checkAuth();
+    // Aguardar um pequeno delay para garantir que o Supabase está totalmente inicializado
+    const timer = setTimeout(checkAuth, 500);
+    return () => clearTimeout(timer);
   }, [router, supabase]);
 
   const handleProfileSelect = (route: string) => {
@@ -124,11 +174,12 @@ export default function ProfileSelection() {
         <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 text-center w-full max-w-sm">
           <img src="/images/Teaplus-logo.png" alt="TeaPlus Logo" className="w-40 h-40 mx-auto mb-4" />
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">TeaPlus</h1>
-          <p className="text-sm sm:text-base text-gray-600">Verificando acesso...</p>
+          <p className="text-sm sm:text-base text-gray-600 mb-2">{authStatus}</p>
           <div className="mt-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
           </div>
           <p className="text-xs text-green-600 mt-2">🔒 Autenticação Supabase</p>
+          <p className="text-xs text-gray-400 mt-1">Aguarde alguns segundos...</p>
         </div>
       </div>
     );
