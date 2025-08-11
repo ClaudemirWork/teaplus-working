@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Save, CheckCircle } from 'lucide-react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function AttentionSustained() {
   const [nivel, setNivel] = useState(1)
   const [pontuacao, setPontuacao] = useState(0)
-  const [duracao, setDuracao] = useState(30) // segundos
+  const [duracao, setDuracao] = useState(30)
   const [tempoRestante, setTempoRestante] = useState(30)
   const [ativo, setAtivo] = useState(false)
   const [targetVisible, setTargetVisible] = useState(false)
@@ -17,14 +18,21 @@ export default function AttentionSustained() {
   const [exercicioConcluido, setExercicioConcluido] = useState(false)
   const [jogoIniciado, setJogoIniciado] = useState(false)
 
-  // ✅ MÉTRICAS CIENTÍFICAS ADICIONAIS - BASEADAS EM CPT
+  // ✅ MÉTRICAS CIENTÍFICAS
   const [temposReacao, setTemposReacao] = useState<number[]>([])
-  const [errosComissao, setErrosComissao] = useState(0) // Cliques fora do target
-  const [errosOmissao, setErrosOmissao] = useState(0) // Não cliques no target  
+  const [errosComissao, setErrosComissao] = useState(0)
+  const [errosOmissao, setErrosOmissao] = useState(0)
   const [timestampTarget, setTimestampTarget] = useState<number>(0)
-  const [sequenciaTempos, setSequenciaTempos] = useState<number[]>([])
+  const [sequenciaAcertos, setSequenciaAcertos] = useState<boolean[]>([])
 
-  // Configurações por nível - ✅ CALIBRADAS COM LITERATURA
+  // 💾 ESTADOS PARA SALVAMENTO
+  const [salvando, setSalvando] = useState(false)
+  const [salvo, setSalvo] = useState(false)
+  const [erroSalvamento, setErroSalvamento] = useState('')
+  
+  const supabase = createClientComponentClient()
+
+  // Configurações por nível
   const niveis = {
     1: { duracao: 30, intervalo: 2500, nome: "Iniciante (30s)", exposicao: 1200 },
     2: { duracao: 60, intervalo: 2200, nome: "Básico (1min)", exposicao: 1100 },
@@ -57,7 +65,6 @@ export default function AttentionSustained() {
     return () => clearInterval(interval)
   }, [ativo, nivel])
 
-  // ✅ CAPTURAR CLIQUES FORA DO TARGET (ERROS DE COMISSÃO)
   const handleClickArea = (event: React.MouseEvent) => {
     if (ativo && !targetVisible) {
       setErrosComissao(prev => prev + 1)
@@ -72,34 +79,32 @@ export default function AttentionSustained() {
     setPontuacao(0)
     setAcertos(0)
     setTentativas(0)
-    // ✅ RESETAR MÉTRICAS CIENTÍFICAS
     setTemposReacao([])
     setErrosComissao(0)
     setErrosOmissao(0)
-    setSequenciaTempos([])
+    setSequenciaAcertos([])
     setExercicioConcluido(false)
     setTargetVisible(false)
     setJogoIniciado(true)
+    setSalvo(false)
+    setErroSalvamento('')
   }
 
   const mostrarTarget = () => {
     if (!ativo) return
     
-    // Gerar posição aleatória
-    const x = Math.random() * 70 + 15 // 15-85%
-    const y = Math.random() * 60 + 20 // 20-80%
+    const x = Math.random() * 70 + 15
+    const y = Math.random() * 60 + 20
     setPosicaoTarget({ x, y })
     setTargetVisible(true)
     setTentativas(prev => prev + 1)
-    // ✅ REGISTRAR TIMESTAMP PARA TEMPO DE REAÇÃO
     setTimestampTarget(Date.now())
 
-    // ✅ TEMPO DE EXPOSIÇÃO VARIÁVEL POR NÍVEL
     const tempoExposicao = niveis[nivel as keyof typeof niveis].exposicao
     setTimeout(() => {
       if (targetVisible) {
-        // ✅ ERRO DE OMISSÃO - NÃO CLICOU NO TARGET
         setErrosOmissao(prev => prev + 1)
+        setSequenciaAcertos(prev => [...prev, false])
       }
       setTargetVisible(false)
     }, tempoExposicao)
@@ -107,10 +112,9 @@ export default function AttentionSustained() {
 
   const clicarTarget = () => {
     if (targetVisible && ativo) {
-      // ✅ CALCULAR TEMPO DE REAÇÃO
       const tempoReacao = Date.now() - timestampTarget
       setTemposReacao(prev => [...prev, tempoReacao])
-      setSequenciaTempos(prev => [...prev, tempoReacao])
+      setSequenciaAcertos(prev => [...prev, true])
       
       setAcertos(prev => prev + 1)
       setPontuacao(prev => prev + 10 * nivel)
@@ -122,6 +126,123 @@ export default function AttentionSustained() {
     setAtivo(false)
     setTargetVisible(false)
     setExercicioConcluido(true)
+  }
+
+  // 🔬 CÁLCULOS CIENTÍFICOS
+  const precisao = tentativas > 0 ? Math.round((acertos / tentativas) * 100) : 0
+  const tempoReacaoMedio = temposReacao.length > 0 ? Math.round(temposReacao.reduce((a, b) => a + b, 0) / temposReacao.length) : 0
+  
+  const calcularVariabilidade = () => {
+    if (temposReacao.length < 2) return 0
+    const media = tempoReacaoMedio
+    const variancia = temposReacao.reduce((acc, tempo) => acc + Math.pow(tempo - media, 2), 0) / temposReacao.length
+    return Math.round(Math.sqrt(variancia))
+  }
+  
+  const variabilidadeRT = calcularVariabilidade()
+  const coeficienteVariacao = tempoReacaoMedio > 0 ? Math.round((variabilidadeRT / tempoReacaoMedio) * 100) : 0
+  const podeAvancar = precisao >= 75 && nivel < 5 && coeficienteVariacao <= 30
+
+  // 💾 FUNÇÃO PARA SALVAR NO SUPABASE
+  const salvarResultados = async () => {
+    setSalvando(true)
+    setErroSalvamento('')
+    
+    try {
+      // 1. Verificar se usuário está logado
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      if (authError || !user) {
+        throw new Error('Usuário não autenticado')
+      }
+
+      // 2. Calcular mediana dos tempos de reação
+      const temposOrdenados = [...temposReacao].sort((a, b) => a - b)
+      const mediana = temposOrdenados.length > 0 ? 
+        temposOrdenados[Math.floor(temposOrdenados.length / 2)] : 0
+
+      // 3. Detectar fade effect (declínio ao longo do tempo)
+      const detectarFadeEffect = () => {
+        if (sequenciaAcertos.length < 10) return false
+        const primeiraTerceira = sequenciaAcertos.slice(0, Math.floor(sequenciaAcertos.length / 3))
+        const ultimaTerceira = sequenciaAcertos.slice(-Math.floor(sequenciaAcertos.length / 3))
+        const precisaoInicial = primeiraTerceira.filter(Boolean).length / primeiraTerceira.length
+        const precisaoFinal = ultimaTerceira.filter(Boolean).length / ultimaTerceira.length
+        return precisaoFinal < (precisaoInicial - 0.1) // 10% de declínio
+      }
+
+      // 4. Inserir sessão principal
+      const { data: sessaoData, error: sessaoError } = await supabase
+        .from('sessoes_atividades')
+        .insert([
+          {
+            user_id: user.id,
+            modulo: 'TDAH',
+            atividade: 'atencao_sustentada',
+            nivel: nivel,
+            duracao_total: duracao,
+            concluida: true
+          }
+        ])
+        .select()
+        .single()
+
+      if (sessaoError) throw sessaoError
+
+      // 5. Inserir métricas científicas
+      const { error: metricsError } = await supabase
+        .from('metricas_atencao_sustentada')
+        .insert([
+          {
+            sessao_id: sessaoData.id,
+            acertos: acertos,
+            tentativas: tentativas,
+            precisao: precisao,
+            tempo_reacao_medio: tempoReacaoMedio,
+            tempo_reacao_mediano: mediana,
+            variabilidade_tr: variabilidadeRT,
+            coeficiente_variacao: coeficienteVariacao,
+            erros_comissao: errosComissao,
+            erros_omissao: errosOmissao,
+            tempos_reacao_array: temposReacao,
+            sequencia_acertos: sequenciaAcertos,
+            consistencia_temporal: 100 - coeficienteVariacao, // inverso do CV
+            fade_effect: detectarFadeEffect()
+          }
+        ])
+
+      if (metricsError) throw metricsError
+
+      // 6. Atualizar evolução longitudinal
+      const { error: evolucaoError } = await supabase
+        .from('evolucao_longitudinal')
+        .upsert([
+          {
+            user_id: user.id,
+            modulo: 'TDAH',
+            nivel_maximo_atingido: nivel,
+            criterio_avancos_atingidos: podeAvancar ? 1 : 0,
+            tempo_total_pratica: Math.floor(duracao / 60), // converter para minutos
+            data_inicio: new Date().toISOString().split('T')[0],
+            data_ultima_atualizacao: new Date().toISOString()
+          }
+        ],
+        { 
+          onConflict: 'user_id,modulo',
+          ignoreDuplicates: false 
+        })
+
+      if (evolucaoError) throw evolucaoError
+
+      setSalvo(true)
+      console.log('✅ Dados salvos com sucesso!')
+      
+    } catch (error: any) {
+      console.error('❌ Erro ao salvar:', error)
+      setErroSalvamento(error.message || 'Erro desconhecido ao salvar')
+    } finally {
+      setSalvando(false)
+    }
   }
 
   const proximoNivel = () => {
@@ -138,26 +259,6 @@ export default function AttentionSustained() {
     setAtivo(false)
     setTargetVisible(false)
   }
-
-  // ✅ CÁLCULOS CIENTÍFICOS AVANÇADOS
-  const precisao = tentativas > 0 ? Math.round((acertos / tentativas) * 100) : 0
-  const tempoReacaoMedio = temposReacao.length > 0 ? Math.round(temposReacao.reduce((a, b) => a + b, 0) / temposReacao.length) : 0
-  
-  // ✅ VARIABILIDADE INTRAINDIVIDUAL (DESVIO PADRÃO)
-  const calcularVariabilidade = () => {
-    if (temposReacao.length < 2) return 0
-    const media = tempoReacaoMedio
-    const variancia = temposReacao.reduce((acc, tempo) => acc + Math.pow(tempo - media, 2), 0) / temposReacao.length
-    return Math.round(Math.sqrt(variancia))
-  }
-  
-  const variabilidadeRT = calcularVariabilidade()
-  
-  // ✅ COEFICIENTE DE VARIAÇÃO (CONSISTÊNCIA)
-  const coeficienteVariacao = tempoReacaoMedio > 0 ? Math.round((variabilidadeRT / tempoReacaoMedio) * 100) : 0
-  
-  // ✅ CRITÉRIO DE AVANÇO CIENTÍFICO BASEADO EM CPT
-  const podeAvancar = precisao >= 75 && nivel < 5 && coeficienteVariacao <= 30
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -190,7 +291,7 @@ export default function AttentionSustained() {
         <div className="max-w-4xl mx-auto">
           
           {!jogoIniciado ? (
-            // Tela de informações inicial
+            // Tela inicial (mesmo código anterior)
             <div className="space-y-6">
               {/* Objetivo */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -203,7 +304,7 @@ export default function AttentionSustained() {
                 </p>
               </div>
 
-              {/* ✅ MÉTRICAS CIENTÍFICAS */}
+              {/* Métricas Científicas */}
               <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
                 <div className="flex items-center space-x-2 mb-3">
                   <span className="text-2xl">🔬</span>
@@ -223,7 +324,7 @@ export default function AttentionSustained() {
                 </div>
               </div>
 
-              {/* Pontuação */}
+              {/* Critérios */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center space-x-2 mb-3">
                   <span className="text-2xl">⭐</span>
@@ -235,7 +336,7 @@ export default function AttentionSustained() {
                 </p>
               </div>
 
-              {/* Base Científica Expandida */}
+              {/* Base Científica */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center space-x-2 mb-3">
                   <span className="text-2xl">🧠</span>
@@ -248,7 +349,7 @@ export default function AttentionSustained() {
                 </div>
               </div>
 
-              {/* ✅ DISCLAIMER CIENTÍFICO */}
+              {/* Disclaimer */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <div className="text-sm text-yellow-800">
                   <strong>⚠️ Nota Científica:</strong> Este exercício complementa avaliação profissional. 
@@ -268,9 +369,9 @@ export default function AttentionSustained() {
               </div>
             </div>
           ) : !exercicioConcluido ? (
-            // Área de jogo ativa
+            // Área de jogo (mesmo código anterior)
             <div className="space-y-6">
-              {/* ✅ STATS CIENTÍFICOS DURANTE O JOGO */}
+              {/* Stats durante o jogo */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white rounded-lg p-4 text-center shadow-sm">
                   <div className="text-xl font-bold text-orange-600">{pontuacao}</div>
@@ -291,7 +392,6 @@ export default function AttentionSustained() {
               </div>
 
               <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                {/* Barra de progresso */}
                 <div className="h-2 bg-gray-200">
                   <div 
                     className="h-full bg-orange-500 transition-all duration-1000"
@@ -299,13 +399,11 @@ export default function AttentionSustained() {
                   />
                 </div>
 
-                {/* ✅ ÁREA DO JOGO COM CAPTURA DE ERROS DE COMISSÃO */}
                 <div 
                   className="relative bg-gradient-to-br from-blue-50 to-purple-50 cursor-crosshair"
                   style={{ height: '500px', width: '100%' }}
                   onClick={handleClickArea}
                 >
-                  {/* Target */}
                   {targetVisible && (
                     <button
                       onClick={clicarTarget}
@@ -320,7 +418,6 @@ export default function AttentionSustained() {
                     </button>
                   )}
 
-                  {/* Instruções durante o jogo */}
                   <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-center">
                     <div className="bg-black bg-opacity-70 text-white px-6 py-3 rounded-lg">
                       <div className="font-medium">Mantenha o foco! ⚡</div>
@@ -330,7 +427,6 @@ export default function AttentionSustained() {
                 </div>
               </div>
 
-              {/* Botão para voltar */}
               <div className="text-center">
                 <button
                   onClick={voltarInicio}
@@ -341,7 +437,7 @@ export default function AttentionSustained() {
               </div>
             </div>
           ) : (
-            // ✅ TELA DE RESULTADOS CIENTÍFICOS
+            // ✅ TELA DE RESULTADOS COM BOTÃO SALVAR
             <div className="bg-white rounded-xl shadow-lg p-8 text-center">
               <div className="text-6xl mb-4">
                 {precisao >= 90 && coeficienteVariacao <= 20 ? '🏆' : precisao >= 75 && coeficienteVariacao <= 30 ? '🎉' : '💪'}
@@ -352,7 +448,7 @@ export default function AttentionSustained() {
                  precisao >= 75 && coeficienteVariacao <= 30 ? 'Bom Desempenho!' : 'Continue Praticando!'}
               </h3>
               
-              {/* ✅ MÉTRICAS CIENTÍFICAS COMPLETAS */}
+              {/* Métricas científicas */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-2xl mx-auto mb-8">
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="text-lg font-bold text-gray-800">{acertos}/{tentativas}</div>
@@ -380,7 +476,7 @@ export default function AttentionSustained() {
                 </div>
               </div>
               
-              {/* ✅ INTERPRETAÇÃO CIENTÍFICA */}
+              {/* Interpretação científica */}
               <div className="bg-blue-50 rounded-lg p-4 mb-6 text-left">
                 <h4 className="font-bold text-blue-800 mb-2">📊 Interpretação Científica:</h4>
                 <div className="text-sm text-blue-700 space-y-1">
@@ -389,7 +485,65 @@ export default function AttentionSustained() {
                   <p><strong>Tempo de Reação:</strong> {tempoReacaoMedio < 600 ? '✅ Rápido' : tempoReacaoMedio < 800 ? '⚠️ Moderado' : '🔴 Lento'}</p>
                 </div>
               </div>
+
+              {/* 💾 BOTÃO SALVAR RESULTADOS */}
+              {!salvo && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-center space-x-2 mb-3">
+                    <Save size={20} className="text-green-600" />
+                    <span className="font-bold text-green-800">Salvar Resultados Científicos</span>
+                  </div>
+                  <p className="text-sm text-green-700 mb-4">
+                    Salve suas métricas para acompanhar evolução temporal e gerar relatórios científicos.
+                  </p>
+                  <button
+                    onClick={salvarResultados}
+                    disabled={salvando}
+                    className="bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center space-x-2 mx-auto"
+                  >
+                    {salvando ? (
+                      <>
+                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                        <span>Salvando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save size={16} />
+                        <span>💾 Salvar no Supabase</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* ✅ CONFIRMAÇÃO DE SALVAMENTO */}
+              {salvo && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-center space-x-2 text-green-800">
+                    <CheckCircle size={20} />
+                    <span className="font-bold">✅ Dados Salvos com Sucesso!</span>
+                  </div>
+                  <p className="text-sm text-green-700 mt-2">
+                    Métricas científicas salvas no banco de dados. Acesse seus relatórios no Dashboard.
+                  </p>
+                </div>
+              )}
+
+              {/* ❌ ERRO DE SALVAMENTO */}
+              {erroSalvamento && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <div className="text-red-800 font-bold">❌ Erro ao Salvar</div>
+                  <p className="text-sm text-red-700">{erroSalvamento}</p>
+                  <button
+                    onClick={salvarResultados}
+                    className="mt-2 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm"
+                  >
+                    🔄 Tentar Novamente
+                  </button>
+                </div>
+              )}
               
+              {/* Botões de ação */}
               <div className="space-x-4">
                 {podeAvancar && (
                   <button
