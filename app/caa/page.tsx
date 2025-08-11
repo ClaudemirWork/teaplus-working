@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, X, Volume2, CornerLeftUp, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '../utils/supabaseClient';
 
 export default function CAAActivityPage() {
     const router = useRouter();
+    const supabase = createClient();
     const [selectedCategory, setSelectedCategory] = useState('necessidades');
     const [message, setMessage] = useState('');
     const [selectedSymbols, setSelectedSymbols] = useState<{ text: string; icon: string }[]>([]);
@@ -159,7 +160,7 @@ export default function CAAActivityPage() {
         setMessage(''); 
     };
     
-    // FUNÇÃO DE SALVAMENTO CORRIGIDA
+    // FUNÇÃO DE SALVAMENTO - IGUAL AO LOGIN
     const handleSaveSession = async () => {
         if (totalAtosComunicativos === 0) {
             alert('Nenhuma interação foi registrada para salvar.');
@@ -174,72 +175,30 @@ export default function CAAActivityPage() {
         const atosPorMinutoFinal = duracaoFinalMinutos > 0 ? (totalAtosComunicativos / duracaoFinalMinutos).toFixed(2) : '0.00';
         
         try {
-            // Criar cliente Supabase AQUI dentro da função
-            const supabase = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-            );
+            // Obter o usuário atual - EXATAMENTE COMO NO LOGIN
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
             
-            // Primeiro, tentar pegar o usuário da sessão
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            if (!session || !session.user) {
+            if (userError || !user) {
+                console.error('Erro ao obter usuário:', userError);
                 alert('Erro: Sessão expirada. Por favor, faça login novamente.');
                 router.push('/login');
                 return;
             }
             
-            // Usar o ID do usuário da sessão
-            const userId = session.user.id;
-            
-            console.log('Salvando para usuário:', userId);
-            
-            // Inserir na tabela sessoes
+            // Salvar na tabela sessoes
             const { data, error } = await supabase
                 .from('sessoes')
                 .insert([{
-                    usuario_id: userId,
+                    usuario_id: user.id,
                     atividade_nome: 'CAA',
                     pontuacao_final: totalAtosComunicativos,
                     data_fim: fimSessao.toISOString()
-                }])
-                .select();
+                }]);
 
             if (error) {
                 console.error('Erro ao salvar:', error);
-                
-                // Se for erro de RLS, tentar método alternativo
-                if (error.message.includes('row-level security')) {
-                    // Tentar sem select para ver se funciona
-                    const { error: errorSemSelect } = await supabase
-                        .from('sessoes')
-                        .insert({
-                            usuario_id: userId,
-                            atividade_nome: 'CAA',
-                            pontuacao_final: totalAtosComunicativos,
-                            data_fim: fimSessao.toISOString()
-                        });
-                    
-                    if (!errorSemSelect) {
-                        // Salvou mas sem retorno
-                        alert(`Sessão salva com sucesso!
-                        
-📊 Resumo:
-• ${totalAtosComunicativos} atos comunicativos
-• ${atosPorMinutoFinal} atos por minuto  
-• ${categoriasUtilizadas.size} categorias exploradas
-• ${simbolosUnicos.size} símbolos únicos`);
-                        
-                        router.push('/profileselection');
-                        return;
-                    } else {
-                        throw errorSemSelect;
-                    }
-                }
-                
-                throw error;
+                alert(`Erro ao salvar: ${error.message}`);
             } else {
-                console.log('Sessão salva com sucesso!', data);
                 alert(`Sessão salva com sucesso!
                 
 📊 Resumo:
