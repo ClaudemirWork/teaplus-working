@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, Save, CheckCircle } from 'lucide-react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function AttentionSustained() {
   const [nivel, setNivel] = useState(1)
@@ -25,12 +24,10 @@ export default function AttentionSustained() {
   const [timestampTarget, setTimestampTarget] = useState<number>(0)
   const [sequenciaAcertos, setSequenciaAcertos] = useState<boolean[]>([])
 
-  // 💾 ESTADOS PARA SALVAMENTO
+  // 💾 ESTADOS PARA SALVAMENTO (TEMPORARIAMENTE DESABILITADO)
   const [salvando, setSalvando] = useState(false)
   const [salvo, setSalvo] = useState(false)
   const [erroSalvamento, setErroSalvamento] = useState('')
-  
-  const supabase = createClientComponentClient()
 
   // Configurações por nível
   const niveis = {
@@ -143,103 +140,45 @@ export default function AttentionSustained() {
   const coeficienteVariacao = tempoReacaoMedio > 0 ? Math.round((variabilidadeRT / tempoReacaoMedio) * 100) : 0
   const podeAvancar = precisao >= 75 && nivel < 5 && coeficienteVariacao <= 30
 
-  // 💾 FUNÇÃO PARA SALVAR NO SUPABASE
+  // 💾 FUNÇÃO SIMULADA PARA SALVAR (PREPARADA PARA SUPABASE)
   const salvarResultados = async () => {
     setSalvando(true)
     setErroSalvamento('')
     
     try {
-      // 1. Verificar se usuário está logado
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      // 🔄 SIMULAÇÃO DE SALVAMENTO (localStorage temporário)
+      const dadosResultado = {
+        timestamp: new Date().toISOString(),
+        nivel: nivel,
+        acertos: acertos,
+        tentativas: tentativas,
+        precisao: precisao,
+        tempoReacaoMedio: tempoReacaoMedio,
+        variabilidadeRT: variabilidadeRT,
+        coeficienteVariacao: coeficienteVariacao,
+        errosComissao: errosComissao,
+        errosOmissao: errosOmissao,
+        temposReacao: temposReacao,
+        sequenciaAcertos: sequenciaAcertos,
+        duracao: duracao
+      }
+
+      // Simular delay de rede
+      await new Promise(resolve => setTimeout(resolve, 1500))
+
+      // Salvar temporariamente no localStorage para demonstração
+      const sessionId = `atencao_sustentada_${Date.now()}`
+      localStorage.setItem(sessionId, JSON.stringify(dadosResultado))
       
-      if (authError || !user) {
-        throw new Error('Usuário não autenticado')
-      }
-
-      // 2. Calcular mediana dos tempos de reação
-      const temposOrdenados = [...temposReacao].sort((a, b) => a - b)
-      const mediana = temposOrdenados.length > 0 ? 
-        temposOrdenados[Math.floor(temposOrdenados.length / 2)] : 0
-
-      // 3. Detectar fade effect (declínio ao longo do tempo)
-      const detectarFadeEffect = () => {
-        if (sequenciaAcertos.length < 10) return false
-        const primeiraTerceira = sequenciaAcertos.slice(0, Math.floor(sequenciaAcertos.length / 3))
-        const ultimaTerceira = sequenciaAcertos.slice(-Math.floor(sequenciaAcertos.length / 3))
-        const precisaoInicial = primeiraTerceira.filter(Boolean).length / primeiraTerceira.length
-        const precisaoFinal = ultimaTerceira.filter(Boolean).length / ultimaTerceira.length
-        return precisaoFinal < (precisaoInicial - 0.1) // 10% de declínio
-      }
-
-      // 4. Inserir sessão principal
-      const { data: sessaoData, error: sessaoError } = await supabase
-        .from('sessoes_atividades')
-        .insert([
-          {
-            user_id: user.id,
-            modulo: 'TDAH',
-            atividade: 'atencao_sustentada',
-            nivel: nivel,
-            duracao_total: duracao,
-            concluida: true
-          }
-        ])
-        .select()
-        .single()
-
-      if (sessaoError) throw sessaoError
-
-      // 5. Inserir métricas científicas
-      const { error: metricsError } = await supabase
-        .from('metricas_atencao_sustentada')
-        .insert([
-          {
-            sessao_id: sessaoData.id,
-            acertos: acertos,
-            tentativas: tentativas,
-            precisao: precisao,
-            tempo_reacao_medio: tempoReacaoMedio,
-            tempo_reacao_mediano: mediana,
-            variabilidade_tr: variabilidadeRT,
-            coeficiente_variacao: coeficienteVariacao,
-            erros_comissao: errosComissao,
-            erros_omissao: errosOmissao,
-            tempos_reacao_array: temposReacao,
-            sequencia_acertos: sequenciaAcertos,
-            consistencia_temporal: 100 - coeficienteVariacao, // inverso do CV
-            fade_effect: detectarFadeEffect()
-          }
-        ])
-
-      if (metricsError) throw metricsError
-
-      // 6. Atualizar evolução longitudinal
-      const { error: evolucaoError } = await supabase
-        .from('evolucao_longitudinal')
-        .upsert([
-          {
-            user_id: user.id,
-            modulo: 'TDAH',
-            nivel_maximo_atingido: nivel,
-            criterio_avancos_atingidos: podeAvancar ? 1 : 0,
-            tempo_total_pratica: Math.floor(duracao / 60), // converter para minutos
-            data_inicio: new Date().toISOString().split('T')[0],
-            data_ultima_atualizacao: new Date().toISOString()
-          }
-        ],
-        { 
-          onConflict: 'user_id,modulo',
-          ignoreDuplicates: false 
-        })
-
-      if (evolucaoError) throw evolucaoError
+      // Log para verificação
+      console.log('📊 Dados científicos capturados:', dadosResultado)
+      console.log('💾 Salvo temporariamente em:', sessionId)
 
       setSalvo(true)
-      console.log('✅ Dados salvos com sucesso!')
       
     } catch (error: any) {
       console.error('❌ Erro ao salvar:', error)
-      setErroSalvamento(error.message || 'Erro desconhecido ao salvar')
+      setErroSalvamento('Erro na simulação de salvamento. Dados capturados no console.')
     } finally {
       setSalvando(false)
     }
@@ -291,7 +230,7 @@ export default function AttentionSustained() {
         <div className="max-w-4xl mx-auto">
           
           {!jogoIniciado ? (
-            // Tela inicial (mesmo código anterior)
+            // Tela inicial
             <div className="space-y-6">
               {/* Objetivo */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -357,6 +296,14 @@ export default function AttentionSustained() {
                 </div>
               </div>
 
+              {/* Status Técnico */}
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="text-sm text-orange-800">
+                  <strong>🔧 Status:</strong> Versão de demonstração - salvamento em localStorage. 
+                  Integração Supabase será ativada após instalação de dependências.
+                </div>
+              </div>
+
               {/* Botão Iniciar */}
               <div className="text-center py-8">
                 <div className="text-6xl mb-4">😊</div>
@@ -364,12 +311,12 @@ export default function AttentionSustained() {
                   onClick={iniciarExercicio}
                   className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors"
                 >
-                  🚀 Iniciar Avaliação
+                  🚀 Iniciar Avaliação Científica
                 </button>
               </div>
             </div>
           ) : !exercicioConcluido ? (
-            // Área de jogo (mesmo código anterior)
+            // Área de jogo
             <div className="space-y-6">
               {/* Stats durante o jogo */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -437,7 +384,7 @@ export default function AttentionSustained() {
               </div>
             </div>
           ) : (
-            // ✅ TELA DE RESULTADOS COM BOTÃO SALVAR
+            // Tela de resultados com salvamento
             <div className="bg-white rounded-xl shadow-lg p-8 text-center">
               <div className="text-6xl mb-4">
                 {precisao >= 90 && coeficienteVariacao <= 20 ? '🏆' : precisao >= 75 && coeficienteVariacao <= 30 ? '🎉' : '💪'}
@@ -486,15 +433,16 @@ export default function AttentionSustained() {
                 </div>
               </div>
 
-              {/* 💾 BOTÃO SALVAR RESULTADOS */}
+              {/* Botão salvar dados */}
               {!salvo && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                   <div className="flex items-center justify-center space-x-2 mb-3">
                     <Save size={20} className="text-green-600" />
-                    <span className="font-bold text-green-800">Salvar Resultados Científicos</span>
+                    <span className="font-bold text-green-800">Salvar Dados Científicos</span>
                   </div>
                   <p className="text-sm text-green-700 mb-4">
-                    Salve suas métricas para acompanhar evolução temporal e gerar relatórios científicos.
+                    Capture suas métricas científicas para análise posterior. 
+                    (Versão demo - dados salvos no console do navegador)
                   </p>
                   <button
                     onClick={salvarResultados}
@@ -504,41 +452,41 @@ export default function AttentionSustained() {
                     {salvando ? (
                       <>
                         <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                        <span>Salvando...</span>
+                        <span>Capturando...</span>
                       </>
                     ) : (
                       <>
                         <Save size={16} />
-                        <span>💾 Salvar no Supabase</span>
+                        <span>💾 Capturar Métricas</span>
                       </>
                     )}
                   </button>
                 </div>
               )}
 
-              {/* ✅ CONFIRMAÇÃO DE SALVAMENTO */}
+              {/* Confirmação de salvamento */}
               {salvo && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                   <div className="flex items-center justify-center space-x-2 text-green-800">
                     <CheckCircle size={20} />
-                    <span className="font-bold">✅ Dados Salvos com Sucesso!</span>
+                    <span className="font-bold">✅ Dados Capturados!</span>
                   </div>
                   <p className="text-sm text-green-700 mt-2">
-                    Métricas científicas salvas no banco de dados. Acesse seus relatórios no Dashboard.
+                    Métricas científicas salvas no console. Abra DevTools (F12) para visualizar.
                   </p>
                 </div>
               )}
 
-              {/* ❌ ERRO DE SALVAMENTO */}
+              {/* Erro de salvamento */}
               {erroSalvamento && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                  <div className="text-red-800 font-bold">❌ Erro ao Salvar</div>
+                  <div className="text-red-800 font-bold">⚠️ Informação</div>
                   <p className="text-sm text-red-700">{erroSalvamento}</p>
                   <button
                     onClick={salvarResultados}
                     className="mt-2 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm"
                   >
-                    🔄 Tentar Novamente
+                    🔄 Capturar Novamente
                   </button>
                 </div>
               )}
