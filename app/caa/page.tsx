@@ -1,409 +1,344 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { ChevronLeft, Save } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/app/utils/supabaseClient'
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { ChevronLeft, X, Volume2, CornerLeftUp, HelpCircle, Save } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
 
-export default function AttentionSustained() {
-  const supabase = createClient()
-  const router = useRouter()
-  
-  const [nivel, setNivel] = useState(1)
-  const [pontuacao, setPontuacao] = useState(0)
-  const [duracao, setDuracao] = useState(30)
-  const [tempoRestante, setTempoRestante] = useState(30)
-  const [ativo, setAtivo] = useState(false)
-  const [targetVisible, setTargetVisible] = useState(false)
-  const [posicaoTarget, setPosicaoTarget] = useState({ x: 50, y: 50 })
-  const [acertos, setAcertos] = useState(0)
-  const [tentativas, setTentativas] = useState(0)
-  const [exercicioConcluido, setExercicioConcluido] = useState(false)
-  const [jogoIniciado, setJogoIniciado] = useState(false)
-  
-  // Métricas internas (sem mostrar "científico" para o usuário)
-  const [temposReacao, setTemposReacao] = useState<number[]>([])
-  const [errosComissao, setErrosComissao] = useState(0)
-  const [errosOmissao, setErrosOmissao] = useState(0)
-  const [timestampTarget, setTimestampTarget] = useState<number>(0)
-  const [sequenciaAcertos, setSequenciaAcertos] = useState<boolean[]>([])
-  const [salvando, setSalvando] = useState(false)
-
-  // Configurações por nível
-  const niveis = {
-    1: { duracao: 30, intervalo: 2500, nome: "Iniciante (30s)", exposicao: 1200 },
-    2: { duracao: 60, intervalo: 2200, nome: "Básico (1min)", exposicao: 1100 },
-    3: { duracao: 90, intervalo: 1900, nome: "Intermediário (1.5min)", exposicao: 1000 },
-    4: { duracao: 120, intervalo: 1600, nome: "Avançado (2min)", exposicao: 900 },
-    5: { duracao: 180, intervalo: 1300, nome: "Expert (3min)", exposicao: 800 }
-  }
-
-  // Timer principal
-  useEffect(() => {
-    let timer: NodeJS.Timeout
-    if (ativo && tempoRestante > 0) {
-      timer = setTimeout(() => {
-        setTempoRestante(prev => prev - 1)
-      }, 1000)
-    } else if (tempoRestante === 0 && ativo) {
-      finalizarExercicio()
-    }
-    return () => clearTimeout(timer)
-  }, [ativo, tempoRestante])
-
-  // Controle de aparição do target
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (ativo) {
-      interval = setInterval(() => {
-        mostrarTarget()
-      }, niveis[nivel as keyof typeof niveis].intervalo)
-    }
-    return () => clearInterval(interval)
-  }, [ativo, nivel])
-
-  const handleClickArea = (event: React.MouseEvent) => {
-    if (ativo && !targetVisible) {
-      setErrosComissao(prev => prev + 1)
-    }
-  }
-
-  const iniciarExercicio = () => {
-    const configuracao = niveis[nivel as keyof typeof niveis]
-    setDuracao(configuracao.duracao)
-    setTempoRestante(configuracao.duracao)
-    setAtivo(true)
-    setPontuacao(0)
-    setAcertos(0)
-    setTentativas(0)
-    setTemposReacao([])
-    setErrosComissao(0)
-    setErrosOmissao(0)
-    setSequenciaAcertos([])
-    setExercicioConcluido(false)
-    setTargetVisible(false)
-    setJogoIniciado(true)
-  }
-
-  const mostrarTarget = () => {
-    if (!ativo) return
+export default function CAAActivityPage() {
+    const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const router = useRouter();
+    const [selectedCategory, setSelectedCategory] = useState('necessidades');
+    const [message, setMessage] = useState('');
+    const [selectedSymbols, setSelectedSymbols] = useState<{ text: string; icon: string }[]>([]);
     
-    const x = Math.random() * 70 + 15
-    const y = Math.random() * 60 + 20
-    setPosicaoTarget({ x, y })
-    setTargetVisible(true)
-    setTentativas(prev => prev + 1)
-    setTimestampTarget(Date.now())
-
-    const tempoExposicao = niveis[nivel as keyof typeof niveis].exposicao
-    setTimeout(() => {
-      if (targetVisible) {
-        setErrosOmissao(prev => prev + 1)
-        setSequenciaAcertos(prev => [...prev, false])
-      }
-      setTargetVisible(false)
-    }, tempoExposicao)
-  }
-
-  const clicarTarget = () => {
-    if (targetVisible && ativo) {
-      const tempoReacao = Date.now() - timestampTarget
-      setTemposReacao(prev => [...prev, tempoReacao])
-      setSequenciaAcertos(prev => [...prev, true])
-      
-      setAcertos(prev => prev + 1)
-      setPontuacao(prev => prev + 10 * nivel)
-      setTargetVisible(false)
-    }
-  }
-
-  const finalizarExercicio = () => {
-    setAtivo(false)
-    setTargetVisible(false)
-    setExercicioConcluido(true)
-  }
-
-  // Cálculos para métricas
-  const precisao = tentativas > 0 ? Math.round((acertos / tentativas) * 100) : 0
-  const tempoReacaoMedio = temposReacao.length > 0 ? Math.round(temposReacao.reduce((a, b) => a + b, 0) / temposReacao.length) : 0
-  
-  const calcularVariabilidade = () => {
-    if (temposReacao.length < 2) return 0
-    const media = tempoReacaoMedio
-    const variancia = temposReacao.reduce((acc, tempo) => acc + Math.pow(tempo - media, 2), 0) / temposReacao.length
-    return Math.round(Math.sqrt(variancia))
-  }
-  
-  const variabilidadeRT = calcularVariabilidade()
-  const coeficienteVariacao = tempoReacaoMedio > 0 ? Math.round((variabilidadeRT / tempoReacaoMedio) * 100) : 0
-  const podeAvancar = precisao >= 75 && nivel < 5 && coeficienteVariacao <= 30
-
-  // SALVAMENTO SIMPLES - IGUAL AO CAA
-  const handleSaveSession = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      alert('Erro: Você precisa estar logado para salvar a sessão.')
-      return
-    }
-
-    if (tentativas === 0) {
-      alert('Complete pelo menos uma tentativa antes de salvar.')
-      return
-    }
-
-    setSalvando(true)
+    // Estados para métricas
+    const [totalAtosComunicativos, setTotalAtosComunicativos] = useState(0);
+    const [categoriasUtilizadas, setCategoriasUtilizadas] = useState(new Set<string>());
+    const [simbolosUnicos, setSimbolosUnicos] = useState(new Set<string>());
+    const [inicioSessao] = useState(new Date());
+    const [sequenciaTemporal, setSequenciaTemporal] = useState<any[]>([]);
     
-    // USANDO EXATAMENTE A MESMA ESTRUTURA DO CAA
-    const { data, error } = await supabase
-      .from('sessoes')
-      .insert([{
-        usuario_id: user.id,  // ✅ Mesmo campo do CAA
-        atividade_nome: 'Atenção Sustentada',  // Nome da atividade
-        pontuacao_final: pontuacao,  // Pontuação total
-        data_fim: new Date().toISOString()  // Data de conclusão
-      }])
+    // Estrutura de dados para os símbolos organizada por categorias
+    const symbols: { [key: string]: { text: string; icon: string }[] } = {
+        necessidades: [ 
+            { text: 'Quero comer', icon: '🍔' }, 
+            { text: 'Quero beber', icon: '🥤' }, 
+            { text: 'Preciso de ajuda', icon: '🤝' }, 
+            { text: 'Quero ir ao banheiro', icon: '🚽' }, 
+            { text: 'Quero ir para casa', icon: '🏠' }, 
+            { text: 'Quero ir para a escola', icon: '🏫' }, 
+        ],
+        sentimentos: [ 
+            { text: 'Estou feliz', icon: '😊' }, 
+            { text: 'Estou triste', icon: '😢' }, 
+            { text: 'Estou com raiva', icon: '😡' }, 
+            { text: 'Estou com medo', icon: '😨' }, 
+            { text: 'Me sinto doente', icon: '🤒' }, 
+            { text: 'Estou com dor', icon: '🤕' }, 
+        ],
+        acoes: [ 
+            { text: 'Quero brincar', icon: '🪁' }, 
+            { text: 'Quero desenhar', icon: '🎨' }, 
+            { text: 'Quero ler um livro', icon: '📖' }, 
+            { text: 'Quero música', icon: '🎵' }, 
+            { text: 'Quero ir lá fora', icon: '🚶' }, 
+            { text: 'Vamos brincar agora', icon: '🎲' }, 
+        ],
+        pessoas: [ 
+            { text: 'Mamãe', icon: '👩' }, 
+            { text: 'Papai', icon: '👨' }, 
+            { text: 'Amigo', icon: '👫' }, 
+            { text: 'Professor', icon: '🧑‍🏫' }, 
+            { text: 'Eu', icon: '🙋' }, 
+        ],
+        lugares: [ 
+            { text: 'Sala', icon: '🛋️' }, 
+            { text: 'Quarto', icon: '🛏️' }, 
+            { text: 'Carro', icon: '🚗' }, 
+            { text: 'Supermercado', icon: '🛒' }, 
+            { text: 'Parque', icon: '🌳' }, 
+            { text: 'Brinquedo', icon: '🧸' }, 
+            { text: 'Celular', icon: '📱' }, 
+        ],
+        comidas: [ 
+            { text: 'Maçã', icon: '🍎' }, 
+            { text: 'Banana', icon: '🍌' }, 
+            { text: 'Leite', icon: '🥛' }, 
+            { text: 'Pão', icon: '🍞' }, 
+            { text: 'Pizza', icon: '🍕' }, 
+            { text: 'Doce', icon: '🍬' }, 
+            { text: 'Água', icon: '💧' }, 
+        ],
+        saude: [ 
+            { text: 'Banho', icon: '🚿' }, 
+            { text: 'Escovar os dentes', icon: '🦷' }, 
+            { text: 'Remédio', icon: '💊' }, 
+            { text: 'Febre', icon: '🌡️' }, 
+            { text: 'Dormir', icon: '😴' }, 
+            { text: 'Curativo', icon: '🩹' }, 
+        ],
+        tempo: [ 
+            { text: 'Sol', icon: '☀️' }, 
+            { text: 'Lua', icon: '🌙' }, 
+            { text: 'Relógio', icon: '⏰' }, 
+            { text: 'Calendário', icon: '🗓️' }, 
+            { text: 'Escola', icon: '🏫' }, 
+            { text: 'Família', icon: '👨‍👩‍👧‍👦' }, 
+        ],
+    };
 
-    setSalvando(false)
+    const activityInfo = {
+        title: 'Comunicação Aumentativa e Alternativa (CAA)',
+        objective: 'Praticar a comunicação de necessidades e sentimentos usando símbolos visuais e frases curtas.',
+        levels: [ 
+            'Nível 1: Símbolos básicos', 
+            'Nível 2: Mais símbolos e conceitos', 
+            'Nível 3: Símbolos com frases curtas' 
+        ],
+        howToPlay: [ 
+            'Selecione uma categoria para ver os símbolos.', 
+            'Clique nos ícones para adicionar palavras à sua frase.', 
+            'Use os botões abaixo para falar, desfazer ou limpar a frase.' 
+        ]
+    };
 
-    if (error) {
-      console.error('Erro ao salvar:', error)
-      alert(`Erro ao salvar: ${error.message}`)
-    } else {
-      alert(`Sessão salva com sucesso!
-      
+    const calcularAtosPorMinuto = () => { 
+        const agora = new Date(); 
+        const diferencaMinutos = (agora.getTime() - inicioSessao.getTime()) / 60000; 
+        return diferencaMinutos > 0 ? (totalAtosComunicativos / diferencaMinutos).toFixed(2) : '0.00'; 
+    };
+
+    const speakText = (text: string) => { 
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) { 
+            const utterance = new SpeechSynthesisUtterance(text); 
+            utterance.lang = 'pt-BR'; 
+            window.speechSynthesis.speak(utterance); 
+        } 
+    };
+
+    const handleSymbolClick = (symbol: { text: string; icon: string }) => { 
+        setSelectedSymbols(prevSymbols => [...prevSymbols, symbol]); 
+        speakText(symbol.text); 
+        setTotalAtosComunicativos(prev => prev + 1); 
+        setCategoriasUtilizadas(prev => new Set(prev).add(selectedCategory)); 
+        setSimbolosUnicos(prev => new Set(prev).add(symbol.text)); 
+        setSequenciaTemporal(prev => [...prev, { 
+            timestamp: new Date(), 
+            categoria: selectedCategory, 
+            simbolo: symbol.text, 
+            icon: symbol.icon 
+        }]); 
+    };
+
+    const handleClearSentence = () => { 
+        setSelectedSymbols([]); 
+        setMessage(''); 
+    };
+
+    const handleSpeakSentence = () => { 
+        if (selectedSymbols.length > 0) { 
+            const sentence = selectedSymbols.map(s => s.text).join(' '); 
+            speakText(sentence); 
+            setMessage(`Frase: ${sentence}`); 
+            setTotalAtosComunicativos(prev => prev + 1); 
+            setSequenciaTemporal(prev => [...prev, { 
+                timestamp: new Date(), 
+                tipo: 'frase_completa', 
+                conteudo: sentence, 
+                simbolos_count: selectedSymbols.length 
+            }]); 
+        } else { 
+            setMessage('Selecione um símbolo primeiro.'); 
+        } 
+    };
+
+    const handleUndo = () => { 
+        setSelectedSymbols(prevSymbols => prevSymbols.slice(0, -1)); 
+        setMessage(''); 
+    };
+    
+    // Função de salvamento
+    const handleSaveSession = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            alert('Erro: Você precisa estar logado para salvar a sessão.');
+            return;
+        }
+        if (totalAtosComunicativos === 0) {
+            alert('Nenhuma interação foi registrada para salvar.');
+            return;
+        }
+        
+        const fimSessao = new Date();
+        const duracaoFinalSegundos = Math.round((fimSessao.getTime() - inicioSessao.getTime()) / 1000);
+        const duracaoFinalMinutos = duracaoFinalSegundos / 60;
+        const atosPorMinutoFinal = duracaoFinalMinutos > 0 ? (totalAtosComunicativos / duracaoFinalMinutos).toFixed(2) : '0.00';
+        
+        const { data, error } = await supabase
+            .from('sessoes')
+            .insert([{
+                usuario_id: user.id,
+                atividade_nome: 'CAA',
+                pontuacao_final: totalAtosComunicativos,
+                data_fim: fimSessao.toISOString()
+            }]);
+
+        if (error) {
+            console.error('Erro ao salvar a sessão:', error);
+            alert(`Ocorreu um erro ao salvar os dados: ${error.message}`);
+        } else {
+            console.log('Sessão salva com sucesso!', data);
+            alert(`Sessão finalizada com sucesso! 
+            
 📊 Resumo:
-• ${acertos}/${tentativas} acertos (${precisao}%)
-• Tempo de reação: ${tempoReacaoMedio}ms
-• Nível ${nivel} completado
-• ${pontuacao} pontos`)
-      
-      router.push('/profileselection')
-    }
-  }
+• ${totalAtosComunicativos} atos comunicativos
+• ${atosPorMinutoFinal} atos por minuto  
+• ${categoriasUtilizadas.size} categorias exploradas
+• ${simbolosUnicos.size} símbolos únicos`);
+            router.push('/profileselection');
+        }
+    };
 
-  const proximoNivel = () => {
-    if (nivel < 5) {
-      setNivel(prev => prev + 1)
-      setExercicioConcluido(false)
-      setJogoIniciado(false)
-    }
-  }
-
-  const voltarInicio = () => {
-    setJogoIniciado(false)
-    setExercicioConcluido(false)
-    setAtivo(false)
-    setTargetVisible(false)
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header PADRONIZADO igual ao CAA */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="p-3 sm:p-4 flex items-center justify-between">
-          <Link 
-            href="/tdah" 
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
-          >
-            <ChevronLeft size
-
-      <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
-        {!jogoIniciado ? (
-          // Tela inicial LIMPA
-          <div className="space-y-6">
-            {/* Título e Info */}
-            <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">⚡ Atenção Sustentada</h1>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
-                  <p className="text-sm text-gray-600">
-                    Manter atenção focada clicando nos alvos que aparecem na tela.
-                  </p>
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+                <div className="p-3 sm:p-4 flex items-center justify-between">
+                    <Link
+                        href="/tea"
+                        className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
+                    >
+                        <ChevronLeft size={20} />
+                        <span className="text-sm sm:text-base">Voltar para TEA</span>
+                    </Link>
+                    <div className="flex items-center space-x-2 sm:space-x-4">
+                        <button 
+                          onClick={handleSaveSession}
+                          className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors"
+                        >
+                            <Save size={20} />
+                            <span>Finalizar e Salvar</span>
+                        </button>
+                    </div>
                 </div>
-                
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como Jogar:</h3>
-                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                    <li>Clique nos alvos vermelhos</li>
-                    <li>Seja rápido e preciso</li>
-                    <li>Evite clicar fora do alvo</li>
-                  </ul>
+            </header>
+            <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+                <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-6">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">{activityInfo.title}</h1>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4"> 
+                            <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3> 
+                            <p className="text-sm text-gray-600">{activityInfo.objective}</p> 
+                        </div>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4"> 
+                            <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como se Joga:</h3> 
+                            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1"> 
+                                {activityInfo.howToPlay.map((instruction, index) => ( 
+                                    <li key={index}>{instruction}</li> 
+                                ))} 
+                            </ul> 
+                        </div>
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4"> 
+                            <h3 className="font-semibold text-gray-800 mb-1">⭐ Níveis:</h3> 
+                            <ul className="list-disc list-inside text-sm text-gray-600"> 
+                                {activityInfo.levels.map((level, index) => ( 
+                                    <li key={index}>{level}</li> 
+                                ))} 
+                            </ul> 
+                        </div>
+                    </div>
                 </div>
-                
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1">⭐ Progresso:</h3>
-                  <p className="text-sm text-gray-600">
-                    75% de precisão para avançar de nível. Consistência é importante!
-                  </p>
+                <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+                    <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">📊 Progresso da Sessão</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center"> 
+                            <div className="text-xl font-bold text-blue-800">{totalAtosComunicativos}</div> 
+                            <div className="text-xs text-blue-600">Atos Comunicativos</div> 
+                        </div>
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center"> 
+                            <div className="text-xl font-bold text-green-800">{calcularAtosPorMinuto()}</div> 
+                            <div className="text-xs text-green-600">Atos por Minuto</div> 
+                        </div>
+                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center"> 
+                            <div className="text-xl font-bold text-purple-800">{categoriasUtilizadas.size}</div> 
+                            <div className="text-xs text-purple-600">Categorias Exploradas</div> 
+                        </div>
+                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center"> 
+                            <div className="text-xl font-bold text-orange-800">{simbolosUnicos.size}</div> 
+                            <div className="text-xs text-orange-600">Símbolos Únicos</div> 
+                        </div>
+                    </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Seleção de Nível */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Nível</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                {Object.entries(niveis).map(([key, value]) => (
-                  <button
-                    key={key}
-                    onClick={() => setNivel(Number(key))}
-                    className={`p-4 rounded-lg font-medium transition-colors ${
-                      nivel === Number(key)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
-                  >
-                    <div className="text-2xl mb-1">⚡</div>
-                    <div className="text-sm">Nível {key}</div>
-                    <div className="text-xs opacity-80">{value.nome}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Botão Iniciar */}
-            <div className="text-center">
-              <button
-                onClick={iniciarExercicio}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors"
-              >
-                🚀 Iniciar Atividade
-              </button>
-            </div>
-          </div>
-        ) : !exercicioConcluido ? (
-          // Área de jogo
-          <div className="space-y-6">
-            {/* Progresso */}
-            <div className="bg-white rounded-xl shadow-lg p-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-xl font-bold text-orange-600">{pontuacao}</div>
-                  <div className="text-sm text-gray-600">Pontos</div>
+                <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+                    <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-gray-100 rounded-lg min-h-[64px]">
+                        {selectedSymbols.length === 0 ? ( 
+                            <span className="text-gray-400 italic">Selecione os símbolos para montar sua frase...</span> 
+                        ) : ( 
+                            selectedSymbols.map((symbol, index) => ( 
+                                <div key={index} className="flex items-center space-x-1 p-2 bg-white rounded-md border border-gray-200"> 
+                                    <span className="text-xl">{symbol.icon}</span> 
+                                    <span className="text-sm text-gray-800">{symbol.text}</span> 
+                                </div> 
+                            )) 
+                        )}
+                    </div>
+                    <div className="flex flex-wrap gap-2 justify-end">
+                        <button onClick={handleSpeakSentence} className="flex items-center space-x-2 px-4 py-2 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"> 
+                            <Volume2 size={20} /> 
+                            <span>Falar Frase</span> 
+                        </button>
+                        <button onClick={handleUndo} className="flex items-center space-x-2 px-4 py-2 rounded-full bg-gray-500 text-white font-medium hover:bg-gray-600 transition-colors"> 
+                            <CornerLeftUp size={20} /> 
+                            <span>Desfazer</span> 
+                        </button>
+                        <button onClick={handleClearSentence} className="flex items-center space-x-2 px-4 py-2 rounded-full bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"> 
+                            <X size={20} /> 
+                            <span>Limpar</span> 
+                        </button>
+                    </div>
+                    {message && ( 
+                        <div className="mt-4 p-4 text-center rounded-lg bg-blue-100 text-blue-800 font-semibold"> 
+                            {message} 
+                        </div> 
+                    )}
                 </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-blue-600">{tempoRestante}s</div>
-                  <div className="text-sm text-gray-600">Tempo</div>
+                <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">Selecione uma categoria e depois os ícones</h2>
+                    <div className="flex flex-wrap justify-center gap-2 mb-4">
+                        {Object.keys(symbols).map(category => ( 
+                            <button 
+                                key={category} 
+                                onClick={() => setSelectedCategory(category)} 
+                                className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                                    selectedCategory === category 
+                                        ? 'bg-blue-600 text-white' 
+                                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                                }`}
+                            > 
+                                {category.charAt(0).toUpperCase() + category.slice(1)} 
+                                {categoriasUtilizadas.has(category) && <span className="ml-2 text-xs">✓</span>} 
+                            </button> 
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                        {symbols[selectedCategory].map((symbol, index) => ( 
+                            <button 
+                                key={index} 
+                                onClick={() => handleSymbolClick(symbol)} 
+                                className="flex flex-col items-center justify-center p-4 rounded-xl bg-white hover:bg-gray-100 transition-colors border-2 border-gray-200 min-h-[120px] shadow-sm touch-manipulation"
+                            > 
+                                <span className="text-4xl mb-2">{symbol.icon}</span> 
+                                <span className="text-sm sm:text-base font-semibold text-gray-800">{symbol.text}</span> 
+                                {simbolosUnicos.has(symbol.text) && <span className="text-xs text-green-600 mt-1">✓ Usado</span>} 
+                            </button> 
+                        ))}
+                    </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-green-600">{acertos}/{tentativas}</div>
-                  <div className="text-sm text-gray-600">Acertos</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-purple-600">{precisao}%</div>
-                  <div className="text-sm text-gray-600">Precisão</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Área de Jogo */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="h-2 bg-gray-200">
-                <div 
-                  className="h-full bg-orange-500 transition-all duration-1000"
-                  style={{ width: `${((duracao - tempoRestante) / duracao) * 100}%` }}
-                />
-              </div>
-
-              <div 
-                className="relative bg-gradient-to-br from-blue-50 to-purple-50 cursor-crosshair"
-                style={{ height: '500px', width: '100%' }}
-                onClick={handleClickArea}
-              >
-                {targetVisible && (
-                  <button
-                    onClick={clicarTarget}
-                    className="absolute w-20 h-20 bg-red-500 hover:bg-red-600 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center text-white text-2xl animate-pulse border-4 border-white"
-                    style={{ 
-                      left: `${posicaoTarget.x}%`, 
-                      top: `${posicaoTarget.y}%`,
-                      transform: 'translate(-50%, -50%)'
-                    }}
-                  >
-                    🎯
-                  </button>
-                )}
-
-                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-center">
-                  <div className="bg-black bg-opacity-70 text-white px-6 py-3 rounded-lg">
-                    <div className="font-medium">Mantenha o foco!</div>
-                    <div className="text-sm opacity-90">Nível {nivel} • {tempoRestante}s restantes</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          // Tela de resultados LIMPA
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <div className="text-center mb-6">
-              <div className="text-6xl mb-4">
-                {precisao >= 90 ? '🏆' : precisao >= 75 ? '🎉' : '💪'}
-              </div>
-              
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                {precisao >= 90 ? 'Excelente!' : precisao >= 75 ? 'Muito bem!' : 'Continue praticando!'}
-              </h3>
-              
-              <p className="text-gray-600">
-                Você completou o nível {nivel} com {precisao}% de precisão
-              </p>
-            </div>
-            
-            {/* Resultados */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto mb-8">
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-gray-800">{acertos}/{tentativas}</div>
-                <div className="text-sm text-gray-600">Acertos</div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-gray-800">{precisao}%</div>
-                <div className="text-sm text-gray-600">Precisão</div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-gray-800">{tempoReacaoMedio}ms</div>
-                <div className="text-sm text-gray-600">Tempo Médio</div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-gray-800">{pontuacao}</div>
-                <div className="text-sm text-gray-600">Pontos</div>
-              </div>
-            </div>
-            
-            {/* Feedback */}
-            <div className="bg-blue-50 rounded-lg p-4 mb-6">
-              <h4 className="font-bold text-blue-800 mb-2">📊 Seu Desempenho:</h4>
-              <div className="text-sm text-blue-700 space-y-1">
-                <p>• Precisão: {precisao >= 75 ? '✅ Ótima!' : '⚠️ Precisa melhorar'}</p>
-                <p>• Velocidade: {tempoReacaoMedio < 600 ? '✅ Rápido' : tempoReacaoMedio < 800 ? '⚠️ Moderado' : '🔴 Lento'}</p>
-                <p>• Consistência: {coeficienteVariacao <= 30 ? '✅ Estável' : '⚠️ Variável'}</p>
-              </div>
-            </div>
-            
-            {/* Botões de ação */}
-            <div className="flex justify-center space-x-4">
-              {podeAvancar && (
-                <button
-                  onClick={proximoNivel}
-                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-                >
-                  🆙 Próximo Nível
-                </button>
-              )}
-              
-              <button
-                onClick={voltarInicio}
-                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-              >
-                🔄 Repetir
-              </button>
-            </div>
-          </div>
-        )}
-      </main>
-    </div>
-  )
+            </main>
+        </div>
+    );
 }
