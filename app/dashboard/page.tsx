@@ -1,10 +1,23 @@
 'use client';
-
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardCharts from '@/components/charts/DashboardCharts';
+import { fetchAllSessions } from './dashboardUtils';
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
+  const loadSessions = async () => {
+    const data = await fetchAllSessions();
+    setSessions(data);
+    setLoading(false);
+  };
 
   const handleBack = () => {
     router.push('/profileselection');
@@ -40,13 +53,19 @@ export default function DashboardPage() {
               Dashboard de Progresso
             </h1>
             
-            <div className="w-20"></div> {/* Spacer para centralizar título */}
+            <div className="w-20"></div>
           </div>
         </div>
       </div>
-
+      
       {/* Conteúdo do Dashboard */}
-      <DashboardCharts />
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <p>Carregando dados...</p>
+        </div>
+      ) : (
+        <DashboardCharts sessions={sessions} />
+      )}
     </div>
   );
 }
