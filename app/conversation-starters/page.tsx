@@ -579,18 +579,22 @@ export default function ConversationStartersPage() {
         return
       }
       
-      // Salvar métricas detalhadas no campo detalhes (JSON)
+      // Salvar métricas detalhadas na coluna detalhes (JSONB)
       const detalhesMetricas = {
+        tipo_atividade: 'iniciando_conversas',
+        versao_metricas: '1.0',
         nivel: currentLevel,
         situacoesCompletadas: currentSituation + 1,
         acertos: score,
-        tempoMedioResposta: metricas.tempoMedioResposta,
-        taxaIniciacao: metricas.taxaIniciacao,
-        taxaSucesso: metricas.taxaSucesso,
+        tempoMedioResposta: parseFloat(metricas.tempoMedioResposta),
+        taxaIniciacao: parseFloat(metricas.taxaIniciacao),
+        taxaSucesso: parseFloat(metricas.taxaSucesso),
         diversidadeEstrategias: metricas.diversidadeEstrategias,
         contextosVariados: metricas.contextosVariados,
         elementosNaoVerbais: metricas.elementosNaoVerbaisTotal,
-        trocasReciprocas: metricas.trocasReciprocas
+        trocasReciprocas: metricas.trocasReciprocas,
+        estrategiasUsadas: Array.from(estrategiasUsadas),
+        contextosExplorados: Array.from(contextosExplorados)
       }
       
       const { data, error } = await supabase
