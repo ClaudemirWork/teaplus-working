@@ -1,7 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
+
+// Configuração Supabase
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 interface AudioExercise {
   id: number
@@ -19,6 +25,7 @@ interface AudioExercise {
     explanation: string
   }[]
   listeningSkill: string
+  complexity: 'simple' | 'complex' | 'inferential' // Para métricas CELF-5
 }
 
 interface Level {
@@ -41,6 +48,21 @@ export default function ActiveListening() {
   const [completedLevels, setCompletedLevels] = useState<number[]>([])
   const [gameCompleted, setGameCompleted] = useState(false)
   const [isListening, setIsListening] = useState(false)
+  const [sessionStartTime] = useState(Date.now())
+  
+  // Métricas baseadas em CELF-5, TILLS e ADOS-2
+  const [metrics, setMetrics] = useState({
+    totalQuestions: 0,
+    correctAnswers: 0,
+    simpleComprehension: 0, // Compreensão de instruções simples
+    complexComprehension: 0, // Compreensão de contexto complexo
+    inferentialComprehension: 0, // Compreensão inferencial/sarcasmo
+    audioRepeats: 0, // Solicitações de repetição (atenção sustentada)
+    responseTime: [] as number[], // Tempo de resposta para cada questão
+    listenerFeedback: 0, // Vezes que ouviu o áudio completo
+  })
+
+  const questionStartTime = useRef<number>(Date.now())
 
   // Inicializar vozes do navegador
   useEffect(() => {
@@ -73,6 +95,7 @@ export default function ActiveListening() {
           speakerEmotion: "😊",
           message: "Oi! Meu nome é Ana, tenho 16 anos e estudo no Colégio Santos. Moro aqui em São Paulo com minha família. Gosto muito de ler livros e tocar violão nas horas livres.",
           listeningSkill: "Identificação de informações pessoais",
+          complexity: 'simple',
           questions: [
             {
               id: 1,
@@ -106,6 +129,7 @@ export default function ActiveListening() {
           speakerEmotion: "📚",
           message: "Pessoal, para a próxima aula vocês precisam trazer o livro de matemática, uma calculadora e fazer os exercícios da página 45. A prova será na sexta-feira.",
           listeningSkill: "Compreensão de instruções",
+          complexity: 'complex',
           questions: [
             {
               id: 1,
@@ -135,18 +159,24 @@ export default function ActiveListening() {
           id: 3,
           title: "Detectando Sarcasmo",
           instruction: "Identifique o verdadeiro significado da mensagem",
-          audioDescription: "Pessoa usando tom irônico",
-          speaker: "Pessoa",
+          audioDescription: "Pessoa usando tom irônico ao olhar pela janela em dia chuvoso",
+          speaker: "Carlos",
           speakerEmotion: "😏",
-          message: "Nossa, que dia lindo para um piquenique!",
+          message: "Nossa, que dia lindo para um piquenique! Está chovendo tanto que mal consigo ver a rua.",
           listeningSkill: "Interpretação de sarcasmo e ironia",
+          complexity: 'inferential',
           questions: [
             {
               id: 1,
               question: "Qual é o verdadeiro significado da frase?",
-              options: ["A pessoa realmente acha o dia bom", "A pessoa está sendo sarcástica", "A pessoa está feliz", "A pessoa quer fazer piquenique"],
+              options: [
+                "A pessoa realmente acha o dia bom", 
+                "A pessoa está sendo sarcástica sobre o mau tempo", 
+                "A pessoa está feliz", 
+                "A pessoa quer fazer piquenique"
+              ],
               correct: 1,
-              explanation: "O tom irônico indica sarcasmo sobre o mau tempo."
+              explanation: "O tom irônico e a menção à chuva indicam sarcasmo sobre o mau tempo."
             }
           ]
         }
@@ -163,10 +193,11 @@ export default function ActiveListening() {
           title: "Detectando Tristeza",
           instruction: "Identifique as emoções por trás das palavras",
           audioDescription: "Estudante com tom baixo e hesitante",
-          speaker: "Estudante",
+          speaker: "João",
           speakerEmotion: "😔",
-          message: "Ah, tudo bem... a prova foi normal, eu acho... não sei...",
+          message: "Ah, tudo bem... a prova foi normal, eu acho... não sei... talvez eu devesse ter estudado mais...",
           listeningSkill: "Reconhecimento de estados emocionais",
+          complexity: 'inferential',
           questions: [
             {
               id: 1,
@@ -189,6 +220,12 @@ export default function ActiveListening() {
     if (!currentExerciseData) return
     
     setIsListening(true)
+    
+    // Incrementar métrica de listener feedback
+    setMetrics(prev => ({
+      ...prev,
+      listenerFeedback: prev.listenerFeedback + 1
+    }))
     
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel()
@@ -230,13 +267,51 @@ export default function ActiveListening() {
     setIsListening(false)
   }
 
+  const repeatAudio = () => {
+    // Registrar repetição (métrica de atenção)
+    setMetrics(prev => ({
+      ...prev,
+      audioRepeats: prev.audioRepeats + 1
+    }))
+    simulateAudioPlay()
+  }
+
   const handleAnswer = (answerIndex: number) => {
     if (selectedAnswer !== null) return
 
+    // Calcular tempo de resposta
+    const responseTime = Date.now() - questionStartTime.current
+    
     setSelectedAnswer(answerIndex)
     setShowResult(true)
 
-    if (answerIndex === currentQuestionData?.correct) {
+    const isCorrect = answerIndex === currentQuestionData?.correct
+
+    // Atualizar métricas
+    setMetrics(prev => {
+      const newMetrics = {
+        ...prev,
+        totalQuestions: prev.totalQuestions + 1,
+        responseTime: [...prev.responseTime, responseTime]
+      }
+
+      if (isCorrect) {
+        newMetrics.correctAnswers = prev.correctAnswers + 1
+        
+        // Categorizar por tipo de compreensão
+        if (currentExerciseData?.complexity === 'simple') {
+          newMetrics.simpleComprehension = prev.simpleComprehension + 1
+        } else if (currentExerciseData?.complexity === 'complex') {
+          newMetrics.complexComprehension = prev.complexComprehension + 1
+        } else if (currentExerciseData?.complexity === 'inferential') {
+          newMetrics.inferentialComprehension = prev.inferentialComprehension + 1
+        }
+      }
+
+      return newMetrics
+    })
+
+    if (isCorrect) {
       const points = 10
       setScore(score + points)
       setTotalScore(totalScore + points)
@@ -249,6 +324,9 @@ export default function ActiveListening() {
 
   const nextQuestion = () => {
     stopAudio()
+    
+    // Resetar tempo para próxima questão
+    questionStartTime.current = Date.now()
     
     if (!currentExerciseData || !currentQuestionData) return
 
@@ -296,26 +374,118 @@ export default function ActiveListening() {
     setCompletedLevels([])
     setGameCompleted(false)
     setIsListening(false)
+    setMetrics({
+      totalQuestions: 0,
+      correctAnswers: 0,
+      simpleComprehension: 0,
+      complexComprehension: 0,
+      inferentialComprehension: 0,
+      audioRepeats: 0,
+      responseTime: [],
+      listenerFeedback: 0,
+    })
+  }
+
+  const saveSession = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        window.location.href = '/login'
+        return
+      }
+
+      const sessionTime = Math.floor((Date.now() - sessionStartTime) / 1000)
+      const avgResponseTime = metrics.responseTime.length > 0 
+        ? Math.floor(metrics.responseTime.reduce((a, b) => a + b, 0) / metrics.responseTime.length / 1000)
+        : 0
+
+      const sessionData = {
+        usuario_id: user.id,
+        tipo_atividade: 'escuta_ativa',
+        pontuacao: totalScore,
+        tempo_sessao: sessionTime,
+        dados_sessao: {
+          exercicios_completados: metrics.totalQuestions,
+          respostas_corretas: metrics.correctAnswers,
+          taxa_acerto: Math.round((metrics.correctAnswers / Math.max(metrics.totalQuestions, 1)) * 100),
+          compreensao_simples: metrics.simpleComprehension,
+          compreensao_complexa: metrics.complexComprehension,
+          compreensao_inferencial: metrics.inferentialComprehension,
+          repeticoes_audio: metrics.audioRepeats,
+          tempo_resposta_medio: avgResponseTime,
+          feedback_ouvinte: metrics.listenerFeedback,
+          niveis_completados: completedLevels.length,
+          metricas_celf5: {
+            compreensao_auditiva: metrics.correctAnswers,
+            processamento_linguagem: metrics.complexComprehension + metrics.inferentialComprehension
+          },
+          metricas_ados2: {
+            resposta_comunicativa: metrics.listenerFeedback,
+            atencao_sustentada: metrics.audioRepeats < 3 ? 'adequada' : 'necessita_suporte'
+          }
+        }
+      }
+
+      const { error } = await supabase
+        .from('sessoes')
+        .insert([sessionData])
+
+      if (error) throw error
+
+      // Mostrar resumo antes de redirecionar
+      const resumo = `
+✅ Sessão Salva com Sucesso!
+
+📊 Métricas da Sessão:
+• Exercícios Completados: ${metrics.totalQuestions}
+• Taxa de Acerto: ${Math.round((metrics.correctAnswers / Math.max(metrics.totalQuestions, 1)) * 100)}%
+• Tempo Total: ${Math.floor(sessionTime / 60)}min ${sessionTime % 60}s
+• Compreensão Simples: ${metrics.simpleComprehension}
+• Compreensão Complexa: ${metrics.complexComprehension}
+• Compreensão Inferencial: ${metrics.inferentialComprehension}
+• Repetições de Áudio: ${metrics.audioRepeats}
+• Tempo de Resposta Médio: ${avgResponseTime}s
+
+🎯 Métricas Científicas:
+• CELF-5 (Compreensão Auditiva): ${metrics.correctAnswers}/${metrics.totalQuestions}
+• ADOS-2 (Atenção): ${metrics.audioRepeats < 3 ? 'Adequada' : 'Necessita Suporte'}
+• Listener Feedback: ${metrics.listenerFeedback} interações
+      `
+      
+      alert(resumo)
+      window.location.href = '/tea'
+    } catch (error) {
+      console.error('Erro ao salvar sessão:', error)
+      alert('Erro ao salvar a sessão. Por favor, tente novamente.')
+    }
   }
 
   if (gameCompleted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-100">
-        {/* Header Mobile */}
+        {/* Header com Botão Finalizar */}
         <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
             <div className="flex items-center justify-between">
-              <a 
+              <Link 
                 href="/tea" 
                 className="flex items-center text-teal-600 hover:text-teal-700 transition-colors min-h-[44px] px-2 -ml-2"
               >
                 <span className="text-xl mr-2">←</span>
-                <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
-              </a>
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex-1 mx-4">
+                <span className="text-sm sm:text-base font-medium">Voltar</span>
+              </Link>
+              
+              <h1 className="text-lg sm:text-xl font-bold text-gray-800">
                 👂 Escuta Ativa
               </h1>
-              <div className="w-20"></div>
+              
+              <button
+                onClick={saveSession}
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+              >
+                Finalizar e Salvar
+              </button>
             </div>
           </div>
         </div>
@@ -343,24 +513,26 @@ export default function ActiveListening() {
                   </div>
 
                   <div className="rounded-2xl bg-gradient-to-r from-green-50 to-blue-50 p-4 sm:p-6">
-                    <h3 className="mb-2 text-base sm:text-lg font-semibold text-gray-900">Níveis Completados</h3>
-                    <p className="text-xl sm:text-2xl font-bold text-green-600">{completedLevels.length}/3</p>
+                    <h3 className="mb-2 text-base sm:text-lg font-semibold text-gray-900">Taxa de Acerto</h3>
+                    <p className="text-xl sm:text-2xl font-bold text-green-600">
+                      {Math.round((metrics.correctAnswers / Math.max(metrics.totalQuestions, 1)) * 100)}%
+                    </p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <button
+                    onClick={saveSession}
+                    className="w-full rounded-2xl bg-gradient-to-r from-green-500 to-green-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white transition-all hover:from-green-600 hover:to-green-700 hover:shadow-lg"
+                  >
+                    💾 Salvar Sessão
+                  </button>
+                  <button
                     onClick={resetGame}
-                    className="w-full rounded-2xl bg-gradient-to-r from-teal-500 to-blue-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white transition-all hover:from-teal-600 hover:to-blue-700 hover:shadow-lg min-h-[48px] touch-manipulation"
+                    className="w-full rounded-2xl bg-gradient-to-r from-teal-500 to-blue-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white transition-all hover:from-teal-600 hover:to-blue-700 hover:shadow-lg"
                   >
                     🔄 Jogar Novamente
                   </button>
-                  <Link
-                    href="/tea"
-                    className="block w-full rounded-2xl border-2 border-gray-300 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-gray-700 transition-all hover:border-gray-400 hover:shadow-lg min-h-[48px] touch-manipulation"
-                  >
-                    🏠 Voltar à TEA
-                  </Link>
                 </div>
               </div>
             </div>
@@ -372,49 +544,55 @@ export default function ActiveListening() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-100">
-      {/* Header Mobile */}
+      {/* Header com Botão Finalizar Sempre Visível */}
       <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <a 
+            <Link 
               href="/tea" 
               className="flex items-center text-teal-600 hover:text-teal-700 transition-colors min-h-[44px] px-2 -ml-2"
             >
               <span className="text-xl mr-2">←</span>
-              <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
-            </a>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex-1 mx-4">
+              <span className="text-sm sm:text-base font-medium">Voltar</span>
+            </Link>
+            
+            <h1 className="text-lg sm:text-xl font-bold text-gray-800">
               👂 Escuta Ativa
             </h1>
-            <div className="text-right">
-              <div className="text-xs sm:text-sm text-gray-500">Pontuação Total</div>
-              <div className="text-base sm:text-xl font-bold text-teal-600">{totalScore} pts</div>
-            </div>
+            
+            <button
+              onClick={saveSession}
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+            >
+              Finalizar e Salvar
+            </button>
           </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        {/* Game Info Cards */}
-        <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Cards de Instrução - Layout Padronizado */}
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="rounded-xl bg-white p-4 shadow-lg border-l-4 border-red-500">
             <div className="mb-3 flex items-center">
               <span className="mr-2 text-xl sm:text-2xl">🎯</span>
               <h3 className="text-base sm:text-lg font-semibold text-red-600">Objetivo:</h3>
             </div>
             <p className="text-sm text-gray-700">
-              Desenvolver habilidades de escuta ativa, compreensão de mensagens e interpretação de sinais emocionais
+              Desenvolver compreensão auditiva, processamento de linguagem e identificação de sinais emocionais na fala
             </p>
           </div>
 
           <div className="rounded-xl bg-white p-4 shadow-lg border-l-4 border-blue-500">
             <div className="mb-3 flex items-center">
-              <span className="mr-2 text-xl sm:text-2xl">👑</span>
-              <h3 className="text-base sm:text-lg font-semibold text-blue-600">Pontuação:</h3>
+              <span className="mr-2 text-xl sm:text-2xl">🎮</span>
+              <h3 className="text-base sm:text-lg font-semibold text-blue-600">Como se Joga:</h3>
             </div>
-            <p className="text-sm text-gray-700">
-              Cada resposta correta = +10 pontos. Use o botão ▶️ para ouvir o áudio!
-            </p>
+            <ul className="text-sm text-gray-700 space-y-1">
+              <li>• Clique no ▶️ para ouvir</li>
+              <li>• Escolha a resposta correta</li>
+              <li>• Repita se necessário 🔁</li>
+            </ul>
           </div>
 
           <div className="rounded-xl bg-white p-4 shadow-lg border-l-4 border-purple-500">
@@ -424,29 +602,50 @@ export default function ActiveListening() {
             </div>
             <div className="space-y-1 text-xs sm:text-sm">
               <div className={completedLevels.includes(1) ? 'text-green-600 font-semibold' : 'text-gray-700'}>
-                <span className="font-semibold text-purple-600">Nível 1:</span> Escuta básica
+                Nível 1: Escuta básica
               </div>
               <div className={completedLevels.includes(2) ? 'text-green-600 font-semibold' : 'text-gray-700'}>
-                <span className="font-semibold text-purple-600">Nível 2:</span> Escuta interpretativa
+                Nível 2: Interpretativa
               </div>
               <div className={completedLevels.includes(3) ? 'text-green-600 font-semibold' : 'text-gray-700'}>
-                <span className="font-semibold text-purple-600">Nível 3:</span> Escuta empática
+                Nível 3: Empática
               </div>
             </div>
-          </div>
-
-          <div className="rounded-xl bg-white p-4 shadow-lg border-l-4 border-green-500">
-            <div className="mb-3 flex items-center">
-              <span className="mr-2 text-xl sm:text-2xl">🏁</span>
-              <h3 className="text-base sm:text-lg font-semibold text-green-600">Final:</h3>
-            </div>
-            <p className="text-sm text-gray-700">
-              Complete os 3 níveis para dominar a escuta ativa e compreensão de mensagens
-            </p>
           </div>
         </div>
 
-        {/* Game Area */}
+        {/* Progresso da Sessão - 4 Métricas */}
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">📊 Progresso da Sessão</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-blue-100 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {Math.round((metrics.correctAnswers / Math.max(metrics.totalQuestions, 1)) * 100)}%
+              </div>
+              <div className="text-xs text-gray-600">Taxa de Acerto</div>
+            </div>
+            <div className="bg-green-100 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {metrics.totalQuestions}
+              </div>
+              <div className="text-xs text-gray-600">Questões Respondidas</div>
+            </div>
+            <div className="bg-purple-100 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {metrics.audioRepeats}
+              </div>
+              <div className="text-xs text-gray-600">Repetições de Áudio</div>
+            </div>
+            <div className="bg-orange-100 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-orange-600">
+                {completedLevels.length}/3
+              </div>
+              <div className="text-xs text-gray-600">Níveis Completos</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Área Principal do Jogo */}
         <div className="rounded-xl bg-white p-4 sm:p-8 shadow-xl">
           <div className="mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
@@ -509,6 +708,14 @@ export default function ActiveListening() {
                       title="Reproduzir áudio"
                     >
                       {isListening ? '🔊' : '▶️'}
+                    </button>
+                    <button
+                      onClick={repeatAudio}
+                      disabled={isListening}
+                      className="rounded-full p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white transition-all min-h-[44px] min-w-[44px] touch-manipulation"
+                      title="Repetir áudio"
+                    >
+                      🔁
                     </button>
                     {isListening && (
                       <button
@@ -616,8 +823,26 @@ export default function ActiveListening() {
             </div>
           )}
 
-          <div className="mt-6 text-center text-xs sm:text-sm text-gray-500">
-            Exercício {currentExercise + 1} • Pergunta {currentQuestion + 1} • Nível {currentLevel} de {levels.length}
+          {/* Indicadores de Progresso */}
+          <div className="mt-6 flex justify-center space-x-2">
+            {Array.from({ length: currentLevelData?.exercises.length || 0 }).map((_, idx) => (
+              <div
+                key={idx}
+                className={`h-2 w-2 rounded-full ${
+                  idx < currentExercise 
+                    ? 'bg-green-500'
+                    : idx === currentExercise
+                    ? 'bg-blue-500'
+                    : 'bg-gray-300'
+                }`}
+              />
+            ))}
+          </div>
+
+          <div className="mt-4 text-center text-xs sm:text-sm text-gray-500">
+            Exercício {currentExercise + 1} de {currentLevelData?.exercises.length} • 
+            Pergunta {currentQuestion + 1} • 
+            Nível {currentLevel} de {levels.length}
           </div>
         </div>
       </div>
