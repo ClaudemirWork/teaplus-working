@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { useRouter } from 'next/router';
 
 export default function FacialExpressionsGame() {
   const [pontuacao, setPontuacao] = useState(0);
-  const [nivel, setNivel] = useState(1);
+  const [nivel, setNivel] = useState<1 | 2 | 3>(1);
   const [atividadeIniciada, setAtividadeIniciada] = useState(false);
   const [atividadeConcluida, setAtividadeConcluida] = useState(false);
   const [emocaoAtual, setEmocaoAtual] = useState('');
@@ -24,21 +23,20 @@ export default function FacialExpressionsGame() {
   const [temposResposta, setTemposResposta] = useState<number[]>([]);
   const [tempoPerguntaAtual, setTempoPerguntaAtual] = useState<Date | null>(null);
   
-  const router = useRouter();
-  
   // Inicializar Supabase - mesmo padrão do CAA/eye-contact
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = supabaseUrl && supabaseAnonKey ? 
+    createClient(supabaseUrl, supabaseAnonKey) : null;
 
   // Emoções baseadas em pesquisa científica (NEPSY-II e estudos TEA)
-  const emocoes = {
+  const emocoes: Record<1 | 2 | 3, string[]> = {
     1: ['😊', '😢', '😮'], // Básico: feliz, triste, surpreso
     2: ['😊', '😢', '😮', '😠', '😨'], // Intermediário: + bravo, medo
     3: ['😊', '😢', '😮', '😠', '😨', '😐', '🤢', '🤔'] // Avançado: + neutro, nojo, pensativo
   };
 
-  const nomesEmocoes = {
+  const nomesEmocoes: Record<string, string> = {
     '😊': 'Feliz',
     '😢': 'Triste', 
     '😮': 'Surpreso',
@@ -114,7 +112,7 @@ export default function FacialExpressionsGame() {
       if (pontuacao >= 40 && nivel < 3) {
         // Avançar de nível
         const novaPontuacao = 0;
-        const novoNivel = nivel + 1;
+        const novoNivel = (nivel + 1) as 1 | 2 | 3;
         setPontuacao(novaPontuacao);
         setNivel(novoNivel);
       } else if (pontuacao < 50) {
@@ -137,7 +135,7 @@ export default function FacialExpressionsGame() {
   };
 
   const getNomeNivel = () => {
-    const nomes = { 1: 'Básico', 2: 'Intermediário', 3: 'Avançado' };
+    const nomes: Record<1 | 2 | 3, string> = { 1: 'Básico', 2: 'Intermediário', 3: 'Avançado' };
     return nomes[nivel];
   };
 
@@ -183,10 +181,17 @@ export default function FacialExpressionsGame() {
   const handleSaveSession = async () => {
     if (!atividadeConcluida || salvando) return;
     
+    // Garantir que está no client-side
+    if (typeof window === 'undefined') return;
+    
     setSalvando(true);
     setErroSalvamento('');
     
     try {
+      if (!supabase) {
+        throw new Error('Supabase não está configurado');
+      }
+      
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -214,7 +219,7 @@ export default function FacialExpressionsGame() {
       setSalvamentoConfirmado(true);
       
       setTimeout(() => {
-        router.push('/tea');
+        window.location.href = '/tea';
       }, 2000);
       
     } catch (error) {
