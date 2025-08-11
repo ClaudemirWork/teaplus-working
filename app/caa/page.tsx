@@ -206,25 +206,7 @@ export default function AttentionSustained() {
             href="/tdah" 
             className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
           >
-            <ChevronLeft size={20} />
-            <span className="text-sm sm:text-base">Voltar para TDAH</span>
-          </Link>
-          
-          {/* BOTÃO SEMPRE NO MESMO LUGAR - HEADER */}
-          {exercicioConcluido && (
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <button 
-                onClick={handleSaveSession}
-                disabled={salvando}
-                className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
-              >
-                <Save size={20} />
-                <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
+            <ChevronLeft size
 
       <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
         {!jogoIniciado ? (
