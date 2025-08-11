@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, Save, Eye, Target, Trophy, Timer, Star, Heart } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '../../utils/supabaseClient' // Corrigido para eye-contact/page.tsx
+import { createClient } from '../utils/supabaseClient' // IMPORT CORRETO para eye-contact/page.tsx
 
 export default function ContatoVisualProgressivoPage() {
   const router = useRouter()
