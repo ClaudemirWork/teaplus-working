@@ -6,6 +6,21 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '../utils/supabaseClient' // IMPORT CORRETO para eye-contact/page.tsx
 
 export default function ContatoVisualProgressivoPage() {
+  /*
+   * Atividade de Contato Visual Progressivo - TeaPlus
+   * 
+   * Métricas baseadas em literatura científica:
+   * 1. Tempo de Reação - Gap-Overlap paradigm (Molecular Autism, 2021)
+   * 2. Taxa de Acerto - TVPS (Test of Visual Perceptual Skills)
+   * 3. Variabilidade de Resposta - RDI (Response Dispersion Index)
+   * 4. Atenção Visual Direcionada - Go/NoGo com eye-tracking (Scientific Reports, 2021)
+   * 
+   * Referências:
+   * - Frontiers in Psychology (2021) - Visual Perceptual Skills in ASD
+   * - Molecular Autism (2020-2021) - Visual attention and inhibitory control
+   * - Scientific Reports (2021) - Go/NoGo game CatChicken
+   */
+  
   const router = useRouter()
   const supabase = createClient()
   const [salvando, setSalvando] = useState(false)
@@ -74,10 +89,23 @@ export default function ContatoVisualProgressivoPage() {
     
     // Aguarda um tempo antes de mostrar os olhos
     timeoutRef.current = setTimeout(() => {
-      // Define posição aleatória para os olhos
-      const novaX = 20 + Math.random() * 60
-      const novaY = 20 + Math.random() * 40
-      setPosicaoOlhos({ x: novaX, y: novaY })
+      // Define posição aleatória para os olhos com mais variação
+      // Posições pré-definidas para simular diferentes direções do olhar
+      const posicoes = [
+        { x: 50, y: 20 }, // Olhando para cima
+        { x: 50, y: 45 }, // Olhando para baixo
+        { x: 25, y: 33 }, // Olhando para esquerda
+        { x: 75, y: 33 }, // Olhando para direita
+        { x: 30, y: 25 }, // Canto superior esquerdo
+        { x: 70, y: 25 }, // Canto superior direito
+        { x: 30, y: 40 }, // Canto inferior esquerdo
+        { x: 70, y: 40 }, // Canto inferior direito
+        { x: 50, y: 33 }, // Centro (contato direto)
+      ]
+      
+      // Escolhe uma posição aleatória
+      const posicaoEscolhida = posicoes[Math.floor(Math.random() * posicoes.length)]
+      setPosicaoOlhos(posicaoEscolhida)
       
       setOlhosVisiveis(true)
       setAguardandoClique(true)
@@ -305,6 +333,9 @@ export default function ContatoVisualProgressivoPage() {
               Praticar o direcionamento da atenção visual clicando nos olhos quando aparecerem. 
               Desenvolve foco, velocidade de resposta e coordenação olho-mão.
             </p>
+            <p className="text-xs text-gray-500 mt-2 italic">
+              Baseado em métricas validadas: TVPS, Gap-Overlap, RDI (Response Dispersion Index)
+            </p>
           </div>
           
           {/* Como se Joga */}
@@ -443,6 +474,19 @@ export default function ContatoVisualProgressivoPage() {
                     {aguardandoClique ? 'Clique nos olhos!' : 'Aguarde...'}
                   </div>
                 </div>
+                
+                {/* Indicador de direção do olhar */}
+                {olhosVisiveis && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                    <div className="text-xs text-gray-500 bg-white px-3 py-1 rounded-full">
+                      {posicaoOlhos.y < 30 ? '👀 Olhando para cima' :
+                       posicaoOlhos.y > 35 ? '👀 Olhando para baixo' :
+                       posicaoOlhos.x < 40 ? '👀 Olhando para esquerda' :
+                       posicaoOlhos.x > 60 ? '👀 Olhando para direita' :
+                       '👀 Contato direto'}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             
