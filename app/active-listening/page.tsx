@@ -1,19 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { createClient } from '../utils/supabaseClient'
 
-// Configuração Supabase com verificação
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Variáveis de ambiente do Supabase não configuradas')
-}
-
-const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
+// Usar o mesmo cliente do CAA
+const supabase = createClient()
 
 interface AudioExercise {
   id: number
@@ -31,7 +24,7 @@ interface AudioExercise {
     explanation: string
   }[]
   listeningSkill: string
-  complexity: 'simple' | 'complex' | 'inferential' // Para métricas CELF-5
+  complexity: 'simple' | 'complex' | 'inferential'
 }
 
 interface Level {
@@ -55,61 +48,25 @@ export default function ActiveListening() {
   const [completedLevels, setCompletedLevels] = useState<number[]>([])
   const [gameCompleted, setGameCompleted] = useState(false)
   const [isListening, setIsListening] = useState(false)
-  const [sessionStartTime] = useState(Date.now())
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  const [salvando, setSalvando] = useState(false)
+  const [inicioSessao] = useState(new Date())
   
   // Métricas baseadas em CELF-5, TILLS e ADOS-2
   const [metrics, setMetrics] = useState({
     totalQuestions: 0,
     correctAnswers: 0,
-    simpleComprehension: 0, // Compreensão de instruções simples
-    complexComprehension: 0, // Compreensão de contexto complexo
-    inferentialComprehension: 0, // Compreensão inferencial/sarcasmo
-    audioRepeats: 0, // Solicitações de repetição (atenção sustentada)
-    responseTime: [] as number[], // Tempo de resposta para cada questão
-    listenerFeedback: 0, // Vezes que ouviu o áudio completo
+    simpleComprehension: 0,
+    complexComprehension: 0,
+    inferentialComprehension: 0,
+    audioRepeats: 0,
+    responseTime: [] as number[],
+    listenerFeedback: 0,
   })
 
   const questionStartTime = useRef<number>(Date.now())
 
-  // Inicializar vozes do navegador e verificar sessões pendentes
+  // Inicializar vozes do navegador
   useEffect(() => {
-    // Verificar autenticação ao carregar o componente
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        console.log('Usuário não autenticado ao carregar a página')
-        console.log('Recomenda-se fazer login para salvar o progresso')
-        setIsAuthenticated(false)
-      } else {
-        console.log('Usuário autenticado:', user.email)
-        setIsAuthenticated(true)
-        
-        // Verificar se há sessões locais para sincronizar
-        const localSessions = JSON.parse(localStorage.getItem('tea_sessions_temp') || '[]')
-        if (localSessions.length > 0) {
-          console.log(`Encontradas ${localSessions.length} sessões locais para sincronizar`)
-          
-          for (const session of localSessions) {
-            try {
-              await supabase
-                .from('sessoes')
-                .insert([{ ...session, usuario_id: user.id }])
-              
-              console.log('Sessão local sincronizada com sucesso')
-            } catch (error) {
-              console.error('Erro ao sincronizar sessão local:', error)
-            }
-          }
-          
-          // Limpar sessões locais após sincronização
-          localStorage.removeItem('tea_sessions_temp')
-        }
-      }
-    }
-    
-    checkAuth()
-    
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const loadVoices = () => {
         const voices = window.speechSynthesis.getVoices()
@@ -430,148 +387,71 @@ export default function ActiveListening() {
     })
   }
 
-  const saveSession = async () => {
+  // FUNÇÃO DE SALVAMENTO - IGUAL AO CAA
+  const handleSaveSession = async () => {
+    if (metrics.totalQuestions === 0) {
+      alert('Nenhuma interação foi registrada para salvar.')
+      return
+    }
+    
+    setSalvando(true)
+    
+    const fimSessao = new Date()
+    const duracaoSegundos = Math.round((fimSessao.getTime() - inicioSessao.getTime()) / 1000)
+    const avgResponseTime = metrics.responseTime.length > 0 
+      ? Math.floor(metrics.responseTime.reduce((a, b) => a + b, 0) / metrics.responseTime.length / 1000)
+      : 0
+    
     try {
-      console.log('Iniciando salvamento da sessão...')
+      // Obter o usuário atual - EXATAMENTE COMO NO CAA
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
       
-      // Verificar se há dados para salvar
-      if (metrics.totalQuestions === 0) {
-        alert('Você precisa responder pelo menos uma questão antes de salvar.')
+      if (userError || !user) {
+        console.error('Erro ao obter usuário:', userError)
+        alert('Erro: Sessão expirada. Por favor, faça login novamente.')
+        router.push('/login')
         return
       }
       
-      const sessionTime = Math.floor((Date.now() - sessionStartTime) / 1000)
-      const avgResponseTime = metrics.responseTime.length > 0 
-        ? Math.floor(metrics.responseTime.reduce((a, b) => a + b, 0) / metrics.responseTime.length / 1000)
-        : 0
-
-      const sessionData = {
-        tipo_atividade: 'escuta_ativa',
-        pontuacao: totalScore,
-        tempo_sessao: sessionTime,
-        dados_sessao: {
-          exercicios_completados: metrics.totalQuestions,
-          respostas_corretas: metrics.correctAnswers,
-          taxa_acerto: Math.round((metrics.correctAnswers / Math.max(metrics.totalQuestions, 1)) * 100),
-          compreensao_simples: metrics.simpleComprehension,
-          compreensao_complexa: metrics.complexComprehension,
-          compreensao_inferencial: metrics.inferentialComprehension,
-          repeticoes_audio: metrics.audioRepeats,
-          tempo_resposta_medio: avgResponseTime,
-          feedback_ouvinte: metrics.listenerFeedback,
-          niveis_completados: completedLevels.length,
-          metricas_celf5: {
-            compreensao_auditiva: metrics.correctAnswers,
-            processamento_linguagem: metrics.complexComprehension + metrics.inferentialComprehension
-          },
-          metricas_ados2: {
-            resposta_comunicativa: metrics.listenerFeedback,
-            atencao_sustentada: metrics.audioRepeats < 3 ? 'adequada' : 'necessita_suporte'
-          }
-        },
-        created_at: new Date().toISOString()
-      }
-      
-      // Verificar autenticação
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      
-      if (authError) {
-        console.error('Erro de autenticação:', authError)
-      }
-      
-      if (!user) {
-        console.log('Usuário não autenticado - salvando localmente')
-        
-        // Salvar no localStorage temporariamente
-        const localSessions = JSON.parse(localStorage.getItem('tea_sessions_temp') || '[]')
-        localSessions.push(sessionData)
-        localStorage.setItem('tea_sessions_temp', JSON.stringify(localSessions))
-        
-        // Mostrar resumo
-        const resumo = `
-⚠️ Sessão Salva Localmente (Faça login para salvar permanentemente)
-
-📊 Métricas da Sessão:
-• Exercícios Completados: ${metrics.totalQuestions}
-• Taxa de Acerto: ${Math.round((metrics.correctAnswers / Math.max(metrics.totalQuestions, 1)) * 100)}%
-• Tempo Total: ${Math.floor(sessionTime / 60)}min ${sessionTime % 60}s
-
-Para salvar permanentemente, faça login e a sessão será sincronizada.
-        `
-        
-        alert(resumo)
-        
-        // Perguntar se deseja fazer login
-        if (confirm('Deseja fazer login agora para salvar permanentemente?')) {
-          router.push('/login')
-        } else {
-          router.push('/tea')
-        }
-        return
-      }
-
-      console.log('Usuário autenticado:', user.id)
-      
-      // Adicionar usuario_id aos dados
-      const sessionDataWithUser = {
-        ...sessionData,
-        usuario_id: user.id
-      }
-
-      console.log('Dados da sessão preparados:', sessionDataWithUser)
-
+      // Salvar na tabela sessoes - MESMA ESTRUTURA DO CAA
       const { data, error } = await supabase
         .from('sessoes')
-        .insert([sessionDataWithUser])
-        .select()
+        .insert([{
+          usuario_id: user.id,
+          atividade_nome: 'Escuta Ativa',
+          pontuacao_final: totalScore,
+          data_fim: fimSessao.toISOString()
+        }])
 
       if (error) {
-        console.error('Erro ao salvar no Supabase:', error)
-        
-        // Se falhar, salvar localmente
-        const localSessions = JSON.parse(localStorage.getItem('tea_sessions_temp') || '[]')
-        localSessions.push(sessionData)
-        localStorage.setItem('tea_sessions_temp', JSON.stringify(localSessions))
-        
-        alert('Erro ao salvar no servidor. Sessão salva localmente.')
-        throw error
-      }
-
-      console.log('Sessão salva com sucesso:', data)
-
-      // Limpar sessões locais se existirem
-      localStorage.removeItem('tea_sessions_temp')
-
-      // Mostrar resumo
-      const resumo = `
-✅ Sessão Salva com Sucesso!
+        console.error('Erro ao salvar:', error)
+        alert(`Erro ao salvar: ${error.message}`)
+      } else {
+        // Mostrar resumo antes de redirecionar
+        const resumo = `Sessão salva com sucesso!
 
 📊 Métricas da Sessão:
 • Exercícios Completados: ${metrics.totalQuestions}
 • Taxa de Acerto: ${Math.round((metrics.correctAnswers / Math.max(metrics.totalQuestions, 1)) * 100)}%
-• Tempo Total: ${Math.floor(sessionTime / 60)}min ${sessionTime % 60}s
+• Tempo Total: ${Math.floor(duracaoSegundos / 60)}min ${duracaoSegundos % 60}s
 • Compreensão Simples: ${metrics.simpleComprehension}
 • Compreensão Complexa: ${metrics.complexComprehension}
 • Compreensão Inferencial: ${metrics.inferentialComprehension}
 • Repetições de Áudio: ${metrics.audioRepeats}
-• Tempo de Resposta Médio: ${avgResponseTime}s
 
 🎯 Métricas Científicas:
 • CELF-5 (Compreensão Auditiva): ${metrics.correctAnswers}/${metrics.totalQuestions}
 • ADOS-2 (Atenção): ${metrics.audioRepeats < 3 ? 'Adequada' : 'Necessita Suporte'}
-• Listener Feedback: ${metrics.listenerFeedback} interações
-      `
-      
-      alert(resumo)
-      
-      // Aguardar um pouco antes de redirecionar
-      setTimeout(() => {
-        router.push('/tea')
-      }, 500)
-      
-    } catch (error) {
-      console.error('Erro ao salvar sessão:', error)
-      alert(`Erro ao salvar: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+• Listener Feedback: ${metrics.listenerFeedback} interações`
+        
+        alert(resumo)
+        router.push('/profileselection')
+      }
+    } catch (error: any) {
+      console.error('Erro inesperado:', error)
+      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`)
+    } finally {
+      setSalvando(false)
     }
   }
 
@@ -590,20 +470,16 @@ Para salvar permanentemente, faça login e a sessão será sincronizada.
                 <span className="text-sm sm:text-base font-medium">Voltar</span>
               </Link>
               
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-800">
                 👂 Escuta Ativa
-                {isAuthenticated === false && (
-                  <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                    Não logado
-                  </span>
-                )}
               </h1>
               
               <button
-                onClick={saveSession}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                onClick={handleSaveSession}
+                disabled={salvando}
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors disabled:bg-green-400"
               >
-                💾 Salvar
+                {salvando ? 'Salvando...' : 'Finalizar e Salvar'}
               </button>
             </div>
           </div>
@@ -641,10 +517,11 @@ Para salvar permanentemente, faça login e a sessão será sincronizada.
 
                 <div className="space-y-4">
                   <button
-                    onClick={saveSession}
-                    className="w-full rounded-2xl bg-gradient-to-r from-green-500 to-green-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white transition-all hover:from-green-600 hover:to-green-700 hover:shadow-lg"
+                    onClick={handleSaveSession}
+                    disabled={salvando}
+                    className="w-full rounded-2xl bg-gradient-to-r from-green-500 to-green-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white transition-all hover:from-green-600 hover:to-green-700 hover:shadow-lg disabled:bg-green-400"
                   >
-                    💾 Salvar Sessão
+                    {salvando ? '💾 Salvando...' : '💾 Salvar Sessão'}
                   </button>
                   <button
                     onClick={resetGame}
@@ -663,7 +540,7 @@ Para salvar permanentemente, faça login e a sessão será sincronizada.
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-100">
-      {/* Header com Botão Finalizar Sempre Visível */}
+      {/* Header com Botão Finalizar Sempre Visível - IGUAL AO CAA */}
       <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
@@ -672,105 +549,95 @@ Para salvar permanentemente, faça login e a sessão será sincronizada.
               className="flex items-center text-teal-600 hover:text-teal-700 transition-colors min-h-[44px] px-2 -ml-2"
             >
               <span className="text-xl mr-2">←</span>
-              <span className="text-sm sm:text-base font-medium">Voltar</span>
+              <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
             </Link>
             
-            <h1 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
-              👂 Escuta Ativa
-              {isAuthenticated === false && (
-                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                  Não logado
-                </span>
-              )}
-            </h1>
-            
             <button
-              onClick={saveSession}
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
+              onClick={handleSaveSession}
+              disabled={salvando}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full font-medium transition-colors disabled:bg-green-400 flex items-center space-x-2"
             >
-              💾 Salvar
+              <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        {/* Cards de Instrução - Layout Padronizado */}
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="rounded-xl bg-white p-4 shadow-lg border-l-4 border-red-500">
-            <div className="mb-3 flex items-center">
-              <span className="mr-2 text-xl sm:text-2xl">🎯</span>
-              <h3 className="text-base sm:text-lg font-semibold text-red-600">Objetivo:</h3>
-            </div>
-            <p className="text-sm text-gray-700">
-              Desenvolver compreensão auditiva, processamento de linguagem e identificação de sinais emocionais na fala
-            </p>
-          </div>
+      {/* Título da Atividade */}
+      <div className="bg-white shadow-lg rounded-xl p-6 sm:p-8 mx-4 sm:mx-6 max-w-4xl mx-auto mt-6 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Escuta Ativa</h1>
+      </div>
 
-          <div className="rounded-xl bg-white p-4 shadow-lg border-l-4 border-blue-500">
-            <div className="mb-3 flex items-center">
-              <span className="mr-2 text-xl sm:text-2xl">🎮</span>
-              <h3 className="text-base sm:text-lg font-semibold text-blue-600">Como se Joga:</h3>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        {/* Cards de Instrução - Layout Padronizado IGUAL AO CAA */}
+        <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
+              <p className="text-sm text-gray-600">
+                Desenvolver compreensão auditiva, processamento de linguagem e identificação de sinais emocionais na fala
+              </p>
             </div>
-            <ul className="text-sm text-gray-700 space-y-1">
-              <li>• Clique no ▶️ para ouvir</li>
-              <li>• Escolha a resposta correta</li>
-              <li>• Repita se necessário 🔁</li>
-            </ul>
-          </div>
 
-          <div className="rounded-xl bg-white p-4 shadow-lg border-l-4 border-purple-500">
-            <div className="mb-3 flex items-center">
-              <span className="mr-2 text-xl sm:text-2xl">📊</span>
-              <h3 className="text-base sm:text-lg font-semibold text-purple-600">Níveis:</h3>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como se Joga:</h3>
+              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                <li>Clique no ▶️ para ouvir</li>
+                <li>Escolha a resposta correta</li>
+                <li>Repita se necessário 🔁</li>
+              </ul>
             </div>
-            <div className="space-y-1 text-xs sm:text-sm">
-              <div className={completedLevels.includes(1) ? 'text-green-600 font-semibold' : 'text-gray-700'}>
-                Nível 1: Escuta básica
-              </div>
-              <div className={completedLevels.includes(2) ? 'text-green-600 font-semibold' : 'text-gray-700'}>
-                Nível 2: Interpretativa
-              </div>
-              <div className={completedLevels.includes(3) ? 'text-green-600 font-semibold' : 'text-gray-700'}>
-                Nível 3: Empática
-              </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-800 mb-1">⭐ Níveis:</h3>
+              <ul className="list-disc list-inside text-sm text-gray-600">
+                <li className={completedLevels.includes(1) ? 'text-green-600 font-semibold' : ''}>
+                  Nível 1: Escuta básica
+                </li>
+                <li className={completedLevels.includes(2) ? 'text-green-600 font-semibold' : ''}>
+                  Nível 2: Interpretativa
+                </li>
+                <li className={completedLevels.includes(3) ? 'text-green-600 font-semibold' : ''}>
+                  Nível 3: Empática
+                </li>
+              </ul>
             </div>
           </div>
         </div>
 
-        {/* Progresso da Sessão - 4 Métricas */}
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-3">📊 Progresso da Sessão</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-blue-100 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-blue-600">
+        {/* Progresso da Sessão - 4 Métricas IGUAL AO CAA */}
+        <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+          <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">📊 Progresso da Sessão</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+              <div className="text-xl font-bold text-blue-800">
                 {Math.round((metrics.correctAnswers / Math.max(metrics.totalQuestions, 1)) * 100)}%
               </div>
-              <div className="text-xs text-gray-600">Taxa de Acerto</div>
+              <div className="text-xs text-blue-600">Taxa de Acerto</div>
             </div>
-            <div className="bg-green-100 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-green-600">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+              <div className="text-xl font-bold text-green-800">
                 {metrics.totalQuestions}
               </div>
-              <div className="text-xs text-gray-600">Questões Respondidas</div>
+              <div className="text-xs text-green-600">Questões Respondidas</div>
             </div>
-            <div className="bg-purple-100 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-purple-600">
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
+              <div className="text-xl font-bold text-purple-800">
                 {metrics.audioRepeats}
               </div>
-              <div className="text-xs text-gray-600">Repetições de Áudio</div>
+              <div className="text-xs text-purple-600">Repetições de Áudio</div>
             </div>
-            <div className="bg-orange-100 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-orange-600">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
+              <div className="text-xl font-bold text-orange-800">
                 {completedLevels.length}/3
               </div>
-              <div className="text-xs text-gray-600">Níveis Completos</div>
+              <div className="text-xs text-orange-600">Níveis Completos</div>
             </div>
           </div>
         </div>
 
         {/* Área Principal do Jogo */}
-        <div className="rounded-xl bg-white p-4 sm:p-8 shadow-xl">
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-8 mb-6">
           <div className="mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
               <div className="mb-2 sm:mb-0">
