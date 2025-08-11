@@ -1,18 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import Link from 'next/link';
+import { ChevronLeft, Save } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '../utils/supabaseClient'; // IMPORT CORRETO
 
 export default function FacialExpressionsGame() {
+  const router = useRouter();
+  const supabase = createClient();
+  
   const [pontuacao, setPontuacao] = useState(0);
-  const [nivel, setNivel] = useState<1 | 2 | 3>(1);
+  const [nivel, setNivel] = useState(1);
   const [atividadeIniciada, setAtividadeIniciada] = useState(false);
   const [atividadeConcluida, setAtividadeConcluida] = useState(false);
   const [emocaoAtual, setEmocaoAtual] = useState('');
   const [emocaoPergunta, setEmocaoPergunta] = useState('');
   const [salvando, setSalvando] = useState(false);
-  const [salvamentoConfirmado, setSalvamentoConfirmado] = useState(false);
-  const [erroSalvamento, setErroSalvamento] = useState('');
   
   // Métricas para salvar
   const [tempoInicio, setTempoInicio] = useState<Date | null>(null);
@@ -23,20 +27,14 @@ export default function FacialExpressionsGame() {
   const [temposResposta, setTemposResposta] = useState<number[]>([]);
   const [tempoPerguntaAtual, setTempoPerguntaAtual] = useState<Date | null>(null);
   
-  // Inicializar Supabase - mesmo padrão do CAA/eye-contact
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-  const supabase = supabaseUrl && supabaseAnonKey ? 
-    createClient(supabaseUrl, supabaseAnonKey) : null;
-
   // Emoções baseadas em pesquisa científica (NEPSY-II e estudos TEA)
-  const emocoes: Record<1 | 2 | 3, string[]> = {
+  const emocoes: { [key: number]: string[] } = {
     1: ['😊', '😢', '😮'], // Básico: feliz, triste, surpreso
     2: ['😊', '😢', '😮', '😠', '😨'], // Intermediário: + bravo, medo
     3: ['😊', '😢', '😮', '😠', '😨', '😐', '🤢', '🤔'] // Avançado: + neutro, nojo, pensativo
   };
 
-  const nomesEmocoes: Record<string, string> = {
+  const nomesEmocoes: { [key: string]: string } = {
     '😊': 'Feliz',
     '😢': 'Triste', 
     '😮': 'Surpreso',
@@ -72,8 +70,6 @@ export default function FacialExpressionsGame() {
     setHistoricoRespostas([]);
     setTemposResposta([]);
     setTempoInicio(new Date());
-    setSalvamentoConfirmado(false);
-    setErroSalvamento('');
     gerarPergunta();
   };
 
@@ -111,10 +107,8 @@ export default function FacialExpressionsGame() {
       
       if (pontuacao >= 40 && nivel < 3) {
         // Avançar de nível
-        const novaPontuacao = 0;
-        const novoNivel = (nivel + 1) as 1 | 2 | 3;
-        setPontuacao(novaPontuacao);
-        setNivel(novoNivel);
+        setPontuacao(0);
+        setNivel(prev => prev + 1);
       } else if (pontuacao < 50) {
         const novaPontuacao = pontuacao + 10;
         setPontuacao(novaPontuacao);
@@ -135,7 +129,7 @@ export default function FacialExpressionsGame() {
   };
 
   const getNomeNivel = () => {
-    const nomes: Record<1 | 2 | 3, string> = { 1: 'Básico', 2: 'Intermediário', 3: 'Avançado' };
+    const nomes: { [key: number]: string } = { 1: 'Básico', 2: 'Intermediário', 3: 'Avançado' };
     return nomes[nivel];
   };
 
@@ -152,18 +146,6 @@ export default function FacialExpressionsGame() {
     
     const taxaAcerto = tentativas > 0 ? (acertos / tentativas * 100) : 0;
     
-    // Análise por emoção
-    const acertosPorEmocao: Record<string, { acertos: number; tentativas: number }> = {};
-    historicoRespostas.forEach(resp => {
-      if (!acertosPorEmocao[resp.emocaoPergunta]) {
-        acertosPorEmocao[resp.emocaoPergunta] = { acertos: 0, tentativas: 0 };
-      }
-      acertosPorEmocao[resp.emocaoPergunta].tentativas++;
-      if (resp.correto) {
-        acertosPorEmocao[resp.emocaoPergunta].acertos++;
-      }
-    });
-    
     return {
       tempoTotal,
       tempoMedioResposta,
@@ -172,59 +154,59 @@ export default function FacialExpressionsGame() {
       pontuacaoFinal: pontuacao,
       totalTentativas: tentativas,
       totalAcertos: acertos,
-      totalErros: erros,
-      acertosPorEmocao,
-      atividadeCompleta: atividadeConcluida
+      totalErros: erros
     };
   };
 
+  // FUNÇÃO DE SALVAMENTO - IDÊNTICA AO CAA/EYE-CONTACT
   const handleSaveSession = async () => {
-    if (!atividadeConcluida || salvando) return;
-    
-    // Garantir que está no client-side
-    if (typeof window === 'undefined') return;
+    if (!atividadeConcluida) {
+      alert('Complete a atividade antes de salvar.');
+      return;
+    }
     
     setSalvando(true);
-    setErroSalvamento('');
     
     try {
-      if (!supabase) {
-        throw new Error('Supabase não está configurado');
-      }
+      // Obter o usuário atual - EXATAMENTE COMO NO CAA
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('Usuário não autenticado');
+      if (userError || !user) {
+        console.error('Erro ao obter usuário:', userError);
+        alert('Erro: Sessão expirada. Por favor, faça login novamente.');
+        router.push('/login');
+        return;
       }
       
       const metricas = calcularMetricas();
       
-      const { error } = await supabase
-        .from('tea_activities')
-        .insert({
-          user_id: user.id,
-          activity_type: 'facial_expressions',
-          metrics: {
-            ...metricas,
-            detalhesRespostas: historicoRespostas,
-            temposIndividuais: temposResposta,
-            timestamp: new Date().toISOString()
-          },
-          completed_at: new Date().toISOString()
-        });
-      
-      if (error) throw error;
-      
-      setSalvamentoConfirmado(true);
-      
-      setTimeout(() => {
-        window.location.href = '/tea';
-      }, 2000);
-      
-    } catch (error) {
-      console.error('Erro ao salvar:', error);
-      setErroSalvamento('Erro ao salvar atividade. Tente novamente.');
+      // Salvar na tabela sessoes - MESMA TABELA DO CAA
+      const { data, error } = await supabase
+        .from('sessoes')
+        .insert([{
+          usuario_id: user.id,
+          atividade_nome: 'Expressões Faciais',
+          pontuacao_final: (acertos * 10) + (nivel * 30),
+          data_fim: new Date().toISOString()
+        }]);
+
+      if (error) {
+        console.error('Erro ao salvar:', error);
+        alert(`Erro ao salvar: ${error.message}`);
+      } else {
+        alert(`Sessão salva com sucesso!
+        
+📊 Resumo:
+• Taxa de Acerto: ${metricas.taxaAcerto.toFixed(1)}%
+• Tempo Total: ${metricas.tempoTotal}s
+• Nível Alcançado: ${nivel} (${getNomeNivel()})
+• Total de Tentativas: ${tentativas}`);
+        
+        router.push('/tea');
+      }
+    } catch (error: any) {
+      console.error('Erro inesperado:', error);
+      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setSalvando(false);
     }
@@ -232,107 +214,125 @@ export default function FacialExpressionsGame() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100">
-      {/* Header Padrão - SEMPRE VISÍVEL */}
-      <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <a 
-              href="/tea" 
-              className="flex items-center text-purple-600 hover:text-purple-700 transition-colors min-h-[44px] px-2 -ml-2"
-            >
-              <span className="text-xl mr-2">←</span>
-              <span className="text-sm sm:text-base font-medium">Voltar</span>
-            </a>
-            
-            <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex-1 mx-4">
-              😊 Expressões Faciais
-            </h1>
-            
-            {/* BOTÃO SALVAR - SEMPRE VISÍVEL */}
-            <button
-              onClick={handleSaveSession}
-              disabled={salvando || !atividadeConcluida}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-full font-medium transition-all min-h-[44px] ${
-                atividadeConcluida && !salvando
-                  ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              {salvando ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm">Salvando...</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-lg">💾</span>
-                  <span className="text-sm">Finalizar e Salvar</span>
-                </>
-              )}
-            </button>
-          </div>
+      {/* HEADER IDÊNTICO AO CAA/EYE-CONTACT */}
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+        <div className="p-3 sm:p-4 flex items-center justify-between">
+          <Link
+            href="/tea"
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
+          >
+            <ChevronLeft size={20} />
+            <span className="text-sm sm:text-base">Voltar para TEA</span>
+          </Link>
+          
+          {/* BOTÃO SALVAR - CLASSES IDÊNTICAS AO EYE-CONTACT */}
+          <button
+            onClick={handleSaveSession}
+            disabled={salvando || !atividadeConcluida}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-full font-medium transition-colors ${
+              atividadeConcluida 
+                ? 'bg-green-600 text-white hover:bg-green-700' 
+                : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+            }`}
+          >
+            <Save size={20} />
+            <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
+          </button>
         </div>
-      </div>
-
-      {/* Mensagens de Feedback */}
-      {salvamentoConfirmado && (
-        <div className="fixed top-20 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
-          <div className="flex items-center">
-            <span className="text-xl mr-2">✅</span>
-            <div>
-              <p className="font-semibold">Atividade salva com sucesso!</p>
-              <p className="text-sm">Redirecionando para TEA...</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {erroSalvamento && (
-        <div className="fixed top-20 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50">
-          <div className="flex items-center">
-            <span className="text-xl mr-2">❌</span>
-            <p>{erroSalvamento}</p>
-          </div>
-        </div>
-      )}
+      </header>
 
       {/* Conteúdo Principal */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
         
-        {/* Cards de Instruções */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
-            <h3 className="text-base sm:text-lg font-semibold text-red-800 mb-2">🎯 Objetivo:</h3>
-            <p className="text-red-700 text-sm sm:text-base">
+        {/* Título */}
+        <div className="text-center mb-6">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
+            😊 Expressões Faciais
+          </h1>
+        </div>
+        
+        {/* Cards de Instruções - PADRÃO CAA */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">🎯 Objetivo:</h3>
+            <p className="text-gray-600 text-sm">
               Identifique corretamente as expressões faciais apresentadas
             </p>
           </div>
 
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
-            <h3 className="text-base sm:text-lg font-semibold text-blue-800 mb-2">📊 Níveis:</h3>
-            <p className="text-blue-700 text-sm sm:text-base">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">📊 Níveis:</h3>
+            <p className="text-gray-600 text-sm">
               3 níveis progressivos com emoções básicas e complexas
             </p>
           </div>
 
-          <div className="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-r-lg">
-            <h3 className="text-base sm:text-lg font-semibold text-purple-800 mb-2">🏆 Pontuação:</h3>
-            <p className="text-purple-700 text-sm sm:text-base">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">🏆 Pontuação:</h3>
+            <p className="text-gray-600 text-sm">
               10 pontos por acerto. 50 pontos para avançar de nível
             </p>
           </div>
 
-          <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-lg">
-            <h3 className="text-base sm:text-lg font-semibold text-green-800 mb-2">📚 Base Científica:</h3>
-            <p className="text-green-700 text-sm sm:text-base">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">📚 Base Científica:</h3>
+            <p className="text-gray-600 text-sm">
               Baseado em NEPSY-II e ADOS-2 para avaliação TEA
             </p>
           </div>
         </div>
 
+        {/* Progresso da Sessão - PADRÃO CAA */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            📊 Progresso da Sessão
+          </h2>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">{nivel}</div>
+              <div className="text-sm text-gray-600">Nível Atual</div>
+            </div>
+            
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">{acertos}</div>
+              <div className="text-sm text-gray-600">Acertos</div>
+            </div>
+            
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-2xl font-bold text-purple-600">
+                {tentativas > 0 ? (acertos/tentativas*100).toFixed(0) : 0}%
+              </div>
+              <div className="text-sm text-gray-600">Taxa de Acerto</div>
+            </div>
+            
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <div className="text-2xl font-bold text-orange-600">{erros}</div>
+              <div className="text-sm text-gray-600">Erros</div>
+            </div>
+          </div>
+          
+          {/* Barra de Progresso */}
+          {atividadeIniciada && !atividadeConcluida && (
+            <div className="mt-4">
+              <div className="flex justify-between text-sm text-gray-600 mb-1">
+                <span>Progresso do Nível {nivel}</span>
+                <span>{pontuacao}/50 pontos</span>
+              </div>
+              <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-400 to-green-400 transition-all duration-500"
+                  style={{ width: `${getProgressoPorcentagem()}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Área do Jogo */}
-        <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-6">
-          <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="relative min-h-[400px] bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl flex items-center justify-center">
+            
             {!atividadeIniciada ? (
               <div className="text-center">
                 <div className="text-6xl mb-6">😊</div>
@@ -344,7 +344,7 @@ export default function FacialExpressionsGame() {
                 </p>
                 <button 
                   onClick={iniciarAtividade}
-                  className="bg-purple-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-purple-700 transition-colors min-h-[48px]"
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105 text-lg"
                 >
                   🎮 Iniciar Atividade
                 </button>
@@ -366,7 +366,7 @@ export default function FacialExpressionsGame() {
                 </div>
                 <button 
                   onClick={iniciarAtividade}
-                  className="bg-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                  className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   🔄 Jogar Novamente
                 </button>
@@ -398,24 +398,6 @@ export default function FacialExpressionsGame() {
                   ))}
                 </div>
 
-                {/* Status do Jogo */}
-                <div className="bg-gray-50 p-4 rounded-lg mb-4 max-w-sm mx-auto">
-                  <p className="text-lg font-semibold text-gray-800">
-                    Nível: {nivel} ({getNomeNivel()})
-                  </p>
-                  <p className="text-lg text-gray-700">Pontuação: {pontuacao}/50</p>
-                  
-                  <div className="w-full bg-gray-200 rounded-full h-3 mt-3 overflow-hidden">
-                    <div 
-                      className="bg-purple-600 h-3 rounded-full transition-all duration-500" 
-                      style={{width: `${getProgressoPorcentagem()}%`}}
-                    />
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1 text-right">
-                    {getProgressoPorcentagem().toFixed(0)}%
-                  </div>
-                </div>
-
                 {/* Informações da Sessão */}
                 <div className="bg-blue-50 p-4 rounded-lg max-w-sm mx-auto">
                   <p className="text-sm text-blue-800">
@@ -428,7 +410,7 @@ export default function FacialExpressionsGame() {
         </div>
 
         {/* Informações Científicas */}
-        <div className="bg-white p-4 rounded-lg shadow-sm">
+        <div className="mt-6 bg-white rounded-xl shadow-lg p-6">
           <h3 className="font-semibold text-gray-800 mb-2">📚 Fundamentação Científica</h3>
           <p className="text-gray-600 text-sm">
             Esta atividade é baseada nos protocolos NEPSY-II (Affect Recognition) e ADOS-2, 
@@ -437,23 +419,7 @@ export default function FacialExpressionsGame() {
             processamento emocional em indivíduos no espectro autista.
           </p>
         </div>
-      </div>
-
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-out;
-        }
-      `}</style>
+      </main>
     </div>
   );
 }
