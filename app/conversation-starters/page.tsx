@@ -473,14 +473,18 @@ export default function ConversationStartersPage() {
   const [iniciacoesCorretas, setIniciacoesCorretas] = useState(0)
   const [iniciacoesTotais, setIniciacoesTotais] = useState(0)
   
-  // Reiniciar quando muda de nível
-  useEffect(() => {
+  // Reiniciar quando muda de nível - CORRIGIDO
+  const resetLevel = () => {
     setCurrentSituation(0)
-    setScore(0)
     setAnswered(false)
     setSelectedOption(null)
     setShowFeedback(false)
     setInicioSituacao(new Date())
+    // NÃO resetar score e métricas para manter continuidade entre níveis
+  }
+
+  useEffect(() => {
+    resetLevel()
   }, [currentLevel])
 
   const selectOption = (index: number, option: Option) => {
@@ -526,6 +530,15 @@ export default function ConversationStartersPage() {
     } else {
       setCurrentScreen('results')
     }
+  }
+
+  const nextLevel = () => {
+    if (currentLevel === 3) {
+      setCurrentLevel(1)
+    } else {
+      setCurrentLevel(currentLevel + 1)
+    }
+    setCurrentScreen('game')
   }
 
   const calcularMetricas = () => {
@@ -584,7 +597,7 @@ export default function ConversationStartersPage() {
         tipo_atividade: 'iniciando_conversas',
         versao_metricas: '1.0',
         nivel: currentLevel,
-        situacoesCompletadas: currentSituation + 1,
+        situacoesCompletadas: iniciacoesTotais,
         acertos: score,
         tempoMedioResposta: parseFloat(metricas.tempoMedioResposta),
         taxaIniciacao: parseFloat(metricas.taxaIniciacao),
@@ -614,7 +627,7 @@ export default function ConversationStartersPage() {
         alert(`Sessão salva com sucesso!
         
 📊 Resumo das Métricas:
-• ${score}/${gameData[currentLevel].situations.length} situações corretas
+• ${score} acertos em ${iniciacoesTotais} situações
 • Tempo médio de resposta: ${metricas.tempoMedioResposta}s
 • Taxa de sucesso: ${metricas.taxaSucesso}%
 • ${metricas.diversidadeEstrategias} estratégias diferentes usadas
@@ -908,20 +921,13 @@ export default function ConversationStartersPage() {
               </ul>
             </div>
 
-            {/* Botões de ação */}
-            <div className="flex flex-wrap justify-center gap-4">
+            {/* Botão único de navegação - REMOVIDO BOTÃO "SALVAR E SAIR" */}
+            <div className="flex justify-center">
               <button 
-                onClick={() => setCurrentLevel(currentLevel === 3 ? 1 : currentLevel + 1)}
+                onClick={nextLevel}
                 className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
               >
                 {currentLevel === 3 ? 'Voltar ao Nível 1' : `Ir para Nível ${currentLevel + 1}`} →
-              </button>
-              <button 
-                onClick={handleSaveSession}
-                disabled={salvando}
-                className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-semibold transition-colors disabled:bg-green-400"
-              >
-                {salvando ? 'Salvando...' : '💾 Salvar e Sair'}
               </button>
             </div>
           </div>
