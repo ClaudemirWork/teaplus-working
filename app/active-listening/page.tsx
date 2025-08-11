@@ -3,11 +3,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
-// Configuração Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Configuração Supabase com verificação
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Variáveis de ambiente do Supabase não configuradas')
+}
+
+const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
 
 interface AudioExercise {
   id: number
@@ -37,6 +43,7 @@ interface Level {
 }
 
 export default function ActiveListening() {
+  const router = useRouter()
   const [currentLevel, setCurrentLevel] = useState(1)
   const [currentExercise, setCurrentExercise] = useState(0)
   const [currentQuestion, setCurrentQuestion] = useState(0)
@@ -49,6 +56,7 @@ export default function ActiveListening() {
   const [gameCompleted, setGameCompleted] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [sessionStartTime] = useState(Date.now())
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   
   // Métricas baseadas em CELF-5, TILLS e ADOS-2
   const [metrics, setMetrics] = useState({
@@ -64,8 +72,44 @@ export default function ActiveListening() {
 
   const questionStartTime = useRef<number>(Date.now())
 
-  // Inicializar vozes do navegador
+  // Inicializar vozes do navegador e verificar sessões pendentes
   useEffect(() => {
+    // Verificar autenticação ao carregar o componente
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        console.log('Usuário não autenticado ao carregar a página')
+        console.log('Recomenda-se fazer login para salvar o progresso')
+        setIsAuthenticated(false)
+      } else {
+        console.log('Usuário autenticado:', user.email)
+        setIsAuthenticated(true)
+        
+        // Verificar se há sessões locais para sincronizar
+        const localSessions = JSON.parse(localStorage.getItem('tea_sessions_temp') || '[]')
+        if (localSessions.length > 0) {
+          console.log(`Encontradas ${localSessions.length} sessões locais para sincronizar`)
+          
+          for (const session of localSessions) {
+            try {
+              await supabase
+                .from('sessoes')
+                .insert([{ ...session, usuario_id: user.id }])
+              
+              console.log('Sessão local sincronizada com sucesso')
+            } catch (error) {
+              console.error('Erro ao sincronizar sessão local:', error)
+            }
+          }
+          
+          // Limpar sessões locais após sincronização
+          localStorage.removeItem('tea_sessions_temp')
+        }
+      }
+    }
+    
+    checkAuth()
+    
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const loadVoices = () => {
         const voices = window.speechSynthesis.getVoices()
@@ -388,20 +432,20 @@ export default function ActiveListening() {
 
   const saveSession = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      console.log('Iniciando salvamento da sessão...')
       
-      if (!user) {
-        window.location.href = '/login'
+      // Verificar se há dados para salvar
+      if (metrics.totalQuestions === 0) {
+        alert('Você precisa responder pelo menos uma questão antes de salvar.')
         return
       }
-
+      
       const sessionTime = Math.floor((Date.now() - sessionStartTime) / 1000)
       const avgResponseTime = metrics.responseTime.length > 0 
         ? Math.floor(metrics.responseTime.reduce((a, b) => a + b, 0) / metrics.responseTime.length / 1000)
         : 0
 
       const sessionData = {
-        usuario_id: user.id,
         tipo_atividade: 'escuta_ativa',
         pontuacao: totalScore,
         tempo_sessao: sessionTime,
@@ -424,16 +468,81 @@ export default function ActiveListening() {
             resposta_comunicativa: metrics.listenerFeedback,
             atencao_sustentada: metrics.audioRepeats < 3 ? 'adequada' : 'necessita_suporte'
           }
+        },
+        created_at: new Date().toISOString()
+      }
+      
+      // Verificar autenticação
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      if (authError) {
+        console.error('Erro de autenticação:', authError)
+      }
+      
+      if (!user) {
+        console.log('Usuário não autenticado - salvando localmente')
+        
+        // Salvar no localStorage temporariamente
+        const localSessions = JSON.parse(localStorage.getItem('tea_sessions_temp') || '[]')
+        localSessions.push(sessionData)
+        localStorage.setItem('tea_sessions_temp', JSON.stringify(localSessions))
+        
+        // Mostrar resumo
+        const resumo = `
+⚠️ Sessão Salva Localmente (Faça login para salvar permanentemente)
+
+📊 Métricas da Sessão:
+• Exercícios Completados: ${metrics.totalQuestions}
+• Taxa de Acerto: ${Math.round((metrics.correctAnswers / Math.max(metrics.totalQuestions, 1)) * 100)}%
+• Tempo Total: ${Math.floor(sessionTime / 60)}min ${sessionTime % 60}s
+
+Para salvar permanentemente, faça login e a sessão será sincronizada.
+        `
+        
+        alert(resumo)
+        
+        // Perguntar se deseja fazer login
+        if (confirm('Deseja fazer login agora para salvar permanentemente?')) {
+          router.push('/login')
+        } else {
+          router.push('/tea')
         }
+        return
       }
 
-      const { error } = await supabase
+      console.log('Usuário autenticado:', user.id)
+      
+      // Adicionar usuario_id aos dados
+      const sessionDataWithUser = {
+        ...sessionData,
+        usuario_id: user.id
+      }
+
+      console.log('Dados da sessão preparados:', sessionDataWithUser)
+
+      const { data, error } = await supabase
         .from('sessoes')
-        .insert([sessionData])
+        .insert([sessionDataWithUser])
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro ao salvar no Supabase:', error)
+        
+        // Se falhar, salvar localmente
+        const localSessions = JSON.parse(localStorage.getItem('tea_sessions_temp') || '[]')
+        localSessions.push(sessionData)
+        localStorage.setItem('tea_sessions_temp', JSON.stringify(localSessions))
+        
+        alert('Erro ao salvar no servidor. Sessão salva localmente.')
+        throw error
+      }
 
-      // Mostrar resumo antes de redirecionar
+      console.log('Sessão salva com sucesso:', data)
+
+      // Limpar sessões locais se existirem
+      localStorage.removeItem('tea_sessions_temp')
+
+      // Mostrar resumo
       const resumo = `
 ✅ Sessão Salva com Sucesso!
 
@@ -454,10 +563,15 @@ export default function ActiveListening() {
       `
       
       alert(resumo)
-      window.location.href = '/tea'
+      
+      // Aguardar um pouco antes de redirecionar
+      setTimeout(() => {
+        router.push('/tea')
+      }, 500)
+      
     } catch (error) {
       console.error('Erro ao salvar sessão:', error)
-      alert('Erro ao salvar a sessão. Por favor, tente novamente.')
+      alert(`Erro ao salvar: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     }
   }
 
@@ -476,15 +590,20 @@ export default function ActiveListening() {
                 <span className="text-sm sm:text-base font-medium">Voltar</span>
               </Link>
               
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
                 👂 Escuta Ativa
+                {isAuthenticated === false && (
+                  <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                    Não logado
+                  </span>
+                )}
               </h1>
               
               <button
                 onClick={saveSession}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
               >
-                Finalizar e Salvar
+                💾 Salvar
               </button>
             </div>
           </div>
@@ -556,15 +675,20 @@ export default function ActiveListening() {
               <span className="text-sm sm:text-base font-medium">Voltar</span>
             </Link>
             
-            <h1 className="text-lg sm:text-xl font-bold text-gray-800">
+            <h1 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
               👂 Escuta Ativa
+              {isAuthenticated === false && (
+                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                  Não logado
+                </span>
+              )}
             </h1>
             
             <button
               onClick={saveSession}
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
             >
-              Finalizar e Salvar
+              💾 Salvar
             </button>
           </div>
         </div>
