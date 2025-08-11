@@ -2,10 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, Save, CheckCircle } from 'lucide-react'
-import { createClient } from '@supabase/supabase-js'
+import { ChevronLeft, Save } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '../utils/supabaseClient'
 
 export default function AttentionSustained() {
+  const router = useRouter()
+  const supabase = createClient()
+  
   const [nivel, setNivel] = useState(1)
   const [pontuacao, setPontuacao] = useState(0)
   const [duracao, setDuracao] = useState(30)
@@ -17,24 +21,14 @@ export default function AttentionSustained() {
   const [tentativas, setTentativas] = useState(0)
   const [exercicioConcluido, setExercicioConcluido] = useState(false)
   const [jogoIniciado, setJogoIniciado] = useState(false)
-
-  // ✅ MÉTRICAS CIENTÍFICAS
+  const [salvando, setSalvando] = useState(false)
+  
+  // Métricas internas
   const [temposReacao, setTemposReacao] = useState<number[]>([])
   const [errosComissao, setErrosComissao] = useState(0)
   const [errosOmissao, setErrosOmissao] = useState(0)
   const [timestampTarget, setTimestampTarget] = useState<number>(0)
   const [sequenciaAcertos, setSequenciaAcertos] = useState<boolean[]>([])
-
-  // 💾 ESTADOS PARA SALVAMENTO
-  const [salvando, setSalvando] = useState(false)
-  const [salvo, setSalvo] = useState(false)
-  const [erroSalvamento, setErroSalvamento] = useState('')
-  
-  // 🔧 SUPABASE CLIENT
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
 
   // Configurações por nível
   const niveis = {
@@ -90,8 +84,6 @@ export default function AttentionSustained() {
     setExercicioConcluido(false)
     setTargetVisible(false)
     setJogoIniciado(true)
-    setSalvo(false)
-    setErroSalvamento('')
   }
 
   const mostrarTarget = () => {
@@ -132,7 +124,7 @@ export default function AttentionSustained() {
     setExercicioConcluido(true)
   }
 
-  // 🔬 CÁLCULOS CIENTÍFICOS
+  // Cálculos para métricas
   const precisao = tentativas > 0 ? Math.round((acertos / tentativas) * 100) : 0
   const tempoReacaoMedio = temposReacao.length > 0 ? Math.round(temposReacao.reduce((a, b) => a + b, 0) / temposReacao.length) : 0
   
@@ -147,109 +139,54 @@ export default function AttentionSustained() {
   const coeficienteVariacao = tempoReacaoMedio > 0 ? Math.round((variabilidadeRT / tempoReacaoMedio) * 100) : 0
   const podeAvancar = precisao >= 75 && nivel < 5 && coeficienteVariacao <= 30
 
-  // 💾 FUNÇÃO PARA SALVAR NO SUPABASE REAL
-  const salvarResultados = async () => {
+  // SALVAMENTO - IGUAL AO CAA
+  const handleSaveSession = async () => {
+    if (tentativas === 0) {
+      alert('Complete pelo menos uma tentativa antes de salvar.')
+      return
+    }
+
     setSalvando(true)
-    setErroSalvamento('')
     
     try {
-      // 1. Verificar se usuário está logado
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      // Obter o usuário atual - EXATAMENTE COMO NO CAA
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
       
-      // Para teste, usar um user_id fixo se não estiver logado
-      const userId = user?.id || '00000000-0000-0000-0000-000000000001'
+      if (userError || !user) {
+        console.error('Erro ao obter usuário:', userError)
+        alert('Erro: Sessão expirada. Por favor, faça login novamente.')
+        router.push('/login')
+        return
+      }
       
-      if (authError && !user) {
-        console.warn('⚠️ Usuário não autenticado - usando ID de teste')
+      // Salvar na tabela sessoes - MESMA ESTRUTURA DO CAA
+      const { data, error } = await supabase
+        .from('sessoes')
+        .insert([{
+          usuario_id: user.id,
+          atividade_nome: 'Atenção Sustentada',
+          pontuacao_final: pontuacao,
+          data_fim: new Date().toISOString()
+        }])
+
+      if (error) {
+        console.error('Erro ao salvar:', error)
+        alert(`Erro ao salvar: ${error.message}`)
+      } else {
+        // MESMO FORMATO DE MENSAGEM DO CAA
+        alert(`Sessão salva com sucesso!
+        
+📊 Resumo:
+• ${acertos}/${tentativas} acertos (${precisao}%)
+• Tempo de reação: ${tempoReacaoMedio}ms
+• Nível ${nivel} completado
+• ${pontuacao} pontos`)
+        
+        router.push('/profileselection')
       }
-
-      // 2. Calcular mediana dos tempos de reação
-      const temposOrdenados = [...temposReacao].sort((a, b) => a - b)
-      const mediana = temposOrdenados.length > 0 ? 
-        temposOrdenados[Math.floor(temposOrdenados.length / 2)] : 0
-
-      // 3. Detectar fade effect (declínio ao longo do tempo)
-      const detectarFadeEffect = () => {
-        if (sequenciaAcertos.length < 10) return false
-        const primeiraTerceira = sequenciaAcertos.slice(0, Math.floor(sequenciaAcertos.length / 3))
-        const ultimaTerceira = sequenciaAcertos.slice(-Math.floor(sequenciaAcertos.length / 3))
-        const precisaoInicial = primeiraTerceira.filter(Boolean).length / primeiraTerceira.length
-        const precisaoFinal = ultimaTerceira.filter(Boolean).length / ultimaTerceira.length
-        return precisaoFinal < (precisaoInicial - 0.1)
-      }
-
-      console.log('📊 Dados a serem salvos:', {
-        userId, nivel, acertos, tentativas, precisao,
-        tempoReacaoMedio, variabilidadeRT, coeficienteVariacao
-      })
-
-      // 4. Inserir sessão principal
-      const { data: sessaoData, error: sessaoError } = await supabase
-        .from('sessoes_atividades')
-        .insert([
-          {
-            user_id: userId,
-            modulo: 'TDAH',
-            atividade: 'atencao_sustentada',
-            nivel: nivel,
-            duracao_total: duracao,
-            concluida: true
-          }
-        ])
-        .select()
-        .single()
-
-      if (sessaoError) {
-        console.error('❌ Erro ao inserir sessão:', sessaoError)
-        throw new Error(`Erro na sessão: ${sessaoError.message}`)
-      }
-
-      console.log('✅ Sessão criada:', sessaoData)
-
-      // 5. Inserir métricas científicas
-      const { error: metricsError } = await supabase
-        .from('metricas_atencao_sustentada')
-        .insert([
-          {
-            sessao_id: sessaoData.id,
-            acertos: acertos,
-            tentativas: tentativas,
-            precisao: precisao,
-            tempo_reacao_medio: tempoReacaoMedio,
-            tempo_reacao_mediano: mediana,
-            variabilidade_tr: variabilidadeRT,
-            coeficiente_variacao: coeficienteVariacao,
-            erros_comissao: errosComissao,
-            erros_omissao: errosOmissao,
-            tempos_reacao_array: JSON.stringify(temposReacao),
-            sequencia_acertos: JSON.stringify(sequenciaAcertos),
-            consistencia_temporal: 100 - coeficienteVariacao,
-            fade_effect: detectarFadeEffect()
-          }
-        ])
-
-      if (metricsError) {
-        console.error('❌ Erro ao inserir métricas:', metricsError)
-        throw new Error(`Erro nas métricas: ${metricsError.message}`)
-      }
-
-      console.log('✅ Métricas salvas com sucesso!')
-      setSalvo(true)
-      
     } catch (error: any) {
-      console.error('❌ Erro ao salvar:', error)
-      setErroSalvamento(error.message || 'Erro desconhecido ao salvar')
-      
-      // Backup no localStorage
-      const dadosBackup = {
-        timestamp: new Date().toISOString(),
-        nivel, acertos, tentativas, precisao,
-        tempoReacaoMedio, variabilidadeRT, coeficienteVariacao,
-        errosComissao, errosOmissao, temposReacao, sequenciaAcertos
-      }
-      localStorage.setItem(`backup_${Date.now()}`, JSON.stringify(dadosBackup))
-      console.log('💾 Backup salvo no localStorage:', dadosBackup)
-      
+      console.error('Erro inesperado:', error)
+      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`)
     } finally {
       setSalvando(false)
     }
@@ -272,309 +209,231 @@ export default function AttentionSustained() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header PADRONIZADO igual ao CAA */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="p-4">
-          <div className="flex items-center justify-between">
-            <Link 
-              href="/tdah" 
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              <ChevronLeft size={20} />
-              <span>Voltar ao TDAH</span>
-            </Link>
-            
-            <div className="text-center">
-              <h1 className="text-xl font-bold text-gray-800">⚡ Atenção Sustentada Científica</h1>
-              <div className="text-xs text-green-600">🔬 Validado por CPT + Supabase</div>
-            </div>
-            
-            <div className="text-right">
-              <div className="text-lg font-semibold text-orange-600">Nível {nivel}</div>
-              <div className="text-sm text-gray-600">{niveis[nivel as keyof typeof niveis].nome}</div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="p-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="p-3 sm:p-4 flex items-center justify-between">
+          <Link 
+            href="/tdah" 
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
+          >
+            <ChevronLeft size={20} />
+            <span className="text-sm sm:text-base">Voltar para TDAH</span>
+          </Link>
           
-          {!jogoIniciado ? (
-            // Tela inicial
-            <div className="space-y-6">
-              {/* Objetivo */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">🎯</span>
-                  <h2 className="text-lg font-bold text-gray-800">Objetivo:</h2>
-                </div>
-                <p className="text-gray-700 border-l-4 border-red-400 pl-4">
-                  Fortalecer a capacidade de manter atenção sustentada clicando nos alvos que aparecem na tela de forma progressiva e consistente.
-                </p>
-              </div>
-
-              {/* Métricas Científicas */}
-              <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">🔬</span>
-                  <h2 className="text-lg font-bold text-blue-800">Métricas Científicas Avaliadas:</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <strong>• Precisão:</strong> Acertos vs Total de tentativas<br/>
-                    <strong>• Tempo de Reação:</strong> Velocidade de resposta (ms)<br/>
-                    <strong>• Variabilidade:</strong> Consistência temporal
-                  </div>
-                  <div>
-                    <strong>• Erros de Comissão:</strong> Cliques incorretos<br/>
-                    <strong>• Erros de Omissão:</strong> Targets perdidos<br/>
-                    <strong>• Coeficiente de Variação:</strong> Estabilidade
-                  </div>
-                </div>
-              </div>
-
-              {/* Critérios */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">⭐</span>
-                  <h2 className="text-lg font-bold text-gray-800">Critérios de Avanço:</h2>
-                </div>
-                <p className="text-gray-700 border-l-4 border-blue-400 pl-4">
-                  <strong>75% de precisão</strong> + <strong>Coeficiente de variação ≤ 30%</strong> (consistência temporal). 
-                  Baseado em protocolos CPT para população brasileira.
-                </p>
-              </div>
-
-              {/* Base Científica */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">🧠</span>
-                  <h2 className="text-lg font-bold text-gray-800">Base Científica:</h2>
-                </div>
-                <div className="text-gray-700 space-y-2">
-                  <p><strong>Fundamentação:</strong> Conners' Continuous Performance Test (CPT-II) e protocolos brasileiros validados.</p>
-                  <p><strong>Métricas:</strong> Atenção sustentada, vigilância, controle inibitório e variabilidade intraindividual.</p>
-                  <p><strong>Literatura:</strong> Estudos SciELO brasileiros sobre avaliação neuropsicológica em TDAH.</p>
-                </div>
-              </div>
-
-              {/* Disclaimer */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="text-sm text-yellow-800">
-                  <strong>⚠️ Nota Científica:</strong> Este exercício complementa avaliação profissional. 
-                  Não substitui diagnóstico clínico. Métricas baseadas em literatura científica internacional adaptada.
-                </div>
-              </div>
-
-              {/* Botão Iniciar */}
-              <div className="text-center py-8">
-                <div className="text-6xl mb-4">😊</div>
-                <button
-                  onClick={iniciarExercicio}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors"
-                >
-                  🚀 Iniciar Avaliação Científica
-                </button>
-              </div>
-            </div>
-          ) : !exercicioConcluido ? (
-            // Área de jogo
-            <div className="space-y-6">
-              {/* Stats durante o jogo */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <div className="text-xl font-bold text-orange-600">{pontuacao}</div>
-                  <div className="text-sm text-gray-600">Pontos</div>
-                </div>
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <div className="text-xl font-bold text-blue-600">{tempoRestante}s</div>
-                  <div className="text-sm text-gray-600">Restante</div>
-                </div>
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <div className="text-xl font-bold text-green-600">{acertos}/{tentativas}</div>
-                  <div className="text-sm text-gray-600">Acertos</div>
-                </div>
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <div className="text-xl font-bold text-purple-600">{precisao}%</div>
-                  <div className="text-sm text-gray-600">Precisão</div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                <div className="h-2 bg-gray-200">
-                  <div 
-                    className="h-full bg-orange-500 transition-all duration-1000"
-                    style={{ width: `${((duracao - tempoRestante) / duracao) * 100}%` }}
-                  />
-                </div>
-
-                <div 
-                  className="relative bg-gradient-to-br from-blue-50 to-purple-50 cursor-crosshair"
-                  style={{ height: '500px', width: '100%' }}
-                  onClick={handleClickArea}
-                >
-                  {targetVisible && (
-                    <button
-                      onClick={clicarTarget}
-                      className="absolute w-20 h-20 bg-red-500 hover:bg-red-600 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center text-white text-2xl animate-pulse border-4 border-white"
-                      style={{ 
-                        left: `${posicaoTarget.x}%`, 
-                        top: `${posicaoTarget.y}%`,
-                        transform: 'translate(-50%, -50%)'
-                      }}
-                    >
-                      🎯
-                    </button>
-                  )}
-
-                  <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-center">
-                    <div className="bg-black bg-opacity-70 text-white px-6 py-3 rounded-lg">
-                      <div className="font-medium">Mantenha o foco! ⚡</div>
-                      <div className="text-sm opacity-90">TR médio: {tempoReacaoMedio}ms | Restante: {tempoRestante}s</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <button
-                  onClick={voltarInicio}
-                  className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg transition-colors"
-                >
-                  ← Voltar ao Início
-                </button>
-              </div>
-            </div>
-          ) : (
-            // Tela de resultados
-            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-              <div className="text-6xl mb-4">
-                {precisao >= 90 && coeficienteVariacao <= 20 ? '🏆' : precisao >= 75 && coeficienteVariacao <= 30 ? '🎉' : '💪'}
-              </div>
-              
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                {precisao >= 90 && coeficienteVariacao <= 20 ? 'Desempenho Excelente!' : 
-                 precisao >= 75 && coeficienteVariacao <= 30 ? 'Bom Desempenho!' : 'Continue Praticando!'}
-              </h3>
-              
-              {/* Métricas científicas */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-2xl mx-auto mb-8">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-lg font-bold text-gray-800">{acertos}/{tentativas}</div>
-                  <div className="text-sm text-gray-600">Acertos</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-lg font-bold text-gray-800">{precisao}%</div>
-                  <div className="text-sm text-gray-600">Precisão</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-lg font-bold text-gray-800">{tempoReacaoMedio}ms</div>
-                  <div className="text-sm text-gray-600">TR Médio</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-lg font-bold text-gray-800">{variabilidadeRT}ms</div>
-                  <div className="text-sm text-gray-600">Variabilidade</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-lg font-bold text-gray-800">{coeficienteVariacao}%</div>
-                  <div className="text-sm text-gray-600">Coef. Variação</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-lg font-bold text-gray-800">{errosComissao}</div>
-                  <div className="text-sm text-gray-600">Erros Comissão</div>
-                </div>
-              </div>
-              
-              {/* Interpretação científica */}
-              <div className="bg-blue-50 rounded-lg p-4 mb-6 text-left">
-                <h4 className="font-bold text-blue-800 mb-2">📊 Interpretação Científica:</h4>
-                <div className="text-sm text-blue-700 space-y-1">
-                  <p><strong>Precisão:</strong> {precisao >= 75 ? '✅ Dentro do esperado' : '⚠️ Abaixo do esperado'}</p>
-                  <p><strong>Consistência:</strong> {coeficienteVariacao <= 30 ? '✅ Boa estabilidade' : '⚠️ Alta variabilidade'}</p>
-                  <p><strong>Tempo de Reação:</strong> {tempoReacaoMedio < 600 ? '✅ Rápido' : tempoReacaoMedio < 800 ? '⚠️ Moderado' : '🔴 Lento'}</p>
-                </div>
-              </div>
-
-              {/* Botão salvar dados */}
-              {!salvo && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                  <div className="flex items-center justify-center space-x-2 mb-3">
-                    <Save size={20} className="text-green-600" />
-                    <span className="font-bold text-green-800">Salvar Dados Científicos no Supabase</span>
-                  </div>
-                  <p className="text-sm text-green-700 mb-4">
-                    Salve suas métricas para acompanhar evolução temporal e gerar relatórios científicos.
-                  </p>
-                  <button
-                    onClick={salvarResultados}
-                    disabled={salvando}
-                    className="bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center space-x-2 mx-auto"
-                  >
-                    {salvando ? (
-                      <>
-                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                        <span>Salvando no Supabase...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save size={16} />
-                        <span>💾 Salvar no Supabase</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Confirmação de salvamento */}
-              {salvo && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                  <div className="flex items-center justify-center space-x-2 text-green-800">
-                    <CheckCircle size={20} />
-                    <span className="font-bold">✅ Dados Salvos no Supabase!</span>
-                  </div>
-                  <p className="text-sm text-green-700 mt-2">
-                    Métricas científicas persistidas no banco de dados. Acesse relatórios no Dashboard.
-                  </p>
-                </div>
-              )}
-
-              {/* Erro de salvamento */}
-              {erroSalvamento && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                  <div className="text-red-800 font-bold">⚠️ Aviso de Salvamento</div>
-                  <p className="text-sm text-red-700">{erroSalvamento}</p>
-                  <p className="text-xs text-red-600 mt-2">Dados salvos como backup no navegador.</p>
-                  <button
-                    onClick={salvarResultados}
-                    className="mt-2 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm"
-                  >
-                    🔄 Tentar Novamente
-                  </button>
-                </div>
-              )}
-              
-              {/* Botões de ação */}
-              <div className="space-x-4">
-                {podeAvancar && (
-                  <button
-                    onClick={proximoNivel}
-                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-                  >
-                    🆙 Próximo Nível
-                  </button>
-                )}
-                
-                <button
-                  onClick={voltarInicio}
-                  className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-                >
-                  🔄 Repetir Avaliação
-                </button>
-              </div>
+          {/* BOTÃO SEMPRE NO MESMO LUGAR - IGUAL CAA */}
+          {exercicioConcluido && (
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <button 
+                onClick={handleSaveSession}
+                disabled={salvando}
+                className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
+              >
+                <Save size={20} />
+                <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
+              </button>
             </div>
           )}
         </div>
+      </header>
+
+      <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+        {!jogoIniciado ? (
+          // Tela inicial LIMPA - SEM TERMOS TÉCNICOS
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">⚡ Atenção Sustentada</h1>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
+                  <p className="text-sm text-gray-600">
+                    Manter atenção focada clicando nos alvos que aparecem na tela.
+                  </p>
+                </div>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como Jogar:</h3>
+                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                    <li>Clique nos alvos vermelhos</li>
+                    <li>Seja rápido e preciso</li>
+                    <li>Evite clicar fora do alvo</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-800 mb-1">⭐ Progresso:</h3>
+                  <p className="text-sm text-gray-600">
+                    75% de precisão para avançar de nível. Consistência é importante!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Seleção de Nível */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Nível</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                {Object.entries(niveis).map(([key, value]) => (
+                  <button
+                    key={key}
+                    onClick={() => setNivel(Number(key))}
+                    className={`p-4 rounded-lg font-medium transition-colors ${
+                      nivel === Number(key)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">⚡</div>
+                    <div className="text-sm">Nível {key}</div>
+                    <div className="text-xs opacity-80">{value.nome}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Botão Iniciar - SEM "AVALIAÇÃO CIENTÍFICA" */}
+            <div className="text-center">
+              <button
+                onClick={iniciarExercicio}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors"
+              >
+                🚀 Iniciar Atividade
+              </button>
+            </div>
+          </div>
+        ) : !exercicioConcluido ? (
+          // Área de jogo - LIMPA
+          <div className="space-y-6">
+            {/* Progresso */}
+            <div className="bg-white rounded-xl shadow-lg p-4">
+              <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">📊 Progresso da Sessão</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
+                  <div className="text-xl font-bold text-orange-800">{pontuacao}</div>
+                  <div className="text-xs text-orange-600">Pontos</div>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                  <div className="text-xl font-bold text-blue-800">{tempoRestante}s</div>
+                  <div className="text-xs text-blue-600">Tempo</div>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                  <div className="text-xl font-bold text-green-800">{acertos}/{tentativas}</div>
+                  <div className="text-xs text-green-600">Acertos</div>
+                </div>
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
+                  <div className="text-xl font-bold text-purple-800">{precisao}%</div>
+                  <div className="text-xs text-purple-600">Precisão</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Área de Jogo */}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <div className="h-2 bg-gray-200">
+                <div 
+                  className="h-full bg-orange-500 transition-all duration-1000"
+                  style={{ width: `${((duracao - tempoRestante) / duracao) * 100}%` }}
+                />
+              </div>
+
+              <div 
+                className="relative bg-gradient-to-br from-blue-50 to-purple-50 cursor-crosshair"
+                style={{ height: '500px', width: '100%' }}
+                onClick={handleClickArea}
+              >
+                {targetVisible && (
+                  <button
+                    onClick={clicarTarget}
+                    className="absolute w-20 h-20 bg-red-500 hover:bg-red-600 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center text-white text-2xl animate-pulse border-4 border-white"
+                    style={{ 
+                      left: `${posicaoTarget.x}%`, 
+                      top: `${posicaoTarget.y}%`,
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                  >
+                    🎯
+                  </button>
+                )}
+
+                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-center">
+                  <div className="bg-black bg-opacity-70 text-white px-6 py-3 rounded-lg">
+                    <div className="font-medium">Mantenha o foco!</div>
+                    <div className="text-sm opacity-90">Nível {nivel} • {tempoRestante}s restantes</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Tela de resultados LIMPA
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">
+                {precisao >= 90 ? '🏆' : precisao >= 75 ? '🎉' : '💪'}
+              </div>
+              
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                {precisao >= 90 ? 'Excelente!' : precisao >= 75 ? 'Muito bem!' : 'Continue praticando!'}
+              </h3>
+              
+              <p className="text-gray-600">
+                Você completou o nível {nivel} com {precisao}% de precisão
+              </p>
+            </div>
+            
+            {/* Resultados - LAYOUT LIMPO */}
+            <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">📊 Resultados da Sessão</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                  <div className="text-xl font-bold text-blue-800">{acertos}/{tentativas}</div>
+                  <div className="text-xs text-blue-600">Acertos</div>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                  <div className="text-xl font-bold text-green-800">{precisao}%</div>
+                  <div className="text-xs text-green-600">Precisão</div>
+                </div>
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
+                  <div className="text-xl font-bold text-purple-800">{tempoReacaoMedio}ms</div>
+                  <div className="text-xs text-purple-600">Tempo Médio</div>
+                </div>
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
+                  <div className="text-xl font-bold text-orange-800">{pontuacao}</div>
+                  <div className="text-xs text-orange-600">Pontos</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Feedback - LINGUAGEM SIMPLES */}
+            <div className="bg-blue-50 rounded-lg p-4 mb-6">
+              <h4 className="font-bold text-blue-800 mb-2">📊 Seu Desempenho:</h4>
+              <div className="text-sm text-blue-700 space-y-1">
+                <p>• Precisão: {precisao >= 75 ? '✅ Ótima!' : '⚠️ Precisa melhorar'}</p>
+                <p>• Velocidade: {tempoReacaoMedio < 600 ? '✅ Rápido' : tempoReacaoMedio < 800 ? '⚠️ Moderado' : '🔴 Lento'}</p>
+                <p>• Consistência: {coeficienteVariacao <= 30 ? '✅ Estável' : '⚠️ Variável'}</p>
+              </div>
+            </div>
+            
+            {/* Botões de ação */}
+            <div className="flex justify-center space-x-4">
+              {podeAvancar && (
+                <button
+                  onClick={proximoNivel}
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                >
+                  🆙 Próximo Nível
+                </button>
+              )}
+              
+              <button
+                onClick={voltarInicio}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+              >
+                🔄 Repetir
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )
