@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, Save, CheckCircle } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
 
 export default function AttentionSustained() {
   const [nivel, setNivel] = useState(1)
@@ -24,10 +25,16 @@ export default function AttentionSustained() {
   const [timestampTarget, setTimestampTarget] = useState<number>(0)
   const [sequenciaAcertos, setSequenciaAcertos] = useState<boolean[]>([])
 
-  // 💾 ESTADOS PARA SALVAMENTO (TEMPORARIAMENTE DESABILITADO)
+  // 💾 ESTADOS PARA SALVAMENTO
   const [salvando, setSalvando] = useState(false)
   const [salvo, setSalvo] = useState(false)
   const [erroSalvamento, setErroSalvamento] = useState('')
+  
+  // 🔧 SUPABASE CLIENT
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   // Configurações por nível
   const niveis = {
@@ -140,45 +147,109 @@ export default function AttentionSustained() {
   const coeficienteVariacao = tempoReacaoMedio > 0 ? Math.round((variabilidadeRT / tempoReacaoMedio) * 100) : 0
   const podeAvancar = precisao >= 75 && nivel < 5 && coeficienteVariacao <= 30
 
-  // 💾 FUNÇÃO SIMULADA PARA SALVAR (PREPARADA PARA SUPABASE)
+  // 💾 FUNÇÃO PARA SALVAR NO SUPABASE REAL
   const salvarResultados = async () => {
     setSalvando(true)
     setErroSalvamento('')
     
     try {
-      // 🔄 SIMULAÇÃO DE SALVAMENTO (localStorage temporário)
-      const dadosResultado = {
-        timestamp: new Date().toISOString(),
-        nivel: nivel,
-        acertos: acertos,
-        tentativas: tentativas,
-        precisao: precisao,
-        tempoReacaoMedio: tempoReacaoMedio,
-        variabilidadeRT: variabilidadeRT,
-        coeficienteVariacao: coeficienteVariacao,
-        errosComissao: errosComissao,
-        errosOmissao: errosOmissao,
-        temposReacao: temposReacao,
-        sequenciaAcertos: sequenciaAcertos,
-        duracao: duracao
+      // 1. Verificar se usuário está logado
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      // Para teste, usar um user_id fixo se não estiver logado
+      const userId = user?.id || '00000000-0000-0000-0000-000000000001'
+      
+      if (authError && !user) {
+        console.warn('⚠️ Usuário não autenticado - usando ID de teste')
       }
 
-      // Simular delay de rede
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // 2. Calcular mediana dos tempos de reação
+      const temposOrdenados = [...temposReacao].sort((a, b) => a - b)
+      const mediana = temposOrdenados.length > 0 ? 
+        temposOrdenados[Math.floor(temposOrdenados.length / 2)] : 0
 
-      // Salvar temporariamente no localStorage para demonstração
-      const sessionId = `atencao_sustentada_${Date.now()}`
-      localStorage.setItem(sessionId, JSON.stringify(dadosResultado))
-      
-      // Log para verificação
-      console.log('📊 Dados científicos capturados:', dadosResultado)
-      console.log('💾 Salvo temporariamente em:', sessionId)
+      // 3. Detectar fade effect (declínio ao longo do tempo)
+      const detectarFadeEffect = () => {
+        if (sequenciaAcertos.length < 10) return false
+        const primeiraTerceira = sequenciaAcertos.slice(0, Math.floor(sequenciaAcertos.length / 3))
+        const ultimaTerceira = sequenciaAcertos.slice(-Math.floor(sequenciaAcertos.length / 3))
+        const precisaoInicial = primeiraTerceira.filter(Boolean).length / primeiraTerceira.length
+        const precisaoFinal = ultimaTerceira.filter(Boolean).length / ultimaTerceira.length
+        return precisaoFinal < (precisaoInicial - 0.1)
+      }
 
+      console.log('📊 Dados a serem salvos:', {
+        userId, nivel, acertos, tentativas, precisao,
+        tempoReacaoMedio, variabilidadeRT, coeficienteVariacao
+      })
+
+      // 4. Inserir sessão principal
+      const { data: sessaoData, error: sessaoError } = await supabase
+        .from('sessoes_atividades')
+        .insert([
+          {
+            user_id: userId,
+            modulo: 'TDAH',
+            atividade: 'atencao_sustentada',
+            nivel: nivel,
+            duracao_total: duracao,
+            concluida: true
+          }
+        ])
+        .select()
+        .single()
+
+      if (sessaoError) {
+        console.error('❌ Erro ao inserir sessão:', sessaoError)
+        throw new Error(`Erro na sessão: ${sessaoError.message}`)
+      }
+
+      console.log('✅ Sessão criada:', sessaoData)
+
+      // 5. Inserir métricas científicas
+      const { error: metricsError } = await supabase
+        .from('metricas_atencao_sustentada')
+        .insert([
+          {
+            sessao_id: sessaoData.id,
+            acertos: acertos,
+            tentativas: tentativas,
+            precisao: precisao,
+            tempo_reacao_medio: tempoReacaoMedio,
+            tempo_reacao_mediano: mediana,
+            variabilidade_tr: variabilidadeRT,
+            coeficiente_variacao: coeficienteVariacao,
+            erros_comissao: errosComissao,
+            erros_omissao: errosOmissao,
+            tempos_reacao_array: JSON.stringify(temposReacao),
+            sequencia_acertos: JSON.stringify(sequenciaAcertos),
+            consistencia_temporal: 100 - coeficienteVariacao,
+            fade_effect: detectarFadeEffect()
+          }
+        ])
+
+      if (metricsError) {
+        console.error('❌ Erro ao inserir métricas:', metricsError)
+        throw new Error(`Erro nas métricas: ${metricsError.message}`)
+      }
+
+      console.log('✅ Métricas salvas com sucesso!')
       setSalvo(true)
       
     } catch (error: any) {
       console.error('❌ Erro ao salvar:', error)
-      setErroSalvamento('Erro na simulação de salvamento. Dados capturados no console.')
+      setErroSalvamento(error.message || 'Erro desconhecido ao salvar')
+      
+      // Backup no localStorage
+      const dadosBackup = {
+        timestamp: new Date().toISOString(),
+        nivel, acertos, tentativas, precisao,
+        tempoReacaoMedio, variabilidadeRT, coeficienteVariacao,
+        errosComissao, errosOmissao, temposReacao, sequenciaAcertos
+      }
+      localStorage.setItem(`backup_${Date.now()}`, JSON.stringify(dadosBackup))
+      console.log('💾 Backup salvo no localStorage:', dadosBackup)
+      
     } finally {
       setSalvando(false)
     }
@@ -215,7 +286,7 @@ export default function AttentionSustained() {
             
             <div className="text-center">
               <h1 className="text-xl font-bold text-gray-800">⚡ Atenção Sustentada Científica</h1>
-              <div className="text-xs text-green-600">🔬 Validado por CPT</div>
+              <div className="text-xs text-green-600">🔬 Validado por CPT + Supabase</div>
             </div>
             
             <div className="text-right">
@@ -293,14 +364,6 @@ export default function AttentionSustained() {
                 <div className="text-sm text-yellow-800">
                   <strong>⚠️ Nota Científica:</strong> Este exercício complementa avaliação profissional. 
                   Não substitui diagnóstico clínico. Métricas baseadas em literatura científica internacional adaptada.
-                </div>
-              </div>
-
-              {/* Status Técnico */}
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <div className="text-sm text-orange-800">
-                  <strong>🔧 Status:</strong> Versão de demonstração - salvamento em localStorage. 
-                  Integração Supabase será ativada após instalação de dependências.
                 </div>
               </div>
 
@@ -384,7 +447,7 @@ export default function AttentionSustained() {
               </div>
             </div>
           ) : (
-            // Tela de resultados com salvamento
+            // Tela de resultados
             <div className="bg-white rounded-xl shadow-lg p-8 text-center">
               <div className="text-6xl mb-4">
                 {precisao >= 90 && coeficienteVariacao <= 20 ? '🏆' : precisao >= 75 && coeficienteVariacao <= 30 ? '🎉' : '💪'}
@@ -438,11 +501,10 @@ export default function AttentionSustained() {
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                   <div className="flex items-center justify-center space-x-2 mb-3">
                     <Save size={20} className="text-green-600" />
-                    <span className="font-bold text-green-800">Salvar Dados Científicos</span>
+                    <span className="font-bold text-green-800">Salvar Dados Científicos no Supabase</span>
                   </div>
                   <p className="text-sm text-green-700 mb-4">
-                    Capture suas métricas científicas para análise posterior. 
-                    (Versão demo - dados salvos no console do navegador)
+                    Salve suas métricas para acompanhar evolução temporal e gerar relatórios científicos.
                   </p>
                   <button
                     onClick={salvarResultados}
@@ -452,12 +514,12 @@ export default function AttentionSustained() {
                     {salvando ? (
                       <>
                         <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                        <span>Capturando...</span>
+                        <span>Salvando no Supabase...</span>
                       </>
                     ) : (
                       <>
                         <Save size={16} />
-                        <span>💾 Capturar Métricas</span>
+                        <span>💾 Salvar no Supabase</span>
                       </>
                     )}
                   </button>
@@ -469,10 +531,10 @@ export default function AttentionSustained() {
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                   <div className="flex items-center justify-center space-x-2 text-green-800">
                     <CheckCircle size={20} />
-                    <span className="font-bold">✅ Dados Capturados!</span>
+                    <span className="font-bold">✅ Dados Salvos no Supabase!</span>
                   </div>
                   <p className="text-sm text-green-700 mt-2">
-                    Métricas científicas salvas no console. Abra DevTools (F12) para visualizar.
+                    Métricas científicas persistidas no banco de dados. Acesse relatórios no Dashboard.
                   </p>
                 </div>
               )}
@@ -480,13 +542,14 @@ export default function AttentionSustained() {
               {/* Erro de salvamento */}
               {erroSalvamento && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                  <div className="text-red-800 font-bold">⚠️ Informação</div>
+                  <div className="text-red-800 font-bold">⚠️ Aviso de Salvamento</div>
                   <p className="text-sm text-red-700">{erroSalvamento}</p>
+                  <p className="text-xs text-red-600 mt-2">Dados salvos como backup no navegador.</p>
                   <button
                     onClick={salvarResultados}
                     className="mt-2 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm"
                   >
-                    🔄 Capturar Novamente
+                    🔄 Tentar Novamente
                   </button>
                 </div>
               )}
