@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { useRouter } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
+import { useRouter } from 'next/router';
 
 export default function FacialExpressionsGame() {
   const [pontuacao, setPontuacao] = useState(0);
@@ -24,8 +24,12 @@ export default function FacialExpressionsGame() {
   const [temposResposta, setTemposResposta] = useState<number[]>([]);
   const [tempoPerguntaAtual, setTempoPerguntaAtual] = useState<Date | null>(null);
   
-  const supabase = createClientComponentClient();
   const router = useRouter();
+  
+  // Inicializar Supabase - mesmo padrão do CAA/eye-contact
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
   // Emoções baseadas em pesquisa científica (NEPSY-II e estudos TEA)
   const emocoes = {
