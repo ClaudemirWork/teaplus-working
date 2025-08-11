@@ -299,12 +299,16 @@ export default function ContatoVisualProgressivoPage() {
             <span className="text-sm sm:text-base">Voltar para TEA</span>
           </Link>
           
-          {/* BOTÃO SALVAR - SEMPRE NO HEADER */}
-          {atividadeConcluida && (
+          {/* BOTÃO SALVAR - SEMPRE VISÍVEL COMO NO CAA */}
+          {atividadeIniciada && (
             <button
               onClick={handleSaveSession}
-              disabled={salvando}
-              className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
+              disabled={salvando || !atividadeConcluida}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-full font-medium transition-colors ${
+                atividadeConcluida 
+                  ? 'bg-green-600 text-white hover:bg-green-700' 
+                  : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+              }`}
             >
               <Save size={20} />
               <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
@@ -474,19 +478,6 @@ export default function ContatoVisualProgressivoPage() {
                     {aguardandoClique ? 'Clique nos olhos!' : 'Aguarde...'}
                   </div>
                 </div>
-                
-                {/* Indicador de direção do olhar */}
-                {olhosVisiveis && (
-                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                    <div className="text-xs text-gray-500 bg-white px-3 py-1 rounded-full">
-                      {posicaoOlhos.y < 30 ? '👀 Olhando para cima' :
-                       posicaoOlhos.y > 35 ? '👀 Olhando para baixo' :
-                       posicaoOlhos.x < 40 ? '👀 Olhando para esquerda' :
-                       posicaoOlhos.x > 60 ? '👀 Olhando para direita' :
-                       '👀 Contato direto'}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
             
