@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, Save, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '../../utils/supabaseClient'  // CORRIGIDO - 2 níveis acima
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 type Direction = 'up' | 'down' | 'left' | 'right'
 type TrialType = 'congruent' | 'incongruent' | 'neutral'
@@ -21,7 +21,7 @@ interface Trial {
 
 export default function SelectiveAttention() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = createClientComponentClient()
   
   // Estados do jogo
   const [nivel, setNivel] = useState(1)
