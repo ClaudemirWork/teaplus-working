@@ -173,14 +173,17 @@ export default function AttentionSustained() {
         console.error('Erro ao salvar:', error)
         alert(`Erro ao salvar: ${error.message}`)
       } else {
-        // MESMO FORMATO DE MENSAGEM DO CAA
+        // ALERT MELHORADO COM MÉTRICAS DETALHADAS
         alert(`Sessão salva com sucesso!
         
-📊 Resumo:
-• ${acertos}/${tentativas} acertos (${precisao}%)
-• Tempo de reação: ${tempoReacaoMedio}ms
-• Nível ${nivel} completado
-• ${pontuacao} pontos`)
+📊 Resumo da Avaliação:
+- ${acertos}/${tentativas} acertos (${precisao}%)
+- Tempo de reação: ${tempoReacaoMedio}ms
+- Variabilidade (CV): ${coeficienteVariacao}%
+- Erros de omissão: ${errosOmissao}
+- Erros de comissão: ${errosComissao}
+- Nível ${nivel} completado
+- ${pontuacao} pontos`)
         
         router.push('/profileselection')
       }
@@ -411,6 +414,8 @@ export default function AttentionSustained() {
                 <p>• Precisão: {precisao >= 75 ? '✅ Ótima!' : '⚠️ Precisa melhorar'}</p>
                 <p>• Velocidade: {tempoReacaoMedio < 600 ? '✅ Rápido' : tempoReacaoMedio < 800 ? '⚠️ Moderado' : '🔴 Lento'}</p>
                 <p>• Consistência: {coeficienteVariacao <= 30 ? '✅ Estável' : '⚠️ Variável'}</p>
+                <p>• Atenção: {errosOmissao <= 2 ? '✅ Focado' : '⚠️ Distraído'}</p>
+                <p>• Controle: {errosComissao <= 2 ? '✅ Controlado' : '⚠️ Impulsivo'}</p>
               </div>
             </div>
             
