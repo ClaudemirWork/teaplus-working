@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { format, subDays, isAfter } from 'date-fns';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { format, subDays, isAfter, differenceInDays, startOfWeek, endOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface SessionData {
@@ -37,26 +37,14 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
   
   // NORMALIZAÇÃO: Cada atividade tem escala diferente
   const activityScales = {
-    'CAA': { min: 0, max: 10, tipo: 'acertos' },
-    'Atenção Sustentada': { min: 0, max: 600, tipo: 'segundos' },
-    'Contato Visual Progressivo': { min: 0, max: 300, tipo: 'segundos' },
-    'Expressões Faciais': { min: 0, max: 300, tipo: 'pontos' },
-    'Tom de Voz': { min: 0, max: 300, tipo: 'pontos' },
-    'Escuta Ativa': { min: 0, max: 100, tipo: 'pontos' },
-    'Iniciando Conversas': { min: 0, max: 300, tipo: 'pontos' },
-    'Diálogos em Cenas': { min: 0, max: 200, tipo: 'pontos' }
-  };
-
-  // Nomes abreviados para o gráfico
-  const shortNames = {
-    'CAA': 'CAA',
-    'Atenção Sustentada': 'Atenção',
-    'Contato Visual Progressivo': 'Contato Visual',
-    'Expressões Faciais': 'Expressões',
-    'Tom de Voz': 'Tom Voz',
-    'Escuta Ativa': 'Escuta',
-    'Iniciando Conversas': 'Conversas',
-    'Diálogos em Cenas': 'Diálogos'
+    'CAA': { min: 0, max: 10, tipo: 'acertos', meta: 70 },
+    'Atenção Sustentada': { min: 0, max: 600, tipo: 'segundos', meta: 75 },
+    'Contato Visual Progressivo': { min: 0, max: 300, tipo: 'segundos', meta: 80 },
+    'Expressões Faciais': { min: 0, max: 300, tipo: 'pontos', meta: 70 },
+    'Tom de Voz': { min: 0, max: 300, tipo: 'pontos', meta: 70 },
+    'Escuta Ativa': { min: 0, max: 100, tipo: 'pontos', meta: 75 },
+    'Iniciando Conversas': { min: 0, max: 300, tipo: 'pontos', meta: 65 },
+    'Diálogos em Cenas': { min: 0, max: 200, tipo: 'pontos', meta: 65 }
   };
 
   // Função para normalizar pontuação (0-100%)
@@ -66,6 +54,56 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
     
     const normalized = ((score - scale.min) / (scale.max - scale.min)) * 100;
     return Math.min(100, Math.max(0, Math.round(normalized)));
+  };
+
+  // Calcular desvio padrão
+  const calculateStandardDeviation = (values: number[]): number => {
+    if (values.length === 0) return 0;
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const squaredDiffs = values.map(value => Math.pow(value - mean, 2));
+    const avgSquaredDiff = squaredDiffs.reduce((a, b) => a + b, 0) / values.length;
+    return Math.sqrt(avgSquaredDiff);
+  };
+
+  // Calcular Coeficiente de Variação (CV) para consistência
+  const calculateConsistency = (scores: number[]): { level: string, cv: number, color: string } => {
+    if (scores.length < 2) return { level: 'Insuficiente', cv: 0, color: 'text-gray-500' };
+    
+    const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const stdDev = calculateStandardDeviation(scores);
+    const cv = mean > 0 ? (stdDev / mean) * 100 : 0;
+    
+    if (cv < 15) return { level: 'Alta', cv, color: 'text-green-600' };
+    if (cv < 30) return { level: 'Média', cv, color: 'text-yellow-600' };
+    return { level: 'Baixa', cv, color: 'text-red-600' };
+  };
+
+  // Calcular frequência de prática
+  const calculateFrequency = (sessionDates: Date[]): { sessionsPerWeek: number, maxGap: number, regularityScore: string } => {
+    if (sessionDates.length < 2) return { sessionsPerWeek: 0, maxGap: 0, regularityScore: 'Novo' };
+    
+    const sortedDates = sessionDates.sort((a, b) => a.getTime() - b.getTime());
+    const firstDate = sortedDates[0];
+    const lastDate = sortedDates[sortedDates.length - 1];
+    const totalDays = differenceInDays(lastDate, firstDate) + 1;
+    const totalWeeks = Math.max(1, totalDays / 7);
+    
+    const sessionsPerWeek = sessionDates.length / totalWeeks;
+    
+    // Calcular maior gap entre sessões
+    let maxGap = 0;
+    for (let i = 1; i < sortedDates.length; i++) {
+      const gap = differenceInDays(sortedDates[i], sortedDates[i - 1]);
+      maxGap = Math.max(maxGap, gap);
+    }
+    
+    // Determinar regularidade
+    let regularityScore = 'Irregular';
+    if (sessionsPerWeek >= 3) regularityScore = 'Excelente';
+    else if (sessionsPerWeek >= 2) regularityScore = 'Boa';
+    else if (sessionsPerWeek >= 1) regularityScore = 'Regular';
+    
+    return { sessionsPerWeek: Math.round(sessionsPerWeek * 10) / 10, maxGap, regularityScore };
   };
 
   // Filtrar sessões por período
@@ -141,23 +179,48 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
     }));
   }, [processedData, domains]);
 
-  // Preparar dados para gráfico de barras com nomes curtos
-  const barData = useMemo(() => {
-    const activityData = {};
-    
-    Object.keys(activityScales).forEach(activity => {
+  // Análise Multidimensional por Atividade
+  const multidimensionalAnalysis = useMemo(() => {
+    return Object.keys(activityScales).map(activity => {
       const activitySessions = processedData.filter(s => s.atividade_nome === activity);
-      if (activitySessions.length > 0) {
-        const scores = activitySessions.map(s => s.normalized_score);
-        activityData[activity] = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+      const scores = activitySessions.map(s => s.normalized_score);
+      const dates = activitySessions.map(s => new Date(s.data_fim));
+      
+      // Métricas básicas
+      const average = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+      const lastScore = scores[scores.length - 1] || 0;
+      
+      // Consistência
+      const consistency = calculateConsistency(scores);
+      
+      // Frequência
+      const frequency = calculateFrequency(dates);
+      
+      // Velocidade de progresso (últimas 5 vs primeiras 5 sessões)
+      let progressRate = 0;
+      if (scores.length >= 5) {
+        const firstFive = scores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
+        const lastFive = scores.slice(-5).reduce((a, b) => a + b, 0) / 5;
+        progressRate = Math.round(lastFive - firstFive);
       }
+      
+      // Distância até a meta
+      const meta = activityScales[activity].meta;
+      const distanceToGoal = meta - average;
+      
+      return {
+        name: activity,
+        sessions: activitySessions.length,
+        average,
+        lastScore,
+        consistency,
+        frequency,
+        progressRate,
+        meta,
+        distanceToGoal,
+        scale: activityScales[activity]
+      };
     });
-    
-    return Object.entries(activityData).map(([name, score]) => ({
-      name: shortNames[name] || name,
-      score,
-      fullName: name
-    }));
   }, [processedData, activityScales]);
 
   // Calcular métricas por domínio
@@ -282,12 +345,12 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
         
         <div className="bg-blue-100 border-l-4 border-blue-500 p-4 rounded mt-4">
           <p className="text-sm text-blue-800">
-            <strong>📊 Metodologia:</strong> Scores normalizados (0-100%) considerando a escala específica de cada atividade
+            <strong>📊 Metodologia:</strong> Análise multidimensional baseada em evidências científicas para TEA e TDAH
           </p>
         </div>
       </div>
 
-      {/* Cards por Domínio Clínico - MANTIDO EXATAMENTE IGUAL */}
+      {/* Cards por Domínio Clínico - MANTIDO */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {Object.entries(domains).map(([domain, activities]) => {
           const metrics = calculateDomainMetrics(activities);
@@ -357,7 +420,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
         </div>
       )}
 
-      {/* Tabela Detalhada - MANTIDA EXATAMENTE IGUAL */}
+      {/* Tabela Detalhada - MANTIDA */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
         <h2 className="text-xl font-bold text-gray-800 mb-4">
           Análise Detalhada por Atividade
@@ -400,68 +463,78 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
         </div>
       </div>
 
-      {/* Gráfico de Barras MELHORADO */}
-      {barData.length > 0 && (
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">
-            📊 Comparação entre Atividades
-          </h2>
-          {isMobile ? (
-            // Layout Mobile - Lista ao invés de gráfico
-            <div className="space-y-3">
-              {barData.map((item) => (
-                <div key={item.fullName} className="border-b pb-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium text-gray-800">{item.fullName}</span>
-                    <span className="font-bold text-blue-600">{item.score}%</span>
+      {/* NOVA SEÇÃO: Análise Multidimensional (substitui gráfico de barras) */}
+      <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">
+          🔬 Análise Multidimensional
+        </h2>
+        <div className="space-y-4">
+          {multidimensionalAnalysis.map(activity => (
+            <div key={activity.name} className="border rounded-lg p-4 hover:bg-gray-50">
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="font-semibold text-gray-800">{activity.name}</h3>
+                <span className="text-sm text-gray-500">{activity.sessions} sessões</span>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {/* Consistência */}
+                <div className="bg-gray-50 p-2 rounded">
+                  <div className="text-xs text-gray-600 mb-1">Consistência</div>
+                  <div className={`font-semibold ${activity.consistency.color}`}>
+                    {activity.consistency.level}
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div 
-                      className="bg-blue-600 h-3 rounded-full transition-all duration-500"
-                      style={{ width: `${item.score}%` }}
-                    />
+                  <div className="text-xs text-gray-500">CV: {activity.consistency.cv.toFixed(1)}%</div>
+                </div>
+                
+                {/* Frequência */}
+                <div className="bg-gray-50 p-2 rounded">
+                  <div className="text-xs text-gray-600 mb-1">Frequência</div>
+                  <div className="font-semibold text-gray-800">
+                    {activity.frequency.sessionsPerWeek}/sem
+                  </div>
+                  <div className="text-xs text-gray-500">{activity.frequency.regularityScore}</div>
+                </div>
+                
+                {/* Progresso */}
+                <div className="bg-gray-50 p-2 rounded">
+                  <div className="text-xs text-gray-600 mb-1">Velocidade</div>
+                  <div className={`font-semibold ${activity.progressRate > 0 ? 'text-green-600' : activity.progressRate < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                    {activity.progressRate > 0 ? '+' : ''}{activity.progressRate}%
+                  </div>
+                  <div className="text-xs text-gray-500">Últimas 5 sessões</div>
+                </div>
+                
+                {/* Meta */}
+                <div className="bg-gray-50 p-2 rounded">
+                  <div className="text-xs text-gray-600 mb-1">Meta</div>
+                  <div className="font-semibold text-gray-800">
+                    {activity.average}/{activity.meta}%
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {activity.distanceToGoal > 0 ? `Faltam ${activity.distanceToGoal}%` : '✅ Atingida'}
                   </div>
                 </div>
-              ))}
+              </div>
+              
+              {/* Barra de progresso até a meta */}
+              <div className="mt-3">
+                <div className="flex justify-between text-xs text-gray-600 mb-1">
+                  <span>Progresso até a meta</span>
+                  <span>{Math.min(100, Math.round((activity.average / activity.meta) * 100))}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full ${activity.average >= activity.meta ? 'bg-green-600' : 'bg-blue-600'}`}
+                    style={{ width: `${Math.min(100, (activity.average / activity.meta) * 100)}%` }}
+                  />
+                </div>
+              </div>
             </div>
-          ) : (
-            // Layout Desktop - Gráfico de Barras
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart 
-                data={barData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="name" 
-                  angle={-45}
-                  textAnchor="end"
-                  height={100}
-                  interval={0}
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis domain={[0, 100]} />
-                <Tooltip 
-                  content={({ active, payload }) => {
-                    if (active && payload && payload[0]) {
-                      return (
-                        <div className="bg-white p-3 border rounded-lg shadow-lg">
-                          <p className="font-semibold text-gray-800">{payload[0].payload.fullName}</p>
-                          <p className="text-blue-600 font-bold">Score: {payload[0].value}%</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Bar dataKey="score" fill="#3B82F6" />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Interpretação Clínica - MANTIDA EXATAMENTE IGUAL */}
+      {/* Interpretação Clínica - MANTIDA */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-4">
           💡 Interpretação dos Resultados
