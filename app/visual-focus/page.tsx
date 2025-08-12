@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
-import './visual-focus.css';  // IMPORT CORRIGIDO - UM PONTO SÓ
+import './visual-focus.css';
 
 export default function VisualFocusPage() {
     const router = useRouter();
@@ -40,75 +40,33 @@ export default function VisualFocusPage() {
     const ultimaAtualizacao = useRef(Date.now());
 
     // ==========================================
-    // FIX PARA iOS - PREVENIR TREMEDEIRA
+    // FIX PARA iOS - VERSÃO SIMPLIFICADA
     // ==========================================
     useEffect(() => {
-        // 1. AJUSTAR ALTURA REAL DA VIEWPORT (iOS tem barra de endereço que some/aparece)
-        const setViewportHeight = () => {
-            const vh = window.innerHeight * 0.01;
-            document.documentElement.style.setProperty('--vh', `${vh}px`);
-            console.log('Viewport ajustada:', window.innerHeight + 'px');
-        };
-
-        // 2. DETECTAR SE É iOS
+        // Detectar se é iOS
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         
         if (isIOS) {
-            console.log('iOS detectado - aplicando fixes');
+            console.log('iOS detectado - aplicando fix simples');
             
-            // 3. ADICIONAR CLASSE ESPECIAL PARA iOS
-            document.documentElement.classList.add('ios-device');
+            // Adicionar classe ao body apenas quando está nesta página
+            document.body.classList.add('ios-fix-active');
             
-            // 4. PREVENIR SCROLL BOUNCE
-            const preventBounce = (e: TouchEvent) => {
-                const target = e.target as HTMLElement;
-                if (!target.closest('.allow-scroll')) {
-                    e.preventDefault();
-                }
+            // Prevenir o bounce/elastic scroll
+            const preventBounce = (e: Event) => {
+                e.preventDefault();
             };
             
-            // 5. PREVENIR ZOOM COM PINCH
-            const preventZoom = (e: TouchEvent) => {
-                if (e.touches.length > 1) {
-                    e.preventDefault();
-                }
-            };
-            
-            // 6. ADICIONAR LISTENERS
+            // Aplicar apenas no document, não em elementos específicos
             document.addEventListener('touchmove', preventBounce, { passive: false });
-            document.addEventListener('touchstart', preventZoom, { passive: false });
             
-            // 7. PREVENIR SCROLL QUANDO TOCA NA ÁREA DO JOGO
-            const gameArea = gameAreaRef.current;
-            if (gameArea) {
-                gameArea.addEventListener('touchmove', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }, { passive: false });
-            }
-            
-            // 8. LIMPAR AO DESMONTAR
+            // Limpar quando sair da página
             return () => {
+                document.body.classList.remove('ios-fix-active');
                 document.removeEventListener('touchmove', preventBounce);
-                document.removeEventListener('touchstart', preventZoom);
-                document.documentElement.classList.remove('ios-device');
+                console.log('iOS fix removido');
             };
         }
-        
-        // 9. AJUSTAR VIEWPORT INICIAL
-        setViewportHeight();
-        
-        // 10. REAJUSTAR QUANDO MUDA ORIENTAÇÃO OU TAMANHO
-        window.addEventListener('resize', setViewportHeight);
-        window.addEventListener('orientationchange', setViewportHeight);
-        
-        // 11. FORÇAR REAJUSTE APÓS 100ms (iOS às vezes demora)
-        setTimeout(setViewportHeight, 100);
-        
-        return () => {
-            window.removeEventListener('resize', setViewportHeight);
-            window.removeEventListener('orientationchange', setViewportHeight);
-        };
     }, []);
 
     // Configurações por nível
@@ -273,7 +231,7 @@ export default function VisualFocusPage() {
         ultimaAtualizacao.current = Date.now();
     };
 
-    // FUNÇÃO handleMouseMove MODIFICADA PARA SUPORTAR TOUCH
+    // FUNÇÃO handleMouseMove PARA SUPORTAR TOUCH
     const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
         if (!gameAreaRef.current || !ativo) return;
         
@@ -284,9 +242,6 @@ export default function VisualFocusPage() {
         if ('touches' in e) {
             // É um evento de toque (mobile)
             if (e.touches.length === 0) return;
-            
-            // Previne comportamento padrão do touch
-            e.preventDefault();
             
             // Pega a primeira posição de toque
             clientX = e.touches[0].clientX;
@@ -380,7 +335,7 @@ export default function VisualFocusPage() {
         setDistratores([]);
     };
 
-    // FUNÇÃO DE SALVAMENTO - IGUAL AO CAA
+    // FUNÇÃO DE SALVAMENTO
     const handleSaveSession = async () => {
         if (tempoFocoTotal === 0) {
             alert('Nenhuma interação foi registrada para salvar.');
@@ -396,7 +351,6 @@ export default function VisualFocusPage() {
         const tempoRecuperacaoMedio = calcularTempoRecuperacaoMedio();
         
         try {
-            // Obter o usuário atual - EXATAMENTE COMO NO CAA
             const { data: { user }, error: userError } = await supabase.auth.getUser();
             
             if (userError || !user) {
@@ -406,7 +360,6 @@ export default function VisualFocusPage() {
                 return;
             }
             
-            // Salvar na tabela sessoes
             const { data, error } = await supabase
                 .from('sessoes')
                 .insert([{
@@ -415,7 +368,6 @@ export default function VisualFocusPage() {
                     pontuacao_final: pontuacao,
                     data_fim: fimSessao.toISOString(),
                     duracao_segundos: duracaoFinalSegundos,
-                    // MÉTRICAS ESPECÍFICAS DO FOCO VISUAL
                     proximidade_media: Number(proximidadeMedia.toFixed(2)),
                     tempo_foco_percentual: Number(percentualFoco.toFixed(2)),
                     variabilidade_proximidade: Number(variabilidadeProximidade.toFixed(2)),
@@ -464,7 +416,6 @@ export default function VisualFocusPage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header - IGUAL AO CAA */}
             <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
                 <div className="p-3 sm:p-4 flex items-center justify-between">
                     <Link
@@ -488,7 +439,6 @@ export default function VisualFocusPage() {
             </header>
 
             <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
-                {/* Informações da Atividade - IGUAL AO CAA */}
                 <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-6">
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">{activityInfo.title}</h1>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -515,7 +465,6 @@ export default function VisualFocusPage() {
                     </div>
                 </div>
 
-                {/* Progresso da Sessão - IGUAL AO CAA */}
                 {jogoIniciado && (
                     <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
                         <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">📊 Progresso da Sessão</h3>
@@ -541,7 +490,6 @@ export default function VisualFocusPage() {
                 )}
 
                 {!jogoIniciado ? (
-                    // Tela inicial
                     <div className="bg-white rounded-xl shadow-lg p-8 text-center">
                         <div className="text-6xl mb-4">👁️</div>
                         <h2 className="text-2xl font-bold text-gray-800 mb-4">Foco Visual</h2>
@@ -563,9 +511,7 @@ export default function VisualFocusPage() {
                         </button>
                     </div>
                 ) : !exercicioConcluido ? (
-                    // Área de jogo ativa
                     <div className="space-y-6">
-                        {/* Stats durante o jogo */}
                         <div className="grid grid-cols-5 gap-4">
                             <div className="bg-white rounded-lg p-4 text-center shadow-sm">
                                 <div className="text-xl font-bold text-green-600">{pontuacao}</div>
@@ -590,7 +536,6 @@ export default function VisualFocusPage() {
                         </div>
 
                         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                            {/* Barra de progresso */}
                             <div className="h-2 bg-gray-200">
                                 <div 
                                     className="h-full bg-green-500 transition-all duration-1000"
@@ -598,22 +543,17 @@ export default function VisualFocusPage() {
                                 />
                             </div>
 
-                            {/* Área do jogo - MODIFICADA */}
                             <div 
                                 ref={gameAreaRef}
                                 onMouseMove={handleMouseMove}
-                                onTouchMove={handleMouseMove}  // NOVO
-                                onTouchStart={handleMouseMove} // NOVO
-                                className="game-area-ios-fix relative bg-gradient-to-br from-blue-50 to-green-50 cursor-none" // CLASSE MUDADA
+                                onTouchMove={handleMouseMove}
+                                onTouchStart={handleMouseMove}
+                                className="game-area-ios-fix relative bg-gradient-to-br from-blue-50 to-green-50 cursor-none"
                                 style={{ 
                                     height: '500px', 
-                                    width: '100%',
-                                    WebkitUserSelect: 'none',  // NOVO
-                                    userSelect: 'none',        // NOVO
-                                    touchAction: 'none'         // NOVO
+                                    width: '100%'
                                 }}
                             >
-                                {/* Alvo principal */}
                                 <div
                                     className="absolute w-6 h-6 bg-green-500 rounded-full shadow-lg border-2 border-white animate-pulse"
                                     style={{ 
@@ -623,7 +563,6 @@ export default function VisualFocusPage() {
                                     }}
                                 />
 
-                                {/* Distratores */}
                                 {distratores.map((distrator) => (
                                     <div
                                         key={distrator.id}
@@ -637,7 +576,6 @@ export default function VisualFocusPage() {
                                     />
                                 ))}
 
-                                {/* Cursor do usuário */}
                                 <div
                                     className="absolute w-4 h-4 bg-red-500 rounded-full border-2 border-white pointer-events-none"
                                     style={{ 
@@ -647,7 +585,6 @@ export default function VisualFocusPage() {
                                     }}
                                 />
 
-                                {/* Instruções durante o jogo */}
                                 <div className="absolute top-6 left-1/2 transform -translate-x-1/2 text-center">
                                     <div className="bg-black bg-opacity-70 text-white px-6 py-3 rounded-lg">
                                         <div className="font-medium">🟢 Siga o alvo verde com o cursor!</div>
@@ -657,7 +594,6 @@ export default function VisualFocusPage() {
                             </div>
                         </div>
 
-                        {/* Botão para voltar */}
                         <div className="text-center">
                             <button
                                 onClick={voltarInicio}
@@ -668,7 +604,6 @@ export default function VisualFocusPage() {
                         </div>
                     </div>
                 ) : (
-                    // Tela de resultados
                     <div className="bg-white rounded-xl shadow-lg p-8 text-center">
                         <div className="text-6xl mb-4">
                             {percentualFoco >= 80 && proximidadeMedia >= 60 ? '🏆' : 
