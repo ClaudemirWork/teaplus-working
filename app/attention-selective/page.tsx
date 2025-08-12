@@ -1,10 +1,10 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { ChevronLeft, Save, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { ChevronLeft, Save, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 type Direction = 'up' | 'down' | 'left' | 'right'
 type TrialType = 'congruent' | 'incongruent' | 'neutral'
@@ -19,9 +19,9 @@ interface Trial {
   responded?: boolean
 }
 
-export default function SelectiveAttention() {
-  const router = useRouter()
-  const supabase = createClientComponentClient()
+export default function SelectiveAttentionPage() {
+  const router = useRouter();
+  const supabase = createClientComponentClient();
   
   // Estados do jogo
   const [nivel, setNivel] = useState(1)
@@ -257,43 +257,35 @@ export default function SelectiveAttention() {
     )
   }
 
-  // Salvamento - IGUAL AO PADRÃO
+  // SALVAMENTO - IGUAL AO CAA
   const handleSaveSession = async () => {
-    setSalvando(true)
-    const metricas = calcularMetricas()
+    setSalvando(true);
+    const metricas = calcularMetricas();
     
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      // Obter o usuário atual - EXATAMENTE COMO NO CAA
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
-        console.error('Erro ao obter usuário:', userError)
-        alert('Erro: Sessão expirada. Por favor, faça login novamente.')
-        router.push('/login')
-        return
+        console.error('Erro ao obter usuário:', userError);
+        alert('Erro: Sessão expirada. Por favor, faça login novamente.');
+        router.push('/login');
+        return;
       }
       
-      // Salvar com métricas detalhadas
+      // Salvar na tabela sessoes - MESMA ESTRUTURA DO CAA
       const { data, error } = await supabase
         .from('sessoes')
         .insert([{
           usuario_id: user.id,
           atividade_nome: 'Atenção Seletiva',
           pontuacao_final: pontuacao,
-          data_fim: new Date().toISOString(),
-          detalhes: {
-            acertos_congruentes: metricas.acertosCongruentes,
-            acertos_incongruentes: metricas.acertosIncongruentes,
-            rt_medio_congruente: metricas.rtCongruente,
-            rt_medio_incongruente: metricas.rtIncongruente,
-            indice_interferencia: metricas.indiceInterferencia,
-            tentativas_total: metricas.totalTentativas,
-            nivel_completado: nivel
-          }
-        }])
+          data_fim: new Date().toISOString()
+        }]);
 
       if (error) {
-        console.error('Erro ao salvar:', error)
-        alert(`Erro ao salvar: ${error.message}`)
+        console.error('Erro ao salvar:', error);
+        alert(`Erro ao salvar: ${error.message}`);
       } else {
         alert(`Sessão salva com sucesso!
         
@@ -301,17 +293,17 @@ export default function SelectiveAttention() {
 • ${metricas.acertosTotal}/${metricas.totalTentativas} acertos (${metricas.precisaoTotal}%)
 • Interferência: ${metricas.indiceInterferencia}ms
 • Nível ${nivel} completado
-• ${pontuacao} pontos`)
+• ${pontuacao} pontos`);
         
-        router.push('/profileselection')
+        router.push('/profileselection');
       }
     } catch (error: any) {
-      console.error('Erro inesperado:', error)
-      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`)
+      console.error('Erro inesperado:', error);
+      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
     } finally {
-      setSalvando(false)
+      setSalvando(false);
     }
-  }
+  };
 
   const voltarInicio = () => {
     setJogoIniciado(false)
@@ -332,11 +324,11 @@ export default function SelectiveAttention() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header PADRÃO */}
+      {/* Header PADRONIZADO igual ao CAA */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="p-3 sm:p-4 flex items-center justify-between">
-          <Link 
-            href="/tdah" 
+          <Link
+            href="/tdah"
             className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
           >
             <ChevronLeft size={20} />
@@ -592,5 +584,5 @@ export default function SelectiveAttention() {
         )}
       </main>
     </div>
-  )
+  );
 }
