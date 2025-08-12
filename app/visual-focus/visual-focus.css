@@ -1,81 +1,25 @@
 /* ========================================
-   SOLUÇÃO ANTI-TREMEDEIRA PARA iOS
+   FIX ESPECÍFICO PARA iOS - VERSÃO SIMPLES
    ======================================== */
 
-/* 1. PREVENIR BOUNCE EM TODOS OS NAVEGADORES */
-html, body {
-  overscroll-behavior-y: none;
-  overscroll-behavior-x: none;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-}
-
-/* 2. SOLUÇÃO ESPECÍFICA PARA iOS SAFARI */
-html {
-  position: fixed;
-  width: 100%;
-  height: 100vh;
-  height: calc(var(--vh, 1vh) * 100);
-  overflow: hidden;
-  touch-action: manipulation;
-}
-
-body {
+/* Apenas previne o bounce, sem travar toques */
+.ios-fix-active {
   position: fixed;
   width: 100%;
   height: 100%;
   overflow: hidden;
   -webkit-overflow-scrolling: touch;
-  touch-action: none;
+}
+
+/* Área do jogo */
+.game-area-ios-fix {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   -webkit-user-select: none;
   user-select: none;
 }
 
-/* 3. CONTAINER DO JOGO */
-.game-container-fixed {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  touch-action: none;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-}
-
-/* 4. ÁREA DE JOGO ESPECÍFICA */
-.game-area-ios-fix {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  touch-action: none;
-  will-change: transform;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* 5. PREVENIR ZOOM NO iOS */
-input, select, textarea {
+/* Prevenir zoom apenas nos inputs desta página */
+.visual-focus-page input {
   font-size: 16px !important;
-}
-
-/* 6. MODO PAISAGEM - AJUSTES ESPECIAIS */
-@media screen and (orientation: landscape) {
-  html {
-    height: 100vw;
-  }
-}
-
-/* 7. ANIMAÇÕES OTIMIZADAS PARA iOS */
-@supports (-webkit-touch-callout: none) {
-  * {
-    animation-duration: 0.3s !important;
-    transition-duration: 0.3s !important;
-  }
 }
