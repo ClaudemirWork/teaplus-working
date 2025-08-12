@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
+import '../visual-focus.css';  // NOVO IMPORT DO CSS
 
 export default function VisualFocusPage() {
     const router = useRouter();
@@ -37,6 +38,78 @@ export default function VisualFocusPage() {
     const gameAreaRef = useRef<HTMLDivElement>(null);
     const direcaoRef = useRef({ x: 1, y: 1 });
     const ultimaAtualizacao = useRef(Date.now());
+
+    // ==========================================
+    // FIX PARA iOS - PREVENIR TREMEDEIRA
+    // ==========================================
+    useEffect(() => {
+        // 1. AJUSTAR ALTURA REAL DA VIEWPORT (iOS tem barra de endereço que some/aparece)
+        const setViewportHeight = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+            console.log('Viewport ajustada:', window.innerHeight + 'px');
+        };
+
+        // 2. DETECTAR SE É iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        
+        if (isIOS) {
+            console.log('iOS detectado - aplicando fixes');
+            
+            // 3. ADICIONAR CLASSE ESPECIAL PARA iOS
+            document.documentElement.classList.add('ios-device');
+            
+            // 4. PREVENIR SCROLL BOUNCE
+            const preventBounce = (e: TouchEvent) => {
+                const target = e.target as HTMLElement;
+                if (!target.closest('.allow-scroll')) {
+                    e.preventDefault();
+                }
+            };
+            
+            // 5. PREVENIR ZOOM COM PINCH
+            const preventZoom = (e: TouchEvent) => {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            };
+            
+            // 6. ADICIONAR LISTENERS
+            document.addEventListener('touchmove', preventBounce, { passive: false });
+            document.addEventListener('touchstart', preventZoom, { passive: false });
+            
+            // 7. PREVENIR SCROLL QUANDO TOCA NA ÁREA DO JOGO
+            const gameArea = gameAreaRef.current;
+            if (gameArea) {
+                gameArea.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, { passive: false });
+            }
+            
+            // 8. LIMPAR AO DESMONTAR
+            return () => {
+                document.removeEventListener('touchmove', preventBounce);
+                document.removeEventListener('touchstart', preventZoom);
+                document.documentElement.classList.remove('ios-device');
+            };
+        }
+        
+        // 9. AJUSTAR VIEWPORT INICIAL
+        setViewportHeight();
+        
+        // 10. REAJUSTAR QUANDO MUDA ORIENTAÇÃO OU TAMANHO
+        window.addEventListener('resize', setViewportHeight);
+        window.addEventListener('orientationchange', setViewportHeight);
+        
+        // 11. FORÇAR REAJUSTE APÓS 100ms (iOS às vezes demora)
+        setTimeout(setViewportHeight, 100);
+        
+        return () => {
+            window.removeEventListener('resize', setViewportHeight);
+            window.removeEventListener('orientationchange', setViewportHeight);
+        };
+    }, []);
 
     // Configurações por nível
     const niveis = {
@@ -200,14 +273,39 @@ export default function VisualFocusPage() {
         ultimaAtualizacao.current = Date.now();
     };
 
-    const handleMouseMove = (e: React.MouseEvent) => {
+    // FUNÇÃO handleMouseMove MODIFICADA PARA SUPORTAR TOUCH
+    const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
         if (!gameAreaRef.current || !ativo) return;
         
         const rect = gameAreaRef.current.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        let clientX, clientY;
         
-        setPosicaoMouse({ x, y });
+        // DETECTAR SE É TOUCH OU MOUSE
+        if ('touches' in e) {
+            // É um evento de toque (mobile)
+            if (e.touches.length === 0) return;
+            
+            // Previne comportamento padrão do touch
+            e.preventDefault();
+            
+            // Pega a primeira posição de toque
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            // É um evento de mouse (desktop)
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        
+        // Calcula posição relativa em porcentagem
+        const x = ((clientX - rect.left) / rect.width) * 100;
+        const y = ((clientY - rect.top) / rect.height) * 100;
+        
+        // Limita aos bounds da área de jogo
+        const boundedX = Math.max(0, Math.min(100, x));
+        const boundedY = Math.max(0, Math.min(100, y));
+        
+        setPosicaoMouse({ x: boundedX, y: boundedY });
     };
 
     const calcularProximidade = () => {
@@ -339,12 +437,12 @@ export default function VisualFocusPage() {
                 alert(`Sessão salva com sucesso!
                 
 📊 Resumo Científico:
-• ${percentualFoco}% tempo em foco
-• ${proximidadeMedia.toFixed(1)}% proximidade média
-• ${lapsosAtencao} lapsos de atenção
-• ${tempoRecuperacaoMedio.toFixed(1)}s recuperação média
-• Nível máximo: ${nivelMaximo}
-• Variabilidade: ${variabilidadeProximidade.toFixed(1)}%`);
+- ${percentualFoco}% tempo em foco
+- ${proximidadeMedia.toFixed(1)}% proximidade média
+- ${lapsosAtencao} lapsos de atenção
+- ${tempoRecuperacaoMedio.toFixed(1)}s recuperação média
+- Nível máximo: ${nivelMaximo}
+- Variabilidade: ${variabilidadeProximidade.toFixed(1)}%`);
                 
                 router.push('/profileselection');
             }
@@ -500,12 +598,20 @@ export default function VisualFocusPage() {
                                 />
                             </div>
 
-                            {/* Área do jogo */}
+                            {/* Área do jogo - MODIFICADA */}
                             <div 
                                 ref={gameAreaRef}
                                 onMouseMove={handleMouseMove}
-                                className="relative bg-gradient-to-br from-blue-50 to-green-50 cursor-none"
-                                style={{ height: '500px', width: '100%' }}
+                                onTouchMove={handleMouseMove}  // NOVO
+                                onTouchStart={handleMouseMove} // NOVO
+                                className="game-area-ios-fix relative bg-gradient-to-br from-blue-50 to-green-50 cursor-none" // CLASSE MUDADA
+                                style={{ 
+                                    height: '500px', 
+                                    width: '100%',
+                                    WebkitUserSelect: 'none',  // NOVO
+                                    userSelect: 'none',        // NOVO
+                                    touchAction: 'none'         // NOVO
+                                }}
                             >
                                 {/* Alvo principal */}
                                 <div
