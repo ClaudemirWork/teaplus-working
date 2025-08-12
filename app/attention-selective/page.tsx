@@ -2,402 +2,594 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Save, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '../../utils/supabaseClient'  // CORRIGIDO - 2 níveis acima
 
-export default function AttentionSelective() {
+type Direction = 'up' | 'down' | 'left' | 'right'
+type TrialType = 'congruent' | 'incongruent' | 'neutral'
+
+interface Trial {
+  target: Direction
+  flankers: Direction[]
+  type: TrialType
+  startTime: number
+  responseTime?: number
+  correct?: boolean
+  responded?: boolean
+}
+
+export default function SelectiveAttention() {
+  const router = useRouter()
+  const supabase = createClient()
+  
+  // Estados do jogo
   const [nivel, setNivel] = useState(1)
   const [pontuacao, setPontuacao] = useState(0)
-  const [duracao, setDuracao] = useState(45) // segundos
-  const [tempoRestante, setTempoRestante] = useState(45)
-  const [ativo, setAtivo] = useState(false)
-  const [alvos, setAlvos] = useState<any[]>([])
-  const [corAlvo, setCorAlvo] = useState('red')
-  const [acertos, setAcertos] = useState(0)
-  const [erros, setErros] = useState(0)
-  const [tentativas, setTentativas] = useState(0)
-  const [exercicioConcluido, setExercicioConcluido] = useState(false)
   const [jogoIniciado, setJogoIniciado] = useState(false)
-
+  const [exercicioConcluido, setExercicioConcluido] = useState(false)
+  const [salvando, setSalvando] = useState(false)
+  
+  // Estados da tarefa Flanker
+  const [trialAtual, setTrialAtual] = useState<Trial | null>(null)
+  const [trials, setTrials] = useState<Trial[]>([])
+  const [trialIndex, setTrialIndex] = useState(0)
+  const [mostrarFeedback, setMostrarFeedback] = useState(false)
+  const [feedbackType, setFeedbackType] = useState<'correct' | 'incorrect'>('correct')
+  
   // Configurações por nível
   const niveis = {
-    1: { duracao: 45, totalAlvos: 3, distratores: 2, intervalo: 3000, nome: "Iniciante (45s)" },
-    2: { duracao: 60, totalAlvos: 4, distratores: 3, intervalo: 2500, nome: "Básico (1min)" },
-    3: { duracao: 75, totalAlvos: 5, distratores: 4, intervalo: 2000, nome: "Intermediário (1.25min)" },
-    4: { duracao: 90, totalAlvos: 6, distratores: 5, intervalo: 1800, nome: "Avançado (1.5min)" },
-    5: { duracao: 120, totalAlvos: 8, distratores: 7, intervalo: 1500, nome: "Expert (2min)" }
+    1: { totalTrials: 20, tempoLimite: 3000, nome: "Iniciante", proporcaoIncongruente: 0.3 },
+    2: { totalTrials: 30, tempoLimite: 2500, nome: "Básico", proporcaoIncongruente: 0.4 },
+    3: { totalTrials: 40, tempoLimite: 2000, nome: "Intermediário", proporcaoIncongruente: 0.5 },
+    4: { totalTrials: 50, tempoLimite: 1500, nome: "Avançado", proporcaoIncongruente: 0.6 },
+    5: { totalTrials: 60, tempoLimite: 1200, nome: "Expert", proporcaoIncongruente: 0.7 }
   }
 
-  const cores = {
-    red: { bg: 'bg-red-500', nome: 'Vermelho', emoji: '🔴' },
-    blue: { bg: 'bg-blue-500', nome: 'Azul', emoji: '🔵' },
-    green: { bg: 'bg-green-500', nome: 'Verde', emoji: '🟢' },
-    yellow: { bg: 'bg-yellow-500', nome: 'Amarelo', emoji: '🟡' },
-    purple: { bg: 'bg-purple-500', nome: 'Roxo', emoji: '🟣' },
-    orange: { bg: 'bg-orange-500', nome: 'Laranja', emoji: '🟠' }
-  }
-
-  // Timer principal
-  useEffect(() => {
-    let timer: NodeJS.Timeout
-    if (ativo && tempoRestante > 0) {
-      timer = setTimeout(() => {
-        setTempoRestante(prev => prev - 1)
-      }, 1000)
-    } else if (tempoRestante === 0 && ativo) {
-      finalizarExercicio()
-    }
-    return () => clearTimeout(timer)
-  }, [ativo, tempoRestante])
-
-  // Controle de geração de alvos
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (ativo) {
-      interval = setInterval(() => {
-        gerarAlvos()
-      }, niveis[nivel as keyof typeof niveis].intervalo)
-    }
-    return () => clearInterval(interval)
-  }, [ativo, nivel])
-
-  const iniciarExercicio = () => {
-    const configuracao = niveis[nivel as keyof typeof niveis]
-    setDuracao(configuracao.duracao)
-    setTempoRestante(configuracao.duracao)
-    setAtivo(true)
-    setPontuacao(0)
-    setAcertos(0)
-    setErros(0)
-    setTentativas(0)
-    setExercicioConcluido(false)
-    setAlvos([])
-    setJogoIniciado(true)
-    
-    // Definir cor alvo aleatória
-    const coresDisponiveis = Object.keys(cores)
-    const corEscolhida = coresDisponiveis[Math.floor(Math.random() * coresDisponiveis.length)]
-    setCorAlvo(corEscolhida)
-  }
-
-  const gerarAlvos = () => {
-    if (!ativo) return
-    
+  // Gerar trials baseado no nível
+  const gerarTrials = (nivel: number): Trial[] => {
     const config = niveis[nivel as keyof typeof niveis]
-    const novosAlvos = []
-    const coresDisponiveis = Object.keys(cores)
+    const novasTrials: Trial[] = []
+    const direcoes: Direction[] = ['up', 'down', 'left', 'right']
     
-    // Gerar alvos corretos
-    const numAlvosCorretos = Math.floor(Math.random() * 2) + 1 // 1-2 alvos corretos
-    for (let i = 0; i < numAlvosCorretos; i++) {
-      novosAlvos.push({
-        id: Date.now() + i,
-        cor: corAlvo,
-        correto: true,
-        x: Math.random() * 70 + 15,
-        y: Math.random() * 60 + 20
+    const numIncongruente = Math.floor(config.totalTrials * config.proporcaoIncongruente)
+    const numCongruente = Math.floor((config.totalTrials - numIncongruente) * 0.7)
+    const numNeutral = config.totalTrials - numIncongruente - numCongruente
+    
+    // Criar trials incongruentes
+    for (let i = 0; i < numIncongruente; i++) {
+      const target = direcoes[Math.floor(Math.random() * direcoes.length)]
+      const flankerDirection = direcoes.filter(d => d !== target)[Math.floor(Math.random() * 3)]
+      novasTrials.push({
+        target,
+        flankers: [flankerDirection, flankerDirection, flankerDirection, flankerDirection],
+        type: 'incongruent',
+        startTime: 0
       })
     }
     
-    // Gerar distratores
-    const numDistratores = config.distratores
-    for (let i = 0; i < numDistratores; i++) {
-      const coresDistratores = coresDisponiveis.filter(c => c !== corAlvo)
-      const corDistrator = coresDistratores[Math.floor(Math.random() * coresDistratores.length)]
-      
-      novosAlvos.push({
-        id: Date.now() + numAlvosCorretos + i,
-        cor: corDistrator,
-        correto: false,
-        x: Math.random() * 70 + 15,
-        y: Math.random() * 60 + 20
+    // Criar trials congruentes
+    for (let i = 0; i < numCongruente; i++) {
+      const direction = direcoes[Math.floor(Math.random() * direcoes.length)]
+      novasTrials.push({
+        target: direction,
+        flankers: [direction, direction, direction, direction],
+        type: 'congruent',
+        startTime: 0
       })
     }
     
-    setAlvos(novosAlvos)
-    setTentativas(prev => prev + numAlvosCorretos)
+    // Criar trials neutros (sem flankers direcionais)
+    for (let i = 0; i < numNeutral; i++) {
+      const target = direcoes[Math.floor(Math.random() * direcoes.length)]
+      novasTrials.push({
+        target,
+        flankers: ['neutral' as Direction, 'neutral' as Direction, 'neutral' as Direction, 'neutral' as Direction],
+        type: 'neutral',
+        startTime: 0
+      })
+    }
     
-    // Remover alvos após 2 segundos
+    // Embaralhar
+    return novasTrials.sort(() => Math.random() - 0.5)
+  }
+
+  // Iniciar exercício
+  const iniciarExercicio = () => {
+    const novasTrials = gerarTrials(nivel)
+    setTrials(novasTrials)
+    setTrialIndex(0)
+    setPontuacao(0)
+    setJogoIniciado(true)
+    setExercicioConcluido(false)
+    
+    // Iniciar primeira trial após delay
     setTimeout(() => {
-      setAlvos([])
-    }, 2000)
+      if (novasTrials.length > 0) {
+        setTrialAtual({ ...novasTrials[0], startTime: Date.now() })
+      }
+    }, 1000)
   }
 
-  const clicarAlvo = (alvo: any) => {
-    if (!ativo) return
+  // Processar resposta do usuário
+  const handleResponse = (direction: Direction) => {
+    if (!trialAtual || trialAtual.responded) return
     
-    if (alvo.correto) {
-      setAcertos(prev => prev + 1)
-      setPontuacao(prev => prev + 15 * nivel)
-    } else {
-      setErros(prev => prev + 1)
-      setPontuacao(prev => Math.max(0, prev - 5)) // Penalidade por erro
+    const responseTime = Date.now() - trialAtual.startTime
+    const correct = direction === trialAtual.target
+    
+    // Atualizar trial com resposta
+    const updatedTrial = {
+      ...trialAtual,
+      responseTime,
+      correct,
+      responded: true
     }
     
-    // Remover alvo clicado
-    setAlvos(prev => prev.filter(a => a.id !== alvo.id))
+    // Atualizar trials array
+    const updatedTrials = [...trials]
+    updatedTrials[trialIndex] = updatedTrial
+    setTrials(updatedTrials)
+    
+    // Atualizar pontuação
+    if (correct) {
+      const bonus = responseTime < 500 ? 20 : responseTime < 1000 ? 15 : 10
+      setPontuacao(prev => prev + bonus * nivel)
+    }
+    
+    // Mostrar feedback
+    setFeedbackType(correct ? 'correct' : 'incorrect')
+    setMostrarFeedback(true)
+    
+    // Próxima trial após delay
+    setTimeout(() => {
+      setMostrarFeedback(false)
+      proximaTrial()
+    }, 500)
   }
 
+  // Avançar para próxima trial
+  const proximaTrial = () => {
+    const nextIndex = trialIndex + 1
+    
+    if (nextIndex >= trials.length) {
+      finalizarExercicio()
+    } else {
+      setTrialIndex(nextIndex)
+      setTimeout(() => {
+        setTrialAtual({ ...trials[nextIndex], startTime: Date.now() })
+      }, 500)
+    }
+  }
+
+  // Timeout para trials sem resposta
+  useEffect(() => {
+    if (trialAtual && !trialAtual.responded) {
+      const config = niveis[nivel as keyof typeof niveis]
+      const timeout = setTimeout(() => {
+        handleResponse('none' as Direction) // Marca como erro
+      }, config.tempoLimite)
+      
+      return () => clearTimeout(timeout)
+    }
+  }, [trialAtual])
+
+  // Finalizar exercício
   const finalizarExercicio = () => {
-    setAtivo(false)
-    setAlvos([])
+    setJogoIniciado(false)
     setExercicioConcluido(true)
+    setTrialAtual(null)
   }
 
-  const proximoNivel = () => {
-    if (nivel < 5) {
-      setNivel(prev => prev + 1)
-      setExercicioConcluido(false)
-      setJogoIniciado(false)
+  // Calcular métricas
+  const calcularMetricas = () => {
+    const trialsRespondidas = trials.filter(t => t.responded)
+    const congruentes = trialsRespondidas.filter(t => t.type === 'congruent')
+    const incongruentes = trialsRespondidas.filter(t => t.type === 'incongruent')
+    
+    const acertosTotal = trialsRespondidas.filter(t => t.correct).length
+    const acertosCongruentes = congruentes.filter(t => t.correct).length
+    const acertosIncongruentes = incongruentes.filter(t => t.correct).length
+    
+    const rtCongruente = congruentes.length > 0 
+      ? Math.round(congruentes.reduce((acc, t) => acc + (t.responseTime || 0), 0) / congruentes.length)
+      : 0
+    
+    const rtIncongruente = incongruentes.length > 0
+      ? Math.round(incongruentes.reduce((acc, t) => acc + (t.responseTime || 0), 0) / incongruentes.length)
+      : 0
+    
+    const indiceInterferencia = rtIncongruente - rtCongruente
+    const precisaoTotal = trialsRespondidas.length > 0 
+      ? Math.round((acertosTotal / trialsRespondidas.length) * 100)
+      : 0
+    
+    return {
+      acertosTotal,
+      totalTentativas: trialsRespondidas.length,
+      acertosCongruentes,
+      acertosIncongruentes,
+      rtCongruente,
+      rtIncongruente,
+      indiceInterferencia,
+      precisaoTotal
+    }
+  }
+
+  // Renderizar setas do Flanker
+  const renderizarFlanker = () => {
+    if (!trialAtual) return null
+    
+    const getArrow = (direction: Direction | 'neutral') => {
+      switch (direction) {
+        case 'up': return <ArrowUp size={48} />
+        case 'down': return <ArrowDown size={48} />
+        case 'left': return <ArrowLeft size={48} />
+        case 'right': return <ArrowRight size={48} />
+        case 'neutral': return <div className="w-12 h-12 bg-gray-400 rounded" />
+        default: return null
+      }
+    }
+    
+    return (
+      <div className="flex items-center justify-center space-x-4">
+        {/* Flankers esquerdos */}
+        <div className="text-gray-600">
+          {getArrow(trialAtual.flankers[0])}
+        </div>
+        <div className="text-gray-600">
+          {getArrow(trialAtual.flankers[1])}
+        </div>
+        
+        {/* Target central - DESTAQUE */}
+        <div className="text-blue-600 border-4 border-blue-400 rounded-lg p-2 bg-blue-50">
+          {getArrow(trialAtual.target)}
+        </div>
+        
+        {/* Flankers direitos */}
+        <div className="text-gray-600">
+          {getArrow(trialAtual.flankers[2])}
+        </div>
+        <div className="text-gray-600">
+          {getArrow(trialAtual.flankers[3])}
+        </div>
+      </div>
+    )
+  }
+
+  // Salvamento - IGUAL AO PADRÃO
+  const handleSaveSession = async () => {
+    setSalvando(true)
+    const metricas = calcularMetricas()
+    
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError || !user) {
+        console.error('Erro ao obter usuário:', userError)
+        alert('Erro: Sessão expirada. Por favor, faça login novamente.')
+        router.push('/login')
+        return
+      }
+      
+      // Salvar com métricas detalhadas
+      const { data, error } = await supabase
+        .from('sessoes')
+        .insert([{
+          usuario_id: user.id,
+          atividade_nome: 'Atenção Seletiva',
+          pontuacao_final: pontuacao,
+          data_fim: new Date().toISOString(),
+          detalhes: {
+            acertos_congruentes: metricas.acertosCongruentes,
+            acertos_incongruentes: metricas.acertosIncongruentes,
+            rt_medio_congruente: metricas.rtCongruente,
+            rt_medio_incongruente: metricas.rtIncongruente,
+            indice_interferencia: metricas.indiceInterferencia,
+            tentativas_total: metricas.totalTentativas,
+            nivel_completado: nivel
+          }
+        }])
+
+      if (error) {
+        console.error('Erro ao salvar:', error)
+        alert(`Erro ao salvar: ${error.message}`)
+      } else {
+        alert(`Sessão salva com sucesso!
+        
+📊 Resumo:
+• ${metricas.acertosTotal}/${metricas.totalTentativas} acertos (${metricas.precisaoTotal}%)
+• Interferência: ${metricas.indiceInterferencia}ms
+• Nível ${nivel} completado
+• ${pontuacao} pontos`)
+        
+        router.push('/profileselection')
+      }
+    } catch (error: any) {
+      console.error('Erro inesperado:', error)
+      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`)
+    } finally {
+      setSalvando(false)
     }
   }
 
   const voltarInicio = () => {
     setJogoIniciado(false)
     setExercicioConcluido(false)
-    setAtivo(false)
-    setAlvos([])
+    setTrialAtual(null)
+    setTrials([])
+    setTrialIndex(0)
   }
 
-  const precisao = tentativas > 0 ? Math.round((acertos / tentativas) * 100) : 0
-  const podeAvancar = precisao >= 70 && nivel < 5
+  const proximoNivel = () => {
+    if (nivel < 5) {
+      setNivel(prev => prev + 1)
+      voltarInicio()
+    }
+  }
+
+  const metricas = calcularMetricas()
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header PADRÃO */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="p-4">
-          <div className="flex items-center justify-between">
-            <Link 
-              href="/tdah" 
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              <ChevronLeft size={20} />
-              <span>Voltar ao TDAH</span>
-            </Link>
-            
-            <div className="text-center">
-              <h1 className="text-xl font-bold text-gray-800">🎯 Atenção Seletiva</h1>
-            </div>
-            
-            <div className="text-right">
-              <div className="text-lg font-semibold text-blue-600">Nível {nivel}</div>
-              <div className="text-sm text-gray-600">{niveis[nivel as keyof typeof niveis].nome}</div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="p-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="p-3 sm:p-4 flex items-center justify-between">
+          <Link 
+            href="/tdah" 
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
+          >
+            <ChevronLeft size={20} />
+            <span className="text-sm sm:text-base">Voltar para TDAH</span>
+          </Link>
           
-          {!jogoIniciado ? (
-            // Tela de informações inicial
-            <div className="space-y-6">
-              {/* Objetivo */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">🎯</span>
-                  <h2 className="text-lg font-bold text-gray-800">Objetivo:</h2>
-                </div>
-                <p className="text-gray-700 border-l-4 border-red-400 pl-4">
-                  Desenvolver atenção seletiva clicando apenas nos alvos da cor especificada, ignorando distratores de outras cores.
-                </p>
-              </div>
-
-              {/* Pontuação */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">⭐</span>
-                  <h2 className="text-lg font-bold text-gray-800">Pontuação:</h2>
-                </div>
-                <p className="text-gray-700 border-l-4 border-blue-400 pl-4">
-                  Alvo correto = +15 pontos × nível. Erro = -5 pontos. Você precisa de 70% de precisão para avançar de nível.
-                </p>
-              </div>
-
-              {/* Níveis */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">📊</span>
-                  <h2 className="text-lg font-bold text-gray-800">Níveis:</h2>
-                </div>
-                <div className="border-l-4 border-purple-400 pl-4 space-y-1">
-                  <p className="text-gray-700"><strong>Nível 1:</strong> Iniciante (3 alvos, 2 distratores, 45s)</p>
-                  <p className="text-gray-700"><strong>Nível 2:</strong> Básico (4 alvos, 3 distratores, 1min)</p>
-                  <p className="text-gray-700"><strong>Nível 3:</strong> Intermediário (5 alvos, 4 distratores, 1.25min)</p>
-                  <p className="text-gray-700"><strong>Nível 4:</strong> Avançado (6 alvos, 5 distratores, 1.5min)</p>
-                  <p className="text-gray-700"><strong>Nível 5:</strong> Expert (8 alvos, 7 distratores, 2min)</p>
-                </div>
-              </div>
-
-              {/* Final */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">🏆</span>
-                  <h2 className="text-lg font-bold text-gray-800">Final:</h2>
-                </div>
-                <p className="text-gray-700 border-l-4 border-green-400 pl-4">
-                  Complete o Nível 5 com 70% de precisão para finalizar o exercício e fortalecer sua atenção seletiva.
-                </p>
-              </div>
-
-              {/* Base Científica */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">🧠</span>
-                  <h2 className="text-lg font-bold text-gray-800">Base Científica:</h2>
-                </div>
-                <p className="text-gray-700">
-                  Este exercício treina atenção seletiva e controle inibitório, fundamentais para filtrar estímulos irrelevantes e focar no que é importante, baseado em protocolos de neurociência cognitiva.
-                </p>
-              </div>
-
-              {/* Botão Iniciar */}
-              <div className="text-center py-8">
-                <div className="text-6xl mb-4">😊</div>
-                <button
-                  onClick={iniciarExercicio}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors"
-                >
-                  🚀 Iniciar Jogo
-                </button>
-              </div>
-            </div>
-          ) : !exercicioConcluido ? (
-            // Área de jogo ativa
-            <div className="space-y-6">
-              {/* Instrução da cor alvo */}
-              <div className="bg-white rounded-lg shadow-lg p-6 text-center">
-                <h2 className="text-xl font-bold text-gray-800 mb-2">
-                  Clique apenas nos alvos: {cores[corAlvo as keyof typeof cores].emoji} {cores[corAlvo as keyof typeof cores].nome}
-                </h2>
-                <p className="text-gray-600">Ignore as outras cores!</p>
-              </div>
-
-              {/* Stats durante o jogo */}
-              <div className="grid grid-cols-5 gap-4">
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <div className="text-xl font-bold text-blue-600">{pontuacao}</div>
-                  <div className="text-sm text-gray-600">Pontos</div>
-                </div>
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <div className="text-xl font-bold text-orange-600">{tempoRestante}s</div>
-                  <div className="text-sm text-gray-600">Restante</div>
-                </div>
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <div className="text-xl font-bold text-green-600">{acertos}</div>
-                  <div className="text-sm text-gray-600">Acertos</div>
-                </div>
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <div className="text-xl font-bold text-red-600">{erros}</div>
-                  <div className="text-sm text-gray-600">Erros</div>
-                </div>
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <div className="text-xl font-bold text-purple-600">{precisao}%</div>
-                  <div className="text-sm text-gray-600">Precisão</div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                {/* Barra de progresso */}
-                <div className="h-2 bg-gray-200">
-                  <div 
-                    className="h-full bg-blue-500 transition-all duration-1000"
-                    style={{ width: `${((duracao - tempoRestante) / duracao) * 100}%` }}
-                  />
-                </div>
-
-                {/* Área do jogo */}
-                <div 
-                  className="relative bg-gradient-to-br from-gray-50 to-blue-50"
-                  style={{ height: '500px', width: '100%' }}
-                >
-                  {/* Alvos */}
-                  {alvos.map((alvo) => (
-                    <button
-                      key={alvo.id}
-                      onClick={() => clicarAlvo(alvo)}
-                      className={`absolute w-16 h-16 rounded-full shadow-lg transition-all duration-200 hover:scale-110 border-4 border-white ${cores[alvo.cor as keyof typeof cores].bg}`}
-                      style={{ 
-                        left: `${alvo.x}%`, 
-                        top: `${alvo.y}%`,
-                        transform: 'translate(-50%, -50%)'
-                      }}
-                    />
-                  ))}
-
-                  {/* Instruções durante o jogo */}
-                  <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-center">
-                    <div className="bg-black bg-opacity-70 text-white px-6 py-3 rounded-lg">
-                      <div className="font-medium">
-                        Clique apenas nos {cores[corAlvo as keyof typeof cores].emoji} {cores[corAlvo as keyof typeof cores].nome}!
-                      </div>
-                      <div className="text-sm opacity-90">Tempo restante: {tempoRestante}s</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Botão para voltar */}
-              <div className="text-center">
-                <button
-                  onClick={voltarInicio}
-                  className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg transition-colors"
-                >
-                  ← Voltar ao Início
-                </button>
-              </div>
-            </div>
-          ) : (
-            // Tela de resultados
-            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-              <div className="text-6xl mb-4">
-                {precisao >= 90 ? '🏆' : precisao >= 70 ? '🎉' : '💪'}
-              </div>
-              
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                {precisao >= 90 ? 'Excelente Foco!' : precisao >= 70 ? 'Muito Bem!' : 'Continue Praticando!'}
-              </h3>
-              
-              <div className="grid grid-cols-2 gap-6 max-w-md mx-auto mb-8">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-lg font-bold text-gray-800">{acertos}/{tentativas}</div>
-                  <div className="text-sm text-gray-600">Acertos</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-lg font-bold text-gray-800">{precisao}%</div>
-                  <div className="text-sm text-gray-600">Precisão</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-lg font-bold text-gray-800">{pontuacao}</div>
-                  <div className="text-sm text-gray-600">Pontos</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-lg font-bold text-gray-800">Nível {nivel}</div>
-                  <div className="text-sm text-gray-600">Atual</div>
-                </div>
-              </div>
-              
-              <div className="space-x-4">
-                {podeAvancar && (
-                  <button
-                    onClick={proximoNivel}
-                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-                  >
-                    🆙 Próximo Nível
-                  </button>
-                )}
-                
-                <button
-                  onClick={voltarInicio}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-                >
-                  🔄 Jogar Novamente
-                </button>
-              </div>
+          {exercicioConcluido && (
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <button 
+                onClick={handleSaveSession}
+                disabled={salvando}
+                className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
+              >
+                <Save size={20} />
+                <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
+              </button>
             </div>
           )}
         </div>
+      </header>
+
+      <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+        {!jogoIniciado && !exercicioConcluido ? (
+          // Tela inicial
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">🎯 Atenção Seletiva</h1>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
+                  <p className="text-sm text-gray-600">
+                    Responda apenas à seta CENTRAL, ignorando as setas ao redor (distratores).
+                  </p>
+                </div>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como Jogar:</h3>
+                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                    <li>Foque na seta do MEIO (azul)</li>
+                    <li>Use as teclas de seta do teclado</li>
+                    <li>Ignore as setas cinzas ao lado</li>
+                    <li>Responda o mais rápido possível</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-800 mb-1">⭐ Dica:</h3>
+                  <p className="text-sm text-gray-600">
+                    Quando as setas apontam para direções diferentes, é mais difícil. Mantenha o foco!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Seleção de Nível */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Nível</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                {Object.entries(niveis).map(([key, value]) => (
+                  <button
+                    key={key}
+                    onClick={() => setNivel(Number(key))}
+                    className={`p-4 rounded-lg font-medium transition-colors ${
+                      nivel === Number(key)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">🎯</div>
+                    <div className="text-sm">Nível {key}</div>
+                    <div className="text-xs opacity-80">{value.nome}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="text-center">
+              <button
+                onClick={iniciarExercicio}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors"
+              >
+                🚀 Iniciar Atividade
+              </button>
+            </div>
+          </div>
+        ) : jogoIniciado ? (
+          // Área de jogo
+          <div className="space-y-6">
+            {/* Progresso */}
+            <div className="bg-white rounded-xl shadow-lg p-4">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-bold text-gray-800">📊 Progresso</h3>
+                <span className="text-sm text-gray-600">
+                  Trial {trialIndex + 1} de {trials.length}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${((trialIndex + 1) / trials.length) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Área do Flanker */}
+            <div className="bg-white rounded-xl shadow-lg p-8">
+              <div className="text-center mb-6">
+                <p className="text-lg font-semibold text-gray-700 mb-2">
+                  Responda à direção da seta AZUL (centro)
+                </p>
+                <p className="text-sm text-gray-500">
+                  Use as setas do teclado: ↑ ↓ ← →
+                </p>
+              </div>
+
+              {/* Display do Flanker */}
+              <div className="flex justify-center items-center min-h-[200px] bg-gray-50 rounded-lg">
+                {trialAtual && !mostrarFeedback ? (
+                  renderizarFlanker()
+                ) : mostrarFeedback ? (
+                  <div className={`text-4xl font-bold ${feedbackType === 'correct' ? 'text-green-600' : 'text-red-600'}`}>
+                    {feedbackType === 'correct' ? '✓ Correto!' : '✗ Incorreto'}
+                  </div>
+                ) : (
+                  <div className="text-gray-400">Preparando...</div>
+                )}
+              </div>
+
+              {/* Botões de resposta para mobile */}
+              <div className="grid grid-cols-3 gap-4 mt-8 max-w-xs mx-auto">
+                <div />
+                <button
+                  onClick={() => handleResponse('up')}
+                  className="p-4 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
+                  disabled={!trialAtual || trialAtual.responded}
+                >
+                  <ArrowUp size={32} className="mx-auto" />
+                </button>
+                <div />
+                
+                <button
+                  onClick={() => handleResponse('left')}
+                  className="p-4 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
+                  disabled={!trialAtual || trialAtual.responded}
+                >
+                  <ArrowLeft size={32} className="mx-auto" />
+                </button>
+                <button
+                  onClick={() => handleResponse('down')}
+                  className="p-4 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
+                  disabled={!trialAtual || trialAtual.responded}
+                >
+                  <ArrowDown size={32} className="mx-auto" />
+                </button>
+                <button
+                  onClick={() => handleResponse('right')}
+                  className="p-4 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
+                  disabled={!trialAtual || trialAtual.responded}
+                >
+                  <ArrowRight size={32} className="mx-auto" />
+                </button>
+              </div>
+            </div>
+
+            {/* Pontuação atual */}
+            <div className="bg-white rounded-xl shadow-lg p-4">
+              <div className="flex justify-around text-center">
+                <div>
+                  <div className="text-2xl font-bold text-orange-600">{pontuacao}</div>
+                  <div className="text-sm text-gray-600">Pontos</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {trials.filter(t => t.correct).length}/{trialIndex}
+                  </div>
+                  <div className="text-sm text-gray-600">Acertos</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Tela de resultados
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">
+                {metricas.precisaoTotal >= 90 ? '🏆' : metricas.precisaoTotal >= 75 ? '🎉' : '💪'}
+              </div>
+              
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                {metricas.precisaoTotal >= 90 ? 'Excelente!' : metricas.precisaoTotal >= 75 ? 'Muito bem!' : 'Continue praticando!'}
+              </h3>
+              
+              <p className="text-gray-600">
+                Você completou o nível {nivel} com {metricas.precisaoTotal}% de precisão
+              </p>
+            </div>
+            
+            {/* Métricas detalhadas */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                <div className="text-xl font-bold text-blue-800">
+                  {metricas.acertosTotal}/{metricas.totalTentativas}
+                </div>
+                <div className="text-xs text-blue-600">Acertos Total</div>
+              </div>
+              
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                <div className="text-xl font-bold text-green-800">{metricas.rtCongruente}ms</div>
+                <div className="text-xs text-green-600">Tempo Congruente</div>
+              </div>
+              
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
+                <div className="text-xl font-bold text-purple-800">{metricas.rtIncongruente}ms</div>
+                <div className="text-xs text-purple-600">Tempo Incongruente</div>
+              </div>
+              
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
+                <div className="text-xl font-bold text-orange-800">{metricas.indiceInterferencia}ms</div>
+                <div className="text-xs text-orange-600">Índice Interferência</div>
+              </div>
+            </div>
+            
+            {/* Análise de desempenho */}
+            <div className="bg-blue-50 rounded-lg p-4 mb-6">
+              <h4 className="font-bold text-blue-800 mb-2">📊 Análise do Desempenho:</h4>
+              <div className="text-sm text-blue-700 space-y-1">
+                <p>• Precisão: {metricas.precisaoTotal >= 75 ? '✅ Ótima!' : '⚠️ Precisa melhorar'}</p>
+                <p>• Controle de Interferência: {metricas.indiceInterferencia < 200 ? '✅ Excelente' : metricas.indiceInterferencia < 400 ? '⚠️ Moderado' : '🔴 Precisa treinar'}</p>
+                <p>• Velocidade: {metricas.rtCongruente < 800 ? '✅ Rápido' : '⚠️ Pode melhorar'}</p>
+              </div>
+            </div>
+            
+            {/* Botões de ação */}
+            <div className="flex justify-center space-x-4">
+              {metricas.precisaoTotal >= 75 && nivel < 5 && (
+                <button
+                  onClick={proximoNivel}
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                >
+                  🆙 Próximo Nível
+                </button>
+              )}
+              
+              <button
+                onClick={voltarInicio}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+              >
+                🔄 Repetir
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )
