@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
-import '../visual-focus.css';  // NOVO IMPORT DO CSS
+import './visual-focus.css';  // IMPORT CORRIGIDO - UM PONTO SÓ
 
 export default function VisualFocusPage() {
     const router = useRouter();
