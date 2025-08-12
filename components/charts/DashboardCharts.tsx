@@ -145,8 +145,8 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
                 </span>
               </div>
               <div className="text-sm text-gray-600 space-y-1">
-                <p>📊 {metrics.sessions} sessões totais</p>
-                <p>🎯 Última: {metrics.lastScore}%</p>
+                <p className="text-gray-600">📊 {metrics.sessions} sessões totais</p>
+                <p className="text-gray-600">🎯 Última: {metrics.lastScore}%</p>
                 <p className={getTrendColor(metrics.trend)}>
                   Tendência: {
                     metrics.trend === 'improving' ? 'Melhorando' :
@@ -169,18 +169,18 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
           <table className="w-full">
             <thead>
               <tr className="border-b text-left">
-                <th className="pb-2">Atividade</th>
-                <th className="pb-2">Sessões</th>
-                <th className="pb-2">Média</th>
-                <th className="pb-2">Última</th>
-                <th className="pb-2">Escala Original</th>
+                <th className="pb-2 text-gray-800">Atividade</th>
+                <th className="pb-2 text-gray-800">Sessões</th>
+                <th className="pb-2 text-gray-800">Média</th>
+                <th className="pb-2 text-gray-800">Última</th>
+                <th className="pb-2 text-gray-800">Escala Original</th>
               </tr>
             </thead>
             <tbody>
               {activityProgress.map(activity => (
                 <tr key={activity.name} className="border-b hover:bg-gray-50">
-                  <td className="py-3 font-medium">{activity.name}</td>
-                  <td className="py-3">{activity.sessions}</td>
+                  <td className="py-3 font-medium text-gray-800">{activity.name}</td>
+                  <td className="py-3 text-gray-800">{activity.sessions}</td>
                   <td className="py-3">
                     <div className="flex items-center gap-2">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
@@ -189,10 +189,10 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
                           style={{ width: `${activity.average}%` }}
                         />
                       </div>
-                      <span className="text-sm font-semibold">{activity.average}%</span>
+                      <span className="text-sm font-semibold text-gray-800">{activity.average}%</span>
                     </div>
                   </td>
-                  <td className="py-3">{activity.lastScore}%</td>
+                  <td className="py-3 text-gray-800">{activity.lastScore}%</td>
                   <td className="py-3 text-sm text-gray-600">
                     {activity.scale.min}-{activity.scale.max} {activity.scale.tipo}
                   </td>
@@ -215,7 +215,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
               {activityProgress
                 .filter(a => a.average >= 70)
                 .map(a => (
-                  <li key={a.name}>✓ {a.name}: {a.average}% de desempenho</li>
+                  <li key={a.name} className="text-gray-600">✓ {a.name}: {a.average}% de desempenho</li>
                 ))}
             </ul>
           </div>
@@ -225,7 +225,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
               {activityProgress
                 .filter(a => a.average < 50 && a.sessions > 0)
                 .map(a => (
-                  <li key={a.name}>• {a.name}: {a.average}% - Considerar estratégias adicionais</li>
+                  <li key={a.name} className="text-gray-600">• {a.name}: {a.average}% - Considerar estratégias adicionais</li>
                 ))}
             </ul>
           </div>
