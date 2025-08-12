@@ -4,38 +4,38 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Save, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '../utils/supabaseClient';
 
-type Direction = 'up' | 'down' | 'left' | 'right'
-type TrialType = 'congruent' | 'incongruent' | 'neutral'
+type Direction = 'up' | 'down' | 'left' | 'right';
+type TrialType = 'congruent' | 'incongruent' | 'neutral';
 
 interface Trial {
-  target: Direction
-  flankers: Direction[]
-  type: TrialType
-  startTime: number
-  responseTime?: number
-  correct?: boolean
-  responded?: boolean
+  target: Direction;
+  flankers: Direction[];
+  type: TrialType;
+  startTime: number;
+  responseTime?: number;
+  correct?: boolean;
+  responded?: boolean;
 }
 
 export default function SelectiveAttentionPage() {
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   
   // Estados do jogo
-  const [nivel, setNivel] = useState(1)
-  const [pontuacao, setPontuacao] = useState(0)
-  const [jogoIniciado, setJogoIniciado] = useState(false)
-  const [exercicioConcluido, setExercicioConcluido] = useState(false)
-  const [salvando, setSalvando] = useState(false)
+  const [nivel, setNivel] = useState(1);
+  const [pontuacao, setPontuacao] = useState(0);
+  const [jogoIniciado, setJogoIniciado] = useState(false);
+  const [exercicioConcluido, setExercicioConcluido] = useState(false);
+  const [salvando, setSalvando] = useState(false);
   
   // Estados da tarefa Flanker
-  const [trialAtual, setTrialAtual] = useState<Trial | null>(null)
-  const [trials, setTrials] = useState<Trial[]>([])
-  const [trialIndex, setTrialIndex] = useState(0)
-  const [mostrarFeedback, setMostrarFeedback] = useState(false)
-  const [feedbackType, setFeedbackType] = useState<'correct' | 'incorrect'>('correct')
+  const [trialAtual, setTrialAtual] = useState<Trial | null>(null);
+  const [trials, setTrials] = useState<Trial[]>([]);
+  const [trialIndex, setTrialIndex] = useState(0);
+  const [mostrarFeedback, setMostrarFeedback] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<'correct' | 'incorrect'>('correct');
   
   // Configurações por nível
   const niveis = {
@@ -44,79 +44,79 @@ export default function SelectiveAttentionPage() {
     3: { totalTrials: 40, tempoLimite: 2000, nome: "Intermediário", proporcaoIncongruente: 0.5 },
     4: { totalTrials: 50, tempoLimite: 1500, nome: "Avançado", proporcaoIncongruente: 0.6 },
     5: { totalTrials: 60, tempoLimite: 1200, nome: "Expert", proporcaoIncongruente: 0.7 }
-  }
+  };
 
   // Gerar trials baseado no nível
   const gerarTrials = (nivel: number): Trial[] => {
-    const config = niveis[nivel as keyof typeof niveis]
-    const novasTrials: Trial[] = []
-    const direcoes: Direction[] = ['up', 'down', 'left', 'right']
+    const config = niveis[nivel as keyof typeof niveis];
+    const novasTrials: Trial[] = [];
+    const direcoes: Direction[] = ['up', 'down', 'left', 'right'];
     
-    const numIncongruente = Math.floor(config.totalTrials * config.proporcaoIncongruente)
-    const numCongruente = Math.floor((config.totalTrials - numIncongruente) * 0.7)
-    const numNeutral = config.totalTrials - numIncongruente - numCongruente
+    const numIncongruente = Math.floor(config.totalTrials * config.proporcaoIncongruente);
+    const numCongruente = Math.floor((config.totalTrials - numIncongruente) * 0.7);
+    const numNeutral = config.totalTrials - numIncongruente - numCongruente;
     
     // Criar trials incongruentes
     for (let i = 0; i < numIncongruente; i++) {
-      const target = direcoes[Math.floor(Math.random() * direcoes.length)]
-      const flankerDirection = direcoes.filter(d => d !== target)[Math.floor(Math.random() * 3)]
+      const target = direcoes[Math.floor(Math.random() * direcoes.length)];
+      const flankerDirection = direcoes.filter(d => d !== target)[Math.floor(Math.random() * 3)];
       novasTrials.push({
         target,
         flankers: [flankerDirection, flankerDirection, flankerDirection, flankerDirection],
         type: 'incongruent',
         startTime: 0
-      })
+      });
     }
     
     // Criar trials congruentes
     for (let i = 0; i < numCongruente; i++) {
-      const direction = direcoes[Math.floor(Math.random() * direcoes.length)]
+      const direction = direcoes[Math.floor(Math.random() * direcoes.length)];
       novasTrials.push({
         target: direction,
         flankers: [direction, direction, direction, direction],
         type: 'congruent',
         startTime: 0
-      })
+      });
     }
     
-    // Criar trials neutros (sem flankers direcionais)
+    // Criar trials neutros
     for (let i = 0; i < numNeutral; i++) {
-      const target = direcoes[Math.floor(Math.random() * direcoes.length)]
+      const target = direcoes[Math.floor(Math.random() * direcoes.length)];
       novasTrials.push({
         target,
         flankers: ['neutral' as Direction, 'neutral' as Direction, 'neutral' as Direction, 'neutral' as Direction],
         type: 'neutral',
         startTime: 0
-      })
+      });
     }
     
     // Embaralhar
-    return novasTrials.sort(() => Math.random() - 0.5)
-  }
+    return novasTrials.sort(() => Math.random() - 0.5);
+  };
 
   // Iniciar exercício
   const iniciarExercicio = () => {
-    const novasTrials = gerarTrials(nivel)
-    setTrials(novasTrials)
-    setTrialIndex(0)
-    setPontuacao(0)
-    setJogoIniciado(true)
-    setExercicioConcluido(false)
+    const novasTrials = gerarTrials(nivel);
+    setTrials(novasTrials);
+    setTrialIndex(0);
+    setPontuacao(0);
+    setJogoIniciado(true);
+    setExercicioConcluido(false);
     
     // Iniciar primeira trial após delay
     setTimeout(() => {
       if (novasTrials.length > 0) {
-        setTrialAtual({ ...novasTrials[0], startTime: Date.now() })
+        setTrialAtual({ ...novasTrials[0], startTime: Date.now() });
       }
-    }, 1000)
-  }
+    }, 1000);
+  };
 
   // Processar resposta do usuário
   const handleResponse = (direction: Direction) => {
-    if (!trialAtual || trialAtual.responded) return
+    if (!trialAtual || trialAtual.responded) return;
     
-    const responseTime = Date.now() - trialAtual.startTime
-    const correct = direction === trialAtual.target
+    const responseTime = Date.now() - trialAtual.startTime;
+    const correct = direction === trialAtual.target;
     
     // Atualizar trial com resposta
     const updatedTrial = {
@@ -124,85 +124,85 @@ export default function SelectiveAttentionPage() {
       responseTime,
       correct,
       responded: true
-    }
+    };
     
     // Atualizar trials array
-    const updatedTrials = [...trials]
-    updatedTrials[trialIndex] = updatedTrial
-    setTrials(updatedTrials)
+    const updatedTrials = [...trials];
+    updatedTrials[trialIndex] = updatedTrial;
+    setTrials(updatedTrials);
     
     // Atualizar pontuação
     if (correct) {
-      const bonus = responseTime < 500 ? 20 : responseTime < 1000 ? 15 : 10
-      setPontuacao(prev => prev + bonus * nivel)
+      const bonus = responseTime < 500 ? 20 : responseTime < 1000 ? 15 : 10;
+      setPontuacao(prev => prev + bonus * nivel);
     }
     
     // Mostrar feedback
-    setFeedbackType(correct ? 'correct' : 'incorrect')
-    setMostrarFeedback(true)
+    setFeedbackType(correct ? 'correct' : 'incorrect');
+    setMostrarFeedback(true);
     
     // Próxima trial após delay
     setTimeout(() => {
-      setMostrarFeedback(false)
-      proximaTrial()
-    }, 500)
-  }
+      setMostrarFeedback(false);
+      proximaTrial();
+    }, 500);
+  };
 
   // Avançar para próxima trial
   const proximaTrial = () => {
-    const nextIndex = trialIndex + 1
+    const nextIndex = trialIndex + 1;
     
     if (nextIndex >= trials.length) {
-      finalizarExercicio()
+      finalizarExercicio();
     } else {
-      setTrialIndex(nextIndex)
+      setTrialIndex(nextIndex);
       setTimeout(() => {
-        setTrialAtual({ ...trials[nextIndex], startTime: Date.now() })
-      }, 500)
+        setTrialAtual({ ...trials[nextIndex], startTime: Date.now() });
+      }, 500);
     }
-  }
+  };
 
   // Timeout para trials sem resposta
   useEffect(() => {
     if (trialAtual && !trialAtual.responded) {
-      const config = niveis[nivel as keyof typeof niveis]
+      const config = niveis[nivel as keyof typeof niveis];
       const timeout = setTimeout(() => {
-        handleResponse('none' as Direction) // Marca como erro
-      }, config.tempoLimite)
+        handleResponse('none' as Direction);
+      }, config.tempoLimite);
       
-      return () => clearTimeout(timeout)
+      return () => clearTimeout(timeout);
     }
-  }, [trialAtual])
+  }, [trialAtual]);
 
   // Finalizar exercício
   const finalizarExercicio = () => {
-    setJogoIniciado(false)
-    setExercicioConcluido(true)
-    setTrialAtual(null)
-  }
+    setJogoIniciado(false);
+    setExercicioConcluido(true);
+    setTrialAtual(null);
+  };
 
   // Calcular métricas
   const calcularMetricas = () => {
-    const trialsRespondidas = trials.filter(t => t.responded)
-    const congruentes = trialsRespondidas.filter(t => t.type === 'congruent')
-    const incongruentes = trialsRespondidas.filter(t => t.type === 'incongruent')
+    const trialsRespondidas = trials.filter(t => t.responded);
+    const congruentes = trialsRespondidas.filter(t => t.type === 'congruent');
+    const incongruentes = trialsRespondidas.filter(t => t.type === 'incongruent');
     
-    const acertosTotal = trialsRespondidas.filter(t => t.correct).length
-    const acertosCongruentes = congruentes.filter(t => t.correct).length
-    const acertosIncongruentes = incongruentes.filter(t => t.correct).length
+    const acertosTotal = trialsRespondidas.filter(t => t.correct).length;
+    const acertosCongruentes = congruentes.filter(t => t.correct).length;
+    const acertosIncongruentes = incongruentes.filter(t => t.correct).length;
     
     const rtCongruente = congruentes.length > 0 
       ? Math.round(congruentes.reduce((acc, t) => acc + (t.responseTime || 0), 0) / congruentes.length)
-      : 0
+      : 0;
     
     const rtIncongruente = incongruentes.length > 0
       ? Math.round(incongruentes.reduce((acc, t) => acc + (t.responseTime || 0), 0) / incongruentes.length)
-      : 0
+      : 0;
     
-    const indiceInterferencia = rtIncongruente - rtCongruente
+    const indiceInterferencia = rtIncongruente - rtCongruente;
     const precisaoTotal = trialsRespondidas.length > 0 
       ? Math.round((acertosTotal / trialsRespondidas.length) * 100)
-      : 0
+      : 0;
     
     return {
       acertosTotal,
@@ -213,23 +213,23 @@ export default function SelectiveAttentionPage() {
       rtIncongruente,
       indiceInterferencia,
       precisaoTotal
-    }
-  }
+    };
+  };
 
   // Renderizar setas do Flanker
   const renderizarFlanker = () => {
-    if (!trialAtual) return null
+    if (!trialAtual) return null;
     
     const getArrow = (direction: Direction | 'neutral') => {
       switch (direction) {
-        case 'up': return <ArrowUp size={48} />
-        case 'down': return <ArrowDown size={48} />
-        case 'left': return <ArrowLeft size={48} />
-        case 'right': return <ArrowRight size={48} />
-        case 'neutral': return <div className="w-12 h-12 bg-gray-400 rounded" />
-        default: return null
+        case 'up': return <ArrowUp size={48} />;
+        case 'down': return <ArrowDown size={48} />;
+        case 'left': return <ArrowLeft size={48} />;
+        case 'right': return <ArrowRight size={48} />;
+        case 'neutral': return <div className="w-12 h-12 bg-gray-400 rounded" />;
+        default: return null;
       }
-    }
+    };
     
     return (
       <div className="flex items-center justify-center space-x-4">
@@ -254,11 +254,16 @@ export default function SelectiveAttentionPage() {
           {getArrow(trialAtual.flankers[3])}
         </div>
       </div>
-    )
-  }
+    );
+  };
 
-  // SALVAMENTO - IGUAL AO CAA
+  // FUNÇÃO DE SALVAMENTO - IGUAL AO CAA
   const handleSaveSession = async () => {
+    if (trials.length === 0) {
+      alert('Complete pelo menos uma tentativa antes de salvar.');
+      return;
+    }
+    
     setSalvando(true);
     const metricas = calcularMetricas();
     
@@ -273,7 +278,7 @@ export default function SelectiveAttentionPage() {
         return;
       }
       
-      // Salvar na tabela sessoes - MESMA ESTRUTURA DO CAA
+      // Salvar na tabela sessoes
       const { data, error } = await supabase
         .from('sessoes')
         .insert([{
@@ -306,25 +311,24 @@ export default function SelectiveAttentionPage() {
   };
 
   const voltarInicio = () => {
-    setJogoIniciado(false)
-    setExercicioConcluido(false)
-    setTrialAtual(null)
-    setTrials([])
-    setTrialIndex(0)
-  }
+    setJogoIniciado(false);
+    setExercicioConcluido(false);
+    setTrialAtual(null);
+    setTrials([]);
+    setTrialIndex(0);
+  };
 
   const proximoNivel = () => {
     if (nivel < 5) {
-      setNivel(prev => prev + 1)
-      voltarInicio()
+      setNivel(prev => prev + 1);
+      voltarInicio();
     }
-  }
+  };
 
-  const metricas = calcularMetricas()
+  const metricas = calcularMetricas();
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header PADRONIZADO igual ao CAA */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="p-3 sm:p-4 flex items-center justify-between">
           <Link
@@ -334,9 +338,8 @@ export default function SelectiveAttentionPage() {
             <ChevronLeft size={20} />
             <span className="text-sm sm:text-base">Voltar para TDAH</span>
           </Link>
-          
-          {exercicioConcluido && (
-            <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {exercicioConcluido && (
               <button 
                 onClick={handleSaveSession}
                 disabled={salvando}
@@ -345,11 +348,11 @@ export default function SelectiveAttentionPage() {
                 <Save size={20} />
                 <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </header>
-
+      
       <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
         {!jogoIniciado && !exercicioConcluido ? (
           // Tela inicial
@@ -361,7 +364,7 @@ export default function SelectiveAttentionPage() {
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
                   <p className="text-sm text-gray-600">
-                    Responda apenas à seta CENTRAL, ignorando as setas ao redor (distratores).
+                    Responda apenas à seta CENTRAL, ignorando as setas ao redor.
                   </p>
                 </div>
                 
@@ -369,7 +372,7 @@ export default function SelectiveAttentionPage() {
                   <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como Jogar:</h3>
                   <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
                     <li>Foque na seta do MEIO (azul)</li>
-                    <li>Use as teclas de seta do teclado</li>
+                    <li>Use as setas do teclado ou botões</li>
                     <li>Ignore as setas cinzas ao lado</li>
                     <li>Responda o mais rápido possível</li>
                   </ul>
@@ -423,7 +426,7 @@ export default function SelectiveAttentionPage() {
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-lg font-bold text-gray-800">📊 Progresso</h3>
                 <span className="text-sm text-gray-600">
-                  Trial {trialIndex + 1} de {trials.length}
+                  Tentativa {trialIndex + 1} de {trials.length}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -528,27 +531,30 @@ export default function SelectiveAttentionPage() {
             </div>
             
             {/* Métricas detalhadas */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-blue-800">
-                  {metricas.acertosTotal}/{metricas.totalTentativas}
+            <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">📊 Resultados da Sessão</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                  <div className="text-xl font-bold text-blue-800">
+                    {metricas.acertosTotal}/{metricas.totalTentativas}
+                  </div>
+                  <div className="text-xs text-blue-600">Acertos Total</div>
                 </div>
-                <div className="text-xs text-blue-600">Acertos Total</div>
-              </div>
-              
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-green-800">{metricas.rtCongruente}ms</div>
-                <div className="text-xs text-green-600">Tempo Congruente</div>
-              </div>
-              
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-purple-800">{metricas.rtIncongruente}ms</div>
-                <div className="text-xs text-purple-600">Tempo Incongruente</div>
-              </div>
-              
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-orange-800">{metricas.indiceInterferencia}ms</div>
-                <div className="text-xs text-orange-600">Índice Interferência</div>
+                
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                  <div className="text-xl font-bold text-green-800">{metricas.rtCongruente}ms</div>
+                  <div className="text-xs text-green-600">Tempo Congruente</div>
+                </div>
+                
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
+                  <div className="text-xl font-bold text-purple-800">{metricas.rtIncongruente}ms</div>
+                  <div className="text-xs text-purple-600">Tempo Incongruente</div>
+                </div>
+                
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
+                  <div className="text-xl font-bold text-orange-800">{metricas.indiceInterferencia}ms</div>
+                  <div className="text-xs text-orange-600">Índice Interferência</div>
+                </div>
               </div>
             </div>
             
