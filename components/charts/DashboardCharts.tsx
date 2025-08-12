@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
 import { format, subDays, isAfter, differenceInDays, startOfWeek, endOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -18,16 +18,38 @@ interface DashboardChartsProps {
   sessions: SessionData[]
 }
 
-// Componente Sparkline
+// Componente Sparkline MELHORADO
 const Sparkline: React.FC<{ data: number[], color?: string }> = ({ data, color = '#3B82F6' }) => {
+  // Sem dados
   if (data.length === 0) {
     return (
-      <div className="h-12 flex items-center justify-center text-xs text-gray-400">
+      <div className="h-12 flex items-center justify-center text-xs text-gray-400 bg-gray-50 rounded">
         Sem dados
       </div>
     );
   }
 
+  // Apenas 1 sessão - mostrar como barra única
+  if (data.length === 1) {
+    const value = data[0];
+    return (
+      <div className="h-12 flex flex-col justify-center bg-gray-50 rounded p-1">
+        <div className="flex items-end h-8">
+          <div 
+            className="w-full rounded-t"
+            style={{ 
+              height: `${Math.max(10, value)}%`,
+              backgroundColor: color,
+              opacity: 0.8
+            }}
+          />
+        </div>
+        <div className="text-xs text-center text-gray-500 mt-1">1 sessão: {value}%</div>
+      </div>
+    );
+  }
+
+  // 2 ou mais sessões - mostrar gráfico de área
   const chartData = data.map((value, index) => ({
     index,
     value
@@ -43,6 +65,18 @@ const Sparkline: React.FC<{ data: number[], color?: string }> = ({ data, color =
           fill={color} 
           fillOpacity={0.2}
           strokeWidth={2}
+        />
+        <Tooltip 
+          content={({ active, payload }) => {
+            if (active && payload && payload[0]) {
+              return (
+                <div className="bg-white px-2 py-1 text-xs border rounded shadow">
+                  {payload[0].value}%
+                </div>
+              );
+            }
+            return null;
+          }}
         />
       </AreaChart>
     </ResponsiveContainer>
@@ -233,6 +267,9 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
         const firstFive = scores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
         const lastFive = scores.slice(-5).reduce((a, b) => a + b, 0) / 5;
         progressRate = Math.round(lastFive - firstFive);
+      } else if (scores.length >= 2) {
+        // Se tiver menos de 5 sessões mas pelo menos 2, comparar primeira com última
+        progressRate = Math.round(scores[scores.length - 1] - scores[0]);
       }
       
       // Distância até a meta
@@ -498,7 +535,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
         </div>
       </div>
 
-      {/* ANÁLISE MULTIDIMENSIONAL COM SPARKLINES */}
+      {/* ANÁLISE MULTIDIMENSIONAL COM SPARKLINES MELHORADOS */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
         <h2 className="text-xl font-bold text-gray-800 mb-4">
           🔬 Análise Multidimensional com Tendências
@@ -512,9 +549,11 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
                   <span className="text-sm text-gray-500">{activity.sessions} sessões</span>
                 </div>
                 
-                {/* NOVO: Sparkline */}
+                {/* Sparkline MELHORADO */}
                 <div className="w-32 ml-4">
-                  <div className="text-xs text-gray-500 mb-1 text-right">Últimas 10 sessões</div>
+                  <div className="text-xs text-gray-500 mb-1 text-right">
+                    {activity.sparklineData.length > 1 ? 'Últimas sessões' : 'Sessão única'}
+                  </div>
                   <Sparkline 
                     data={activity.sparklineData} 
                     color={activity.scale.color}
@@ -529,14 +568,16 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
                   <div className={`font-semibold ${activity.consistency.color}`}>
                     {activity.consistency.level}
                   </div>
-                  <div className="text-xs text-gray-500">CV: {activity.consistency.cv.toFixed(1)}%</div>
+                  <div className="text-xs text-gray-500">
+                    {activity.consistency.cv > 0 ? `CV: ${activity.consistency.cv.toFixed(1)}%` : 'N/A'}
+                  </div>
                 </div>
                 
                 {/* Frequência */}
                 <div className="bg-gray-50 p-2 rounded">
                   <div className="text-xs text-gray-600 mb-1">Frequência</div>
                   <div className="font-semibold text-gray-800">
-                    {activity.frequency.sessionsPerWeek}/sem
+                    {activity.frequency.sessionsPerWeek > 0 ? `${activity.frequency.sessionsPerWeek}/sem` : '0/sem'}
                   </div>
                   <div className="text-xs text-gray-500">{activity.frequency.regularityScore}</div>
                 </div>
@@ -547,7 +588,9 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
                   <div className={`font-semibold ${activity.progressRate > 0 ? 'text-green-600' : activity.progressRate < 0 ? 'text-red-600' : 'text-gray-600'}`}>
                     {activity.progressRate > 0 ? '+' : ''}{activity.progressRate}%
                   </div>
-                  <div className="text-xs text-gray-500">Últimas 5 sessões</div>
+                  <div className="text-xs text-gray-500">
+                    {activity.sessions >= 5 ? 'Últimas 5 sessões' : activity.sessions >= 2 ? 'Primeira vs Última' : 'N/A'}
+                  </div>
                 </div>
                 
                 {/* Meta */}
