@@ -1,6 +1,9 @@
 'use client'
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { format, subDays, isAfter } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface SessionData {
   id: number
@@ -16,6 +19,9 @@ interface DashboardChartsProps {
 }
 
 const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
+  
+  // Estado para filtro de período
+  const [periodFilter, setPeriodFilter] = useState('all');
   
   // NORMALIZAÇÃO: Cada atividade tem escala diferente
   const activityScales = {
@@ -38,8 +44,32 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
     return Math.min(100, Math.max(0, Math.round(normalized)));
   };
 
+  // Filtrar sessões por período
+  const filteredSessions = useMemo(() => {
+    if (periodFilter === 'all') return sessions;
+    
+    const now = new Date();
+    let cutoffDate = now;
+    
+    switch(periodFilter) {
+      case '7days':
+        cutoffDate = subDays(now, 7);
+        break;
+      case '30days':
+        cutoffDate = subDays(now, 30);
+        break;
+      case '90days':
+        cutoffDate = subDays(now, 90);
+        break;
+    }
+    
+    return sessions.filter(session => 
+      isAfter(new Date(session.data_fim), cutoffDate)
+    );
+  }, [sessions, periodFilter]);
+
   // Processar dados com normalização
-  const processedData = sessions.map(session => ({
+  const processedData = filteredSessions.map(session => ({
     ...session,
     normalized_score: normalizeScore(session.pontuacao_final, session.atividade_nome)
   }));
@@ -50,6 +80,61 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
     'Interação Social': ['Contato Visual Progressivo', 'Expressões Faciais', 'Diálogos em Cenas'],
     'Atenção/Foco': ['Atenção Sustentada', 'Escuta Ativa']
   };
+
+  // Preparar dados para gráfico de evolução temporal
+  const evolutionData = useMemo(() => {
+    const groupedByDate = {};
+    
+    processedData.forEach(session => {
+      const date = format(new Date(session.data_fim), 'dd/MM', { locale: ptBR });
+      
+      if (!groupedByDate[date]) {
+        groupedByDate[date] = {
+          date,
+          Comunicação: [],
+          'Interação Social': [],
+          'Atenção/Foco': []
+        };
+      }
+      
+      // Identificar domínio da atividade
+      Object.entries(domains).forEach(([domain, activities]) => {
+        if (activities.includes(session.atividade_nome)) {
+          groupedByDate[date][domain].push(session.normalized_score);
+        }
+      });
+    });
+    
+    // Calcular médias por domínio
+    return Object.values(groupedByDate).map((item: any) => ({
+      date: item.date,
+      Comunicação: item.Comunicação.length ? 
+        Math.round(item.Comunicação.reduce((a, b) => a + b, 0) / item.Comunicação.length) : null,
+      'Interação Social': item['Interação Social'].length ? 
+        Math.round(item['Interação Social'].reduce((a, b) => a + b, 0) / item['Interação Social'].length) : null,
+      'Atenção/Foco': item['Atenção/Foco'].length ? 
+        Math.round(item['Atenção/Foco'].reduce((a, b) => a + b, 0) / item['Atenção/Foco'].length) : null,
+    }));
+  }, [processedData]);
+
+  // Preparar dados para gráfico de barras
+  const barData = useMemo(() => {
+    const activityData = {};
+    
+    Object.keys(activityScales).forEach(activity => {
+      const activitySessions = processedData.filter(s => s.atividade_nome === activity);
+      if (activitySessions.length > 0) {
+        const scores = activitySessions.map(s => s.normalized_score);
+        activityData[activity] = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+      }
+    });
+    
+    return Object.entries(activityData).map(([name, score]) => ({
+      name: name.length > 15 ? name.substring(0, 15) + '...' : name,
+      score,
+      fullName: name
+    }));
+  }, [processedData]);
 
   // Calcular métricas por domínio
   const calculateDomainMetrics = (domainActivities: string[]) => {
@@ -116,13 +201,62 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
       
       {/* Header com Contexto */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          Dashboard de Progresso Terapêutico
-        </h1>
-        <p className="text-gray-600 mb-2">
-          Análise baseada em {sessions.length} sessões registradas
-        </p>
-        <div className="bg-blue-100 border-l-4 border-blue-500 p-4 rounded">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              Dashboard de Progresso Terapêutico
+            </h1>
+            <p className="text-gray-600">
+              Análise baseada em {filteredSessions.length} sessões registradas
+            </p>
+          </div>
+          
+          {/* Filtros de Período */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPeriodFilter('7days')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                periodFilter === '7days' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              7 dias
+            </button>
+            <button
+              onClick={() => setPeriodFilter('30days')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                periodFilter === '30days' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              30 dias
+            </button>
+            <button
+              onClick={() => setPeriodFilter('90days')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                periodFilter === '90days' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              3 meses
+            </button>
+            <button
+              onClick={() => setPeriodFilter('all')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                periodFilter === 'all' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              Todos
+            </button>
+          </div>
+        </div>
+        
+        <div className="bg-blue-100 border-l-4 border-blue-500 p-4 rounded mt-4">
           <p className="text-sm text-blue-800">
             <strong>📊 Metodologia:</strong> Scores normalizados (0-100%) considerando a escala específica de cada atividade
           </p>
@@ -160,7 +294,46 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
         })}
       </div>
 
-      {/* Detalhamento por Atividade */}
+      {/* Gráfico de Evolução Temporal */}
+      {evolutionData.length > 0 && (
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">
+            📈 Evolução Temporal por Domínio
+          </h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={evolutionData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis domain={[0, 100]} />
+              <Tooltip />
+              <Legend />
+              <Line 
+                type="monotone" 
+                dataKey="Comunicação" 
+                stroke="#10B981" 
+                strokeWidth={2}
+                connectNulls
+              />
+              <Line 
+                type="monotone" 
+                dataKey="Interação Social" 
+                stroke="#8B5CF6" 
+                strokeWidth={2}
+                connectNulls
+              />
+              <Line 
+                type="monotone" 
+                dataKey="Atenção/Foco" 
+                stroke="#3B82F6" 
+                strokeWidth={2}
+                connectNulls
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Detalhamento por Atividade (Tabela) */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
         <h2 className="text-xl font-bold text-gray-800 mb-4">
           Análise Detalhada por Atividade
@@ -202,6 +375,41 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
           </table>
         </div>
       </div>
+
+      {/* Gráfico de Barras Comparativo */}
+      {barData.length > 0 && (
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">
+            📊 Comparação entre Atividades
+          </h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={barData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="name" 
+                angle={-45}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis domain={[0, 100]} />
+              <Tooltip 
+                content={({ active, payload }) => {
+                  if (active && payload && payload[0]) {
+                    return (
+                      <div className="bg-white p-2 border rounded shadow">
+                        <p className="text-sm font-semibold">{payload[0].payload.fullName}</p>
+                        <p className="text-sm">Score: {payload[0].value}%</p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Bar dataKey="score" fill="#3B82F6" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Interpretação Clínica */}
       <div className="bg-white rounded-xl shadow-lg p-6">
