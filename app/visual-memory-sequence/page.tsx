@@ -275,7 +275,7 @@ export default function VisualMemorySequencePage() {
         return (acertos / tentativasTotal) * 100;
     };
 
-    // Salvar sessão
+    // Salvar sessão - AGORA COM span_maximo
     const handleSaveSession = async () => {
         if (tentativasTotal === 0) {
             alert('Nenhuma atividade foi registrada para salvar.');
@@ -312,7 +312,7 @@ export default function VisualMemorySequencePage() {
                     tempo_reacao_medio: Number(tempoMedioResposta.toFixed(2)),
                     taxa_acerto: Number(taxaAcerto.toFixed(2)),
                     total_sequencias: tentativasTotal,
-                    span_maximo: spanMaximo,
+                    span_maximo: spanMaximo, // AGORA FUNCIONA!
                     observacoes: JSON.stringify({
                         sequencia_temporal: sequenciaTemporal,
                         tempos_resposta: temposResposta,
