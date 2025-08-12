@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format, subDays, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -23,6 +23,18 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
   // Estado para filtro de período
   const [periodFilter, setPeriodFilter] = useState('all');
   
+  // Detectar se é mobile
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
   // NORMALIZAÇÃO: Cada atividade tem escala diferente
   const activityScales = {
     'CAA': { min: 0, max: 10, tipo: 'acertos' },
@@ -33,6 +45,18 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
     'Escuta Ativa': { min: 0, max: 100, tipo: 'pontos' },
     'Iniciando Conversas': { min: 0, max: 300, tipo: 'pontos' },
     'Diálogos em Cenas': { min: 0, max: 200, tipo: 'pontos' }
+  };
+
+  // Nomes abreviados para o gráfico
+  const shortNames = {
+    'CAA': 'CAA',
+    'Atenção Sustentada': 'Atenção',
+    'Contato Visual Progressivo': 'Contato Visual',
+    'Expressões Faciais': 'Expressões',
+    'Tom de Voz': 'Tom Voz',
+    'Escuta Ativa': 'Escuta',
+    'Iniciando Conversas': 'Conversas',
+    'Diálogos em Cenas': 'Diálogos'
   };
 
   // Função para normalizar pontuação (0-100%)
@@ -115,9 +139,9 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
       'Atenção/Foco': item['Atenção/Foco'].length ? 
         Math.round(item['Atenção/Foco'].reduce((a, b) => a + b, 0) / item['Atenção/Foco'].length) : null,
     }));
-  }, [processedData]);
+  }, [processedData, domains]);
 
-  // Preparar dados para gráfico de barras
+  // Preparar dados para gráfico de barras com nomes curtos
   const barData = useMemo(() => {
     const activityData = {};
     
@@ -130,11 +154,11 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
     });
     
     return Object.entries(activityData).map(([name, score]) => ({
-      name: name.length > 15 ? name.substring(0, 15) + '...' : name,
+      name: shortNames[name] || name,
       score,
       fullName: name
     }));
-  }, [processedData]);
+  }, [processedData, activityScales]);
 
   // Calcular métricas por domínio
   const calculateDomainMetrics = (domainActivities: string[]) => {
@@ -199,7 +223,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
   return (
     <div className="w-full max-w-7xl mx-auto p-6 bg-gradient-to-br from-blue-50 to-green-50 min-h-screen">
       
-      {/* Header com Contexto */}
+      {/* Header com Contexto e Filtros */}
       <div className="mb-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -212,10 +236,10 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
           </div>
           
           {/* Filtros de Período */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setPeriodFilter('7days')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                 periodFilter === '7days' 
                   ? 'bg-blue-600 text-white' 
                   : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -225,7 +249,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
             </button>
             <button
               onClick={() => setPeriodFilter('30days')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                 periodFilter === '30days' 
                   ? 'bg-blue-600 text-white' 
                   : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -235,7 +259,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
             </button>
             <button
               onClick={() => setPeriodFilter('90days')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                 periodFilter === '90days' 
                   ? 'bg-blue-600 text-white' 
                   : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -245,7 +269,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
             </button>
             <button
               onClick={() => setPeriodFilter('all')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                 periodFilter === 'all' 
                   ? 'bg-blue-600 text-white' 
                   : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -263,7 +287,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
         </div>
       </div>
 
-      {/* Cards por Domínio Clínico */}
+      {/* Cards por Domínio Clínico - MANTIDO EXATAMENTE IGUAL */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {Object.entries(domains).map(([domain, activities]) => {
           const metrics = calculateDomainMetrics(activities);
@@ -333,7 +357,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
         </div>
       )}
 
-      {/* Detalhamento por Atividade (Tabela) */}
+      {/* Tabela Detalhada - MANTIDA EXATAMENTE IGUAL */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
         <h2 className="text-xl font-bold text-gray-800 mb-4">
           Análise Detalhada por Atividade
@@ -376,42 +400,68 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
         </div>
       </div>
 
-      {/* Gráfico de Barras Comparativo */}
+      {/* Gráfico de Barras MELHORADO */}
       {barData.length > 0 && (
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             📊 Comparação entre Atividades
           </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={barData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="name" 
-                angle={-45}
-                textAnchor="end"
-                height={80}
-              />
-              <YAxis domain={[0, 100]} />
-              <Tooltip 
-                content={({ active, payload }) => {
-                  if (active && payload && payload[0]) {
-                    return (
-                      <div className="bg-white p-2 border rounded shadow">
-                        <p className="text-sm font-semibold">{payload[0].payload.fullName}</p>
-                        <p className="text-sm">Score: {payload[0].value}%</p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Bar dataKey="score" fill="#3B82F6" />
-            </BarChart>
-          </ResponsiveContainer>
+          {isMobile ? (
+            // Layout Mobile - Lista ao invés de gráfico
+            <div className="space-y-3">
+              {barData.map((item) => (
+                <div key={item.fullName} className="border-b pb-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-800">{item.fullName}</span>
+                    <span className="font-bold text-blue-600">{item.score}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div 
+                      className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+                      style={{ width: `${item.score}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            // Layout Desktop - Gráfico de Barras
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart 
+                data={barData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={100}
+                  interval={0}
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis domain={[0, 100]} />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload && payload[0]) {
+                      return (
+                        <div className="bg-white p-3 border rounded-lg shadow-lg">
+                          <p className="font-semibold text-gray-800">{payload[0].payload.fullName}</p>
+                          <p className="text-blue-600 font-bold">Score: {payload[0].value}%</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey="score" fill="#3B82F6" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       )}
 
-      {/* Interpretação Clínica */}
+      {/* Interpretação Clínica - MANTIDA EXATAMENTE IGUAL */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-4">
           💡 Interpretação dos Resultados
