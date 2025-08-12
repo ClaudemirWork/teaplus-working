@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { format, subDays, isAfter, differenceInDays, startOfWeek, endOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -17,6 +17,37 @@ interface SessionData {
 interface DashboardChartsProps {
   sessions: SessionData[]
 }
+
+// Componente Sparkline
+const Sparkline: React.FC<{ data: number[], color?: string }> = ({ data, color = '#3B82F6' }) => {
+  if (data.length === 0) {
+    return (
+      <div className="h-12 flex items-center justify-center text-xs text-gray-400">
+        Sem dados
+      </div>
+    );
+  }
+
+  const chartData = data.map((value, index) => ({
+    index,
+    value
+  }));
+
+  return (
+    <ResponsiveContainer width="100%" height={48}>
+      <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+        <Area 
+          type="monotone" 
+          dataKey="value" 
+          stroke={color} 
+          fill={color} 
+          fillOpacity={0.2}
+          strokeWidth={2}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+};
 
 const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
   
@@ -37,14 +68,14 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
   
   // NORMALIZAÇÃO: Cada atividade tem escala diferente
   const activityScales = {
-    'CAA': { min: 0, max: 10, tipo: 'acertos', meta: 70 },
-    'Atenção Sustentada': { min: 0, max: 600, tipo: 'segundos', meta: 75 },
-    'Contato Visual Progressivo': { min: 0, max: 300, tipo: 'segundos', meta: 80 },
-    'Expressões Faciais': { min: 0, max: 300, tipo: 'pontos', meta: 70 },
-    'Tom de Voz': { min: 0, max: 300, tipo: 'pontos', meta: 70 },
-    'Escuta Ativa': { min: 0, max: 100, tipo: 'pontos', meta: 75 },
-    'Iniciando Conversas': { min: 0, max: 300, tipo: 'pontos', meta: 65 },
-    'Diálogos em Cenas': { min: 0, max: 200, tipo: 'pontos', meta: 65 }
+    'CAA': { min: 0, max: 10, tipo: 'acertos', meta: 70, color: '#10B981' },
+    'Atenção Sustentada': { min: 0, max: 600, tipo: 'segundos', meta: 75, color: '#3B82F6' },
+    'Contato Visual Progressivo': { min: 0, max: 300, tipo: 'segundos', meta: 80, color: '#8B5CF6' },
+    'Expressões Faciais': { min: 0, max: 300, tipo: 'pontos', meta: 70, color: '#F59E0B' },
+    'Tom de Voz': { min: 0, max: 300, tipo: 'pontos', meta: 70, color: '#EF4444' },
+    'Escuta Ativa': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#06B6D4' },
+    'Iniciando Conversas': { min: 0, max: 300, tipo: 'pontos', meta: 65, color: '#84CC16' },
+    'Diálogos em Cenas': { min: 0, max: 200, tipo: 'pontos', meta: 65, color: '#EC4899' }
   };
 
   // Função para normalizar pontuação (0-100%)
@@ -208,6 +239,9 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
       const meta = activityScales[activity].meta;
       const distanceToGoal = meta - average;
       
+      // Sparkline data (últimas 10 sessões)
+      const sparklineData = scores.slice(-10);
+      
       return {
         name: activity,
         sessions: activitySessions.length,
@@ -218,7 +252,8 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
         progressRate,
         meta,
         distanceToGoal,
-        scale: activityScales[activity]
+        scale: activityScales[activity],
+        sparklineData
       };
     });
   }, [processedData, activityScales]);
@@ -463,17 +498,28 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
         </div>
       </div>
 
-      {/* NOVA SEÇÃO: Análise Multidimensional (substitui gráfico de barras) */}
+      {/* ANÁLISE MULTIDIMENSIONAL COM SPARKLINES */}
       <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
         <h2 className="text-xl font-bold text-gray-800 mb-4">
-          🔬 Análise Multidimensional
+          🔬 Análise Multidimensional com Tendências
         </h2>
         <div className="space-y-4">
           {multidimensionalAnalysis.map(activity => (
             <div key={activity.name} className="border rounded-lg p-4 hover:bg-gray-50">
               <div className="flex justify-between items-start mb-3">
-                <h3 className="font-semibold text-gray-800">{activity.name}</h3>
-                <span className="text-sm text-gray-500">{activity.sessions} sessões</span>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-800">{activity.name}</h3>
+                  <span className="text-sm text-gray-500">{activity.sessions} sessões</span>
+                </div>
+                
+                {/* NOVO: Sparkline */}
+                <div className="w-32 ml-4">
+                  <div className="text-xs text-gray-500 mb-1 text-right">Últimas 10 sessões</div>
+                  <Sparkline 
+                    data={activity.sparklineData} 
+                    color={activity.scale.color}
+                  />
+                </div>
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -524,8 +570,11 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
-                    className={`h-2 rounded-full ${activity.average >= activity.meta ? 'bg-green-600' : 'bg-blue-600'}`}
-                    style={{ width: `${Math.min(100, (activity.average / activity.meta) * 100)}%` }}
+                    className={`h-2 rounded-full transition-all duration-500`}
+                    style={{ 
+                      width: `${Math.min(100, (activity.average / activity.meta) * 100)}%`,
+                      backgroundColor: activity.average >= activity.meta ? '#10B981' : activity.scale.color
+                    }}
                   />
                 </div>
               </div>
