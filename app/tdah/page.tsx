@@ -17,7 +17,6 @@ export default function TdahDashboard() {
         { name: 'Atenção Sustentada', path: '/attention-sustained', description: 'Exercícios de concentração prolongada' },
         { name: 'Atenção Seletiva', path: '/attention-selective', description: 'Foco em estímulos específicos' },
         { name: 'Stop-Go', path: '/stop-go', description: 'Controle inibitório e flexibilidade' },
-        { name: 'Foco Visual', path: '/visual-focus', description: 'Concentração em elementos visuais' },
         { name: 'Concentração Auditiva', path: '/auditory-focus', description: 'Atenção a estímulos sonoros' },
         { name: 'Atenção Dividida', path: '/divided-attention', description: 'Multitarefa controlada' }
       ]
@@ -196,7 +195,7 @@ export default function TdahDashboard() {
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="bg-orange-50 rounded-lg p-3 sm:p-4">
-                  <div className="text-xl sm:text-2xl font-bold text-orange-600">29</div>
+                  <div className="text-xl sm:text-2xl font-bold text-orange-600">28</div>
                   <div className="text-xs sm:text-sm text-orange-800">Exercícios Disponíveis</div>
                 </div>
                 <div className="bg-red-50 rounded-lg p-3 sm:p-4">
