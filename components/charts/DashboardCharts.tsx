@@ -2,8 +2,9 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
-import { format, subDays, isAfter, differenceInDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format, subDays, isAfter, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ChevronDown, ChevronUp, Search, Filter, TrendingUp, TrendingDown, Activity, Brain, Heart, Eye, MessageSquare, Target } from 'lucide-react';
 
 interface SessionData {
   id: number
@@ -18,7 +19,7 @@ interface DashboardChartsProps {
   sessions: SessionData[]
 }
 
-// Componente Sparkline
+// Mini componente Sparkline
 const Sparkline: React.FC<{ data: number[], color?: string }> = ({ data, color = '#3B82F6' }) => {
   if (data.length === 0) {
     return (
@@ -85,6 +86,8 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
   // Estados
   const [periodFilter, setPeriodFilter] = useState('all');
   const [conditionFilter, setConditionFilter] = useState<'TEA' | 'TDAH' | 'TEA+TDAH'>('TEA');
+  const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   
   useEffect(() => {
@@ -95,123 +98,202 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Toggle expansão de domínio
+  const toggleDomain = (domain: string) => {
+    const newExpanded = new Set(expandedDomains);
+    if (newExpanded.has(domain)) {
+      newExpanded.delete(domain);
+    } else {
+      newExpanded.add(domain);
+    }
+    setExpandedDomains(newExpanded);
+  };
+
+  // Ícones por domínio
+  const domainIcons = {
+    'Comunicação': <MessageSquare className="w-5 h-5" />,
+    'Interação Social': <Heart className="w-5 h-5" />,
+    'Atenção/Foco': <Target className="w-5 h-5" />,
+    'Regulação': <Activity className="w-5 h-5" />,
+    'Funções Executivas': <Brain className="w-5 h-5" />,
+    'Memória': <Brain className="w-5 h-5" />,
+    'Comportamento Adaptativo': <Eye className="w-5 h-5" />,
+    'Habilidades Motoras': <Activity className="w-5 h-5" />,
+    'Linguagem': <MessageSquare className="w-5 h-5" />
+  };
   
-  // CONFIGURAÇÃO POR CONDIÇÃO
+  // CONFIGURAÇÃO COMPLETA COM 92 ATIVIDADES
   const conditionConfig = {
     'TEA': {
       name: 'Transtorno do Espectro Autista',
-      color: '#3B82F6', // Azul
-      activities: [
-        'CAA',
-        'Contato Visual Progressivo',
-        'Expressões Faciais',
-        'Tom de Voz',
-        'Escuta Ativa',
-        'Iniciando Conversas',
-        'Diálogos em Cenas',
-        // Futuras atividades TEA
-        'Reconhecimento Emocional',
-        'Turnos de Conversação',
-        'Linguagem Não-Verbal'
-      ],
+      color: '#3B82F6',
       domains: {
-        'Comunicação': ['CAA', 'Tom de Voz', 'Iniciando Conversas', 'Turnos de Conversação'],
-        'Interação Social': ['Contato Visual Progressivo', 'Expressões Faciais', 'Diálogos em Cenas', 'Reconhecimento Emocional'],
-        'Regulação': ['Escuta Ativa', 'Linguagem Não-Verbal']
-      },
-      metrics: {
-        primary: 'Funcionamento Adaptativo',
-        secondary: ['Comunicação Social', 'Comportamentos Repetitivos', 'Integração Sensorial']
+        'Comunicação': [
+          'CAA', 'Tom de Voz', 'Iniciando Conversas', 'Turnos de Conversação',
+          'Perguntas e Respostas', 'Narrativa Pessoal', 'Descrição de Objetos',
+          'Comunicação Não-Verbal', 'Gestos Comunicativos', 'Pedidos Funcionais',
+          'Comentários Sociais', 'Protesto Apropriado', 'Escolhas', 'Reciprocidade Verbal',
+          'Manutenção de Tópico'
+        ],
+        'Interação Social': [
+          'Contato Visual Progressivo', 'Expressões Faciais', 'Diálogos em Cenas',
+          'Reconhecimento Emocional', 'Imitação Social', 'Brincadeira Compartilhada',
+          'Atenção Conjunta', 'Teoria da Mente', 'Interpretação de Contexto',
+          'Leitura de Pistas Sociais', 'Resolução de Conflitos', 'Empatia'
+        ],
+        'Regulação': [
+          'Escuta Ativa', 'Autorregulação Emocional', 'Tolerância à Frustração',
+          'Flexibilidade Cognitiva', 'Transições', 'Espera', 'Compartilhamento',
+          'Seguir Regras', 'Automonitoramento'
+        ],
+        'Comportamento Adaptativo': [
+          'Rotinas Diárias', 'Higiene Pessoal', 'Alimentação', 'Vestuário',
+          'Organização Pessoal', 'Segurança', 'Uso de Tecnologia', 'Mobilidade'
+        ],
+        'Habilidades Motoras': [
+          'Coordenação Motora Fina', 'Coordenação Motora Grossa', 'Praxia',
+          'Integração Bilateral', 'Planejamento Motor', 'Equilíbrio'
+        ],
+        'Linguagem': [
+          'Vocabulário Receptivo', 'Vocabulário Expressivo', 'Sintaxe',
+          'Pragmática', 'Prosódia', 'Compreensão de Instruções'
+        ]
       }
     },
     'TDAH': {
       name: 'Transtorno do Déficit de Atenção',
-      color: '#10B981', // Verde
-      activities: [
-        'Atenção Sustentada',
-        'Foco Seletivo',
-        'Controle Inibitório',
-        'Memória de Trabalho',
-        'Planejamento Executivo',
-        'Flexibilidade Cognitiva',
-        'Tempo de Reação',
-        'Organização Visual'
-      ],
+      color: '#10B981',
       domains: {
-        'Atenção': ['Atenção Sustentada', 'Foco Seletivo', 'Tempo de Reação'],
-        'Funções Executivas': ['Controle Inibitório', 'Planejamento Executivo', 'Flexibilidade Cognitiva'],
-        'Memória': ['Memória de Trabalho', 'Organização Visual']
-      },
-      metrics: {
-        primary: 'Controle Atencional',
-        secondary: ['Impulsividade', 'Hiperatividade', 'Funções Executivas']
+        'Atenção': [
+          'Atenção Sustentada', 'Foco Seletivo', 'Atenção Dividida',
+          'Vigilância', 'Tempo de Reação', 'Detecção de Estímulos',
+          'Rastreamento Visual', 'Atenção Auditiva', 'Filtro Atencional'
+        ],
+        'Funções Executivas': [
+          'Controle Inibitório', 'Planejamento Executivo', 'Flexibilidade Cognitiva',
+          'Tomada de Decisão', 'Resolução de Problemas', 'Organização',
+          'Priorização', 'Gerenciamento de Tempo', 'Estabelecimento de Metas',
+          'Automonitoramento', 'Iniciação de Tarefas', 'Conclusão de Tarefas'
+        ],
+        'Memória': [
+          'Memória de Trabalho', 'Memória de Curto Prazo', 'Memória Sequencial',
+          'Memória Visual', 'Memória Auditiva', 'Memória Prospectiva'
+        ],
+        'Controle Motor': [
+          'Controle de Impulsos Motores', 'Precisão Motora', 'Tempo de Resposta',
+          'Coordenação', 'Ritmo Motor', 'Inibição Motora'
+        ],
+        'Regulação Emocional': [
+          'Controle Emocional', 'Tolerância ao Estresse', 'Manejo da Ansiedade',
+          'Regulação do Humor', 'Resiliência', 'Autocalmante'
+        ]
       }
     },
     'TEA+TDAH': {
       name: 'Condição Combinada',
-      color: '#8B5CF6', // Roxo
-      activities: [
-        // Todas as atividades de TEA
-        'CAA',
-        'Contato Visual Progressivo',
-        'Expressões Faciais',
-        'Tom de Voz',
-        'Escuta Ativa',
-        'Iniciando Conversas',
-        'Diálogos em Cenas',
-        // Todas as atividades de TDAH
-        'Atenção Sustentada',
-        'Foco Seletivo',
-        'Controle Inibitório',
-        'Memória de Trabalho'
-      ],
+      color: '#8B5CF6',
       domains: {
-        'Comunicação': ['CAA', 'Tom de Voz', 'Iniciando Conversas'],
-        'Interação Social': ['Contato Visual Progressivo', 'Expressões Faciais', 'Diálogos em Cenas'],
-        'Atenção/Funções Executivas': ['Atenção Sustentada', 'Foco Seletivo', 'Controle Inibitório', 'Memória de Trabalho'],
-        'Regulação': ['Escuta Ativa']
-      },
-      metrics: {
-        primary: 'Integração Global',
-        secondary: ['Comunicação Social', 'Controle Atencional', 'Regulação Emocional', 'Funções Executivas']
+        'Comunicação e Linguagem': [
+          'CAA', 'Tom de Voz', 'Iniciando Conversas', 'Turnos de Conversação',
+          'Pragmática', 'Vocabulário', 'Narrativa'
+        ],
+        'Interação Social': [
+          'Contato Visual Progressivo', 'Expressões Faciais', 'Diálogos em Cenas',
+          'Reconhecimento Emocional', 'Teoria da Mente', 'Empatia'
+        ],
+        'Atenção e Foco': [
+          'Atenção Sustentada', 'Foco Seletivo', 'Atenção Dividida',
+          'Vigilância', 'Filtro Atencional'
+        ],
+        'Funções Executivas': [
+          'Controle Inibitório', 'Planejamento', 'Flexibilidade Cognitiva',
+          'Memória de Trabalho', 'Organização', 'Automonitoramento'
+        ],
+        'Regulação': [
+          'Autorregulação Emocional', 'Tolerância à Frustração',
+          'Controle de Impulsos', 'Manejo da Ansiedade'
+        ],
+        'Habilidades Adaptativas': [
+          'Rotinas', 'Organização Pessoal', 'Transições', 'Seguir Regras'
+        ]
       }
     }
   };
 
-  // Configuração atual baseada na condição selecionada
+  // Configuração atual
   const currentConfig = conditionConfig[conditionFilter];
   const currentDomains = currentConfig.domains;
-  const allowedActivities = currentConfig.activities;
   
-  // ESCALAS E METAS POR ATIVIDADE
+  // ESCALAS (para as 92 atividades)
   const activityScales = {
-    // Atividades TEA
-    'CAA': { min: 0, max: 10, tipo: 'acertos', meta: 70, color: '#10B981', condition: 'TEA' },
-    'Contato Visual Progressivo': { min: 0, max: 300, tipo: 'segundos', meta: 80, color: '#8B5CF6', condition: 'TEA' },
-    'Expressões Faciais': { min: 0, max: 300, tipo: 'pontos', meta: 70, color: '#F59E0B', condition: 'TEA' },
-    'Tom de Voz': { min: 0, max: 300, tipo: 'pontos', meta: 70, color: '#EF4444', condition: 'TEA' },
-    'Escuta Ativa': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#06B6D4', condition: 'TEA' },
-    'Iniciando Conversas': { min: 0, max: 300, tipo: 'pontos', meta: 65, color: '#84CC16', condition: 'TEA' },
-    'Diálogos em Cenas': { min: 0, max: 200, tipo: 'pontos', meta: 65, color: '#EC4899', condition: 'TEA' },
-    'Reconhecimento Emocional': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#F97316', condition: 'TEA' },
-    'Turnos de Conversação': { min: 0, max: 100, tipo: 'turnos', meta: 75, color: '#0EA5E9', condition: 'TEA' },
-    'Linguagem Não-Verbal': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#A855F7', condition: 'TEA' },
+    // Comunicação (15 atividades)
+    'CAA': { min: 0, max: 10, tipo: 'acertos', meta: 70, color: '#10B981' },
+    'Tom de Voz': { min: 0, max: 300, tipo: 'pontos', meta: 70, color: '#EF4444' },
+    'Iniciando Conversas': { min: 0, max: 300, tipo: 'pontos', meta: 65, color: '#84CC16' },
+    'Turnos de Conversação': { min: 0, max: 100, tipo: 'turnos', meta: 75, color: '#0EA5E9' },
+    'Perguntas e Respostas': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#F59E0B' },
+    'Narrativa Pessoal': { min: 0, max: 100, tipo: 'pontos', meta: 65, color: '#8B5CF6' },
+    'Descrição de Objetos': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#EC4899' },
+    'Comunicação Não-Verbal': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#06B6D4' },
+    'Gestos Comunicativos': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#10B981' },
+    'Pedidos Funcionais': { min: 0, max: 100, tipo: 'pontos', meta: 80, color: '#F59E0B' },
+    'Comentários Sociais': { min: 0, max: 100, tipo: 'pontos', meta: 65, color: '#8B5CF6' },
+    'Protesto Apropriado': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#EF4444' },
+    'Escolhas': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#84CC16' },
+    'Reciprocidade Verbal': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#0EA5E9' },
+    'Manutenção de Tópico': { min: 0, max: 100, tipo: 'pontos', meta: 65, color: '#EC4899' },
     
-    // Atividades TDAH
-    'Atenção Sustentada': { min: 0, max: 600, tipo: 'segundos', meta: 75, color: '#3B82F6', condition: 'TDAH' },
-    'Foco Seletivo': { min: 0, max: 100, tipo: 'pontos', meta: 80, color: '#14B8A6', condition: 'TDAH' },
-    'Controle Inibitório': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#F59E0B', condition: 'TDAH' },
-    'Memória de Trabalho': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#EF4444', condition: 'TDAH' },
-    'Planejamento Executivo': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#8B5CF6', condition: 'TDAH' },
-    'Flexibilidade Cognitiva': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#10B981', condition: 'TDAH' },
-    'Tempo de Reação': { min: 0, max: 2000, tipo: 'ms', meta: 80, color: '#06B6D4', condition: 'TDAH' },
-    'Organização Visual': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#EC4899', condition: 'TDAH' }
+    // Interação Social (12 atividades)
+    'Contato Visual Progressivo': { min: 0, max: 300, tipo: 'segundos', meta: 80, color: '#8B5CF6' },
+    'Expressões Faciais': { min: 0, max: 300, tipo: 'pontos', meta: 70, color: '#F59E0B' },
+    'Diálogos em Cenas': { min: 0, max: 200, tipo: 'pontos', meta: 65, color: '#EC4899' },
+    'Reconhecimento Emocional': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#F97316' },
+    'Imitação Social': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#10B981' },
+    'Brincadeira Compartilhada': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#3B82F6' },
+    'Atenção Conjunta': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#EF4444' },
+    'Teoria da Mente': { min: 0, max: 100, tipo: 'pontos', meta: 60, color: '#8B5CF6' },
+    'Interpretação de Contexto': { min: 0, max: 100, tipo: 'pontos', meta: 65, color: '#06B6D4' },
+    'Leitura de Pistas Sociais': { min: 0, max: 100, tipo: 'pontos', meta: 65, color: '#F59E0B' },
+    'Resolução de Conflitos': { min: 0, max: 100, tipo: 'pontos', meta: 60, color: '#84CC16' },
+    'Empatia': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#EC4899' },
+    
+    // Atenção/TDAH (9 atividades existentes + expansão)
+    'Atenção Sustentada': { min: 0, max: 600, tipo: 'segundos', meta: 75, color: '#3B82F6' },
+    'Foco Seletivo': { min: 0, max: 100, tipo: 'pontos', meta: 80, color: '#14B8A6' },
+    'Atenção Dividida': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#F59E0B' },
+    'Vigilância': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#8B5CF6' },
+    'Tempo de Reação': { min: 0, max: 2000, tipo: 'ms', meta: 80, color: '#06B6D4' },
+    'Detecção de Estímulos': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#10B981' },
+    'Rastreamento Visual': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#EF4444' },
+    'Atenção Auditiva': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#F59E0B' },
+    'Filtro Atencional': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#8B5CF6' },
+    
+    // Funções Executivas (12 atividades)
+    'Controle Inibitório': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#F59E0B' },
+    'Planejamento Executivo': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#8B5CF6' },
+    'Flexibilidade Cognitiva': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#10B981' },
+    'Memória de Trabalho': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#EF4444' },
+    'Tomada de Decisão': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#3B82F6' },
+    'Resolução de Problemas': { min: 0, max: 100, tipo: 'pontos', meta: 65, color: '#F59E0B' },
+    'Organização': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#8B5CF6' },
+    'Priorização': { min: 0, max: 100, tipo: 'pontos', meta: 65, color: '#06B6D4' },
+    'Gerenciamento de Tempo': { min: 0, max: 100, tipo: 'pontos', meta: 60, color: '#10B981' },
+    'Estabelecimento de Metas': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#EC4899' },
+    'Automonitoramento': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#F59E0B' },
+    'Iniciação de Tarefas': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#84CC16' },
+    
+    // Regulação (9 atividades)
+    'Escuta Ativa': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#06B6D4' },
+    'Autorregulação Emocional': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#EF4444' },
+    'Tolerância à Frustração': { min: 0, max: 100, tipo: 'pontos', meta: 65, color: '#F59E0B' },
+    'Transições': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#8B5CF6' },
+    'Espera': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#10B981' },
+    'Compartilhamento': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#3B82F6' },
+    'Seguir Regras': { min: 0, max: 100, tipo: 'pontos', meta: 75, color: '#F59E0B' },
+    'Controle Emocional': { min: 0, max: 100, tipo: 'pontos', meta: 70, color: '#EF4444' },
+    'Manejo da Ansiedade': { min: 0, max: 100, tipo: 'pontos', meta: 65, color: '#8B5CF6' }
   };
-
-  // Filtrar apenas atividades existentes nos dados
-  const existingActivities = Object.keys(activityScales).filter(activity => 
-    sessions.some(s => s.atividade_nome === activity)
-  );
 
   // Função para normalizar pontuação
   const normalizeScore = (score: number, activityName: string): number => {
@@ -231,7 +313,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
     return Math.sqrt(avgSquaredDiff);
   };
 
-  // Calcular Coeficiente de Variação
+  // Calcular consistência
   const calculateConsistency = (scores: number[]): { level: string, cv: number, color: string } => {
     if (scores.length < 2) return { level: 'Insuficiente', cv: 0, color: 'text-gray-500' };
     
@@ -244,40 +326,9 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
     return { level: 'Baixa', cv, color: 'text-red-600' };
   };
 
-  // Calcular frequência
-  const calculateFrequency = (sessionDates: Date[]): { sessionsPerWeek: number, maxGap: number, regularityScore: string } => {
-    if (sessionDates.length < 2) return { sessionsPerWeek: 0, maxGap: 0, regularityScore: 'Novo' };
-    
-    const sortedDates = sessionDates.sort((a, b) => a.getTime() - b.getTime());
-    const firstDate = sortedDates[0];
-    const lastDate = sortedDates[sortedDates.length - 1];
-    const totalDays = differenceInDays(lastDate, firstDate) + 1;
-    const totalWeeks = Math.max(1, totalDays / 7);
-    
-    const sessionsPerWeek = sessionDates.length / totalWeeks;
-    
-    let maxGap = 0;
-    for (let i = 1; i < sortedDates.length; i++) {
-      const gap = differenceInDays(sortedDates[i], sortedDates[i - 1]);
-      maxGap = Math.max(maxGap, gap);
-    }
-    
-    let regularityScore = 'Irregular';
-    if (sessionsPerWeek >= 3) regularityScore = 'Excelente';
-    else if (sessionsPerWeek >= 2) regularityScore = 'Boa';
-    else if (sessionsPerWeek >= 1) regularityScore = 'Regular';
-    
-    return { sessionsPerWeek: Math.round(sessionsPerWeek * 10) / 10, maxGap, regularityScore };
-  };
-
-  // Filtrar sessões por período e condição
+  // Filtrar sessões
   const filteredSessions = useMemo(() => {
     let filtered = sessions;
-    
-    // Filtrar por condição (apenas atividades permitidas)
-    filtered = filtered.filter(session => 
-      allowedActivities.includes(session.atividade_nome)
-    );
     
     // Filtrar por período
     if (periodFilter !== 'all') {
@@ -301,8 +352,15 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
       );
     }
     
+    // Filtrar por busca
+    if (searchQuery) {
+      filtered = filtered.filter(session =>
+        session.atividade_nome.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
     return filtered;
-  }, [sessions, periodFilter, allowedActivities]);
+  }, [sessions, periodFilter, searchQuery]);
 
   // Processar dados
   const processedData = filteredSessions.map(session => ({
@@ -310,101 +368,27 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
     normalized_score: normalizeScore(session.pontuacao_final, session.atividade_nome)
   }));
 
-  // Preparar dados para gráfico de evolução
-  const evolutionData = useMemo(() => {
-    const groupedByDate = {};
-    
-    processedData.forEach(session => {
-      const date = format(new Date(session.data_fim), 'dd/MM', { locale: ptBR });
-      
-      if (!groupedByDate[date]) {
-        groupedByDate[date] = { date };
-        Object.keys(currentDomains).forEach(domain => {
-          groupedByDate[date][domain] = [];
-        });
-      }
-      
-      // Identificar domínio da atividade
-      Object.entries(currentDomains).forEach(([domain, activities]) => {
-        if (activities.includes(session.atividade_nome)) {
-          groupedByDate[date][domain].push(session.normalized_score);
-        }
-      });
-    });
-    
-    // Calcular médias por domínio
-    return Object.values(groupedByDate).map((item: any) => {
-      const result: any = { date: item.date };
-      
-      Object.keys(currentDomains).forEach(domain => {
-        const scores = item[domain];
-        result[domain] = scores.length ? 
-          Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-      });
-      
-      return result;
-    });
-  }, [processedData, currentDomains]);
-
-  // Análise Multidimensional
-  const multidimensionalAnalysis = useMemo(() => {
-    return existingActivities
-      .filter(activity => allowedActivities.includes(activity))
-      .map(activity => {
-        const activitySessions = processedData.filter(s => s.atividade_nome === activity);
-        const scores = activitySessions.map(s => s.normalized_score);
-        const dates = activitySessions.map(s => new Date(s.data_fim));
-        
-        const average = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-        const lastScore = scores[scores.length - 1] || 0;
-        const consistency = calculateConsistency(scores);
-        const frequency = calculateFrequency(dates);
-        
-        let progressRate = 0;
-        if (scores.length >= 5) {
-          const firstFive = scores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
-          const lastFive = scores.slice(-5).reduce((a, b) => a + b, 0) / 5;
-          progressRate = Math.round(lastFive - firstFive);
-        } else if (scores.length >= 2) {
-          progressRate = Math.round(scores[scores.length - 1] - scores[0]);
-        }
-        
-        const meta = activityScales[activity].meta;
-        const distanceToGoal = meta - average;
-        const sparklineData = scores.slice(-10);
-        
-        return {
-          name: activity,
-          sessions: activitySessions.length,
-          average,
-          lastScore,
-          consistency,
-          frequency,
-          progressRate,
-          meta,
-          distanceToGoal,
-          scale: activityScales[activity],
-          sparklineData
-        };
-      });
-  }, [processedData, existingActivities, allowedActivities, activityScales]);
-
-  // Calcular métricas por domínio
-  const calculateDomainMetrics = (domainActivities: string[]) => {
+  // Calcular métricas agregadas por domínio
+  const calculateDomainMetrics = (domainName: string, activities: string[]) => {
     const domainSessions = processedData.filter(s => 
-      domainActivities.includes(s.atividade_nome)
+      activities.includes(s.atividade_nome)
     );
     
     if (domainSessions.length === 0) return {
+      name: domainName,
       average: 0,
       trend: 'stable',
       sessions: 0,
-      lastScore: 0
+      lastScore: 0,
+      activities: activities.length,
+      completedActivities: 0,
+      consistency: { level: 'N/A', cv: 0, color: 'text-gray-500' }
     };
 
     const scores = domainSessions.map(s => s.normalized_score);
     const average = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
     
+    // Calcular tendência
     const recent = scores.slice(-3);
     const initial = scores.slice(0, 3);
     const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
@@ -414,34 +398,71 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
     if (recentAvg > initialAvg + 5) trend = 'improving';
     if (recentAvg < initialAvg - 5) trend = 'declining';
 
+    // Contar atividades únicas praticadas
+    const uniqueActivities = new Set(domainSessions.map(s => s.atividade_nome));
+
     return {
+      name: domainName,
       average,
       trend,
       sessions: domainSessions.length,
-      lastScore: scores[scores.length - 1] || 0
+      lastScore: scores[scores.length - 1] || 0,
+      activities: activities.length,
+      completedActivities: uniqueActivities.size,
+      consistency: calculateConsistency(scores)
     };
   };
 
-  // Calcular progresso por atividade
-  const activityProgress = existingActivities
-    .filter(activity => allowedActivities.includes(activity))
-    .map(activity => {
+  // Métricas agregadas
+  const domainMetrics = useMemo(() => {
+    return Object.entries(currentDomains).map(([domain, activities]) => 
+      calculateDomainMetrics(domain, activities)
+    );
+  }, [processedData, currentDomains]);
+
+  // Análise detalhada de atividades (apenas para domínios expandidos)
+  const getActivityDetails = (activities: string[]) => {
+    return activities.map(activity => {
       const activitySessions = processedData.filter(s => s.atividade_nome === activity);
       const scores = activitySessions.map(s => s.normalized_score);
+      
+      if (scores.length === 0) {
+        return {
+          name: activity,
+          sessions: 0,
+          average: 0,
+          lastScore: 0,
+          trend: 'new',
+          sparklineData: []
+        };
+      }
+      
+      const average = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+      const lastScore = scores[scores.length - 1] || 0;
+      
+      let trend = 'stable';
+      if (scores.length >= 2) {
+        const diff = lastScore - scores[scores.length - 2];
+        if (diff > 5) trend = 'improving';
+        if (diff < -5) trend = 'declining';
+      }
       
       return {
         name: activity,
         sessions: activitySessions.length,
-        average: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0,
-        lastScore: scores[scores.length - 1] || 0,
+        average,
+        lastScore,
+        trend,
+        sparklineData: scores.slice(-10),
         scale: activityScales[activity]
       };
     });
+  };
 
   const getTrendIcon = (trend: string) => {
-    if (trend === 'improving') return '📈';
-    if (trend === 'declining') return '📉';
-    return '➡️';
+    if (trend === 'improving') return <TrendingUp className="w-5 h-5 text-green-600" />;
+    if (trend === 'declining') return <TrendingDown className="w-5 h-5 text-red-600" />;
+    return <Activity className="w-5 h-5 text-gray-600" />;
   };
 
   const getTrendColor = (trend: string) => {
@@ -450,7 +471,45 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
     return 'text-gray-600';
   };
 
-  // Cores dos domínios para os gráficos
+  // Preparar dados para gráfico temporal
+  const evolutionData = useMemo(() => {
+    const groupedByDate = {};
+    
+    processedData.forEach(session => {
+      const date = format(new Date(session.data_fim), 'dd/MM', { locale: ptBR });
+      
+      if (!groupedByDate[date]) {
+        groupedByDate[date] = { date };
+        domainMetrics.forEach(domain => {
+          groupedByDate[date][domain.name] = [];
+        });
+      }
+      
+      // Identificar domínio da atividade
+      Object.entries(currentDomains).forEach(([domain, activities]) => {
+        if (activities.includes(session.atividade_nome)) {
+          if (groupedByDate[date][domain]) {
+            groupedByDate[date][domain].push(session.normalized_score);
+          }
+        }
+      });
+    });
+    
+    // Calcular médias
+    return Object.values(groupedByDate).map((item: any) => {
+      const result: any = { date: item.date };
+      
+      domainMetrics.forEach(domain => {
+        const scores = item[domain.name] || [];
+        result[domain.name] = scores.length ? 
+          Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+      });
+      
+      return result;
+    });
+  }, [processedData, currentDomains, domainMetrics]);
+
+  // Cores dos domínios
   const domainColors = {
     'Comunicação': '#10B981',
     'Interação Social': '#8B5CF6',
@@ -459,20 +518,26 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
     'Atenção': '#3B82F6',
     'Funções Executivas': '#EF4444',
     'Memória': '#06B6D4',
-    'Atenção/Funções Executivas': '#14B8A6'
+    'Comportamento Adaptativo': '#EC4899',
+    'Habilidades Motoras': '#84CC16',
+    'Linguagem': '#F97316',
+    'Controle Motor': '#14B8A6',
+    'Regulação Emocional': '#A855F7',
+    'Comunicação e Linguagem': '#10B981',
+    'Atenção e Foco': '#3B82F6',
+    'Habilidades Adaptativas': '#EC4899'
   };
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 bg-gradient-to-br from-blue-50 to-green-50 min-h-screen">
       
-      {/* Header com Seletor de Condição */}
+      {/* Header com Seletor */}
       <div className="mb-8">
-        {/* NOVO: Seletor de Condição */}
         <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-gray-800 mb-2">Condição em Foco</h2>
-              <p className="text-sm text-gray-600">Selecione para filtrar atividades e métricas específicas</p>
+              <p className="text-sm text-gray-600">Selecione para filtrar domínios e atividades</p>
             </div>
             <div className="flex gap-2 flex-wrap">
               <button
@@ -484,7 +549,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
                 }`}
               >
                 <span className="block text-sm">TEA</span>
-                <span className="text-xs opacity-80">Espectro Autista</span>
+                <span className="text-xs opacity-80">45 atividades</span>
               </button>
               <button
                 onClick={() => setConditionFilter('TDAH')}
@@ -495,7 +560,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
                 }`}
               >
                 <span className="block text-sm">TDAH</span>
-                <span className="text-xs opacity-80">Déficit de Atenção</span>
+                <span className="text-xs opacity-80">37 atividades</span>
               </button>
               <button
                 onClick={() => setConditionFilter('TEA+TDAH')}
@@ -506,7 +571,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
                 }`}
               >
                 <span className="block text-sm">TEA+TDAH</span>
-                <span className="text-xs opacity-80">Combinado</span>
+                <span className="text-xs opacity-80">92 atividades</span>
               </button>
             </div>
           </div>
@@ -522,95 +587,177 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
             </p>
           </div>
           
-          {/* Filtros de Período */}
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => setPeriodFilter('7days')}
-              className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                periodFilter === '7days' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              7 dias
-            </button>
-            <button
-              onClick={() => setPeriodFilter('30days')}
-              className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                periodFilter === '30days' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              30 dias
-            </button>
-            <button
-              onClick={() => setPeriodFilter('90days')}
-              className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                periodFilter === '90days' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              3 meses
-            </button>
-            <button
-              onClick={() => setPeriodFilter('all')}
-              className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                periodFilter === 'all' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              Todos
-            </button>
+          {/* Filtros e Busca */}
+          <div className="flex flex-col md:flex-row gap-3">
+            {/* Busca */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Buscar atividade..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            {/* Filtros de Período */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPeriodFilter('7days')}
+                className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                  periodFilter === '7days' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                7 dias
+              </button>
+              <button
+                onClick={() => setPeriodFilter('30days')}
+                className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                  periodFilter === '30days' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                30 dias
+              </button>
+              <button
+                onClick={() => setPeriodFilter('all')}
+                className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                  periodFilter === 'all' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                Todos
+              </button>
+            </div>
           </div>
         </div>
-        
-        <div className="bg-blue-100 border-l-4 border-blue-500 p-4 rounded mt-4">
-          <p className="text-sm text-blue-800">
-            <strong>📊 Métricas Principais:</strong> {currentConfig.metrics.primary} | 
-            <strong> Secundárias:</strong> {currentConfig.metrics.secondary.join(', ')}
-          </p>
-        </div>
       </div>
 
-      {/* Cards por Domínio */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {Object.entries(currentDomains).slice(0, 3).map(([domain, activities]) => {
-          const metrics = calculateDomainMetrics(activities);
-          return (
-            <div key={domain} className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">{domain}</h3>
-              <div className="flex items-baseline justify-between mb-2">
-                <span className="text-3xl font-bold text-gray-800">
-                  {metrics.average}%
-                </span>
-                <span className={`text-2xl ${getTrendColor(metrics.trend)}`}>
-                  {getTrendIcon(metrics.trend)}
-                </span>
+      {/* Cards de Domínios AGREGADOS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {domainMetrics.map((domain) => (
+          <div 
+            key={domain.name} 
+            className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+            onClick={() => toggleDomain(domain.name)}
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span style={{ color: domainColors[domain.name] || '#666' }}>
+                    {domainIcons[domain.name] || <Brain className="w-5 h-5" />}
+                  </span>
+                  <h3 className="text-lg font-semibold text-gray-800">{domain.name}</h3>
+                </div>
+                {expandedDomains.has(domain.name) ? 
+                  <ChevronUp className="w-5 h-5 text-gray-400" /> : 
+                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                }
               </div>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p className="text-gray-600">📊 {metrics.sessions} sessões totais</p>
-                <p className="text-gray-600">🎯 Última: {metrics.lastScore}%</p>
-                <p className={getTrendColor(metrics.trend)}>
-                  Tendência: {
-                    metrics.trend === 'improving' ? 'Melhorando' :
-                    metrics.trend === 'declining' ? 'Requer atenção' :
-                    'Estável'
-                  }
-                </p>
+              
+              <div className="flex items-baseline justify-between mb-3">
+                <div>
+                  <span className="text-3xl font-bold text-gray-800">
+                    {domain.average}%
+                  </span>
+                  <span className="text-sm text-gray-500 ml-2">
+                    média geral
+                  </span>
+                </div>
+                {getTrendIcon(domain.trend)}
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-gray-50 rounded p-2">
+                  <p className="text-gray-600">Atividades</p>
+                  <p className="font-semibold text-gray-800">
+                    {domain.completedActivities}/{domain.activities}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded p-2">
+                  <p className="text-gray-600">Sessões</p>
+                  <p className="font-semibold text-gray-800">{domain.sessions}</p>
+                </div>
+              </div>
+              
+              {/* Barra de progresso do domínio */}
+              <div className="mt-4">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="h-2 rounded-full transition-all duration-500"
+                    style={{ 
+                      width: `${domain.average}%`,
+                      backgroundColor: domainColors[domain.name] || '#3B82F6'
+                    }}
+                  />
+                </div>
               </div>
             </div>
-          );
-        })}
+            
+            {/* Área expandida com atividades do domínio */}
+            {expandedDomains.has(domain.name) && (
+              <div className="border-t px-6 py-4 bg-gray-50 max-h-96 overflow-y-auto">
+                <h4 className="font-semibold text-gray-700 mb-3">
+                  Atividades do Domínio ({currentDomains[domain.name].length})
+                </h4>
+                <div className="space-y-2">
+                  {getActivityDetails(currentDomains[domain.name])
+                    .sort((a, b) => b.average - a.average)
+                    .map(activity => (
+                      <div key={activity.name} className="bg-white rounded p-3 flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-800 text-sm">{activity.name}</p>
+                          <div className="flex items-center gap-4 mt-1">
+                            <span className="text-xs text-gray-500">
+                              {activity.sessions} sessões
+                            </span>
+                            <span className="text-xs font-semibold text-gray-700">
+                              Média: {activity.average}%
+                            </span>
+                            {activity.lastScore > 0 && (
+                              <span className="text-xs text-gray-500">
+                                Última: {activity.lastScore}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="w-24">
+                          {activity.sparklineData.length > 0 && (
+                            <Sparkline 
+                              data={activity.sparklineData} 
+                              color={activity.scale?.color || '#3B82F6'}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  
+                  {/* Atividades ainda não praticadas */}
+                  {currentDomains[domain.name]
+                    .filter(activity => !processedData.some(s => s.atividade_nome === activity))
+                    .map(activity => (
+                      <div key={activity} className="bg-gray-100 rounded p-3 opacity-60">
+                        <p className="text-sm text-gray-600">{activity}</p>
+                        <p className="text-xs text-gray-500 mt-1">Ainda não praticada</p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
-      {/* Gráfico de Evolução Temporal */}
+      {/* Gráfico de Evolução Temporal (apenas domínios com dados) */}
       {evolutionData.length > 0 && (
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
-            📈 Evolução Temporal por Domínio
+            📈 Evolução Temporal dos Domínios
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={evolutionData}>
@@ -619,186 +766,94 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ sessions = [] }) => {
               <YAxis domain={[0, 100]} />
               <Tooltip />
               <Legend />
-              {Object.keys(currentDomains).map(domain => (
-                <Line 
-                  key={domain}
-                  type="monotone" 
-                  dataKey={domain} 
-                  stroke={domainColors[domain] || '#666'} 
-                  strokeWidth={2}
-                  connectNulls
-                />
-              ))}
+              {domainMetrics
+                .filter(d => d.sessions > 0)
+                .map(domain => (
+                  <Line 
+                    key={domain.name}
+                    type="monotone" 
+                    dataKey={domain.name} 
+                    stroke={domainColors[domain.name] || '#666'} 
+                    strokeWidth={2}
+                    connectNulls
+                  />
+                ))}
             </LineChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* Tabela Detalhada */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">
-          Análise Detalhada por Atividade
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="pb-2 text-gray-800">Atividade</th>
-                <th className="pb-2 text-gray-800">Sessões</th>
-                <th className="pb-2 text-gray-800">Média</th>
-                <th className="pb-2 text-gray-800">Última</th>
-                <th className="pb-2 text-gray-800">Escala Original</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activityProgress.map(activity => (
-                <tr key={activity.name} className="border-b hover:bg-gray-50">
-                  <td className="py-3 font-medium text-gray-800">{activity.name}</td>
-                  <td className="py-3 text-gray-800">{activity.sessions}</td>
-                  <td className="py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="h-2 rounded-full"
-                          style={{ 
-                            width: `${activity.average}%`,
-                            backgroundColor: activity.scale.color
-                          }}
-                        />
-                      </div>
-                      <span className="text-sm font-semibold text-gray-800">{activity.average}%</span>
-                    </div>
-                  </td>
-                  <td className="py-3 text-gray-800">{activity.lastScore}%</td>
-                  <td className="py-3 text-sm text-gray-600">
-                    {activity.scale.min}-{activity.scale.max} {activity.scale.tipo}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Análise Multidimensional */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">
-          🔬 Análise Multidimensional - {currentConfig.name}
-        </h2>
-        <div className="space-y-4">
-          {multidimensionalAnalysis.map(activity => (
-            <div key={activity.name} className="border rounded-lg p-4 hover:bg-gray-50">
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-800">{activity.name}</h3>
-                  <span className="text-sm text-gray-500">{activity.sessions} sessões</span>
-                </div>
-                
-                <div className="w-32 ml-4">
-                  <div className="text-xs text-gray-500 mb-1 text-right">
-                    {activity.sparklineData.length > 1 ? 'Últimas sessões' : 'Sessão única'}
-                  </div>
-                  <Sparkline 
-                    data={activity.sparklineData} 
-                    color={activity.scale.color}
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-gray-50 p-2 rounded">
-                  <div className="text-xs text-gray-600 mb-1">Consistência</div>
-                  <div className={`font-semibold ${activity.consistency.color}`}>
-                    {activity.consistency.level}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {activity.consistency.cv > 0 ? `CV: ${activity.consistency.cv.toFixed(1)}%` : 'N/A'}
-                  </div>
-                </div>
-                
-                <div className="bg-gray-50 p-2 rounded">
-                  <div className="text-xs text-gray-600 mb-1">Frequência</div>
-                  <div className="font-semibold text-gray-800">
-                    {activity.frequency.sessionsPerWeek > 0 ? `${activity.frequency.sessionsPerWeek}/sem` : '0/sem'}
-                  </div>
-                  <div className="text-xs text-gray-500">{activity.frequency.regularityScore}</div>
-                </div>
-                
-                <div className="bg-gray-50 p-2 rounded">
-                  <div className="text-xs text-gray-600 mb-1">Velocidade</div>
-                  <div className={`font-semibold ${activity.progressRate > 0 ? 'text-green-600' : activity.progressRate < 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                    {activity.progressRate > 0 ? '+' : ''}{activity.progressRate}%
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {activity.sessions >= 5 ? 'Últimas 5 sessões' : activity.sessions >= 2 ? 'Primeira vs Última' : 'N/A'}
-                  </div>
-                </div>
-                
-                <div className="bg-gray-50 p-2 rounded">
-                  <div className="text-xs text-gray-600 mb-1">Meta</div>
-                  <div className="font-semibold text-gray-800">
-                    {activity.average}/{activity.meta}%
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {activity.distanceToGoal > 0 ? `Faltam ${activity.distanceToGoal}%` : '✅ Atingida'}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-3">
-                <div className="flex justify-between text-xs text-gray-600 mb-1">
-                  <span>Progresso até a meta</span>
-                  <span>{Math.min(100, Math.round((activity.average / activity.meta) * 100))}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full transition-all duration-500`}
-                    style={{ 
-                      width: `${Math.min(100, (activity.average / activity.meta) * 100)}%`,
-                      backgroundColor: activity.average >= activity.meta ? '#10B981' : activity.scale.color
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Interpretação Clínica */}
+      {/* Resumo Executivo */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-4">
-          💡 Interpretação dos Resultados - {currentConfig.name}
+          📊 Resumo Executivo - {currentConfig.name}
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="border-l-4 border-green-500 pl-4">
-            <h3 className="font-semibold text-green-700">Pontos Fortes</h3>
-            <ul className="text-sm text-gray-600 mt-2 space-y-1">
-              {activityProgress
-                .filter(a => a.average >= 70)
-                .map(a => (
-                  <li key={a.name} className="text-gray-600">✓ {a.name}: {a.average}% de desempenho</li>
-                ))}
-            </ul>
-          </div>
-          <div className="border-l-4 border-orange-500 pl-4">
-            <h3 className="font-semibold text-orange-700">Áreas para Desenvolvimento</h3>
-            <ul className="text-sm text-gray-600 mt-2 space-y-1">
-              {activityProgress
-                .filter(a => a.average < 50 && a.sessions > 0)
-                .map(a => (
-                  <li key={a.name} className="text-gray-600">• {a.name}: {a.average}% - Considerar estratégias adicionais</li>
-                ))}
-            </ul>
-          </div>
-        </div>
         
-        {/* Métricas Específicas por Condição */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <h4 className="font-semibold text-gray-700 mb-2">📊 Métricas Específicas para {currentConfig.name}</h4>
-          <div className="text-sm text-gray-600">
-            <p><strong>Foco Principal:</strong> {currentConfig.metrics.primary}</p>
-            <p><strong>Áreas Secundárias:</strong> {currentConfig.metrics.secondary.join(' | ')}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Estatísticas Gerais */}
+          <div className="border-l-4 border-blue-500 pl-4">
+            <h3 className="font-semibold text-gray-700 mb-2">Estatísticas Gerais</h3>
+            <div className="space-y-1 text-sm">
+              <p className="text-gray-600">
+                Total de Sessões: <span className="font-semibold text-gray-800">{filteredSessions.length}</span>
+              </p>
+              <p className="text-gray-600">
+                Domínios Ativos: <span className="font-semibold text-gray-800">
+                  {domainMetrics.filter(d => d.sessions > 0).length}/{domainMetrics.length}
+                </span>
+              </p>
+              <p className="text-gray-600">
+                Atividades Praticadas: <span className="font-semibold text-gray-800">
+                  {new Set(processedData.map(s => s.atividade_nome)).size}
+                </span>
+              </p>
+              <p className="text-gray-600">
+                Média Global: <span className="font-semibold text-gray-800">
+                  {domainMetrics.length > 0 ? 
+                    Math.round(domainMetrics.reduce((a, b) => a + b.average, 0) / domainMetrics.filter(d => d.average > 0).length) 
+                    : 0}%
+                </span>
+              </p>
+            </div>
+          </div>
+          
+          {/* Domínios em Destaque */}
+          <div className="border-l-4 border-green-500 pl-4">
+            <h3 className="font-semibold text-green-700 mb-2">Melhores Resultados</h3>
+            <div className="space-y-1 text-sm">
+              {domainMetrics
+                .filter(d => d.average > 0)
+                .sort((a, b) => b.average - a.average)
+                .slice(0, 3)
+                .map(domain => (
+                  <p key={domain.name} className="text-gray-600">
+                    {domain.name}: <span className="font-semibold text-green-700">{domain.average}%</span>
+                  </p>
+                ))}
+            </div>
+          </div>
+          
+          {/* Áreas de Atenção */}
+          <div className="border-l-4 border-orange-500 pl-4">
+            <h3 className="font-semibold text-orange-700 mb-2">Áreas para Desenvolvimento</h3>
+            <div className="space-y-1 text-sm">
+              {domainMetrics
+                .filter(d => d.completedActivities > 0 && d.average < 60)
+                .sort((a, b) => a.average - b.average)
+                .slice(0, 3)
+                .map(domain => (
+                  <p key={domain.name} className="text-gray-600">
+                    {domain.name}: <span className="font-semibold text-orange-700">{domain.average}%</span>
+                  </p>
+                ))}
+              {domainMetrics.filter(d => d.completedActivities === 0).length > 0 && (
+                <p className="text-gray-600">
+                  <span className="font-semibold text-orange-700">
+                    {domainMetrics.filter(d => d.completedActivities === 0).length} domínios
+                  </span> ainda não iniciados
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
