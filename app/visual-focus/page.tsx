@@ -2,14 +2,22 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Save } from 'lucide-react';
+import { ChevronLeft, Save, Camera, Eye, MousePointer, Smartphone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
-import './visual-focus.css';
+
+// Declaração global do WebGazer
+declare global {
+    interface Window {
+        webgazer: any;
+    }
+}
 
 export default function VisualFocusPage() {
     const router = useRouter();
     const supabase = createClient();
+    
+    // Estados principais
     const [nivel, setNivel] = useState(1);
     const [pontuacao, setPontuacao] = useState(0);
     const [duracao, setDuracao] = useState(60);
@@ -25,7 +33,20 @@ export default function VisualFocusPage() {
     const [jogoIniciado, setJogoIniciado] = useState(false);
     const [salvando, setSalvando] = useState(false);
     
-    // MÉTRICAS CIENTÍFICAS
+    // Estados do Eye-Tracking
+    const [modoControle, setModoControle] = useState<'eye-tracking' | 'mouse' | 'touch'>('mouse');
+    const [cameraDisponivel, setCameraDisponivel] = useState(false);
+    const [verificandoCamera, setVerificandoCamera] = useState(true);
+    const [mostrarOpcaoEyeTracking, setMostrarOpcaoEyeTracking] = useState(false);
+    const [calibrando, setCalibrando] = useState(false);
+    const [calibracaoCompleta, setCalibracaoCompleta] = useState(false);
+    const [pontosCalibrados, setPontosCalibrados] = useState(0);
+    const [eyeTrackingAtivo, setEyeTrackingAtivo] = useState(false);
+    const [dadosOculares, setDadosOculares] = useState<any[]>([]);
+    const [fixacoes, setFixacoes] = useState<any[]>([]);
+    const [sacadas, setSacadas] = useState<any[]>([]);
+    
+    // Métricas científicas
     const [inicioSessao] = useState(new Date());
     const [sequenciaTemporal, setSequenciaTemporal] = useState<any[]>([]);
     const [proximidadeHistorico, setProximidadeHistorico] = useState<number[]>([]);
@@ -38,36 +59,8 @@ export default function VisualFocusPage() {
     const gameAreaRef = useRef<HTMLDivElement>(null);
     const direcaoRef = useRef({ x: 1, y: 1 });
     const ultimaAtualizacao = useRef(Date.now());
-
-    // ==========================================
-    // FIX PARA iOS - VERSÃO SIMPLIFICADA
-    // ==========================================
-    useEffect(() => {
-        // Detectar se é iOS
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        
-        if (isIOS) {
-            console.log('iOS detectado - aplicando fix simples');
-            
-            // Adicionar classe ao body apenas quando está nesta página
-            document.body.classList.add('ios-fix-active');
-            
-            // Prevenir o bounce/elastic scroll
-            const preventBounce = (e: Event) => {
-                e.preventDefault();
-            };
-            
-            // Aplicar apenas no document, não em elementos específicos
-            document.addEventListener('touchmove', preventBounce, { passive: false });
-            
-            // Limpar quando sair da página
-            return () => {
-                document.body.classList.remove('ios-fix-active');
-                document.removeEventListener('touchmove', preventBounce);
-                console.log('iOS fix removido');
-            };
-        }
-    }, []);
+    const calibracaoRef = useRef<any[]>([]);
+    const ultimoOlharRef = useRef({ x: 0, y: 0, timestamp: 0 });
 
     // Configurações por nível
     const niveis = {
@@ -88,31 +81,321 @@ export default function VisualFocusPage() {
             'Nível 4: Avançado - Velocidade rápida, 3 distratores (1.75min)',
             'Nível 5: Expert - Velocidade máxima, 4 distratores (2min)'
         ],
-        howToPlay: [
-            'Siga o alvo verde com o cursor do mouse constantemente.',
-            'Mantenha o cursor próximo ao alvo em movimento.',
-            'Ignore os distratores coloridos que aparecem na tela.',
-            'Complete cada nível mantendo 70% de tempo em foco para avançar.'
+        howToPlay: modoControle === 'eye-tracking' ? [
+            '👁️ OLHE para o alvo verde constantemente',
+            'Mantenha o foco visual no alvo em movimento',
+            'Ignore os distratores coloridos',
+            'Sistema rastreia automaticamente seu olhar'
+        ] : [
+            'Siga o alvo verde com o cursor do mouse constantemente',
+            'Mantenha o cursor próximo ao alvo em movimento',
+            'Ignore os distratores coloridos que aparecem na tela',
+            'Complete cada nível mantendo 70% de tempo em foco para avançar'
         ]
     };
 
-    // CÁLCULOS CIENTÍFICOS
-    const calcularVariabilidadeProximidade = () => {
-        if (proximidadeHistorico.length <= 1) return 0;
-        const media = proximidadeHistorico.reduce((sum, p) => sum + p, 0) / proximidadeHistorico.length;
-        const variancia = proximidadeHistorico.reduce((sum, p) => sum + Math.pow(p - media, 2), 0) / proximidadeHistorico.length;
-        return Math.sqrt(variancia);
+    // ==========================================
+    // DETECÇÃO DE CÂMERA E DISPOSITIVO
+    // ==========================================
+    useEffect(() => {
+        const detectarCapacidades = async () => {
+            setVerificandoCamera(true);
+            
+            // Detectar tipo de dispositivo
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const hasTouch = 'ontouchstart' in window;
+            
+            // Verificar disponibilidade de câmera
+            try {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    // Tentar enumerar dispositivos primeiro (não pede permissão)
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const hasCamera = devices.some(device => device.kind === 'videoinput');
+                    
+                    setCameraDisponivel(hasCamera);
+                    
+                    if (hasCamera) {
+                        setMostrarOpcaoEyeTracking(true);
+                    }
+                    
+                    // Definir modo padrão baseado no dispositivo
+                    if (isMobile && hasTouch) {
+                        setModoControle('touch');
+                    } else {
+                        setModoControle('mouse');
+                    }
+                }
+            } catch (error) {
+                console.log('Câmera não disponível:', error);
+                setCameraDisponivel(false);
+            }
+            
+            setVerificandoCamera(false);
+        };
+        
+        detectarCapacidades();
+    }, []);
+
+    // ==========================================
+    // INICIALIZAÇÃO DO WEBGAZER
+    // ==========================================
+    const iniciarEyeTracking = async () => {
+        if (typeof window !== 'undefined' && window.webgazer) {
+            try {
+                console.log('Iniciando WebGazer...');
+                
+                // Configurações do WebGazer
+                window.webgazer.params.showVideoPreview = true;
+                window.webgazer.params.showPredictionPoints = false;
+                window.webgazer.params.showFaceOverlay = false;
+                window.webgazer.params.showFaceFeedbackBox = false;
+                
+                // Iniciar WebGazer
+                await window.webgazer
+                    .setRegression('ridge')
+                    .setTracker('TFFacemesh')
+                    .begin();
+                
+                // Callback para dados do olhar
+                window.webgazer.setGazeListener((data: any, clock: number) => {
+                    if (data && eyeTrackingAtivo) {
+                        // Salvar posição do olhar
+                        ultimoOlharRef.current = {
+                            x: data.x,
+                            y: data.y,
+                            timestamp: clock
+                        };
+                        
+                        // Converter para percentual se estiver no jogo
+                        if (gameAreaRef.current && ativo) {
+                            const rect = gameAreaRef.current.getBoundingClientRect();
+                            const x = ((data.x - rect.left) / rect.width) * 100;
+                            const y = ((data.y - rect.top) / rect.height) * 100;
+                            
+                            setPosicaoMouse({ 
+                                x: Math.max(0, Math.min(100, x)), 
+                                y: Math.max(0, Math.min(100, y)) 
+                            });
+                            
+                            // Coletar dados para análise
+                            setDadosOculares(prev => [...prev.slice(-299), {
+                                x: data.x,
+                                y: data.y,
+                                timestamp: clock
+                            }]);
+                        }
+                    }
+                });
+                
+                setEyeTrackingAtivo(true);
+                console.log('WebGazer iniciado com sucesso!');
+                
+            } catch (error) {
+                console.error('Erro ao iniciar eye-tracking:', error);
+                setModoControle('mouse');
+            }
+        } else {
+            console.log('WebGazer não disponível');
+            setModoControle('mouse');
+        }
     };
 
-    const calcularTempoRecuperacaoMedio = () => {
-        if (tempoRecuperacao.length === 0) return 0;
-        return tempoRecuperacao.reduce((sum, t) => sum + t, 0) / tempoRecuperacao.length;
+    // ==========================================
+    // CALIBRAÇÃO DO EYE-TRACKING
+    // ==========================================
+    const iniciarCalibracao = async () => {
+        setCalibrando(true);
+        setPontosCalibrados(0);
+        calibracaoRef.current = [];
+        
+        // Iniciar WebGazer primeiro
+        await iniciarEyeTracking();
+        
+        // Pontos de calibração (9 pontos)
+        const pontos = [
+            { x: 10, y: 10 },   { x: 50, y: 10 },   { x: 90, y: 10 },
+            { x: 10, y: 50 },   { x: 50, y: 50 },   { x: 90, y: 50 },
+            { x: 10, y: 90 },   { x: 50, y: 90 },   { x: 90, y: 90 }
+        ];
+        
+        // Mostrar pontos sequencialmente
+        for (let i = 0; i < pontos.length; i++) {
+            await mostrarPontoCalibracao(pontos[i], i + 1);
+        }
+        
+        setCalibrando(false);
+        setCalibracaoCompleta(true);
+        setModoControle('eye-tracking');
     };
 
-    const calcularAtosPorMinuto = () => {
-        const agora = new Date();
-        const diferencaMinutos = (agora.getTime() - inicioSessao.getTime()) / 60000;
-        return diferencaMinutos > 0 ? (sequenciaTemporal.length / diferencaMinutos).toFixed(2) : '0.00';
+    const mostrarPontoCalibracao = (ponto: {x: number, y: number}, numero: number) => {
+        return new Promise<void>((resolve) => {
+            const pontoEl = document.createElement('div');
+            pontoEl.className = 'calibration-point';
+            pontoEl.style.position = 'fixed';
+            pontoEl.style.left = `${ponto.x}%`;
+            pontoEl.style.top = `${ponto.y}%`;
+            pontoEl.style.width = '40px';
+            pontoEl.style.height = '40px';
+            pontoEl.style.backgroundColor = '#10b981';
+            pontoEl.style.borderRadius = '50%';
+            pontoEl.style.transform = 'translate(-50%, -50%)';
+            pontoEl.style.cursor = 'pointer';
+            pontoEl.style.zIndex = '10000';
+            pontoEl.style.animation = 'pulse 1s infinite';
+            
+            // Adicionar número
+            pontoEl.innerHTML = `<span style="color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; height: 100%;">${numero}</span>`;
+            
+            document.body.appendChild(pontoEl);
+            
+            const handleClick = () => {
+                // Registrar calibração no WebGazer
+                if (window.webgazer) {
+                    const screenX = (window.innerWidth * ponto.x) / 100;
+                    const screenY = (window.innerHeight * ponto.y) / 100;
+                    
+                    // Registrar múltiplas vezes para melhor precisão
+                    for (let i = 0; i < 5; i++) {
+                        setTimeout(() => {
+                            window.webgazer.recordScreenPosition(screenX, screenY);
+                        }, i * 100);
+                    }
+                }
+                
+                // Feedback visual
+                pontoEl.style.backgroundColor = '#059669';
+                setPontosCalibrados(prev => prev + 1);
+                
+                setTimeout(() => {
+                    document.body.removeChild(pontoEl);
+                    resolve();
+                }, 500);
+            };
+            
+            pontoEl.addEventListener('click', handleClick);
+        });
+    };
+
+    // ==========================================
+    // ANÁLISE DE DADOS OCULARES
+    // ==========================================
+    const analisarDadosOculares = () => {
+        if (dadosOculares.length < 10) return;
+        
+        // Detectar fixações (olhar parado por >100ms)
+        const novasFixacoes: any[] = [];
+        let fixacaoAtual: any[] = [];
+        
+        for (let i = 1; i < dadosOculares.length; i++) {
+            const distancia = Math.sqrt(
+                Math.pow(dadosOculares[i].x - dadosOculares[i-1].x, 2) +
+                Math.pow(dadosOculares[i].y - dadosOculares[i-1].y, 2)
+            );
+            
+            if (distancia < 50) { // Threshold para fixação
+                fixacaoAtual.push(dadosOculares[i]);
+            } else {
+                if (fixacaoAtual.length > 3) {
+                    novasFixacoes.push({
+                        duracao: fixacaoAtual[fixacaoAtual.length-1].timestamp - fixacaoAtual[0].timestamp,
+                        x: fixacaoAtual.reduce((sum, p) => sum + p.x, 0) / fixacaoAtual.length,
+                        y: fixacaoAtual.reduce((sum, p) => sum + p.y, 0) / fixacaoAtual.length
+                    });
+                }
+                fixacaoAtual = [];
+            }
+        }
+        
+        setFixacoes(novasFixacoes);
+        
+        // Detectar sacadas (movimentos rápidos)
+        const novasSacadas: any[] = [];
+        for (let i = 1; i < dadosOculares.length; i++) {
+            const velocidade = Math.sqrt(
+                Math.pow(dadosOculares[i].x - dadosOculares[i-1].x, 2) +
+                Math.pow(dadosOculares[i].y - dadosOculares[i-1].y, 2)
+            ) / (dadosOculares[i].timestamp - dadosOculares[i-1].timestamp);
+            
+            if (velocidade > 300) { // Threshold para sacada
+                novasSacadas.push({
+                    velocidade,
+                    amplitude: Math.sqrt(
+                        Math.pow(dadosOculares[i].x - dadosOculares[i-1].x, 2) +
+                        Math.pow(dadosOculares[i].y - dadosOculares[i-1].y, 2)
+                    )
+                });
+            }
+        }
+        
+        setSacadas(novasSacadas);
+    };
+
+    // Analisar dados a cada segundo
+    useEffect(() => {
+        if (modoControle === 'eye-tracking' && ativo) {
+            const interval = setInterval(analisarDadosOculares, 1000);
+            return () => clearInterval(interval);
+        }
+    }, [modoControle, ativo, dadosOculares]);
+
+    // ==========================================
+    // FUNÇÕES DO JOGO
+    // ==========================================
+    const iniciarExercicio = () => {
+        const configuracao = niveis[nivel as keyof typeof niveis];
+        setDuracao(configuracao.duracao);
+        setTempoRestante(configuracao.duracao);
+        setAtivo(true);
+        setPontuacao(0);
+        setProximidadeMedia(0);
+        setTempoFoco(0);
+        setTempoFocoTotal(0);
+        setExercicioConcluido(false);
+        setJogoIniciado(true);
+        setPosicaoAlvo({ x: 50, y: 50 });
+        
+        // Reset métricas
+        setSequenciaTemporal([]);
+        setProximidadeHistorico([]);
+        setLapsosAtencao(0);
+        setTempoRecuperacao([]);
+        setEmLapso(false);
+        setInicioLapso(null);
+        setNivelMaximo(Math.max(nivelMaximo, nivel));
+        setDadosOculares([]);
+        setFixacoes([]);
+        setSacadas([]);
+        
+        direcaoRef.current = { 
+            x: Math.random() > 0.5 ? 1 : -1, 
+            y: Math.random() > 0.5 ? 1 : -1 
+        };
+        ultimaAtualizacao.current = Date.now();
+    };
+
+    const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+        if (!gameAreaRef.current || !ativo || modoControle === 'eye-tracking') return;
+        
+        const rect = gameAreaRef.current.getBoundingClientRect();
+        let clientX, clientY;
+        
+        if ('touches' in e) {
+            if (e.touches.length === 0) return;
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        
+        const x = ((clientX - rect.left) / rect.width) * 100;
+        const y = ((clientY - rect.top) / rect.height) * 100;
+        
+        setPosicaoMouse({ 
+            x: Math.max(0, Math.min(100, x)), 
+            y: Math.max(0, Math.min(100, y)) 
+        });
     };
 
     // Timer principal
@@ -202,67 +485,6 @@ export default function VisualFocusPage() {
         }
     }, [ativo, nivel]);
 
-    const iniciarExercicio = () => {
-        const configuracao = niveis[nivel as keyof typeof niveis];
-        setDuracao(configuracao.duracao);
-        setTempoRestante(configuracao.duracao);
-        setAtivo(true);
-        setPontuacao(0);
-        setProximidadeMedia(0);
-        setTempoFoco(0);
-        setTempoFocoTotal(0);
-        setExercicioConcluido(false);
-        setJogoIniciado(true);
-        setPosicaoAlvo({ x: 50, y: 50 });
-        
-        // Reset métricas científicas
-        setSequenciaTemporal([]);
-        setProximidadeHistorico([]);
-        setLapsosAtencao(0);
-        setTempoRecuperacao([]);
-        setEmLapso(false);
-        setInicioLapso(null);
-        setNivelMaximo(Math.max(nivelMaximo, nivel));
-        
-        direcaoRef.current = { 
-            x: Math.random() > 0.5 ? 1 : -1, 
-            y: Math.random() > 0.5 ? 1 : -1 
-        };
-        ultimaAtualizacao.current = Date.now();
-    };
-
-    // FUNÇÃO handleMouseMove PARA SUPORTAR TOUCH
-    const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-        if (!gameAreaRef.current || !ativo) return;
-        
-        const rect = gameAreaRef.current.getBoundingClientRect();
-        let clientX, clientY;
-        
-        // DETECTAR SE É TOUCH OU MOUSE
-        if ('touches' in e) {
-            // É um evento de toque (mobile)
-            if (e.touches.length === 0) return;
-            
-            // Pega a primeira posição de toque
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        } else {
-            // É um evento de mouse (desktop)
-            clientX = e.clientX;
-            clientY = e.clientY;
-        }
-        
-        // Calcula posição relativa em porcentagem
-        const x = ((clientX - rect.left) / rect.width) * 100;
-        const y = ((clientY - rect.top) / rect.height) * 100;
-        
-        // Limita aos bounds da área de jogo
-        const boundedX = Math.max(0, Math.min(100, x));
-        const boundedY = Math.max(0, Math.min(100, y));
-        
-        setPosicaoMouse({ x: boundedX, y: boundedY });
-    };
-
     const calcularProximidade = () => {
         if (!ativo) return;
         
@@ -274,10 +496,8 @@ export default function VisualFocusPage() {
         
         const proximidade = Math.max(0, 100 - (distancia / config.raioFoco) * 100);
         
-        // MÉTRICAS CIENTÍFICAS
         setProximidadeHistorico(prev => [...prev.slice(-29), proximidade]);
         
-        // Detectar lapsos de atenção
         if (proximidade < 30) {
             if (!emLapso) {
                 setEmLapso(true);
@@ -304,20 +524,25 @@ export default function VisualFocusPage() {
             ((prev * (tempoFocoTotal - 1)) + proximidade) / tempoFocoTotal
         );
         
-        // Registrar sequência temporal
         setSequenciaTemporal(prev => [...prev, {
             timestamp: new Date(),
             nivel: nivel,
             proximidade: proximidade,
             posicao_alvo: { x: posicaoAlvo.x, y: posicaoAlvo.y },
             posicao_mouse: { x: posicaoMouse.x, y: posicaoMouse.y },
-            em_foco: proximidade > 30
+            em_foco: proximidade > 30,
+            modo_controle: modoControle
         }]);
     };
 
     const finalizarExercicio = () => {
         setAtivo(false);
         setExercicioConcluido(true);
+        
+        // Parar eye-tracking se ativo
+        if (modoControle === 'eye-tracking' && window.webgazer) {
+            window.webgazer.pause();
+        }
     };
 
     const proximoNivel = () => {
@@ -335,7 +560,20 @@ export default function VisualFocusPage() {
         setDistratores([]);
     };
 
-    // FUNÇÃO DE SALVAMENTO
+    // Cálculos científicos
+    const calcularVariabilidadeProximidade = () => {
+        if (proximidadeHistorico.length <= 1) return 0;
+        const media = proximidadeHistorico.reduce((sum, p) => sum + p, 0) / proximidadeHistorico.length;
+        const variancia = proximidadeHistorico.reduce((sum, p) => sum + Math.pow(p - media, 2), 0) / proximidadeHistorico.length;
+        return Math.sqrt(variancia);
+    };
+
+    const calcularTempoRecuperacaoMedio = () => {
+        if (tempoRecuperacao.length === 0) return 0;
+        return tempoRecuperacao.reduce((sum, t) => sum + t, 0) / tempoRecuperacao.length;
+    };
+
+    // Função de salvamento
     const handleSaveSession = async () => {
         if (tempoFocoTotal === 0) {
             alert('Nenhuma interação foi registrada para salvar.');
@@ -360,6 +598,26 @@ export default function VisualFocusPage() {
                 return;
             }
             
+            // Preparar dados avançados se eye-tracking
+            const dadosAvancados = modoControle === 'eye-tracking' ? {
+                modo_controle: 'eye-tracking',
+                total_fixacoes: fixacoes.length,
+                duracao_media_fixacao: fixacoes.length > 0 
+                    ? fixacoes.reduce((sum, f) => sum + f.duracao, 0) / fixacoes.length 
+                    : 0,
+                total_sacadas: sacadas.length,
+                velocidade_media_sacada: sacadas.length > 0
+                    ? sacadas.reduce((sum, s) => sum + s.velocidade, 0) / sacadas.length
+                    : 0,
+                dados_oculares_resumo: {
+                    total_pontos: dadosOculares.length,
+                    fixacoes: fixacoes.slice(-20),
+                    sacadas: sacadas.slice(-20)
+                }
+            } : {
+                modo_controle: modoControle
+            };
+            
             const { data, error } = await supabase
                 .from('sessoes')
                 .insert([{
@@ -376,6 +634,7 @@ export default function VisualFocusPage() {
                     nivel_maximo_atingido: nivelMaximo,
                     distratores_nivel_final: niveis[nivelMaximo as keyof typeof niveis].distratores,
                     observacoes: JSON.stringify({
+                        ...dadosAvancados,
                         sequencia_temporal: sequenciaTemporal.slice(-50),
                         proximidade_historico: proximidadeHistorico,
                         tempo_recuperacao: tempoRecuperacao
@@ -386,6 +645,10 @@ export default function VisualFocusPage() {
                 console.error('Erro ao salvar:', error);
                 alert(`Erro ao salvar: ${error.message}`);
             } else {
+                const mensagemExtra = modoControle === 'eye-tracking' 
+                    ? `\n🧠 Dados Avançados:\n• ${fixacoes.length} fixações oculares\n• ${sacadas.length} movimentos sacádicos`
+                    : '';
+                
                 alert(`Sessão salva com sucesso!
                 
 📊 Resumo Científico:
@@ -394,7 +657,7 @@ export default function VisualFocusPage() {
 - ${lapsosAtencao} lapsos de atenção
 - ${tempoRecuperacaoMedio.toFixed(1)}s recuperação média
 - Nível máximo: ${nivelMaximo}
-- Variabilidade: ${variabilidadeProximidade.toFixed(1)}%`);
+- Variabilidade: ${variabilidadeProximidade.toFixed(1)}%${mensagemExtra}`);
                 
                 router.push('/profileselection');
             }
@@ -403,8 +666,22 @@ export default function VisualFocusPage() {
             alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
         } finally {
             setSalvando(false);
+            
+            // Limpar eye-tracking
+            if (window.webgazer) {
+                window.webgazer.end();
+            }
         }
     };
+
+    // Limpar WebGazer ao sair
+    useEffect(() => {
+        return () => {
+            if (window.webgazer && eyeTrackingAtivo) {
+                window.webgazer.end();
+            }
+        };
+    }, [eyeTrackingAtivo]);
 
     const distanciaAtual = Math.sqrt(
         Math.pow(posicaoAlvo.x - posicaoMouse.x, 2) + 
@@ -413,6 +690,22 @@ export default function VisualFocusPage() {
     const proximidadeAtual = Math.max(0, Math.round(100 - distanciaAtual));
     const percentualFoco = tempoFocoTotal > 0 ? Math.round((tempoFoco / tempoFocoTotal) * 100) : 0;
     const podeAvancar = percentualFoco >= 70 && proximidadeMedia >= 50 && nivel < 5;
+
+    // CSS para animação de calibração
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: translate(-50%, -50%) scale(1); }
+                50% { transform: translate(-50%, -50%) scale(1.2); }
+                100% { transform: translate(-50%, -50%) scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -426,6 +719,12 @@ export default function VisualFocusPage() {
                         <span className="text-sm sm:text-base">Voltar para TDAH</span>
                     </Link>
                     <div className="flex items-center space-x-2 sm:space-x-4">
+                        {modoControle === 'eye-tracking' && (
+                            <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 text-green-800 rounded-full">
+                                <Eye size={16} />
+                                <span className="text-sm font-medium">Eye-Tracking Ativo</span>
+                            </div>
+                        )}
                         <button 
                           onClick={handleSaveSession}
                           disabled={salvando}
@@ -439,6 +738,82 @@ export default function VisualFocusPage() {
             </header>
 
             <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+                {/* Modal de Opção Eye-Tracking */}
+                {mostrarOpcaoEyeTracking && !calibracaoCompleta && !jogoIniciado && !verificandoCamera && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4">
+                            <div className="text-center">
+                                <div className="text-6xl mb-4">🎥</div>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                                    Câmera Detectada!
+                                </h2>
+                                <p className="text-gray-600 mb-6">
+                                    Use <strong>RASTREAMENTO OCULAR</strong> para:
+                                </p>
+                                <ul className="text-left text-sm text-gray-600 mb-6 space-y-2">
+                                    <li>• Maior precisão diagnóstica</li>
+                                    <li>• Métricas científicas avançadas</li>
+                                    <li>• Análise de fixações e sacadas</li>
+                                    <li>• Sem necessidade de mouse ou toque</li>
+                                </ul>
+                                <div className="space-y-3">
+                                    <button
+                                        onClick={iniciarCalibracao}
+                                        className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                                    >
+                                        <Eye size={20} />
+                                        <span>Usar Eye-Tracking</span>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setMostrarOpcaoEyeTracking(false);
+                                            const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+                                            setModoControle(isMobile ? 'touch' : 'mouse');
+                                        }}
+                                        className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                                    >
+                                        {/Android|iPhone|iPad/i.test(navigator.userAgent) ? (
+                                            <>
+                                                <Smartphone size={20} />
+                                                <span>Usar Touch</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <MousePointer size={20} />
+                                                <span>Usar Mouse</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Tela de Calibração */}
+                {calibrando && (
+                    <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
+                        <div className="text-center">
+                            <h2 className="text-3xl font-bold text-gray-800 mb-4">
+                                Calibração do Eye-Tracking
+                            </h2>
+                            <p className="text-lg text-gray-600 mb-8">
+                                Clique em cada ponto verde que aparecer
+                            </p>
+                            <div className="text-2xl font-bold text-green-600">
+                                {pontosCalibrados} / 9 pontos calibrados
+                            </div>
+                            <div className="mt-8 w-64 bg-gray-200 rounded-full h-4 mx-auto">
+                                <div 
+                                    className="bg-green-600 h-4 rounded-full transition-all duration-300"
+                                    style={{ width: `${(pontosCalibrados / 9) * 100}%` }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Informações da Atividade */}
                 <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-6">
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">{activityInfo.title}</h1>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -465,9 +840,17 @@ export default function VisualFocusPage() {
                     </div>
                 </div>
 
+                {/* Progresso da Sessão */}
                 {jogoIniciado && (
                     <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-                        <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">📊 Progresso da Sessão</h3>
+                        <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                            📊 Progresso da Sessão
+                            {modoControle === 'eye-tracking' && (
+                                <span className="ml-3 text-sm font-normal text-green-600">
+                                    (Eye-Tracking: {fixacoes.length} fixações, {sacadas.length} sacadas)
+                                </span>
+                            )}
+                        </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
                                 <div className="text-xl font-bold text-blue-800">{pontuacao}</div>
@@ -493,13 +876,24 @@ export default function VisualFocusPage() {
                     <div className="bg-white rounded-xl shadow-lg p-8 text-center">
                         <div className="text-6xl mb-4">👁️</div>
                         <h2 className="text-2xl font-bold text-gray-800 mb-4">Foco Visual</h2>
-                        <p className="text-gray-600 mb-6">Nível {nivel}: {niveis[nivel as keyof typeof niveis].nome}</p>
+                        <p className="text-gray-600 mb-2">Nível {nivel}: {niveis[nivel as keyof typeof niveis].nome}</p>
+                        {modoControle === 'eye-tracking' && (
+                            <p className="text-green-600 font-medium mb-4">
+                                ✅ Eye-Tracking Calibrado e Pronto!
+                            </p>
+                        )}
                         
                         <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">
                             <h3 className="font-semibold mb-2">🧠 Base Científica:</h3>
                             <p className="text-sm text-gray-600">
                                 Este exercício treina atenção visual sustentada e rastreamento de objetos, 
                                 fundamentais para concentração e coordenação visomotora em pessoas com TDAH.
+                                {modoControle === 'eye-tracking' && (
+                                    <span className="block mt-2 text-green-600">
+                                        Com eye-tracking, medimos fixações oculares, sacadas e padrões de varredura visual 
+                                        para análise científica precisa.
+                                    </span>
+                                )}
                             </p>
                         </div>
                         
@@ -548,7 +942,7 @@ export default function VisualFocusPage() {
                                 onMouseMove={handleMouseMove}
                                 onTouchMove={handleMouseMove}
                                 onTouchStart={handleMouseMove}
-                                className="game-area-ios-fix relative bg-gradient-to-br from-blue-50 to-green-50 cursor-none"
+                                className="relative bg-gradient-to-br from-blue-50 to-green-50 cursor-none"
                                 style={{ 
                                     height: '500px', 
                                     width: '100%'
@@ -576,19 +970,39 @@ export default function VisualFocusPage() {
                                     />
                                 ))}
 
-                                <div
-                                    className="absolute w-4 h-4 bg-red-500 rounded-full border-2 border-white pointer-events-none"
-                                    style={{ 
-                                        left: `${posicaoMouse.x}%`, 
-                                        top: `${posicaoMouse.y}%`,
-                                        transform: 'translate(-50%, -50%)'
-                                    }}
-                                />
+                                {modoControle !== 'eye-tracking' && (
+                                    <div
+                                        className="absolute w-4 h-4 bg-red-500 rounded-full border-2 border-white pointer-events-none"
+                                        style={{ 
+                                            left: `${posicaoMouse.x}%`, 
+                                            top: `${posicaoMouse.y}%`,
+                                            transform: 'translate(-50%, -50%)'
+                                        }}
+                                    />
+                                )}
+
+                                {modoControle === 'eye-tracking' && (
+                                    <div
+                                        className="absolute w-8 h-8 rounded-full border-4 border-red-500 pointer-events-none"
+                                        style={{ 
+                                            left: `${posicaoMouse.x}%`, 
+                                            top: `${posicaoMouse.y}%`,
+                                            transform: 'translate(-50%, -50%)',
+                                            backgroundColor: 'rgba(239, 68, 68, 0.2)'
+                                        }}
+                                    />
+                                )}
 
                                 <div className="absolute top-6 left-1/2 transform -translate-x-1/2 text-center">
                                     <div className="bg-black bg-opacity-70 text-white px-6 py-3 rounded-lg">
-                                        <div className="font-medium">🟢 Siga o alvo verde com o cursor!</div>
-                                        <div className="text-sm opacity-90">Proximidade: {proximidadeAtual}% | Tempo restante: {tempoRestante}s</div>
+                                        <div className="font-medium">
+                                            {modoControle === 'eye-tracking' 
+                                                ? '👁️ Olhe para o alvo verde!' 
+                                                : '🟢 Siga o alvo verde com o cursor!'}
+                                        </div>
+                                        <div className="text-sm opacity-90">
+                                            Proximidade: {proximidadeAtual}% | Tempo restante: {tempoRestante}s
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -614,6 +1028,24 @@ export default function VisualFocusPage() {
                             {percentualFoco >= 80 && proximidadeMedia >= 60 ? 'Foco Excepcional!' : 
                              percentualFoco >= 70 && proximidadeMedia >= 50 ? 'Muito Bem!' : 'Continue Praticando!'}
                         </h3>
+                        
+                        {modoControle === 'eye-tracking' && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                                <h4 className="font-semibold text-green-800 mb-2">
+                                    🧠 Análise Eye-Tracking
+                                </h4>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span className="text-gray-600">Fixações:</span>
+                                        <span className="font-bold text-green-800 ml-2">{fixacoes.length}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600">Sacadas:</span>
+                                        <span className="font-bold text-green-800 ml-2">{sacadas.length}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         
                         <div className="grid grid-cols-2 gap-6 max-w-lg mx-auto mb-8">
                             <div className="bg-gray-50 rounded-lg p-4">
