@@ -2,9 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Save } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '../utils/supabaseClient'
 
 export default function DividedAttention() {
+  const router = useRouter()
+  const supabase = createClient()
+  
   // Estados principais
   const [nivel, setNivel] = useState(1)
   const [pontuacao, setPontuacao] = useState(0)
@@ -30,6 +35,15 @@ export default function DividedAttention() {
   const [objetosNaTela, setObjetosNaTela] = useState<Array<{id: number, x: number, y: number, tipo: 'alvo' | 'distrator', cor: string}>>([])
   const [ultimoTom, setUltimoTom] = useState<'alvo' | 'distrator' | null>(null)
   const [aguardandoTom, setAguardandoTom] = useState(false)
+  
+  // Estados para salvamento e métricas científicas
+  const [salvando, setSalvando] = useState(false)
+  const [inicioSessao] = useState(new Date())
+  const [temposReacaoVisuais, setTemposReacaoVisuais] = useState<number[]>([])
+  const [temposReacaoAuditivos, setTemposReacaoAuditivos] = useState<number[]>([])
+  const [historicoAcoes, setHistoricoAcoes] = useState<any[]>([])
+  const [timestampUltimoObjeto, setTimestampUltimoObjeto] = useState<number | null>(null)
+  const [timestampUltimoTom, setTimestampUltimoTom] = useState<number | null>(null)
   
   // Refs para controle
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -289,12 +303,24 @@ export default function DividedAttention() {
     const sucesso = await reproduzirTom(frequencia, 600)
     
     if (sucesso) {
+      const timestamp = Date.now()
+      setTimestampUltimoTom(timestamp)
       setUltimoTom(tipo)
       setAguardandoTom(true)
+      
+      // Registrar no histórico
+      setHistoricoAcoes(prev => [...prev, {
+        timestamp: new Date(),
+        tipo: 'tom_reproduzido',
+        categoria: tipo,
+        frequencia,
+        nivel: nivelRef.current
+      }])
       
       setTimeout(() => {
         setUltimoTom(null)
         setAguardandoTom(false)
+        setTimestampUltimoTom(null)
       }, 1500)
     }
   }, [reproduzirTom])
@@ -305,6 +331,9 @@ export default function DividedAttention() {
 
     const config = niveis[nivelRef.current as keyof typeof niveis]
     const novosObjetos: Array<{id: number, x: number, y: number, tipo: 'alvo' | 'distrator', cor: string}> = []
+    const timestamp = Date.now()
+    
+    setTimestampUltimoObjeto(timestamp)
     
     for (let i = 0; i < config.quantidadeObjetos; i++) {
       const isAlvo = Math.random() < config.probObjetoAlvo
@@ -332,12 +361,22 @@ export default function DividedAttention() {
       })
     }
     
+    // Registrar no histórico
+    setHistoricoAcoes(prev => [...prev, {
+      timestamp: new Date(),
+      tipo: 'objetos_gerados',
+      quantidade_alvos: novosObjetos.filter(obj => obj.tipo === 'alvo').length,
+      quantidade_total: novosObjetos.length,
+      nivel: nivelRef.current
+    }])
+    
     setObjetosNaTela(novosObjetos)
     
     // Remover objetos após um tempo
     setTimeout(() => {
       if (ativoRef.current) {
         setObjetosNaTela([])
+        setTimestampUltimoObjeto(null)
       }
     }, config.velocidadeObjetos - 500)
     
@@ -367,16 +406,30 @@ export default function DividedAttention() {
 
   // Clique em objeto
   const clicarObjeto = (objeto: {id: number, x: number, y: number, tipo: 'alvo' | 'distrator', cor: string}) => {
+    const tempoReacao = timestampUltimoObjeto ? Date.now() - timestampUltimoObjeto : 0
+    
     if (objeto.tipo === 'alvo') {
       setObjetosContados(prev => prev + 1)
       setObjetosCorretos(prev => prev + 1)
       setPontuacao(prev => prev + 15 * nivel)
+      setTemposReacaoVisuais(prev => [...prev, tempoReacao])
       console.log('✅ [OBJETO] Objeto alvo clicado!')
     } else {
       setObjetosContados(prev => prev + 1)
       setPontuacao(prev => Math.max(0, prev - 8))
       console.log('❌ [OBJETO] Objeto distrator clicado!')
     }
+    
+    // Registrar no histórico
+    setHistoricoAcoes(prev => [...prev, {
+      timestamp: new Date(),
+      tipo: 'objeto_clicado',
+      categoria: objeto.tipo,
+      tempo_reacao: tempoReacao,
+      correto: objeto.tipo === 'alvo',
+      pontuacao_mudanca: objeto.tipo === 'alvo' ? 15 * nivel : -8,
+      nivel: nivel
+    }])
     
     // Remover objeto clicado
     setObjetosNaTela(prev => prev.filter(obj => obj.id !== objeto.id))
@@ -386,10 +439,13 @@ export default function DividedAttention() {
   const identificarTom = () => {
     if (!aguardandoTom || !ultimoTom) return
     
+    const tempoReacao = timestampUltimoTom ? Date.now() - timestampUltimoTom : 0
+    
     if (ultimoTom === 'alvo') {
       setTonsIdentificados(prev => prev + 1)
       setTonsCorretos(prev => prev + 1)
       setPontuacao(prev => prev + 10 * nivel)
+      setTemposReacaoAuditivos(prev => [...prev, tempoReacao])
       console.log('✅ [TOM] Tom alvo identificado!')
     } else {
       setTonsIdentificados(prev => prev + 1)
@@ -397,8 +453,20 @@ export default function DividedAttention() {
       console.log('❌ [TOM] Tom distrator identificado!')
     }
     
+    // Registrar no histórico
+    setHistoricoAcoes(prev => [...prev, {
+      timestamp: new Date(),
+      tipo: 'tom_identificado',
+      categoria: ultimoTom,
+      tempo_reacao: tempoReacao,
+      correto: ultimoTom === 'alvo',
+      pontuacao_mudanca: ultimoTom === 'alvo' ? 10 * nivel : -5,
+      nivel: nivel
+    }])
+    
     setUltimoTom(null)
     setAguardandoTom(false)
+    setTimestampUltimoTom(null)
   }
 
   // Iniciar exercício
@@ -423,6 +491,13 @@ export default function DividedAttention() {
     setObjetosNaTela([])
     setUltimoTom(null)
     setAguardandoTom(false)
+    
+    // Reset métricas científicas
+    setTemposReacaoVisuais([])
+    setTemposReacaoAuditivos([])
+    setHistoricoAcoes([])
+    setTimestampUltimoObjeto(null)
+    setTimestampUltimoTom(null)
 
     if (audioContextRef.current?.state === 'suspended') {
       audioContextRef.current.resume()
@@ -438,6 +513,8 @@ export default function DividedAttention() {
     setObjetosNaTela([])
     setUltimoTom(null)
     setAguardandoTom(false)
+    setTimestampUltimoObjeto(null)
+    setTimestampUltimoTom(null)
     console.log('🏁 [JOGO] Exercício finalizado!')
   }
 
@@ -458,6 +535,129 @@ export default function DividedAttention() {
     setObjetosNaTela([])
     setUltimoTom(null)
     setAguardandoTom(false)
+    setTimestampUltimoObjeto(null)
+    setTimestampUltimoTom(null)
+  }
+
+  // FUNÇÃO DE SALVAMENTO - IGUAL AO CAA
+  const handleSaveSession = async () => {
+    if (!jogoIniciado) {
+      alert('Nenhuma sessão foi iniciada para salvar.')
+      return
+    }
+    
+    setSalvando(true)
+    
+    const fimSessao = new Date()
+    const duracaoFinalSegundos = Math.round((fimSessao.getTime() - inicioSessao.getTime()) / 1000)
+    
+    // Cálculos de métricas científicas
+    const tempoMedioReacaoVisual = temposReacaoVisuais.length > 0 ? 
+      temposReacaoVisuais.reduce((a, b) => a + b, 0) / temposReacaoVisuais.length : 0
+    
+    const tempoMedioReacaoAuditivo = temposReacaoAuditivos.length > 0 ? 
+      temposReacaoAuditivos.reduce((a, b) => a + b, 0) / temposReacaoAuditivos.length : 0
+    
+    const variabilidadeVisual = temposReacaoVisuais.length > 1 ? 
+      Math.sqrt(temposReacaoVisuais.reduce((acc, val) => acc + Math.pow(val - tempoMedioReacaoVisual, 2), 0) / (temposReacaoVisuais.length - 1)) : 0
+    
+    const variabilidadeAuditiva = temposReacaoAuditivos.length > 1 ? 
+      Math.sqrt(temposReacaoAuditivos.reduce((acc, val) => acc + Math.pow(val - tempoMedioReacaoAuditivo, 2), 0) / (temposReacaoAuditivos.length - 1)) : 0
+    
+    const custoDualTask = ((totalObjetosAlvo + totalTonsAlvo) > 0) ? 
+      (((totalObjetosAlvo - objetosCorretos) + (totalTonsAlvo - tonsCorretos)) / (totalObjetosAlvo + totalTonsAlvo)) * 100 : 0
+    
+    try {
+      // Obter o usuário atual - EXATAMENTE COMO NO CAA
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError || !user) {
+        console.error('Erro ao obter usuário:', userError)
+        alert('Erro: Sessão expirada. Por favor, faça login novamente.')
+        router.push('/login')
+        return
+      }
+      
+      // Salvar na tabela sessoes
+      const { data, error } = await supabase
+        .from('sessoes')
+        .insert([{
+          usuario_id: user.id,
+          atividade_nome: 'Atenção_Dividida',
+          pontuacao_final: pontuacao,
+          taxa_acerto: precisaoGeral,
+          tempo_reacao_medio: Math.round((tempoMedioReacaoVisual + tempoMedioReacaoAuditivo) / 2),
+          data_fim: fimSessao.toISOString(),
+          observacoes: {
+            // Métricas por tarefa
+            precisao_visual: precisaoObjetos,
+            precisao_auditiva: precisaoTons,
+            precisao_geral: precisaoGeral,
+            
+            // Tempos de reação detalhados
+            tempo_reacao_visual_ms: Math.round(tempoMedioReacaoVisual),
+            tempo_reacao_auditivo_ms: Math.round(tempoMedioReacaoAuditivo),
+            variabilidade_visual_ms: Math.round(variabilidadeVisual),
+            variabilidade_auditiva_ms: Math.round(variabilidadeAuditiva),
+            
+            // Dual-task metrics
+            custo_dual_task_pct: Math.round(custoDualTask * 100) / 100,
+            total_acoes_visuais: objetosContados,
+            total_acoes_auditivas: tonsIdentificados,
+            
+            // Progressão e contexto
+            nivel_atingido: nivel,
+            nivel_configuracao: niveis[nivel as keyof typeof niveis],
+            duracao_total_segundos: duracaoFinalSegundos,
+            
+            // Contadores detalhados
+            objetos_corretos: objetosCorretos,
+            objetos_total_alvo: totalObjetosAlvo,
+            tons_corretos: tonsCorretos,
+            tons_total_alvo: totalTonsAlvo,
+            
+            // Sequência temporal completa
+            historico_completo: historicoAcoes,
+            
+            // Métricas de consistência
+            consistencia_visual: temposReacaoVisuais.length > 0 ? 
+              (variabilidadeVisual / tempoMedioReacaoVisual) : 0,
+            consistencia_auditiva: temposReacaoAuditivos.length > 0 ? 
+              (variabilidadeAuditiva / tempoMedioReacaoAuditivo) : 0,
+              
+            // Estratégia de priorizacao
+            proporcao_visual_auditiva: tonsIdentificados > 0 ? 
+              objetosContados / tonsIdentificados : objetosContados,
+              
+            // Timestamp da sessão
+            timestamp_inicio: inicioSessao.toISOString(),
+            timestamp_fim: fimSessao.toISOString()
+          }
+        }])
+
+      if (error) {
+        console.error('Erro ao salvar:', error)
+        alert(`Erro ao salvar: ${error.message}`)
+      } else {
+        alert(`Sessão de Atenção Dividida salva com sucesso!
+        
+📊 Resumo da Performance:
+• Precisão Geral: ${precisaoGeral}%
+• Precisão Visual: ${precisaoObjetos}%  
+• Precisão Auditiva: ${precisaoTons}%
+• Tempo Reação Médio: ${Math.round((tempoMedioReacaoVisual + tempoMedioReacaoAuditivo) / 2)}ms
+• Custo Dual-Task: ${Math.round(custoDualTask * 100) / 100}%
+• Nível Atingido: ${nivel}
+• Duração: ${Math.round(duracaoFinalSegundos / 60)}min${duracaoFinalSegundos % 60}s`)
+        
+        router.push('/profileselection')
+      }
+    } catch (error: any) {
+      console.error('Erro inesperado:', error)
+      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`)
+    } finally {
+      setSalvando(false)
+    }
   }
 
   // Cálculos de precisão
@@ -485,9 +685,22 @@ export default function DividedAttention() {
               <div className="text-sm text-gray-600">Multitarefa Controlada</div>
             </div>
             
-            <div className="text-right">
-              <div className="text-lg font-semibold text-blue-600">Nível {nivel}</div>
-              <div className="text-sm text-gray-600">{niveis[nivel as keyof typeof niveis].nome}</div>
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <div className="text-lg font-semibold text-blue-600">Nível {nivel}</div>
+                <div className="text-sm text-gray-600">{niveis[nivel as keyof typeof niveis].nome}</div>
+              </div>
+              
+              {jogoIniciado && (
+                <button 
+                  onClick={handleSaveSession}
+                  disabled={salvando}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
+                >
+                  <Save size={20} />
+                  <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -539,18 +752,6 @@ export default function DividedAttention() {
                   <p className="text-gray-700"><strong>Nível 4:</strong> Círculos a cada 1.3s, tons a cada 2.5s (2.25min)</p>
                   <p className="text-gray-700"><strong>Nível 5:</strong> Círculos a cada 1s, tons a cada 2s (2.5min)</p>
                 </div>
-              </div>
-
-              {/* Final */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center space-x-2 mb-3">
-                  <span className="text-2xl">🏆</span>
-                  <h2 className="text-lg font-bold text-gray-800">Final:</h2>
-                </div>
-                <p className="text-gray-700 border-l-4 border-green-400 pl-4">
-                  Complete o Nível 5 com 65% de precisão geral para dominar a atenção dividida. 
-                  Desenvolva habilidades essenciais de multitarefa controlada para o dia a dia.
-                </p>
               </div>
 
               {/* Base Científica */}
