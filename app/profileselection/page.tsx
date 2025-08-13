@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
-import { useTherapeuticObjectives, TherapeuticObjective, UserProfile, UserCondition } from '../contexts/TherapeuticObjectives';
+import { useTherapeuticObjectives, TherapeuticObjective, UserProfile, UserCondition } from '@/contexts/TherapeuticObjectives';
 
 // =========================================
 // TIPOS E INTERFACES
