@@ -8,10 +8,10 @@ type AppContextType = {
   backUrl: string
 }
 
-// ✅ Cria o context (ainda não está sendo usado)
+// ✅ Cria o context
 const AppContext = createContext<AppContextType | null>(null)
 
-// ✅ Provider que vai "envolver" componentes no futuro
+// ✅ Provider que vai "envolver" componentes
 export function AppProvider({ 
   children, 
   section, 
@@ -21,7 +21,8 @@ export function AppProvider({
   section: 'TEA' | 'TDAH' | 'COMBINED'
   userProfile: any 
 }) {
-  const backUrl = `/${section.toLowerCase()}`
+  // ✅ CORREÇÃO: COMBINED volta para home
+  const backUrl = section === 'COMBINED' ? '/' : `/${section.toLowerCase()}`
   
   return (
     <AppContext.Provider value={{ 
@@ -34,7 +35,7 @@ export function AppProvider({
   )
 }
 
-// ✅ Hook para usar o context nos componentes
+// ✅ Hook para usar o context
 export const useAppContext = () => {
   const context = useContext(AppContext)
   if (!context) {
