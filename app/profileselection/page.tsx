@@ -1,13 +1,11 @@
+// Versão com debug melhorado para identificar erro Supabase
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
 
-// =========================================
-// TIPOS E INTERFACES CIENTÍFICAS
-// =========================================
-
+// [Todos os tipos anteriores permanecem iguais]
 type ProfileType = 'child' | 'parent' | 'professional';
 type Condition = 'TEA' | 'TDAH' | 'TEA_TDAH' | 'OTHER';
 type Avatar = 'star' | 'rocket' | 'unicorn' | 'dragon' | 'robot' | 'cat' | 'dog' | 'lion';
@@ -21,9 +19,6 @@ interface TherapeuticObjective {
   evidenceLevel: 'A' | 'B' | 'C';
 }
 
-// =========================================
-// 8 OBJETIVOS BASEADOS EM EVIDÊNCIAS CIENTÍFICAS
-// =========================================
 const THERAPEUTIC_OBJECTIVES: TherapeuticObjective[] = [
   {
     id: 'regulacao_emocional',
@@ -109,6 +104,7 @@ export default function ProfileSelection() {
   // Estados para as 5 etapas
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState('');
   
   // Dados do perfil
   const [profileType, setProfileType] = useState<ProfileType | null>(null);
@@ -117,16 +113,57 @@ export default function ProfileSelection() {
   const [selectedObjectives, setSelectedObjectives] = useState<string[]>([]);
   const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
 
-  // Verificação de autenticação
+  // Verificação de autenticação e perfil existente
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/login');
+    const checkAuthAndProfile = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          router.push('/login');
+          return;
+        }
+
+        // Verificar se já existe perfil completo
+        const { data: existingProfile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Erro ao buscar perfil:', profileError);
+          setDebugInfo(`Erro ao verificar perfil: ${profileError.message}`);
+        }
+
+        // Se já tem perfil completo, redirecionar
+        if (existingProfile && existingProfile.therapeutic_objectives && existingProfile.avatar) {
+          const redirectTo = getAppRoute(existingProfile.primary_condition);
+          router.push(redirectTo);
+        }
+
+      } catch (error) {
+        console.error('Erro na verificação:', error);
+        setDebugInfo(`Erro de conexão: ${error}`);
       }
     };
-    checkAuth();
+
+    checkAuthAndProfile();
   }, [router, supabase.auth]);
+
+  // Função para determinar rota baseada na condição
+  const getAppRoute = (condition: string) => {
+    switch (condition) {
+      case 'TEA':
+        return '/tea';
+      case 'TDAH':
+        return '/tdah';
+      case 'TEA_TDAH':
+        return '/combined';
+      default:
+        return '/tea';
+    }
+  };
 
   // Função para avançar etapas
   const nextStep = () => {
@@ -151,9 +188,10 @@ export default function ProfileSelection() {
     );
   };
 
-  // Finalizar cadastro
+  // Finalizar cadastro com debug melhorado
   const handleFinish = async () => {
     setIsLoading(true);
+    setDebugInfo('Iniciando salvamento...');
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -162,7 +200,22 @@ export default function ProfileSelection() {
         throw new Error('Usuário não autenticado');
       }
 
-      // Dados científicos para salvar
+      setDebugInfo('Usuário autenticado, preparando dados...');
+
+      // Verificar se a tabela existe
+      const { data: testData, error: testError } = await supabase
+        .from('user_profiles')
+        .select('count')
+        .limit(1);
+
+      if (testError) {
+        setDebugInfo(`Erro na tabela user_profiles: ${testError.message}`);
+        throw new Error(`Tabela não existe ou sem permissão: ${testError.message}`);
+      }
+
+      setDebugInfo('Tabela verificada, criando perfil...');
+
+      // Dados científicos para salvar (estrutura simplificada primeiro)
       const profileData = {
         user_id: session.user.id,
         profile_type: profileType,
@@ -171,55 +224,81 @@ export default function ProfileSelection() {
         therapeutic_objectives: selectedObjectives,
         avatar: selectedAvatar,
         created_at: new Date().toISOString(),
-        scientific_evidence_version: '2024.08.13',
-        evidence_based_recommendations: getRecommendations(condition!, selectedObjectives)
+        updated_at: new Date().toISOString()
       };
 
-      // Salvar no Supabase
-      const { error } = await supabase
-        .from('user_profiles')
-        .upsert(profileData);
+      setDebugInfo('Salvando no Supabase...');
 
-      if (error) throw error;
+      // Tentar inserir primeiro (se não existir)
+      const { data: insertData, error: insertError } = await supabase
+        .from('user_profiles')
+        .insert(profileData);
+
+      if (insertError) {
+        // Se der erro de duplicata, tentar update
+        if (insertError.code === '23505') {
+          setDebugInfo('Perfil existe, atualizando...');
+          
+          const { data: updateData, error: updateError } = await supabase
+            .from('user_profiles')
+            .update({
+              profile_type: profileType,
+              name: userName,
+              primary_condition: condition,
+              therapeutic_objectives: selectedObjectives,
+              avatar: selectedAvatar,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', session.user.id);
+
+          if (updateError) {
+            throw updateError;
+          }
+        } else {
+          throw insertError;
+        }
+      }
+
+      setDebugInfo('Perfil salvo com sucesso! Redirecionando...');
 
       // Redirecionar baseado na condição (compatibilidade)
-      switch (condition) {
-        case 'TEA':
-          router.push('/tea');
-          break;
-        case 'TDAH':
-          router.push('/tdah');
-          break;
-        case 'TEA_TDAH':
-          router.push('/combined');
-          break;
-        default:
-          router.push('/');
+      const redirectTo = getAppRoute(condition!);
+      
+      setTimeout(() => {
+        router.push(redirectTo);
+      }, 1000);
+      
+    } catch (error: any) {
+      console.error('Erro detalhado:', error);
+      setDebugInfo(`ERRO: ${error.message}`);
+      
+      // Se for erro de tabela não existente, criar usuário básico
+      if (error.message.includes('relation "user_profiles" does not exist')) {
+        setDebugInfo('Tabela não existe. Criando perfil básico...');
+        
+        // Salvar em auth metadata como fallback
+        const { error: metaError } = await supabase.auth.updateUser({
+          data: {
+            profile_type: profileType,
+            name: userName,
+            primary_condition: condition,
+            therapeutic_objectives: selectedObjectives,
+            avatar: selectedAvatar
+          }
+        });
+
+        if (!metaError) {
+          setDebugInfo('Perfil salvo em metadata! Redirecionando...');
+          const redirectTo = getAppRoute(condition!);
+          setTimeout(() => router.push(redirectTo), 1000);
+          return;
+        }
       }
       
-    } catch (error) {
-      console.error('Erro ao salvar perfil:', error);
-      alert('Erro ao salvar perfil. Tente novamente.');
+      alert(`Erro ao salvar perfil: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Recomendações baseadas em evidências científicas
-  const getRecommendations = (condition: Condition, objectives: string[]) => {
-    const recommendations: string[] = [];
-    
-    if (condition === 'TEA') {
-      recommendations.push('comunicacao', 'habilidades_sociais', 'rotina_diaria');
-    }
-    if (condition === 'TDAH') {
-      recommendations.push('foco_atencao', 'regulacao_emocional', 'gestao_ansiedade');
-    }
-    if (condition === 'TEA_TDAH') {
-      recommendations.push('regulacao_emocional', 'comunicacao', 'foco_atencao');
-    }
-    
-    return recommendations;
   };
 
   // Logout
@@ -231,6 +310,13 @@ export default function ProfileSelection() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+        {/* Debug Info */}
+        {debugInfo && (
+          <div className="mb-4 p-2 bg-yellow-100 rounded text-xs text-yellow-800">
+            Debug: {debugInfo}
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -344,6 +430,7 @@ export default function ProfileSelection() {
           </div>
         )}
 
+        {/* [ETAPAS 2-4 permanecem iguais ao código anterior] */}
         {/* ETAPA 2: VAMOS NOS CONHECER! */}
         {currentStep === 2 && (
           <div className="space-y-6">
