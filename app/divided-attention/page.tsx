@@ -922,13 +922,11 @@ export default function DividedAttention() {
                     />
                   ))}
                   
-                  {/* Instruções centrais */}
-                  <div className="absolute top-6 left-1/2 transform -translate-x-1/2 text-center">
-                    <div className="bg-black bg-opacity-80 text-white px-6 py-3 rounded-lg">
-                      <div className="font-bold">🟢 Clique círculos VERDES | 🎵 Ouça tons AGUDOS</div>
-                      <div className="text-sm opacity-90">
-                        Duas tarefas simultâneas - Tempo: {tempoRestante}s
-                      </div>
+                  {/* Instruções no canto superior direito - AJUSTE APLICADO */}
+                  <div className="absolute top-4 right-4">
+                    <div className="bg-black bg-opacity-90 text-white px-4 py-2 rounded-lg text-sm shadow-lg">
+                      <div className="font-bold text-xs">🟢 VERDES | 🎵 AGUDOS</div>
+                      <div className="text-xs opacity-90">Tempo: {tempoRestante}s</div>
                     </div>
                   </div>
                 </div>
