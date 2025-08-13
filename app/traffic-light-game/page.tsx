@@ -100,7 +100,6 @@ export default function JogoSemaforo() {
   // 🎯 DETECTOR DEFINITIVO DE ORIGEM VIA URL
   const [origemSecao, setOrigemSecao] = useState<'TEA' | 'TDAH' | 'TEA_TDAH'>('TEA')
   const [voltarPara, setVoltarPara] = useState('/tea')
-  const [isClient, setIsClient] = useState(false)
   
   // Estados do jogo
   const [currentScenario, setCurrentScenario] = useState(0)
@@ -124,67 +123,24 @@ export default function JogoSemaforo() {
   
   const filteredScenarios = scenarios.filter(s => s.difficulty === currentDifficulty)
 
-  // Loading até o cliente estar pronto - evita problemas de SSR
-  if (!isClient) {
-    return (
-      <div style={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0fdf4 100%)'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ 
-            width: '48px', 
-            height: '48px', 
-            background: 'linear-gradient(90deg, #ef4444, #eab308, #22c55e)',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '24px',
-            margin: '0 auto 16px'
-          }}>
-            🚦
-          </div>
-          <p style={{ color: '#6b7280', fontSize: '16px', margin: 0 }}>Carregando Jogo do Semáforo...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // 🎯 DETECTAR ORIGEM DEFINITIVAMENTE VIA URL - SAFE FOR SSR
+  // 🎯 DETECTAR ORIGEM SIMPLES E DIRETO
   useEffect(() => {
-    // Marcar como cliente para evitar problemas de hidratação
-    setIsClient(true)
-    
-    // Só executar no cliente para evitar erro de prerendering
+    // Só executar no cliente
     if (typeof window === 'undefined') return
     
     const urlParams = new URLSearchParams(window.location.search)
     const origem = urlParams.get('origem') || 'tea'
     
-    let origemFinal: 'TEA' | 'TDAH' | 'TEA_TDAH' = 'TEA'
-    let destinoFinal = '/tea'
-    
-    switch(origem.toLowerCase()) {
-      case 'tdah':
-        origemFinal = 'TDAH'
-        destinoFinal = '/tdah'
-        break
-      case 'combined':
-      case 'tea_tdah':
-        origemFinal = 'TEA_TDAH'
-        destinoFinal = '/combined'
-        break
-      default:
-        origemFinal = 'TEA'
-        destinoFinal = '/tea'
+    if (origem.toLowerCase() === 'combined' || origem.toLowerCase() === 'tea_tdah') {
+      setOrigemSecao('TEA_TDAH')
+      setVoltarPara('/combined')
+    } else if (origem.toLowerCase() === 'tdah') {
+      setOrigemSecao('TDAH')
+      setVoltarPara('/tdah')
+    } else {
+      setOrigemSecao('TEA')
+      setVoltarPara('/tea')
     }
-    
-    setOrigemSecao(origemFinal)
-    setVoltarPara(destinoFinal)
   }, [])
 
   // Timer do jogo
