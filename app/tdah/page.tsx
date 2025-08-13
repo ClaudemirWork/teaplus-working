@@ -19,7 +19,7 @@ export default function TdahDashboard() {
         { name: 'Stop-Go', path: '/stop-go', description: 'Controle inibitório e flexibilidade' },
         { name: 'Concentração Auditiva', path: '/auditory-focus', description: 'Atenção a estímulos sonoros' },
         { name: 'Atenção Dividida', path: '/divided-attention', description: 'Multitarefa controlada' },
-        { name: 'Memória Visual Sequencial', path: '/visual-sequential-memory', description: 'Memorização de sequências visuais' }
+        { name: 'Memória Visual Sequencial', path: '/visual-memory-sequence', description: 'Memorização de sequências visuais' }
       ]
     },
     working_memory: {
