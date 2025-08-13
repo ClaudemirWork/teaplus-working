@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { ChevronLeft, Save } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '../utils/supabaseClient'
 
 interface Scenario {
   id: number
@@ -91,6 +94,14 @@ const scenarios: Scenario[] = [
 ]
 
 export default function JogoSemaforo() {
+  const router = useRouter()
+  const supabase = createClient()
+  
+  // 🕵️ DETECTOR DE ORIGEM AUTOMÁTICO
+  const [origemSecao, setOrigemSecao] = useState<'TEA' | 'TDAH' | 'TEA_TDAH'>('TEA')
+  const [voltarPara, setVoltarPara] = useState('/tea')
+  
+  // Estados do jogo original
   const [currentScenario, setCurrentScenario] = useState(0)
   const [selectedOption, setSelectedOption] = useState<'red' | 'yellow' | 'green' | null>(null)
   const [showResult, setShowResult] = useState(false)
@@ -99,26 +110,101 @@ export default function JogoSemaforo() {
   const [timeLeft, setTimeLeft] = useState(30)
   const [gameCompleted, setGameCompleted] = useState(false)
   const [currentDifficulty, setCurrentDifficulty] = useState<'iniciante' | 'intermediário' | 'avançado'>('iniciante')
-
+  
+  // 🔬 ESTADOS PARA MÉTRICAS CIENTÍFICAS
+  const [inicioSessao] = useState(new Date())
+  const [salvando, setSalvando] = useState(false)
+  const [sequenciaTemporal, setSequenciaTemporal] = useState<any[]>([])
+  const [temposReacao, setTemposReacao] = useState<number[]>([])
+  const [inicioResposta, setInicioResposta] = useState<Date | null>(null)
+  const [tiposResposta, setTiposResposta] = useState<('correto' | 'incorreto' | 'timeout')[]>([])
+  const [respostasImpulsivas, setRespostasImpulsivas] = useState(0) // < 3 segundos
+  const [pausasReflexivas, setPausasReflexivas] = useState(0) // > 10 segundos
+  
   const filteredScenarios = scenarios.filter(s => s.difficulty === currentDifficulty)
 
+  // 🕵️ DETECTAR ORIGEM NA INICIALIZAÇÃO
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const referrer = document.referrer
+      let origem: 'TEA' | 'TDAH' | 'TEA_TDAH' = 'TEA'
+      let destino = '/tea'
+      
+      if (referrer.includes('/combined')) {
+        origem = 'TEA_TDAH'
+        destino = '/combined'
+      } else if (referrer.includes('/tdah')) {
+        origem = 'TDAH'
+        destino = '/tdah'
+      }
+      
+      setOrigemSecao(origem)
+      setVoltarPara(destino)
+    }
+  }, [])
+
+  // Timer do jogo
   useEffect(() => {
     let timer: NodeJS.Timeout
     if (gameStarted && timeLeft > 0 && !showResult && !gameCompleted) {
       timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
-    } else if (timeLeft === 0 && !showResult) {
-      handleAnswer(null)
+    } else if (timeLeft === 0 && !showResult && inicioResposta) {
+      handleAnswer(null, 'timeout')
     }
     return () => clearTimeout(timer)
-  }, [timeLeft, gameStarted, showResult, gameCompleted])
+  }, [timeLeft, gameStarted, showResult, gameCompleted, inicioResposta])
 
-  const handleAnswer = (option: 'red' | 'yellow' | 'green' | null) => {
+  // Iniciar contagem de tempo de reação quando cenário aparece
+  useEffect(() => {
+    if (gameStarted && !showResult && !gameCompleted) {
+      setInicioResposta(new Date())
+    }
+  }, [currentScenario, gameStarted, showResult, gameCompleted])
+
+  const handleAnswer = (option: 'red' | 'yellow' | 'green' | null, tipoResposta: 'manual' | 'timeout' = 'manual') => {
+    if (!inicioResposta) return
+    
+    const fimResposta = new Date()
+    const tempoReacao = (fimResposta.getTime() - inicioResposta.getTime()) / 1000
+    
     setSelectedOption(option)
     setShowResult(true)
     
-    if (option === filteredScenarios[currentScenario]?.correctAnswer) {
+    // 🔬 CALCULAR MÉTRICAS CIENTÍFICAS
+    const cenarioAtual = filteredScenarios[currentScenario]
+    const isCorrect = option === cenarioAtual?.correctAnswer
+    const isTimeout = tipoResposta === 'timeout'
+    
+    // Classificar tipo de resposta
+    let classificacaoResposta: 'correto' | 'incorreto' | 'timeout' = 'incorreto'
+    if (isTimeout) {
+      classificacaoResposta = 'timeout'
+    } else if (isCorrect) {
+      classificacaoResposta = 'correto'
       setScore(score + 1)
     }
+    
+    // Detectar padrões comportamentais
+    if (tempoReacao < 3) {
+      setRespostasImpulsivas(prev => prev + 1)
+    } else if (tempoReacao > 10) {
+      setPausasReflexivas(prev => prev + 1)
+    }
+    
+    // Registrar dados
+    setTemposReacao(prev => [...prev, tempoReacao])
+    setTiposResposta(prev => [...prev, classificacaoResposta])
+    setSequenciaTemporal(prev => [...prev, {
+      timestamp: fimResposta,
+      cenario_id: cenarioAtual?.id,
+      opcao_escolhida: option,
+      opcao_correta: cenarioAtual?.correctAnswer,
+      tempo_reacao: tempoReacao,
+      dificuldade: currentDifficulty,
+      correto: isCorrect,
+      timeout: isTimeout,
+      tipo_comportamental: tempoReacao < 3 ? 'impulsivo' : tempoReacao > 10 ? 'reflexivo' : 'normal'
+    }])
   }
 
   const nextScenario = () => {
@@ -140,6 +226,7 @@ export default function JogoSemaforo() {
     setGameStarted(false)
     setTimeLeft(30)
     setGameCompleted(false)
+    // Não resetar métricas científicas - manter histórico completo
   }
 
   const startGame = () => {
@@ -153,6 +240,113 @@ export default function JogoSemaforo() {
     if (percentage >= 60) return "👏 Muito bom! Continue praticando o Stop-Think-Do!"
     if (percentage >= 40) return "📚 Bom início! Pratique mais as técnicas do semáforo!"
     return "💪 Continue tentando! O autocontrole melhora com a prática!"
+  }
+
+  // 💾 FUNÇÃO DE SALVAMENTO CIENTÍFICO
+  const handleSaveSession = async () => {
+    if (sequenciaTemporal.length === 0) {
+      alert('Nenhuma interação foi registrada para salvar.')
+      return
+    }
+    
+    setSalvando(true)
+    
+    const fimSessao = new Date()
+    const duracaoTotalSegundos = Math.round((fimSessao.getTime() - inicioSessao.getTime()) / 1000)
+    
+    // 🔬 CALCULAR MÉTRICAS FINAIS
+    const tempoReacaoMedio = temposReacao.length > 0 ? 
+      temposReacao.reduce((a, b) => a + b, 0) / temposReacao.length : 0
+    
+    const taxaAcerto = tiposResposta.length > 0 ? 
+      (tiposResposta.filter(t => t === 'correto').length / tiposResposta.length) * 100 : 0
+    
+    const variabilidadeRT = temposReacao.length > 1 ? 
+      Math.sqrt(temposReacao.reduce((sum, rt) => sum + Math.pow(rt - tempoReacaoMedio, 2), 0) / temposReacao.length) : 0
+    
+    const indiceControleInibitorio = sequenciaTemporal.length > 0 ? 
+      ((pausasReflexivas / sequenciaTemporal.length) * 100) : 0
+    
+    const indiceImpulsividade = sequenciaTemporal.length > 0 ? 
+      ((respostasImpulsivas / sequenciaTemporal.length) * 100) : 0
+
+    try {
+      // Obter usuário atual
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError || !user) {
+        console.error('Erro ao obter usuário:', userError)
+        alert('Erro: Sessão expirada. Por favor, faça login novamente.')
+        router.push('/login')
+        return
+      }
+      
+      // 📊 DADOS CIENTÍFICOS PARA SUPABASE
+      const observacoesData = {
+        origem_secao: origemSecao,
+        contexto_atividade: origemSecao === 'TEA' ? 'regulacao_emocional' : 
+                            origemSecao === 'TDAH' ? 'controle_inibitorio' : 'habilidades_essenciais',
+        nivel_dificuldade: currentDifficulty,
+        duracao_sessao_segundos: duracaoTotalSegundos,
+        
+        // Métricas científicas principais
+        tempo_reacao_medio_ms: Math.round(tempoReacaoMedio * 1000),
+        variabilidade_rt: Math.round(variabilidadeRT * 1000) / 1000,
+        indice_controle_inibitorio: Math.round(indiceControleInibitorio * 10) / 10,
+        indice_impulsividade: Math.round(indiceImpulsividade * 10) / 10,
+        
+        // Contadores específicos
+        total_cenarios: sequenciaTemporal.length,
+        respostas_corretas: tiposResposta.filter(t => t === 'correto').length,
+        respostas_incorretas: tiposResposta.filter(t => t === 'incorreto').length,
+        timeouts: tiposResposta.filter(t => t === 'timeout').length,
+        respostas_impulsivas: respostasImpulsivas,
+        pausas_reflexivas: pausasReflexivas,
+        
+        // Histórico temporal completo
+        sequencia_temporal: sequenciaTemporal,
+        tempos_reacao_detalhados: temposReacao,
+        
+        // Identificadores para análise futura
+        versao_atividade: 'unified_v1.0',
+        timestamp_inicio: inicioSessao.toISOString(),
+        timestamp_fim: fimSessao.toISOString()
+      }
+      
+      // Salvar na tabela sessoes
+      const { data, error } = await supabase
+        .from('sessoes')
+        .insert([{
+          usuario_id: user.id,
+          atividade_nome: 'Jogo do Semáforo',
+          pontuacao_final: score,
+          taxa_acerto: taxaAcerto,
+          tempo_reacao_medio: tempoReacaoMedio,
+          data_fim: fimSessao.toISOString(),
+          observacoes: observacoesData
+        }])
+
+      if (error) {
+        console.error('Erro ao salvar:', error)
+        alert(`Erro ao salvar: ${error.message}`)
+      } else {
+        alert(`✅ Sessão salva com sucesso!
+        
+📊 Resumo Científico:
+• Precisão: ${Math.round(taxaAcerto)}%
+• Tempo médio: ${tempoReacaoMedio.toFixed(2)}s
+• Controle inibitório: ${indiceControleInibitorio.toFixed(1)}%
+• Origem: ${origemSecao}
+• Cenários completos: ${sequenciaTemporal.length}`)
+        
+        router.push('/profileselection')
+      }
+    } catch (error: any) {
+      console.error('Erro inesperado:', error)
+      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`)
+    } finally {
+      setSalvando(false)
+    }
   }
 
   const cardStyle = {
@@ -199,7 +393,7 @@ export default function JogoSemaforo() {
         background: 'linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0fdf4 100%)',
         paddingTop: '80px'
       }}>
-        {/* Header Fixo - Voltar para TEA */}
+        {/* 🧠 HEADER INTELIGENTE - Adapta automaticamente */}
         <div style={{
           position: 'fixed',
           top: 0,
@@ -219,7 +413,7 @@ export default function JogoSemaforo() {
             margin: '0 auto'
           }}>
             <button
-              onClick={() => window.location.href = '/tea'}
+              onClick={() => window.location.href = voltarPara}
               style={{
                 background: 'none',
                 border: 'none',
@@ -233,7 +427,7 @@ export default function JogoSemaforo() {
               }}
             >
               <span style={{ fontSize: '18px' }}>←</span>
-              Voltar para TEA
+              Voltar para {origemSecao === 'TEA_TDAH' ? 'TEA+TDAH' : origemSecao}
             </button>
             <div style={{
               width: '32px',
@@ -255,7 +449,7 @@ export default function JogoSemaforo() {
               WebkitTextFillColor: 'transparent',
               margin: 0
             }}>
-              Jogo do Semáforo
+              Jogo do Semáforo {origemSecao === 'TEA_TDAH' ? '(Integrado)' : `(${origemSecao})`}
             </h1>
           </div>
         </div>
@@ -292,15 +486,21 @@ export default function JogoSemaforo() {
             </p>
           </div>
 
-          {/* Módulo Info */}
-          <div style={{ ...cardStyle, borderLeft: '4px solid #ef4444' }}>
-            <h3 style={{ color: '#dc2626', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>
-              ❤️ MÓDULO 3: REGULAÇÃO EMOCIONAL
+          {/* 🔬 INDICADOR DE CONTEXTO CIENTÍFICO */}
+          <div style={{ ...cardStyle, borderLeft: `4px solid ${origemSecao === 'TEA' ? '#4A90E2' : origemSecao === 'TDAH' ? '#E74C3C' : '#8E44AD'}` }}>
+            <h3 style={{ color: origemSecao === 'TEA' ? '#4A90E2' : origemSecao === 'TDAH' ? '#E74C3C' : '#8E44AD', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>
+              {origemSecao === 'TEA' && '🧩 MÓDULO TEA: REGULAÇÃO EMOCIONAL'}
+              {origemSecao === 'TDAH' && '⚡ MÓDULO TDAH: CONTROLE INIBITÓRIO'}
+              {origemSecao === 'TEA_TDAH' && '🎯 MÓDULO INTEGRADO: HABILIDADES ESSENCIAIS'}
             </h3>
-            <p style={{ color: '#6b7280', margin: 0, fontSize: 'clamp(14px, 3vw, 16px)' }}>Base: Controle de Impulsos + Assertividade</p>
+            <p style={{ color: '#6b7280', margin: 0, fontSize: 'clamp(14px, 3vw, 16px)' }}>
+              {origemSecao === 'TEA' && 'Foco: Comunicação social + Autorregulação emocional'}
+              {origemSecao === 'TDAH' && 'Foco: Atenção sustentada + Controle de impulsos'}
+              {origemSecao === 'TEA_TDAH' && 'Foco: Competências integradas para comorbidade'}
+            </p>
           </div>
 
-          {/* Objetivo */}
+          {/* Resto do conteúdo original... */}
           <div style={cardStyle}>
             <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>
               🎯 Objetivo da Atividade
@@ -331,40 +531,6 @@ export default function JogoSemaforo() {
                 </div>
                 <p style={{ fontSize: 'clamp(12px, 2.5vw, 14px)', color: '#16a34a', margin: 0 }}>Ação pensada e construtiva</p>
               </div>
-            </div>
-          </div>
-
-          {/* Regras */}
-          <div style={cardStyle}>
-            <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>
-              📋 Como Funciona
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {[
-                'Você receberá situações desafiadoras do dia a dia',
-                'Para cada situação, terá 3 opções: Vermelha (impulsiva), Amarela (reflexiva) e Verde (ação construtiva)',
-                'Você tem 30 segundos para escolher a melhor resposta',
-                'A resposta correta geralmente é AMARELA (parar e pensar primeiro!)',
-                'Receba feedback imediato e explicações sobre cada escolha'
-              ].map((rule, index) => (
-                <div key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                  <span style={{ 
-                    backgroundColor: '#f3f4f6', 
-                    border: '1px solid #d1d5db',
-                    borderRadius: '4px',
-                    padding: '2px 8px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    minWidth: '20px',
-                    textAlign: 'center',
-                    flexShrink: 0,
-                    color: '#374151'
-                  }}>
-                    {index + 1}
-                  </span>
-                  <p style={{ margin: 0, color: '#374151', fontSize: 'clamp(14px, 3vw, 16px)', lineHeight: '1.5' }}>{rule}</p>
-                </div>
-              ))}
             </div>
           </div>
 
@@ -429,7 +595,7 @@ export default function JogoSemaforo() {
         background: 'linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0fdf4 100%)',
         paddingTop: '80px'
       }}>
-        {/* Header Fixo - Voltar para TEA */}
+        {/* 🧠 HEADER INTELIGENTE COM SALVAMENTO */}
         <div style={{
           position: 'fixed',
           top: 0,
@@ -449,7 +615,7 @@ export default function JogoSemaforo() {
             margin: '0 auto'
           }}>
             <button
-              onClick={() => window.location.href = '/tea'}
+              onClick={() => window.location.href = voltarPara}
               style={{
                 background: 'none',
                 border: 'none',
@@ -462,8 +628,8 @@ export default function JogoSemaforo() {
                 padding: '8px'
               }}
             >
-              <span style={{ fontSize: '18px' }}>←</span>
-              Voltar para TEA
+              <ChevronLeft size={20} />
+              <span>Voltar para {origemSecao === 'TEA_TDAH' ? 'TEA+TDAH' : origemSecao}</span>
             </button>
             <div style={{
               width: '32px',
@@ -487,6 +653,29 @@ export default function JogoSemaforo() {
             }}>
               Jogo Concluído!
             </h1>
+            <div style={{ marginLeft: 'auto' }}>
+              <button 
+                onClick={handleSaveSession}
+                disabled={salvando}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#22c55e',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: salvando ? 'not-allowed' : 'pointer',
+                  opacity: salvando ? 0.6 : 1
+                }}
+              >
+                <Save size={16} />
+                <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -501,6 +690,34 @@ export default function JogoSemaforo() {
               {score}/{filteredScenarios.length}
             </div>
             <p style={{ fontSize: 'clamp(1rem, 4vw, 1.25rem)', marginBottom: '24px' }}>{getScoreMessage()}</p>
+            
+            {/* 📊 MÉTRICAS CIENTÍFICAS EM TEMPO REAL */}
+            <div style={{ backgroundColor: '#f8fafc', padding: 'clamp(16px, 4vw, 24px)', borderRadius: '8px', marginBottom: '24px' }}>
+              <h3 style={{ color: '#1e40af', marginBottom: '12px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>📊 Análise de Performance</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3b82f6' }}>
+                    {temposReacao.length > 0 ? (temposReacao.reduce((a, b) => a + b, 0) / temposReacao.length).toFixed(1) : '0'}s
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Tempo Médio</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ef4444' }}>
+                    {Math.round((respostasImpulsivas / (sequenciaTemporal.length || 1)) * 100)}%
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Impulsividade</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#22c55e' }}>
+                    {Math.round((pausasReflexivas / (sequenciaTemporal.length || 1)) * 100)}%
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Reflexão</div>
+                </div>
+              </div>
+              <p style={{ fontSize: '0.875rem', color: '#4b5563', margin: 0 }}>
+                📈 Dados científicos serão salvos para análise longitudinal
+              </p>
+            </div>
             
             <div style={{ backgroundColor: '#eff6ff', padding: 'clamp(16px, 4vw, 24px)', borderRadius: '8px', marginBottom: '24px' }}>
               <h3 style={{ color: '#1e40af', marginBottom: '12px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>🧠 Reflexão Final</h3>
@@ -523,10 +740,10 @@ export default function JogoSemaforo() {
                 🔄 Jogar Novamente
               </button>
               <button 
-                onClick={() => window.location.href = '/tea'}
+                onClick={() => window.location.href = voltarPara}
                 style={buttonStyle}
               >
-                ← Voltar ao TEA
+                ← Voltar para {origemSecao === 'TEA_TDAH' ? 'TEA+TDAH' : origemSecao}
               </button>
             </div>
           </div>
@@ -543,7 +760,7 @@ export default function JogoSemaforo() {
       background: 'linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0fdf4 100%)',
       paddingTop: '80px'
     }}>
-      {/* Header Fixo - Voltar para TEA */}
+      {/* 🧠 HEADER INTELIGENTE NO JOGO */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -563,7 +780,7 @@ export default function JogoSemaforo() {
           margin: '0 auto'
         }}>
           <button
-            onClick={() => window.location.href = '/tea'}
+            onClick={() => window.location.href = voltarPara}
             style={{
               background: 'none',
               border: 'none',
@@ -577,7 +794,7 @@ export default function JogoSemaforo() {
             }}
           >
             <span style={{ fontSize: '18px' }}>←</span>
-            Voltar para TEA
+            Voltar para {origemSecao === 'TEA_TDAH' ? 'TEA+TDAH' : origemSecao}
           </button>
           <div style={{
             width: '32px',
