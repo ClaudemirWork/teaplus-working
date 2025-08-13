@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ChevronLeft, Save } from 'lucide-react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '../utils/supabaseClient'
 
 interface Scenario {
@@ -95,12 +95,12 @@ const scenarios: Scenario[] = [
 
 export default function JogoSemaforo() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClient()
   
   // 🎯 DETECTOR DEFINITIVO DE ORIGEM VIA URL
   const [origemSecao, setOrigemSecao] = useState<'TEA' | 'TDAH' | 'TEA_TDAH'>('TEA')
   const [voltarPara, setVoltarPara] = useState('/tea')
+  const [isClient, setIsClient] = useState(false)
   
   // Estados do jogo
   const [currentScenario, setCurrentScenario] = useState(0)
@@ -124,9 +124,46 @@ export default function JogoSemaforo() {
   
   const filteredScenarios = scenarios.filter(s => s.difficulty === currentDifficulty)
 
-  // 🎯 DETECTAR ORIGEM DEFINITIVAMENTE VIA URL
+  // Loading até o cliente estar pronto - evita problemas de SSR
+  if (!isClient) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0fdf4 100%)'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ 
+            width: '48px', 
+            height: '48px', 
+            background: 'linear-gradient(90deg, #ef4444, #eab308, #22c55e)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '24px',
+            margin: '0 auto 16px'
+          }}>
+            🚦
+          </div>
+          <p style={{ color: '#6b7280', fontSize: '16px', margin: 0 }}>Carregando Jogo do Semáforo...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 🎯 DETECTAR ORIGEM DEFINITIVAMENTE VIA URL - SAFE FOR SSR
   useEffect(() => {
-    const origem = searchParams.get('origem') || 'tea'
+    // Marcar como cliente para evitar problemas de hidratação
+    setIsClient(true)
+    
+    // Só executar no cliente para evitar erro de prerendering
+    if (typeof window === 'undefined') return
+    
+    const urlParams = new URLSearchParams(window.location.search)
+    const origem = urlParams.get('origem') || 'tea'
     
     let origemFinal: 'TEA' | 'TDAH' | 'TEA_TDAH' = 'TEA'
     let destinoFinal = '/tea'
@@ -148,7 +185,7 @@ export default function JogoSemaforo() {
     
     setOrigemSecao(origemFinal)
     setVoltarPara(destinoFinal)
-  }, [searchParams])
+  }, [])
 
   // Timer do jogo
   useEffect(() => {
