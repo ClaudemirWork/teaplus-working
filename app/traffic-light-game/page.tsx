@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ChevronLeft, Save } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '../utils/supabaseClient'
 
 interface Scenario {
@@ -95,13 +95,14 @@ const scenarios: Scenario[] = [
 
 export default function JogoSemaforo() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
   
-  // 🕵️ DETECTOR DE ORIGEM AUTOMÁTICO
+  // 🎯 DETECTOR DEFINITIVO DE ORIGEM VIA URL
   const [origemSecao, setOrigemSecao] = useState<'TEA' | 'TDAH' | 'TEA_TDAH'>('TEA')
   const [voltarPara, setVoltarPara] = useState('/tea')
   
-  // Estados do jogo original
+  // Estados do jogo
   const [currentScenario, setCurrentScenario] = useState(0)
   const [selectedOption, setSelectedOption] = useState<'red' | 'yellow' | 'green' | null>(null)
   const [showResult, setShowResult] = useState(false)
@@ -118,30 +119,36 @@ export default function JogoSemaforo() {
   const [temposReacao, setTemposReacao] = useState<number[]>([])
   const [inicioResposta, setInicioResposta] = useState<Date | null>(null)
   const [tiposResposta, setTiposResposta] = useState<('correto' | 'incorreto' | 'timeout')[]>([])
-  const [respostasImpulsivas, setRespostasImpulsivas] = useState(0) // < 3 segundos
-  const [pausasReflexivas, setPausasReflexivas] = useState(0) // > 10 segundos
+  const [respostasImpulsivas, setRespostasImpulsivas] = useState(0)
+  const [pausasReflexivas, setPausasReflexivas] = useState(0)
   
   const filteredScenarios = scenarios.filter(s => s.difficulty === currentDifficulty)
 
-  // 🕵️ DETECTAR ORIGEM NA INICIALIZAÇÃO
+  // 🎯 DETECTAR ORIGEM DEFINITIVAMENTE VIA URL
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const referrer = document.referrer
-      let origem: 'TEA' | 'TDAH' | 'TEA_TDAH' = 'TEA'
-      let destino = '/tea'
-      
-      if (referrer.includes('/combined')) {
-        origem = 'TEA_TDAH'
-        destino = '/combined'
-      } else if (referrer.includes('/tdah')) {
-        origem = 'TDAH'
-        destino = '/tdah'
-      }
-      
-      setOrigemSecao(origem)
-      setVoltarPara(destino)
+    const origem = searchParams.get('origem') || 'tea'
+    
+    let origemFinal: 'TEA' | 'TDAH' | 'TEA_TDAH' = 'TEA'
+    let destinoFinal = '/tea'
+    
+    switch(origem.toLowerCase()) {
+      case 'tdah':
+        origemFinal = 'TDAH'
+        destinoFinal = '/tdah'
+        break
+      case 'combined':
+      case 'tea_tdah':
+        origemFinal = 'TEA_TDAH'
+        destinoFinal = '/combined'
+        break
+      default:
+        origemFinal = 'TEA'
+        destinoFinal = '/tea'
     }
-  }, [])
+    
+    setOrigemSecao(origemFinal)
+    setVoltarPara(destinoFinal)
+  }, [searchParams])
 
   // Timer do jogo
   useEffect(() => {
@@ -154,7 +161,7 @@ export default function JogoSemaforo() {
     return () => clearTimeout(timer)
   }, [timeLeft, gameStarted, showResult, gameCompleted, inicioResposta])
 
-  // Iniciar contagem de tempo de reação quando cenário aparece
+  // Iniciar contagem de tempo de reação
   useEffect(() => {
     if (gameStarted && !showResult && !gameCompleted) {
       setInicioResposta(new Date())
@@ -175,7 +182,6 @@ export default function JogoSemaforo() {
     const isCorrect = option === cenarioAtual?.correctAnswer
     const isTimeout = tipoResposta === 'timeout'
     
-    // Classificar tipo de resposta
     let classificacaoResposta: 'correto' | 'incorreto' | 'timeout' = 'incorreto'
     if (isTimeout) {
       classificacaoResposta = 'timeout'
@@ -226,12 +232,21 @@ export default function JogoSemaforo() {
     setGameStarted(false)
     setTimeLeft(30)
     setGameCompleted(false)
-    // Não resetar métricas científicas - manter histórico completo
   }
 
   const startGame = () => {
     setGameStarted(true)
     setTimeLeft(30)
+  }
+
+  // 🎯 AVANÇAR PARA PRÓXIMO NÍVEL
+  const proximoNivel = () => {
+    if (currentDifficulty === 'iniciante') {
+      setCurrentDifficulty('intermediário')
+    } else if (currentDifficulty === 'intermediário') {
+      setCurrentDifficulty('avançado')
+    }
+    resetGame()
   }
 
   const getScoreMessage = () => {
@@ -271,7 +286,6 @@ export default function JogoSemaforo() {
       ((respostasImpulsivas / sequenciaTemporal.length) * 100) : 0
 
     try {
-      // Obter usuário atual
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       
       if (userError || !user) {
@@ -308,7 +322,7 @@ export default function JogoSemaforo() {
         tempos_reacao_detalhados: temposReacao,
         
         // Identificadores para análise futura
-        versao_atividade: 'unified_v1.0',
+        versao_atividade: 'unified_v1.1',
         timestamp_inicio: inicioSessao.toISOString(),
         timestamp_fim: fimSessao.toISOString()
       }
@@ -393,7 +407,7 @@ export default function JogoSemaforo() {
         background: 'linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0fdf4 100%)',
         paddingTop: '80px'
       }}>
-        {/* 🧠 HEADER INTELIGENTE - Adapta automaticamente */}
+        {/* 🧠 HEADER LIMPO E INTELIGENTE */}
         <div style={{
           position: 'fixed',
           top: 0,
@@ -427,7 +441,7 @@ export default function JogoSemaforo() {
               }}
             >
               <span style={{ fontSize: '18px' }}>←</span>
-              Voltar para {origemSecao === 'TEA_TDAH' ? 'TEA+TDAH' : origemSecao}
+              Voltar
             </button>
             <div style={{
               width: '32px',
@@ -449,13 +463,13 @@ export default function JogoSemaforo() {
               WebkitTextFillColor: 'transparent',
               margin: 0
             }}>
-              Jogo do Semáforo {origemSecao === 'TEA_TDAH' ? '(Integrado)' : `(${origemSecao})`}
+              Jogo do Semáforo
             </h1>
           </div>
         </div>
 
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: 'clamp(16px, 4vw, 20px)' }}>
-          {/* Header */}
+          {/* Header Principal */}
           <div style={{ textAlign: 'center', marginBottom: 'clamp(24px, 6vw, 32px)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
               <div style={{ 
@@ -486,21 +500,7 @@ export default function JogoSemaforo() {
             </p>
           </div>
 
-          {/* 🔬 INDICADOR DE CONTEXTO CIENTÍFICO */}
-          <div style={{ ...cardStyle, borderLeft: `4px solid ${origemSecao === 'TEA' ? '#4A90E2' : origemSecao === 'TDAH' ? '#E74C3C' : '#8E44AD'}` }}>
-            <h3 style={{ color: origemSecao === 'TEA' ? '#4A90E2' : origemSecao === 'TDAH' ? '#E74C3C' : '#8E44AD', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>
-              {origemSecao === 'TEA' && '🧩 MÓDULO TEA: REGULAÇÃO EMOCIONAL'}
-              {origemSecao === 'TDAH' && '⚡ MÓDULO TDAH: CONTROLE INIBITÓRIO'}
-              {origemSecao === 'TEA_TDAH' && '🎯 MÓDULO INTEGRADO: HABILIDADES ESSENCIAIS'}
-            </h3>
-            <p style={{ color: '#6b7280', margin: 0, fontSize: 'clamp(14px, 3vw, 16px)' }}>
-              {origemSecao === 'TEA' && 'Foco: Comunicação social + Autorregulação emocional'}
-              {origemSecao === 'TDAH' && 'Foco: Atenção sustentada + Controle de impulsos'}
-              {origemSecao === 'TEA_TDAH' && 'Foco: Competências integradas para comorbidade'}
-            </p>
-          </div>
-
-          {/* Resto do conteúdo original... */}
+          {/* Objetivo */}
           <div style={cardStyle}>
             <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>
               🎯 Objetivo da Atividade
@@ -589,13 +589,16 @@ export default function JogoSemaforo() {
   }
 
   if (gameCompleted) {
+    const podeAvancarNivel = (currentDifficulty === 'iniciante' || currentDifficulty === 'intermediário')
+    const proximoNome = currentDifficulty === 'iniciante' ? 'Intermediário' : 'Avançado'
+    
     return (
       <div style={{ 
         minHeight: '100vh', 
         background: 'linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0fdf4 100%)',
         paddingTop: '80px'
       }}>
-        {/* 🧠 HEADER INTELIGENTE COM SALVAMENTO */}
+        {/* 🧠 HEADER LIMPO COM SALVAMENTO */}
         <div style={{
           position: 'fixed',
           top: 0,
@@ -629,7 +632,7 @@ export default function JogoSemaforo() {
               }}
             >
               <ChevronLeft size={20} />
-              <span>Voltar para {origemSecao === 'TEA_TDAH' ? 'TEA+TDAH' : origemSecao}</span>
+              <span>Voltar</span>
             </button>
             <div style={{
               width: '32px',
@@ -683,7 +686,7 @@ export default function JogoSemaforo() {
           <div style={{ ...cardStyle, textAlign: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: 'clamp(40px, 10vw, 48px)' }}>🏆</span>
-              <h2 style={{ fontSize: 'clamp(1.5rem, 6vw, 2rem)', margin: 0 }}>Jogo Concluído!</h2>
+              <h2 style={{ fontSize: 'clamp(1.5rem, 6vw, 2rem)', margin: 0 }}>Nível {currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1)} Concluído!</h2>
             </div>
             
             <div style={{ fontSize: 'clamp(3rem, 10vw, 4rem)', fontWeight: 'bold', color: '#16a34a', marginBottom: '16px' }}>
@@ -732,6 +735,7 @@ export default function JogoSemaforo() {
               </ul>
             </div>
 
+            {/* 🎯 BOTÕES DE PROGRESSÃO INTELIGENTE */}
             <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button 
                 onClick={resetGame} 
@@ -739,12 +743,34 @@ export default function JogoSemaforo() {
               >
                 🔄 Jogar Novamente
               </button>
-              <button 
-                onClick={() => window.location.href = voltarPara}
-                style={buttonStyle}
-              >
-                ← Voltar para {origemSecao === 'TEA_TDAH' ? 'TEA+TDAH' : origemSecao}
-              </button>
+              
+              {podeAvancarNivel && (
+                <button 
+                  onClick={proximoNivel}
+                  style={{
+                    ...buttonStyle,
+                    background: 'linear-gradient(90deg, #8b5cf6, #06b6d4)',
+                    fontSize: 'clamp(14px, 3vw, 16px)'
+                  }}
+                >
+                  🎯 Nível {proximoNome}
+                </button>
+              )}
+              
+              {!podeAvancarNivel && (
+                <button 
+                  onClick={handleSaveSession}
+                  disabled={salvando}
+                  style={{
+                    ...buttonStyle,
+                    backgroundColor: '#22c55e',
+                    opacity: salvando ? 0.6 : 1,
+                    cursor: salvando ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {salvando ? '💾 Salvando...' : '🏆 Finalizar Completo'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -760,7 +786,7 @@ export default function JogoSemaforo() {
       background: 'linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0fdf4 100%)',
       paddingTop: '80px'
     }}>
-      {/* 🧠 HEADER INTELIGENTE NO JOGO */}
+      {/* 🧠 HEADER LIMPO NO JOGO */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -794,7 +820,7 @@ export default function JogoSemaforo() {
             }}
           >
             <span style={{ fontSize: '18px' }}>←</span>
-            Voltar para {origemSecao === 'TEA_TDAH' ? 'TEA+TDAH' : origemSecao}
+            Voltar
           </button>
           <div style={{
             width: '32px',
@@ -846,7 +872,7 @@ export default function JogoSemaforo() {
             </div>
             <div>
               <h1 style={{ fontSize: 'clamp(1.25rem, 4vw, 1.5rem)', fontWeight: 'bold', margin: 0 }}>Jogo do Semáforo</h1>
-              <p style={{ color: '#6b7280', margin: 0, fontSize: 'clamp(12px, 3vw, 14px)' }}>Cenário {currentScenario + 1} de {filteredScenarios.length}</p>
+              <p style={{ color: '#6b7280', margin: 0, fontSize: 'clamp(12px, 3vw, 14px)' }}>Cenário {currentScenario + 1} de {filteredScenarios.length} - Nível {currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1)}</p>
             </div>
           </div>
           
