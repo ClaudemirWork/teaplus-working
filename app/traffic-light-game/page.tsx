@@ -18,77 +18,84 @@ interface Scenario {
   difficulty: 'iniciante' | 'intermediário' | 'avançado'
 }
 
+// 🧠 CENÁRIOS REFORMULADOS COM BASE CIENTÍFICA 
+// (Variabilidade contextual baseada em DBT e Impulse Control research)
 const scenarios: Scenario[] = [
+  // ===== INICIANTE (2 cenários) =====
   {
     id: 1,
-    situation: "Seu amigo pegou seu lanche sem pedir. Você está com muita fome e ficou irritado.",
+    situation: "Seu amigo está chorando porque perdeu o jogo que estava jogando. Você quer ajudá-lo.",
     options: {
-      red: "Gritar com ele na frente de todos",
-      yellow: "Respirar fundo e pensar em como resolver",
-      green: "Conversar calmamente sobre como se sentiu"
+      red: "Ignorar e continuar com suas coisas",
+      yellow: "Observar se ele realmente quer ajuda antes de agir", 
+      green: "Oferecer um abraço ou palavras de apoio imediatamente"
     },
-    correctAnswer: 'yellow',
-    explanation: "AMARELO é parar e pensar! Respirar fundo ajuda a controlar a raiva antes de agir.",
+    correctAnswer: 'green',
+    explanation: "VERDE! Quando alguém está triste, oferecer apoio é sempre uma boa ação. Gestos de carinho ajudam quem está sofrendo.",
     difficulty: 'iniciante'
   },
   {
     id: 2,
-    situation: "Você errou uma questão na prova e está se sentindo frustrado. Quer desistir de tudo.",
+    situation: "Você errou várias questões na prova e está muito frustrado. Quer desistir de estudar.",
     options: {
-      red: "Parar de estudar e jogar o material longe",
-      yellow: "Parar, respirar e lembrar que erros fazem parte do aprendizado",
-      green: "Revisar a questão com calma e continuar estudando"
+      red: "Jogar os materiais longe e parar de estudar",
+      yellow: "Parar, respirar fundo e esperar a frustração passar",
+      green: "Continuar estudando mesmo frustrado"
     },
     correctAnswer: 'yellow',
-    explanation: "AMARELO primeiro! Pare, respire e reframe o pensamento negativo antes de continuar.",
+    explanation: "AMARELO! Quando muito frustrado, é importante pausar e se acalmar. Estudar com raiva não funciona bem.",
     difficulty: 'iniciante'
   },
+
+  // ===== INTERMEDIÁRIO (2 cenários) =====
   {
     id: 3,
-    situation: "Seus pais disseram 'não' para algo que você queria muito. Você sente raiva e decepção.",
+    situation: "Um colega fez um comentário sobre seu cabelo. Você não tem certeza se foi elogio ou crítica.",
     options: {
-      red: "Bater a porta e gritar que eles são injustos",
-      yellow: "Contar até 10 e pensar em como expressar seus sentimentos",
-      green: "Perguntar calmamente o motivo e tentar negociar"
+      red: "Fazer um comentário ruim sobre ele também",
+      yellow: "Observar o tom e contexto antes de reagir",
+      green: "Agradecer e sorrir, assumindo que foi elogio"
     },
     correctAnswer: 'yellow',
-    explanation: "AMARELO! Conte até 10, respire e organize seus pensamentos antes de conversar.",
+    explanation: "AMARELO! Situações ambíguas precisam de observação. Melhor entender a intenção antes de reagir.",
     difficulty: 'intermediário'
   },
   {
     id: 4,
-    situation: "Um colega fez uma piada sobre você na frente da turma. Todos riram e você se sentiu humilhado.",
+    situation: "Você vê alguém sendo machucado ou em perigo real. A situação é séria.",
     options: {
-      red: "Fazer uma piada cruel de volta para se vingar",
-      yellow: "Respirar fundo e avaliar se foi maldade ou brincadeira",
-      green: "Conversar com o colega depois, explicando como se sentiu"
+      red: "Fingir que não viu para evitar problemas",
+      yellow: "Parar para pensar qual a melhor forma de ajudar",
+      green: "Agir imediatamente: ajudar ou chamar um adulto"
     },
-    correctAnswer: 'yellow',
-    explanation: "AMARELO! Pare para avaliar a intenção antes de reagir impulsivamente.",
+    correctAnswer: 'green',
+    explanation: "VERDE! Em situações de perigo real, agir rapidamente é essencial. A segurança sempre vem primeiro.",
     difficulty: 'intermediário'
   },
+
+  // ===== AVANÇADO (2 cenários) =====
   {
     id: 5,
-    situation: "Você está em grupo fazendo um trabalho e ninguém está te ouvindo. Sente que suas ideias são ignoradas.",
+    situation: "Seus pais disseram 'não' para algo muito importante para você. Você sente uma raiva muito intensa.",
     options: {
-      red: "Falar mais alto e interromper os outros",
-      yellow: "Respirar, observar o momento certo e organizar suas ideias",
-      green: "Pedir educadamente para expor sua ideia quando houver uma pausa"
+      red: "Contar até 10 e sair do ambiente até se acalmar completamente",
+      yellow: "Respirar fundo e tentar conversar mesmo sentindo raiva",
+      green: "Explicar calmamente por que é importante para você"
     },
-    correctAnswer: 'yellow',
-    explanation: "AMARELO! Pare, observe o grupo e organize sua abordagem estrategicamente.",
+    correctAnswer: 'red',
+    explanation: "VERMELHO! Raiva muito intensa pode levar a palavras que machucam. Melhor sair e voltar quando estiver calmo.",
     difficulty: 'avançado'
   },
   {
     id: 6,
-    situation: "Você recebeu uma crítica construtiva, mas ela doeu e você quer se defender imediatamente.",
+    situation: "Você recebeu uma crítica sobre seu trabalho. A crítica doeu, mas pode ter pontos válidos.",
     options: {
-      red: "Se justificar e explicar por que a pessoa está errada",
-      yellow: "Respirar fundo e tentar entender o ponto de vista dela",
-      green: "Agradecer o feedback e refletir sobre os pontos válidos"
+      red: "Se defender imediatamente e explicar por que está errada",
+      yellow: "Processar a informação com calma antes de responder",
+      green: "Agradecer e aceitar todos os pontos imediatamente"
     },
     correctAnswer: 'yellow',
-    explanation: "AMARELO! Pause a defensividade automática e processe a informação primeiro.",
+    explanation: "AMARELO! Críticas precisam ser processadas com calma. Assim você aproveita o que é útil e ignora o resto.",
     difficulty: 'avançado'
   }
 ]
@@ -97,7 +104,7 @@ export default function JogoSemaforo() {
   const router = useRouter()
   const supabase = createClient()
   
-  // 🎯 DETECTOR DEFINITIVO DE ORIGEM VIA URL
+  // 🎯 DETECTOR DE ORIGEM VIA URL
   const [origemSecao, setOrigemSecao] = useState<'TEA' | 'TDAH' | 'TEA_TDAH'>('TEA')
   const [voltarPara, setVoltarPara] = useState('/tea')
   
@@ -111,7 +118,7 @@ export default function JogoSemaforo() {
   const [gameCompleted, setGameCompleted] = useState(false)
   const [currentDifficulty, setCurrentDifficulty] = useState<'iniciante' | 'intermediário' | 'avançado'>('iniciante')
   
-  // 🔬 ESTADOS PARA MÉTRICAS CIENTÍFICAS
+  // 🔬 MÉTRICAS CIENTÍFICAS (invisíveis ao usuário)
   const [inicioSessao] = useState(new Date())
   const [salvando, setSalvando] = useState(false)
   const [sequenciaTemporal, setSequenciaTemporal] = useState<any[]>([])
@@ -120,12 +127,12 @@ export default function JogoSemaforo() {
   const [tiposResposta, setTiposResposta] = useState<('correto' | 'incorreto' | 'timeout')[]>([])
   const [respostasImpulsivas, setRespostasImpulsivas] = useState(0)
   const [pausasReflexivas, setPausasReflexivas] = useState(0)
+  const [variabilidadeContextual, setVariabilidadeContextual] = useState<{green: number, yellow: number, red: number}>({green: 0, yellow: 0, red: 0})
   
   const filteredScenarios = scenarios.filter(s => s.difficulty === currentDifficulty)
 
-  // 🎯 DETECTAR ORIGEM SIMPLES E DIRETO
+  // 🎯 DETECTAR ORIGEM
   useEffect(() => {
-    // Só executar no cliente
     if (typeof window === 'undefined') return
     
     const urlParams = new URLSearchParams(window.location.search)
@@ -170,7 +177,7 @@ export default function JogoSemaforo() {
     setSelectedOption(option)
     setShowResult(true)
     
-    // 🔬 CALCULAR MÉTRICAS CIENTÍFICAS
+    // 🔬 MÉTRICAS CIENTÍFICAS
     const cenarioAtual = filteredScenarios[currentScenario]
     const isCorrect = option === cenarioAtual?.correctAnswer
     const isTimeout = tipoResposta === 'timeout'
@@ -183,14 +190,22 @@ export default function JogoSemaforo() {
       setScore(score + 1)
     }
     
-    // Detectar padrões comportamentais
+    // Padrões comportamentais baseados em research
     if (tempoReacao < 3) {
       setRespostasImpulsivas(prev => prev + 1)
     } else if (tempoReacao > 10) {
       setPausasReflexivas(prev => prev + 1)
     }
     
-    // Registrar dados
+    // Variabilidade contextual (DBT-based)
+    if (option) {
+      setVariabilidadeContextual(prev => ({
+        ...prev,
+        [option]: prev[option] + 1
+      }))
+    }
+    
+    // Registro temporal completo
     setTemposReacao(prev => [...prev, tempoReacao])
     setTiposResposta(prev => [...prev, classificacaoResposta])
     setSequenciaTemporal(prev => [...prev, {
@@ -202,7 +217,8 @@ export default function JogoSemaforo() {
       dificuldade: currentDifficulty,
       correto: isCorrect,
       timeout: isTimeout,
-      tipo_comportamental: tempoReacao < 3 ? 'impulsivo' : tempoReacao > 10 ? 'reflexivo' : 'normal'
+      tipo_comportamental: tempoReacao < 3 ? 'impulsivo' : tempoReacao > 10 ? 'reflexivo' : 'normal',
+      contexto_resposta: cenarioAtual?.correctAnswer // Para análise de variabilidade
     }])
   }
 
@@ -225,6 +241,13 @@ export default function JogoSemaforo() {
     setGameStarted(false)
     setTimeLeft(30)
     setGameCompleted(false)
+    // Reset métricas
+    setSequenciaTemporal([])
+    setTemposReacao([])
+    setTiposResposta([])
+    setRespostasImpulsivas(0)
+    setPausasReflexivas(0)
+    setVariabilidadeContextual({green: 0, yellow: 0, red: 0})
   }
 
   const startGame = () => {
@@ -232,7 +255,6 @@ export default function JogoSemaforo() {
     setTimeLeft(30)
   }
 
-  // 🎯 AVANÇAR PARA PRÓXIMO NÍVEL
   const proximoNivel = () => {
     if (currentDifficulty === 'iniciante') {
       setCurrentDifficulty('intermediário')
@@ -244,13 +266,13 @@ export default function JogoSemaforo() {
 
   const getScoreMessage = () => {
     const percentage = (score / filteredScenarios.length) * 100
-    if (percentage >= 80) return "🏆 Excelente! Você tem ótimo controle dos impulsos!"
-    if (percentage >= 60) return "👏 Muito bom! Continue praticando o Stop-Think-Do!"
-    if (percentage >= 40) return "📚 Bom início! Pratique mais as técnicas do semáforo!"
-    return "💪 Continue tentando! O autocontrole melhora com a prática!"
+    if (percentage >= 80) return "🏆 Excelente! Você entende bem quando agir em cada situação!"
+    if (percentage >= 60) return "👏 Muito bom! Continue praticando as diferentes respostas!"
+    if (percentage >= 40) return "📚 Bom início! Cada situação pede uma resposta diferente!"
+    return "💪 Continue tentando! Cada cor do semáforo tem seu momento certo!"
   }
 
-  // 💾 FUNÇÃO DE SALVAMENTO CIENTÍFICO
+  // 💾 SALVAMENTO COM MÉTRICAS CIENTÍFICAS AVANÇADAS
   const handleSaveSession = async () => {
     if (sequenciaTemporal.length === 0) {
       alert('Nenhuma interação foi registrada para salvar.')
@@ -262,7 +284,7 @@ export default function JogoSemaforo() {
     const fimSessao = new Date()
     const duracaoTotalSegundos = Math.round((fimSessao.getTime() - inicioSessao.getTime()) / 1000)
     
-    // 🔬 CALCULAR MÉTRICAS FINAIS
+    // 🔬 MÉTRICAS AVANÇADAS BASEADAS EM RESEARCH
     const tempoReacaoMedio = temposReacao.length > 0 ? 
       temposReacao.reduce((a, b) => a + b, 0) / temposReacao.length : 0
     
@@ -272,11 +294,21 @@ export default function JogoSemaforo() {
     const variabilidadeRT = temposReacao.length > 1 ? 
       Math.sqrt(temposReacao.reduce((sum, rt) => sum + Math.pow(rt - tempoReacaoMedio, 2), 0) / temposReacao.length) : 0
     
+    // Índices baseados em Impulse Control research
     const indiceControleInibitorio = sequenciaTemporal.length > 0 ? 
       ((pausasReflexivas / sequenciaTemporal.length) * 100) : 0
     
     const indiceImpulsividade = sequenciaTemporal.length > 0 ? 
       ((respostasImpulsivas / sequenciaTemporal.length) * 100) : 0
+    
+    // 🎯 VARIABILIDADE CONTEXTUAL (baseado em DBT)
+    const totalRespostas = variabilidadeContextual.green + variabilidadeContextual.yellow + variabilidadeContextual.red
+    const flexibilidadeContextual = totalRespostas > 0 ? {
+      uso_green: (variabilidadeContextual.green / totalRespostas) * 100,
+      uso_yellow: (variabilidadeContextual.yellow / totalRespostas) * 100,
+      uso_red: (variabilidadeContextual.red / totalRespostas) * 100,
+      diversidade_resposta: Object.values(variabilidadeContextual).filter(v => v > 0).length
+    } : { uso_green: 0, uso_yellow: 0, uso_red: 0, diversidade_resposta: 0 }
 
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -296,11 +328,15 @@ export default function JogoSemaforo() {
         nivel_dificuldade: currentDifficulty,
         duracao_sessao_segundos: duracaoTotalSegundos,
         
-        // Métricas científicas principais
+        // Métricas principais
         tempo_reacao_medio_ms: Math.round(tempoReacaoMedio * 1000),
         variabilidade_rt: Math.round(variabilidadeRT * 1000) / 1000,
         indice_controle_inibitorio: Math.round(indiceControleInibitorio * 10) / 10,
         indice_impulsividade: Math.round(indiceImpulsividade * 10) / 10,
+        
+        // 🎯 NOVA MÉTRICA: Flexibilidade Contextual (baseada em DBT research)
+        flexibilidade_contextual: flexibilidadeContextual,
+        variabilidade_resposta_por_cor: variabilidadeContextual,
         
         // Contadores específicos
         total_cenarios: sequenciaTemporal.length,
@@ -310,12 +346,13 @@ export default function JogoSemaforo() {
         respostas_impulsivas: respostasImpulsivas,
         pausas_reflexivas: pausasReflexivas,
         
-        // Histórico temporal completo
+        // Histórico temporal completo para análise longitudinal
         sequencia_temporal: sequenciaTemporal,
         tempos_reacao_detalhados: temposReacao,
         
-        // Identificadores para análise futura
-        versao_atividade: 'unified_v1.1',
+        // Meta-dados para research
+        versao_atividade: 'contextual_variability_v2.0',
+        base_cientifica: 'DBT_impulse_control_research',
         timestamp_inicio: inicioSessao.toISOString(),
         timestamp_fim: fimSessao.toISOString()
       }
@@ -337,13 +374,12 @@ export default function JogoSemaforo() {
         console.error('Erro ao salvar:', error)
         alert(`Erro ao salvar: ${error.message}`)
       } else {
-        alert(`✅ Sessão salva com sucesso!
+        alert(`✅ Atividade concluída com sucesso!
         
-📊 Resumo Científico:
-• Precisão: ${Math.round(taxaAcerto)}%
+📊 Seu resumo:
+• Acertos: ${Math.round(taxaAcerto)}%
 • Tempo médio: ${tempoReacaoMedio.toFixed(2)}s
-• Controle inibitório: ${indiceControleInibitorio.toFixed(1)}%
-• Origem: ${origemSecao}
+• Flexibilidade: ${flexibilidadeContextual.diversidade_resposta}/3 tipos de resposta
 • Cenários completos: ${sequenciaTemporal.length}`)
         
         router.push('/profileselection')
@@ -400,7 +436,7 @@ export default function JogoSemaforo() {
         background: 'linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0fdf4 100%)',
         paddingTop: '80px'
       }}>
-        {/* 🧠 HEADER LIMPO E INTELIGENTE */}
+        {/* Header */}
         <div style={{
           position: 'fixed',
           top: 0,
@@ -489,18 +525,17 @@ export default function JogoSemaforo() {
               </h1>
             </div>
             <p style={{ fontSize: 'clamp(1rem, 4vw, 1.25rem)', color: '#6b7280', maxWidth: '600px', margin: '0 auto', padding: '0 16px' }}>
-              Aprenda a <strong>parar, pensar e agir</strong> com sabedoria em situações desafiadoras
+              Aprenda a <strong>escolher a melhor resposta</strong> para cada situação
             </p>
           </div>
 
           {/* Objetivo */}
           <div style={cardStyle}>
             <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>
-              🎯 Objetivo da Atividade
+              🎯 Como Jogar
             </h3>
             <p style={{ color: '#374151', marginBottom: '16px', fontSize: 'clamp(14px, 3vw, 16px)', lineHeight: '1.6' }}>
-              Desenvolver o controle de impulsos através da técnica <strong>Stop-Think-Do</strong>, 
-              aprendendo a pausar antes de reagir em situações emocionalmente intensas.
+              Cada situação pede um tipo diferente de resposta. Você vai aprender quando usar cada cor do semáforo!
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '16px' }}>
               <div style={{ backgroundColor: '#fef2f2', padding: '16px', borderRadius: '8px', border: '1px solid #fecaca' }}>
@@ -508,21 +543,21 @@ export default function JogoSemaforo() {
                   <div style={{ width: '24px', height: '24px', backgroundColor: '#ef4444', borderRadius: '50%' }}></div>
                   <h4 style={{ color: '#b91c1c', margin: 0, fontSize: 'clamp(14px, 3vw, 16px)' }}>VERMELHO - PARE!</h4>
                 </div>
-                <p style={{ fontSize: 'clamp(12px, 2.5vw, 14px)', color: '#dc2626', margin: 0 }}>Reações impulsivas que podem causar problemas</p>
+                <p style={{ fontSize: 'clamp(12px, 2.5vw, 14px)', color: '#dc2626', margin: 0 }}>Quando precisar parar completamente e se afastar</p>
               </div>
               <div style={{ backgroundColor: '#fefce8', padding: '16px', borderRadius: '8px', border: '1px solid #fde68a' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                   <div style={{ width: '24px', height: '24px', backgroundColor: '#eab308', borderRadius: '50%' }}></div>
                   <h4 style={{ color: '#a16207', margin: 0, fontSize: 'clamp(14px, 3vw, 16px)' }}>AMARELO - PENSE!</h4>
                 </div>
-                <p style={{ fontSize: 'clamp(12px, 2.5vw, 14px)', color: '#ca8a04', margin: 0 }}>Pause, respire e avalie suas opções</p>
+                <p style={{ fontSize: 'clamp(12px, 2.5vw, 14px)', color: '#ca8a04', margin: 0 }}>Quando precisar pausar e pensar antes de agir</p>
               </div>
               <div style={{ backgroundColor: '#f0fdf4', padding: '16px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                   <div style={{ width: '24px', height: '24px', backgroundColor: '#22c55e', borderRadius: '50%' }}></div>
                   <h4 style={{ color: '#15803d', margin: 0, fontSize: 'clamp(14px, 3vw, 16px)' }}>VERDE - SIGA!</h4>
                 </div>
-                <p style={{ fontSize: 'clamp(12px, 2.5vw, 14px)', color: '#16a34a', margin: 0 }}>Ação pensada e construtiva</p>
+                <p style={{ fontSize: 'clamp(12px, 2.5vw, 14px)', color: '#16a34a', margin: 0 }}>Quando puder agir imediatamente de forma positiva</p>
               </div>
             </div>
           </div>
@@ -532,9 +567,9 @@ export default function JogoSemaforo() {
             <h3 style={{ marginBottom: '16px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>🎚️ Escolha o Nível</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px' }}>
               {[
-                { level: 'iniciante', desc: '2 cenários básicos' },
-                { level: 'intermediário', desc: '2 cenários moderados' },
-                { level: 'avançado', desc: '2 cenários complexos' }
+                { level: 'iniciante', desc: '2 situações simples' },
+                { level: 'intermediário', desc: '2 situações moderadas' },
+                { level: 'avançado', desc: '2 situações complexas' }
               ].map(({ level, desc }) => (
                 <button
                   key={level}
@@ -573,7 +608,7 @@ export default function JogoSemaforo() {
                 gap: '8px'
               }}
             >
-              ▶️ Iniciar Jogo do Semáforo
+              ▶️ Iniciar Jogo
             </button>
           </div>
         </div>
@@ -591,7 +626,7 @@ export default function JogoSemaforo() {
         background: 'linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0fdf4 100%)',
         paddingTop: '80px'
       }}>
-        {/* 🧠 HEADER LIMPO COM SALVAMENTO */}
+        {/* Header com Salvamento */}
         <div style={{
           position: 'fixed',
           top: 0,
@@ -647,7 +682,7 @@ export default function JogoSemaforo() {
               WebkitTextFillColor: 'transparent',
               margin: 0
             }}>
-              Jogo Concluído!
+              Parabéns!
             </h1>
             <div style={{ marginLeft: 'auto' }}>
               <button 
@@ -687,9 +722,9 @@ export default function JogoSemaforo() {
             </div>
             <p style={{ fontSize: 'clamp(1rem, 4vw, 1.25rem)', marginBottom: '24px' }}>{getScoreMessage()}</p>
             
-            {/* 📊 MÉTRICAS CIENTÍFICAS EM TEMPO REAL */}
+            {/* Resumo da Performance */}
             <div style={{ backgroundColor: '#f8fafc', padding: 'clamp(16px, 4vw, 24px)', borderRadius: '8px', marginBottom: '24px' }}>
-              <h3 style={{ color: '#1e40af', marginBottom: '12px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>📊 Análise de Performance</h3>
+              <h3 style={{ color: '#1e40af', marginBottom: '12px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>📊 Seu Resumo</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px', marginBottom: '16px' }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3b82f6' }}>
@@ -698,37 +733,33 @@ export default function JogoSemaforo() {
                   <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Tempo Médio</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ef4444' }}>
-                    {Math.round((respostasImpulsivas / (sequenciaTemporal.length || 1)) * 100)}%
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#22c55e' }}>
+                    {Object.values(variabilidadeContextual).filter(v => v > 0).length}/3
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Impulsividade</div>
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Tipos Usados</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#22c55e' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#8b5cf6' }}>
                     {Math.round((pausasReflexivas / (sequenciaTemporal.length || 1)) * 100)}%
                   </div>
                   <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Reflexão</div>
                 </div>
               </div>
-              <p style={{ fontSize: '0.875rem', color: '#4b5563', margin: 0 }}>
-                📈 Dados científicos serão salvos para análise longitudinal
-              </p>
             </div>
             
             <div style={{ backgroundColor: '#eff6ff', padding: 'clamp(16px, 4vw, 24px)', borderRadius: '8px', marginBottom: '24px' }}>
-              <h3 style={{ color: '#1e40af', marginBottom: '12px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>🧠 Reflexão Final</h3>
+              <h3 style={{ color: '#1e40af', marginBottom: '12px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>🧠 Lembre-se</h3>
               <p style={{ color: '#1e40af', marginBottom: '12px', fontSize: 'clamp(14px, 3vw, 16px)', lineHeight: '1.6' }}>
-                Lembre-se: o controle de impulsos é como um músculo que fica mais forte com a prática. 
-                Continue usando a técnica do semáforo no seu dia a dia:
+                Cada situação é única e pede uma resposta diferente. Continue praticando no seu dia a dia:
               </p>
               <ul style={{ textAlign: 'left', color: '#1e40af', margin: 0, paddingLeft: '20px', fontSize: 'clamp(14px, 3vw, 16px)' }}>
-                <li>🔴 <strong>Vermelho:</strong> Reconheça quando está agindo por impulso</li>
-                <li>🟡 <strong>Amarelo:</strong> Pare, respire fundo e pense nas consequências</li>
-                <li>🟢 <strong>Verde:</strong> Aja de forma pensada e construtiva</li>
+                <li>🔴 <strong>Vermelho:</strong> Quando sentir muita raiva, é melhor se afastar</li>
+                <li>🟡 <strong>Amarelo:</strong> Quando não souber como reagir, pause e pense</li>
+                <li>🟢 <strong>Verde:</strong> Quando puder ajudar alguém, aja com confiança</li>
               </ul>
             </div>
 
-            {/* 🎯 BOTÕES DE PROGRESSÃO INTELIGENTE */}
+            {/* Botões de Progressão */}
             <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button 
                 onClick={resetGame} 
@@ -761,7 +792,7 @@ export default function JogoSemaforo() {
                     cursor: salvando ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  {salvando ? '💾 Salvando...' : '🏆 Finalizar Completo'}
+                  {salvando ? '💾 Salvando...' : '🏆 Finalizar'}
                 </button>
               )}
             </div>
@@ -779,7 +810,7 @@ export default function JogoSemaforo() {
       background: 'linear-gradient(135deg, #fef2f2 0%, #fefce8 50%, #f0fdf4 100%)',
       paddingTop: '80px'
     }}>
-      {/* 🧠 HEADER LIMPO NO JOGO */}
+      {/* Header do Jogo */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -865,7 +896,7 @@ export default function JogoSemaforo() {
             </div>
             <div>
               <h1 style={{ fontSize: 'clamp(1.25rem, 4vw, 1.5rem)', fontWeight: 'bold', margin: 0 }}>Jogo do Semáforo</h1>
-              <p style={{ color: '#6b7280', margin: 0, fontSize: 'clamp(12px, 3vw, 14px)' }}>Cenário {currentScenario + 1} de {filteredScenarios.length} - Nível {currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1)}</p>
+              <p style={{ color: '#6b7280', margin: 0, fontSize: 'clamp(12px, 3vw, 14px)' }}>Situação {currentScenario + 1} de {filteredScenarios.length} - Nível {currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1)}</p>
             </div>
           </div>
           
@@ -969,14 +1000,14 @@ export default function JogoSemaforo() {
         {showResult && (
           <div style={{ ...cardStyle, borderLeft: '4px solid #3b82f6' }}>
             <h3 style={{ color: '#1e40af', marginBottom: '16px', fontSize: 'clamp(1rem, 4vw, 1.125rem)' }}>
-              {selectedOption === scenario.correctAnswer ? '🎉 Correto!' : '💭 Vamos Refletir'}
+              {selectedOption === scenario.correctAnswer ? '🎉 Muito bem!' : '💭 Vamos aprender'}
             </h3>
             <p style={{ marginBottom: '16px', lineHeight: '1.6', fontSize: 'clamp(14px, 3vw, 16px)', color: '#374151' }}>{scenario.explanation}</p>
             <button 
               onClick={nextScenario} 
               style={{ ...buttonStyle, width: '100%' }}
             >
-              {currentScenario < filteredScenarios.length - 1 ? 'Próximo Cenário' : 'Ver Resultado Final'}
+              {currentScenario < filteredScenarios.length - 1 ? 'Próxima Situação' : 'Ver Resultado Final'}
             </button>
           </div>
         )}
