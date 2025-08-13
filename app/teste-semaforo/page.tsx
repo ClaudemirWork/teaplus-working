@@ -1,7 +1,6 @@
 'use client'
 import { useState } from 'react'
 import { AppProvider, useAppContext } from '@/contexts/AppContext'
-import { createClient } from '@/utils/supabaseClient'
 
 // ✅ Componente do semáforo que usa o context
 function SemaforoGameComponent() {
@@ -10,34 +9,13 @@ function SemaforoGameComponent() {
   const [score, setScore] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
 
-  // ✅ PRESERVA SISTEMA DE SALVAMENTO ATUAL
-  const saveMetrics = async (gameData: any) => {
-    try {
-      const supabase = createClient()
-      
-      const metrics = {
-        user_id: userProfile?.id || 'guest',
-        activity_name: 'traffic-light-game',
-        section: currentSection, // ← NOVO: contexto automático
-        score: gameData.score,
-        completed_at: new Date().toISOString(),
-        metadata: {
-          section_context: currentSection,
-          total_interactions: gameData.interactions,
-          accuracy: gameData.accuracy
-        }
-      }
-
-      const { error } = await supabase
-        .from('user_metrics')
-        .insert([metrics])
-
-      if (!error) {
-        console.log('✅ Métricas salvas com contexto:', currentSection)
-      }
-    } catch (error) {
-      console.error('Erro ao salvar:', error)
-    }
+  // ✅ SIMULA SALVAMENTO (sem Supabase por enquanto)
+  const saveMetrics = (gameData: any) => {
+    console.log('✅ Métricas que seriam salvas:', {
+      section: currentSection,
+      score: gameData.score,
+      user_id: userProfile?.id || 'guest'
+    })
   }
 
   const handleLightClick = (color: 'red' | 'yellow' | 'green') => {
@@ -50,7 +28,7 @@ function SemaforoGameComponent() {
       setScore(prev => prev + 10)
     }
     
-    // Salva métricas com contexto
+    // Simula salvamento com contexto
     saveMetrics({
       score: score + 10,
       interactions: 1,
@@ -142,7 +120,7 @@ function SemaforoGameComponent() {
         <div className="mt-4 bg-green-50 border border-green-200 rounded p-3">
           <p className="text-xs text-green-700">
             🧪 <strong>TESTE:</strong> Context Provider funcionando | 
-            Métricas salvando com seção: {currentSection}
+            Console mostra métricas com seção: {currentSection}
           </p>
         </div>
       </div>
