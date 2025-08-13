@@ -4,20 +4,23 @@ import type { NextRequest } from 'next/server'
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   
-  // Rotas públicas (não precisam de login)
+  // Rotas públicas
   const publicRoutes = ['/login', '/signup', '/']
-  
-  // Se está numa rota pública, deixa passar
   if (publicRoutes.includes(pathname)) {
     return NextResponse.next()
   }
   
-  // Para outras rotas, verifica se tem token básico
-  const accessToken = req.cookies.get('sb-access-token')?.value
-  
-  // Se não tem token e tenta acessar área protegida → vai para login
-  if (!accessToken && pathname.startsWith('/profileselection')) {
-    return NextResponse.redirect(new URL('/login', req.url))
+  // Verificar tokens básicos para rotas protegidas
+  const protectedRoutes = ['/profileselection', '/tea', '/tdah', '/combined']
+  if (protectedRoutes.some(route => pathname.startsWith(route))) {
+    
+    // Verificação básica de tokens
+    const accessToken = req.cookies.get('sb-access-token')?.value
+    const refreshToken = req.cookies.get('sb-refresh-token')?.value
+    
+    if (!accessToken && !refreshToken) {
+      return NextResponse.redirect(new URL('/login', req.url))
+    }
   }
   
   return NextResponse.next()
