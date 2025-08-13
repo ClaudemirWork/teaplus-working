@@ -3,14 +3,15 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
-import { useTherapeuticObjectives, TherapeuticObjective, UserProfile, UserCondition } from '@/contexts/TherapeuticObjectives';
 
 // =========================================
-// TIPOS E INTERFACES
+// TIPOS E INTERFACES (DEFINITIVOS)
 // =========================================
 
 type ProfileType = 'patient' | 'parent' | 'therapist';
-type OnboardingStep = 'profile_type' | 'name' | 'condition' | 'objectives' | 'avatar' | 'duration' | 'completed';
+type OnboardingStep = 'profile_type' | 'name' | 'condition' | 'objectives' | 'avatar' | 'completed';
+type UserCondition = 'TEA' | 'TDAH' | 'TEA_TDAH' | 'OTHER';
+type TherapeuticObjective = 'manter_rotina_diaria' | 'habilidades_sociais' | 'foco_atencao' | 'regulacao_emocional' | 'comunicacao' | 'independencia';
 
 interface OnboardingData {
   profileType: ProfileType | null;
@@ -143,17 +144,9 @@ const AVATARS = [
   { id: 'leao', name: 'Leão', emoji: '🦁', color: '#CD853F' }
 ];
 
-const THERAPY_DURATIONS = [
-  { id: '4_weeks', title: '4 semanas', description: 'Experimentar o app', recommended: false },
-  { id: '8_weeks', title: '8 semanas', description: 'Ciclo básico', recommended: false },
-  { id: '12_weeks', title: '12 semanas', description: 'Recomendado', recommended: true },
-  { id: '24_weeks', title: '24 semanas', description: 'Programa completo', recommended: false }
-];
-
 export default function ProfileSelection() {
   const router = useRouter();
   const supabase = createClient();
-  const therapeuticContext = useTherapeuticObjectives();
   
   // Estados de autenticação (mantidos do código original)
   const [isLoading, setIsLoading] = useState(true);
@@ -262,7 +255,7 @@ export default function ProfileSelection() {
   };
 
   const goToNextStep = () => {
-    const stepOrder: OnboardingStep[] = ['profile_type', 'name', 'condition', 'objectives', 'avatar', 'duration', 'completed'];
+    const stepOrder: OnboardingStep[] = ['profile_type', 'name', 'condition', 'objectives', 'avatar', 'completed'];
     const currentIndex = stepOrder.indexOf(currentStep);
     if (currentIndex < stepOrder.length - 1) {
       setCurrentStep(stepOrder[currentIndex + 1]);
@@ -270,7 +263,7 @@ export default function ProfileSelection() {
   };
 
   const goToPreviousStep = () => {
-    const stepOrder: OnboardingStep[] = ['profile_type', 'name', 'condition', 'objectives', 'avatar', 'duration', 'completed'];
+    const stepOrder: OnboardingStep[] = ['profile_type', 'name', 'condition', 'objectives', 'avatar', 'completed'];
     const currentIndex = stepOrder.indexOf(currentStep);
     if (currentIndex > 0) {
       setCurrentStep(stepOrder[currentIndex - 1]);
@@ -299,7 +292,7 @@ export default function ProfileSelection() {
         selectedObjectives: currentObjectives.filter(obj => obj !== objective)
       });
     } else {
-      // Permitir seleção ilimitada inicialmente (sistema 3+2+1 será aplicado no Context Provider)
+      // Permitir seleção ilimitada inicialmente (sistema 3+2+1 será aplicado posteriormente)
       updateOnboardingData({
         selectedObjectives: [...currentObjectives, objective]
       });
@@ -312,8 +305,8 @@ export default function ProfileSelection() {
 
   const completeOnboarding = async () => {
     try {
-      // Criar perfil completo para o Context Provider
-      const userProfile: UserProfile = {
+      // Criar perfil completo para salvar no Supabase
+      const userProfile = {
         id: userInfo.id,
         name: onboardingData.name || userInfo.name,
         avatar: onboardingData.avatar,
@@ -337,10 +330,7 @@ export default function ProfileSelection() {
         }
       };
 
-      // Atualizar Context Provider
-      await therapeuticContext.updateUserProfile(userProfile);
-
-      // Salvar no Supabase (opcional para persistência)
+      // Salvar no Supabase (sem Context Provider por enquanto)
       await supabase.from('user_profiles').upsert({
         user_id: userInfo.id,
         profile_data: userProfile,
@@ -654,8 +644,7 @@ export default function ProfileSelection() {
     'condition': renderConditionStep,
     'objectives': renderObjectivesStep,
     'avatar': renderAvatarStep,
-    'duration': renderAvatarStep, // Por enquanto usa o mesmo
-    'completed': renderAvatarStep // Por enquanto usa o mesmo
+    'completed': renderAvatarStep
   };
 
   return (
