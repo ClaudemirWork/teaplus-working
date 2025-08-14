@@ -2,9 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-import { BarChart2, Award, Users, Star, CheckCircle, Trophy, Sparkles, Zap, MessageCircle, BrainCircuit, PlayCircle } from 'lucide-react';
+import { BarChart2, Award, Users, Star, CheckCircle, Trophy, Sparkles, Zap, MessageCircle, BrainCircuit, PlayCircle, Target } from 'lucide-react';
 
-// ATUALIZADO: Importando a nova função
 import DashboardCharts from '@/components/charts/DashboardCharts';
 import { fetchUserSessions } from './dashboardUtils';
 
@@ -54,10 +53,9 @@ export default function DashboardPage() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        // ATUALIZADO: Passamos o ID do usuário para a função de busca de sessões
         const [profileResponse, sessionsResponse] = await Promise.all([
           supabase.from('user_profiles').select('name, avatar, primary_condition, therapeutic_objectives').eq('user_id', session.user.id).single(),
-          fetchUserSessions(session.user.id) // <-- MUDANÇA AQUI
+          fetchUserSessions(session.user.id)
         ]);
 
         if (profileResponse.error) {
@@ -107,6 +105,20 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4"><BarChart2 size={24} /></div><div><p className="text-sm text-gray-500">Atividades Totais</p><p className="text-2xl font-bold text-gray-800">{sessions.length}</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4"><Award size={24} /></div><div><p className="text-sm text-gray-500">Conquistas</p><p className="text-2xl font-bold text-gray-800">0</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-green-100 text-green-600 p-3 rounded-full mr-4"><Users size={24} /></div><div><p className="text-sm text-gray-500">Nível Social</p><p className="text-2xl font-bold text-gray-800">1</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div><div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">0</p></div></div>
           </div>
+
+          {/* ================================================================ */}
+          {/* NOVA SEÇÃO: META SEMANAL */}
+          {/* ================================================================ */}
+          <div className="bg-white p-6 rounded-2xl shadow-lg mb-8">
+            <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-bold text-gray-800 flex items-center"><Target className="mr-2 text-indigo-500"/> Meta Semanal</h3>
+                <span className="text-sm font-semibold text-gray-600">63% de 75 atividades</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-4">
+                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full" style={{ width: `63%` }}></div>
+            </div>
+          </div>
+
 
           {sessions.length > 0 ? (
             <DashboardCharts sessions={sessions} />
