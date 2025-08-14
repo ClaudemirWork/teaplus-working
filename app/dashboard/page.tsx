@@ -4,8 +4,9 @@ import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { BarChart2, Award, Users, Star, CheckCircle, Trophy, Sparkles, Zap, MessageCircle, BrainCircuit, PlayCircle } from 'lucide-react';
 
+// ATUALIZADO: Importando a nova função
 import DashboardCharts from '@/components/charts/DashboardCharts';
-import { fetchAllSessions } from './dashboardUtils';
+import { fetchUserSessions } from './dashboardUtils';
 
 // Tipos e Constantes
 type UserProfile = {
@@ -53,9 +54,10 @@ export default function DashboardPage() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
+        // ATUALIZADO: Passamos o ID do usuário para a função de busca de sessões
         const [profileResponse, sessionsResponse] = await Promise.all([
           supabase.from('user_profiles').select('name, avatar, primary_condition, therapeutic_objectives').eq('user_id', session.user.id).single(),
-          fetchAllSessions()
+          fetchUserSessions(session.user.id) // <-- MUDANÇA AQUI
         ]);
 
         if (profileResponse.error) {
@@ -103,35 +105,23 @@ export default function DashboardPage() {
           )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4"><BarChart2 size={24} /></div><div><p className="text-sm text-gray-500">Atividades Totais</p><p className="text-2xl font-bold text-gray-800">0</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4"><Award size={24} /></div><div><p className="text-sm text-gray-500">Conquistas</p><p className="text-2xl font-bold text-gray-800">0</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-green-100 text-green-600 p-3 rounded-full mr-4"><Users size={24} /></div><div><p className="text-sm text-gray-500">Nível Social</p><p className="text-2xl font-bold text-gray-800">1</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div><div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">0</p></div></div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4"><BarChart2 size={24} /></div><div><p className="text-sm text-gray-500">Atividades Totais</p><p className="text-2xl font-bold text-gray-800">{sessions.length}</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4"><Award size={24} /></div><div><p className="text-sm text-gray-500">Conquistas</p><p className="text-2xl font-bold text-gray-800">0</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-green-100 text-green-600 p-3 rounded-full mr-4"><Users size={24} /></div><div><p className="text-sm text-gray-500">Nível Social</p><p className="text-2xl font-bold text-gray-800">1</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div><div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">0</p></div></div>
           </div>
 
-          {/* ================================================================ */}
-          {/* LÓGICA DO DASHBOARD INTELIGENTE */}
-          {/* ================================================================ */}
           {sessions.length > 0 ? (
-            // SE TIVER DADOS, MOSTRA OS GRÁFICOS COMPLETOS
             <DashboardCharts sessions={sessions} />
           ) : (
-            // SE NÃO TIVER DADOS, MOSTRA O GUIA "COMECE AQUI"
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="bg-white p-6 rounded-2xl shadow-lg">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                  <PlayCircle className="mr-3 text-green-500" />
-                  Comece sua Jornada por Aqui
-                </h3>
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center"><PlayCircle className="mr-3 text-green-500" />Comece sua Jornada por Aqui</h3>
                 <p className="text-gray-600 mb-5">Estes são seus objetivos iniciais. Clique em um para ver as atividades recomendadas e começar a progredir!</p>
                 <div className="space-y-4">
                   {profile?.therapeutic_objectives?.map((objectiveId) => {
                     const details = OBJECTIVE_DETAILS[objectiveId];
                     if (!details) return null;
-
                     return (
                       <button key={objectiveId} className="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200">
-                        <div className={`flex items-center font-semibold ${details.color}`}>
-                          {details.icon}
-                          <span className="ml-3">{details.name}</span>
-                        </div>
+                        <div className={`flex items-center font-semibold ${details.color}`}>{details.icon}<span className="ml-3">{details.name}</span></div>
                       </button>
                     );
                   })}
@@ -139,9 +129,7 @@ export default function DashboardPage() {
               </div>
               <div className="bg-white p-6 rounded-2xl shadow-lg">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">O que esperar?</h3>
-                <p className="text-gray-600">
-                  À medida que você completar as atividades, este espaço se transformará! Gráficos e estatísticas detalhadas aparecerão aqui, mostrando sua evolução em cada um dos seus objetivos.
-                </p>
+                <p className="text-gray-600">À medida que você completar as atividades, este espaço se transformará! Gráficos e estatísticas detalhadas aparecerão aqui, mostrando sua evolução em cada um dos seus objetivos.</p>
               </div>
             </div>
           )}
