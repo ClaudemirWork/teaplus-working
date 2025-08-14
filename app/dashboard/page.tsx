@@ -1,5 +1,3 @@
-// Cole este código completo dentro de app/dashboard/page.tsx
-
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
