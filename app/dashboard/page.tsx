@@ -102,7 +102,6 @@ export default function DashboardPage() {
     const WEEKLY_GOAL = 10;
     const startOfThisWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
     
-    // CORREÇÃO: Verificação de segurança para datas inválidas
     const completedThisWeek = sessions.filter(session => {
         const sessionDate = new Date(session.data_fim);
         return isValid(sessionDate) && isAfter(sessionDate, startOfThisWeek);
@@ -111,15 +110,18 @@ export default function DashboardPage() {
     const weeklyProgressPercentage = Math.min(100, Math.round((completedThisWeek / WEEKLY_GOAL) * 100));
 
     const objectivesProgress: { [key: string]: number } = {};
-    profile?.therapeutic_objectives?.forEach(objectiveId => {
-        const relevantSessions = sessions.filter(session => (ACTIVITY_TO_OBJECTIVE_MAP[session.atividade_nome] || []).includes(objectiveId));
-        if (relevantSessions.length > 0) {
-            const totalScore = relevantSessions.reduce((sum, session) => sum + (session.pontuacao_final || 0), 0);
-            objectivesProgress[objectiveId] = Math.round(totalScore / relevantSessions.length);
-        } else {
-            objectivesProgress[objectiveId] = 0;
-        }
-    });
+    // Verificação de segurança: só calcula se o perfil e os objetivos existirem
+    if (profile?.therapeutic_objectives) {
+        profile.therapeutic_objectives.forEach(objectiveId => {
+            const relevantSessions = sessions.filter(session => (ACTIVITY_TO_OBJECTIVE_MAP[session.atividade_nome] || []).includes(objectiveId));
+            if (relevantSessions.length > 0) {
+                const totalScore = relevantSessions.reduce((sum, session) => sum + (session.pontuacao_final || 0), 0);
+                objectivesProgress[objectiveId] = Math.round(totalScore / relevantSessions.length);
+            } else {
+                objectivesProgress[objectiveId] = 0;
+            }
+        });
+    }
 
     return { 
         totalActivities, totalXP, achievements, socialLevel,
