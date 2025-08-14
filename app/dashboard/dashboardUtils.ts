@@ -1,43 +1,24 @@
-import { createClient } from '../utils/supabaseClient'
+// Cole este código em app/dashboard/dashboardUtils.ts
 
-export interface SessionData {
-  id: number
-  atividade_nome: string
-  pontuacao_final: number
-  data_fim: string
-  detalhes: any
-  paciente_id: number
-}
+// A importação do createClient pode variar dependendo da sua estrutura
+// Se o arquivo supabaseClient estiver na pasta 'utils' na raiz, este caminho está correto.
+import { createClient } from '../../utils/supabaseClient';
 
-export async function fetchAllSessions() {
-  const supabase = createClient()
+// A função agora recebe o ID do usuário como um argumento
+export async function fetchUserSessions(userId: string) {
+  const supabase = createClient();
   
   const { data, error } = await supabase
     .from('sessoes')
     .select('*')
-    .order('data_fim', { ascending: false })
+    // A MÁGICA ACONTECE AQUI: Filtra as sessões para pegar apenas as do usuário logado
+    .eq('user_id', userId) 
+    .order('data_fim', { ascending: false });
   
   if (error) {
-    console.error('Erro:', error)
-    return []
+    console.error('Erro ao buscar sessoes do usuário:', error);
+    return [];
   }
   
-  return data || []
-}
-
-export function calculateMetrics(sessions: SessionData[]) {
-  const totalSessions = sessions.length
-  
-  const sessionsByActivity = sessions.reduce((acc, session) => {
-    if (!acc[session.atividade_nome]) {
-      acc[session.atividade_nome] = []
-    }
-    acc[session.atividade_nome].push(session)
-    return acc
-  }, {} as Record<string, SessionData[]>)
-  
-  return {
-    totalSessions,
-    sessionsByActivity
-  }
+  return data || [];
 }
