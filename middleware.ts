@@ -1,4 +1,3 @@
-// Importa o cliente de Supabase para middleware.
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -19,72 +18,58 @@ const getAppRoute = (condition: string) => {
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
-  
-  // Cria uma instância do cliente Supabase para o middleware.
-  // Isso nos permite interagir com o Supabase de forma segura.
   const supabase = createMiddlewareClient({ req, res });
   
-  // Refresca a sessão do usuário. Isso é crucial para manter a autenticação
-  // entre as requisições e garantir que a sessão esteja sempre atualizada.
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  
+  const { data: { session } } = await supabase.auth.getSession();
   const { pathname } = req.nextUrl;
   
-  // Define rotas que não requerem autenticação.
   const publicRoutes = ['/', '/login', '/signup'];
   
-  // Se o usuário tentar acessar uma rota pública, permite.
-  if (publicRoutes.includes(pathname)) {
+  // Se o usuário está em uma rota pública e não está logado, permite.
+  if (publicRoutes.includes(pathname) && !session) {
     return res;
   }
 
-  // Se não houver sessão, o usuário não está logado. Redireciona para o login.
-  if (!session) {
-    const redirectUrl = new URL('/login', req.url);
-    return NextResponse.redirect(redirectUrl);
+  // Se o usuário está logado e tenta acessar uma rota pública, redireciona.
+  if (publicRoutes.includes(pathname) && session) {
+    // Redireciona para a página de seleção de perfil, onde a lógica de
+    // verificação completa acontecerá.
+    return NextResponse.redirect(new URL('/profileselection', req.url));
   }
 
-  // --- LÓGICA DE VERIFICAÇÃO DE PERFIL APRIMORADA ---
-  
-  // Se o usuário está logado, verifica se o perfil está completo.
+  // Se não houver sessão e a rota não for pública, redireciona para o login.
+  if (!session) {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+
+  // --- Lógica de verificação de perfil para rotas protegidas ---
   const { data: profile, error } = await supabase
     .from('user_profiles')
-    .select('primary_condition, therapeutic_objectives, avatar')
+    .select('primary_condition, avatar')
     .eq('user_id', session.user.id)
     .single();
 
-  // Verifica se há um erro ao buscar o perfil ou se o perfil não existe.
-  if (error || !profile) {
-    console.error('Erro ao buscar perfil no middleware:', error);
-    // Se o perfil não for encontrado, redireciona para a seleção de perfil.
-    // Isso garante que o onboarding seja feito.
-    if (pathname !== '/profileselection') {
-      return NextResponse.redirect(new URL('/profileselection', req.url));
+  // Se o perfil não for encontrado ou estiver incompleto
+  if (error || !profile || !profile.primary_condition || !profile.avatar) {
+    // Se o usuário já está no onboarding, permite.
+    if (pathname === '/profileselection') {
+      return res;
     }
-  } else if (!profile.avatar || !profile.primary_condition || profile.therapeutic_objectives?.length === 0) {
-    // Se o perfil existe mas está incompleto (por exemplo, falta o avatar),
-    // redireciona para a seleção de perfil.
-    if (pathname !== '/profileselection') {
-      return NextResponse.redirect(new URL('/profileselection', req.url));
-    }
+    // Caso contrário, redireciona para o onboarding.
+    return NextResponse.redirect(new URL('/profileselection', req.url));
   }
-  
-  // Se o perfil estiver completo e o usuário estiver na página de profileselection,
-  // significa que ele já terminou o onboarding e pode ser redirecionado para a
-  // sua página personalizada.
-  if (profile && profile.avatar && pathname === '/profileselection') {
+
+  // Se o perfil está completo e o usuário tenta acessar o onboarding,
+  // redireciona para a página correta.
+  if (pathname === '/profileselection') {
     const redirectTo = getAppRoute(profile.primary_condition);
     return NextResponse.redirect(new URL(redirectTo, req.url));
   }
   
-  // Se o usuário está logado e o perfil está completo, permite que ele acesse a página.
+  // Permite o acesso se o usuário está logado, com perfil completo e na rota correta.
   return res;
 }
 
 export const config = {
-  // O matcher define quais rotas o middleware irá interceptar.
-  // A regex garante que ele não intercepta chamadas de API, arquivos estáticos, etc.
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
