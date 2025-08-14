@@ -39,7 +39,6 @@ const OBJECTIVE_DETAILS: { [key: string]: { name: string; icon: React.ReactNode;
     'coordenacao_motora': { name: 'Coordenação Motora', icon: '🤸', color: 'text-orange-600' },
 };
 
-// Mapeamento de Atividades para Objetivos (nosso "livro de receitas")
 const ACTIVITY_TO_OBJECTIVE_MAP: { [key: string]: { objectives: string[], path: string } } = {
     'Jogo do Semáforo': { objectives: ['regulacao_emocional', 'foco_atencao'], path: '/traffic-light-game' },
     'Respiração e Calma': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/breathing-techniques' },
@@ -48,7 +47,6 @@ const ACTIVITY_TO_OBJECTIVE_MAP: { [key: string]: { objectives: string[], path: 
     'Atenção Sustentada': { objectives: ['foco_atencao'], path: '/attention-sustained' },
     'Contato Visual': { objectives: ['habilidades_sociais'], path: '/eye-contact' },
     'Rotinas Diárias': { objectives: ['rotina_diaria'], path: '/daily-routine-builder' },
-    // Este mapa precisa ser expandido com todas as 92 atividades
 };
 
 
@@ -96,8 +94,9 @@ export default function DashboardPage() {
   }, [supabase, router]);
 
   const dashboardData = useMemo(() => {
-    // ... (cálculos de kpiData, weeklyProgress, etc.) ...
-    return { totalActivities: sessions.length, totalXP: sessions.length * 10 };
+    const totalActivities = sessions.length;
+    const totalXP = totalActivities * 10;
+    return { totalActivities, totalXP, achievements: 0, socialLevel: 1 };
   }, [sessions]);
   
   const activitiesForSelectedObjective = useMemo(() => {
@@ -179,7 +178,7 @@ export default function DashboardPage() {
                 <div className="bg-white p-4 rounded-xl shadow-lg text-center"><p className="text-sm text-gray-500">Pontos XP</p><p className="text-3xl font-bold text-gray-800">{dashboardData.totalXP}</p></div>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl shadow-lg">
+              <div className="bg-white p-6 rounded-2xl shadow-lg mb-6">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Os Seus Próximos Marcos</h3>
                 <div className="space-y-2">
                   {profile?.therapeutic_objectives?.map((objectiveId) => {
@@ -203,6 +202,16 @@ export default function DashboardPage() {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl shadow-lg">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Ações Rápidas</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button className="flex flex-col items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors duration-200"><MessageSquareText className="text-blue-600 mb-2" size={32}/><span className="font-semibold text-gray-700">Chat IA</span></button>
+                    <button className="flex flex-col items-center justify-center p-4 bg-green-50 hover:bg-green-100 rounded-xl transition-colors duration-200"><FileText className="text-green-600 mb-2" size={32}/><span className="font-semibold text-gray-700">Relatórios</span></button>
+                    <button className="flex flex-col items-center justify-center p-4 bg-yellow-50 hover:bg-yellow-100 rounded-xl transition-colors duration-200"><Library className="text-yellow-600 mb-2" size={32}/><span className="font-semibold text-gray-700">Biblioteca</span></button>
+                    <button className="flex flex-col items-center justify-center p-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors duration-200"><Settings className="text-gray-600 mb-2" size={32}/><span className="font-semibold text-gray-700">Configurações</span></button>
                 </div>
               </div>
             </div>
