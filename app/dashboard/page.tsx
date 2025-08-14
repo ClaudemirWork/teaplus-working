@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-import { BarChart2, Award, Users, Star } from 'lucide-react'; // Ícones para os novos cards
+// NOVOS ÍCONES
+import { BarChart2, Award, Users, Star, CheckCircle, Trophy, Sparkles } from 'lucide-react';
 
 // Importando os componentes que já existem
 import DashboardCharts from '@/components/charts/DashboardCharts';
@@ -107,47 +108,95 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ================================================================ */}
-          {/* NOVOS CARDS DE RESUMO (KPIs) */}
-          {/* ================================================================ */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
-              <div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4">
-                <BarChart2 size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Atividades Totais</p>
-                <p className="text-2xl font-bold text-gray-800">0</p>
-              </div>
+              <div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4"><BarChart2 size={24} /></div>
+              <div><p className="text-sm text-gray-500">Atividades Totais</p><p className="text-2xl font-bold text-gray-800">0</p></div>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
-              <div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4">
-                <Award size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Conquistas</p>
-                <p className="text-2xl font-bold text-gray-800">0</p>
-              </div>
+              <div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4"><Award size={24} /></div>
+              <div><p className="text-sm text-gray-500">Conquistas</p><p className="text-2xl font-bold text-gray-800">0</p></div>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
-              <div className="bg-green-100 text-green-600 p-3 rounded-full mr-4">
-                <Users size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Nível Social</p>
-                <p className="text-2xl font-bold text-gray-800">1</p>
-              </div>
+              <div className="bg-green-100 text-green-600 p-3 rounded-full mr-4"><Users size={24} /></div>
+              <div><p className="text-sm text-gray-500">Nível Social</p><p className="text-2xl font-bold text-gray-800">1</p></div>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
-              <div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4">
-                <Star size={24} />
+              <div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div>
+              <div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">0</p></div>
+            </div>
+          </div>
+
+          {/* ================================================================ */}
+          {/* NOVA SEÇÃO: ATIVIDADES E CONQUISTAS */}
+          {/* ================================================================ */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Coluna da Esquerda: Atividades de Hoje */}
+            <div className="bg-white p-6 rounded-2xl shadow-lg">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Atividades de Hoje</h3>
+              <div className="space-y-4">
+                {/* Item de atividade de exemplo 1 */}
+                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                  <CheckCircle className="text-green-500 mr-4" size={24} />
+                  <div className="flex-grow">
+                    <p className="font-medium text-gray-700">Respiração 4-7-8</p>
+                    <p className="text-xs text-gray-500">Técnica de regulação</p>
+                  </div>
+                  <span className="text-sm font-semibold text-green-600">Completo</span>
+                </div>
+                {/* Item de atividade de exemplo 2 */}
+                <div className="flex items-center p-3 bg-blue-50 rounded-lg border border-blue-300">
+                  <div className="w-6 h-6 rounded-full border-2 border-blue-500 mr-4"></div>
+                  <div className="flex-grow">
+                    <p className="font-medium text-gray-700">Conversa Inicial</p>
+                    <p className="text-xs text-gray-500">Habilidade social</p>
+                  </div>
+                  <button className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">Começar</button>
+                </div>
+                 {/* Item de atividade de exemplo 3 */}
+                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                  <div className="w-6 h-6 rounded-full border-2 border-gray-400 mr-4"></div>
+                  <div className="flex-grow">
+                    <p className="font-medium text-gray-400">Mindfulness 5-4-3-2-1</p>
+                    <p className="text-xs text-gray-400">Técnica sensorial</p>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-400">Bloqueado</span>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Pontos XP</p>
-                <p className="text-2xl font-bold text-gray-800">0</p>
+            </div>
+
+            {/* Coluna da Direita: Conquistas Recentes */}
+            <div className="bg-white p-6 rounded-2xl shadow-lg">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Conquistas Recentes</h3>
+              <div className="space-y-4">
+                {/* Conquista de exemplo 1 */}
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">🏆</div>
+                  <div>
+                    <p className="font-bold text-gray-800">Conversador</p>
+                    <p className="text-sm text-gray-600">Completou 5 atividades de conversação</p>
+                  </div>
+                </div>
+                {/* Conquista de exemplo 2 */}
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">❤️</div>
+                  <div>
+                    <p className="font-bold text-gray-800">Empático</p>
+                    <p className="text-sm text-gray-600">Demonstrou empatia em situações difíceis</p>
+                  </div>
+                </div>
+                {/* Conquista de exemplo 3 */}
+                <div className="flex items-center">
+                  <div className="text-3xl mr-4">🔥</div>
+                  <div>
+                    <p className="font-bold text-gray-800">Persistente</p>
+                    <p className="text-sm text-gray-600">7 dias consecutivos de atividades</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+
 
           <DashboardCharts sessions={sessions} />
 
