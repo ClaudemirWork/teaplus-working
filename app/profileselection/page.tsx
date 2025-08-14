@@ -1,89 +1,28 @@
-// Versão com debug melhorado para identificar erro Supabase
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
 
-// [Todos os tipos anteriores permanecem iguais]
+// =========================================
+// TIPOS ESSENCIAIS
+// =========================================
 type ProfileType = 'child' | 'parent' | 'professional';
 type Condition = 'TEA' | 'TDAH' | 'TEA_TDAH' | 'OTHER';
 type Avatar = 'star' | 'rocket' | 'unicorn' | 'dragon' | 'robot' | 'cat' | 'dog' | 'lion';
 
-interface TherapeuticObjective {
-  id: string;
-  name: string;
-  icon: string;
-  scientificEvidence: string;
-  cohenD?: number;
-  evidenceLevel: 'A' | 'B' | 'C';
-}
-
-const THERAPEUTIC_OBJECTIVES: TherapeuticObjective[] = [
-  {
-    id: 'regulacao_emocional',
-    name: 'Regular emoções',
-    icon: '😊',
-    scientificEvidence: 'Meta-análise 2024 - Eficácia comprovada',
-    cohenD: 1.89,
-    evidenceLevel: 'A'
-  },
-  {
-    id: 'comunicacao',
-    name: 'Comunicação',
-    icon: '💬',
-    scientificEvidence: 'Core TEA - Evidência neurológica',
-    cohenD: 1.76,
-    evidenceLevel: 'A'
-  },
-  {
-    id: 'foco_atencao',
-    name: 'Aumentar foco e atenção',
-    icon: '🎯',
-    scientificEvidence: 'Core TDAH - Função executiva',
-    cohenD: 1.54,
-    evidenceLevel: 'A'
-  },
-  {
-    id: 'habilidades_sociais',
-    name: 'Melhorar habilidades sociais',
-    icon: '👥',
-    scientificEvidence: 'Intervenção social validada',
-    cohenD: 1.33,
-    evidenceLevel: 'A'
-  },
-  {
-    id: 'rotina_diaria',
-    name: 'Manter rotina diária',
-    icon: '📅',
-    scientificEvidence: 'Estrutura temporal - TEA',
-    cohenD: 1.41,
-    evidenceLevel: 'A'
-  },
-  {
-    id: 'independencia',
-    name: 'Independência',
-    icon: '🦋',
-    scientificEvidence: 'Autonomia funcional',
-    cohenD: 1.28,
-    evidenceLevel: 'A'
-  },
-  {
-    id: 'gestao_ansiedade',
-    name: 'Gestão de ansiedade',
-    icon: '🧘',
-    scientificEvidence: 'Técnicas de mindfulness - Evidência classe A',
-    cohenD: 1.67,
-    evidenceLevel: 'A'
-  },
-  {
-    id: 'coordenacao_motora',
-    name: 'Coordenação motora',
-    icon: '🤸',
-    scientificEvidence: 'Desenvolvimento neuromotor',
-    cohenD: 1.22,
-    evidenceLevel: 'B'
-  }
+// =========================================
+// 8 OBJETIVOS CIENTÍFICOS
+// =========================================
+const THERAPEUTIC_OBJECTIVES = [
+  { id: 'regulacao_emocional', name: 'Regular emoções', icon: '😊' },
+  { id: 'comunicacao', name: 'Comunicação', icon: '💬' },
+  { id: 'foco_atencao', name: 'Aumentar foco e atenção', icon: '🎯' },
+  { id: 'habilidades_sociais', name: 'Melhorar habilidades sociais', icon: '👥' },
+  { id: 'rotina_diaria', name: 'Manter rotina diária', icon: '📅' },
+  { id: 'independencia', name: 'Independência', icon: '🦋' },
+  { id: 'gestao_ansiedade', name: 'Gestão de ansiedade', icon: '🧘' },
+  { id: 'coordenacao_motora', name: 'Coordenação motora', icon: '🤸' }
 ];
 
 const AVATARS = [
@@ -101,10 +40,11 @@ export default function ProfileSelection() {
   const router = useRouter();
   const supabase = createClient();
   
-  // Estados para as 5 etapas
+  // Estados
   const [currentStep, setCurrentStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState('');
   
   // Dados do perfil
   const [profileType, setProfileType] = useState<ProfileType | null>(null);
@@ -113,9 +53,9 @@ export default function ProfileSelection() {
   const [selectedObjectives, setSelectedObjectives] = useState<string[]>([]);
   const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
 
-  // Verificação de autenticação e perfil existente
+  // Verificação inicial
   useEffect(() => {
-    const checkAuthAndProfile = async () => {
+    const checkUser = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -124,62 +64,56 @@ export default function ProfileSelection() {
           return;
         }
 
-        // Verificar se já existe perfil completo
-        const { data: existingProfile, error: profileError } = await supabase
+        // Verificar se já tem perfil
+        const { data: profile } = await supabase
           .from('user_profiles')
           .select('*')
           .eq('user_id', session.user.id)
           .single();
 
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('Erro ao buscar perfil:', profileError);
-          setDebugInfo(`Erro ao verificar perfil: ${profileError.message}`);
+        if (profile && profile.avatar) {
+          // Já tem perfil completo, redirecionar
+          const redirectTo = getAppRoute(profile.primary_condition);
+          router.push(redirectTo);
+          return;
         }
 
-        // Se já tem perfil completo, redirecionar
-        if (existingProfile && existingProfile.therapeutic_objectives && existingProfile.avatar) {
-          const redirectTo = getAppRoute(existingProfile.primary_condition);
-          router.push(redirectTo);
-        }
+        setMessage('Bem-vindo! Vamos configurar seu perfil.');
+        setIsLoading(false);
 
       } catch (error) {
-        console.error('Erro na verificação:', error);
-        setDebugInfo(`Erro de conexão: ${error}`);
+        console.error('Erro inicial:', error);
+        setIsLoading(false);
       }
     };
 
-    checkAuthAndProfile();
-  }, [router, supabase.auth]);
+    checkUser();
+  }, [router, supabase]);
 
   // Função para determinar rota baseada na condição
   const getAppRoute = (condition: string) => {
     switch (condition) {
-      case 'TEA':
-        return '/tea';
-      case 'TDAH':
-        return '/tdah';
-      case 'TEA_TDAH':
-        return '/combined';
-      default:
-        return '/tea';
+      case 'TEA': return '/tea';
+      case 'TDAH': return '/tdah';
+      case 'TEA_TDAH': return '/combined';
+      default: return '/tea';
     }
   };
 
-  // Função para avançar etapas
+  // Navegação entre etapas
   const nextStep = () => {
     if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     }
   };
 
-  // Função para voltar etapas
   const prevStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
   };
 
-  // Toggle de objetivos terapêuticos
+  // Toggle objetivos
   const toggleObjective = (objectiveId: string) => {
     setSelectedObjectives(prev => 
       prev.includes(objectiveId)
@@ -188,116 +122,49 @@ export default function ProfileSelection() {
     );
   };
 
-  // Finalizar cadastro com debug melhorado
+  // Finalizar cadastro
   const handleFinish = async () => {
-    setIsLoading(true);
-    setDebugInfo('Iniciando salvamento...');
+    setIsSubmitting(true);
+    setMessage('Salvando seu perfil...');
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        throw new Error('Usuário não autenticado');
+        throw new Error('Não autenticado');
       }
 
-      setDebugInfo('Usuário autenticado, preparando dados...');
-
-      // Verificar se a tabela existe
-      const { data: testData, error: testError } = await supabase
-        .from('user_profiles')
-        .select('count')
-        .limit(1);
-
-      if (testError) {
-        setDebugInfo(`Erro na tabela user_profiles: ${testError.message}`);
-        throw new Error(`Tabela não existe ou sem permissão: ${testError.message}`);
-      }
-
-      setDebugInfo('Tabela verificada, criando perfil...');
-
-      // Dados científicos para salvar (estrutura simplificada primeiro)
+      // Dados para salvar (estrutura simples)
       const profileData = {
         user_id: session.user.id,
-        profile_type: profileType,
+        profile_type: profileType!,
         name: userName,
-        primary_condition: condition,
+        primary_condition: condition!,
         therapeutic_objectives: selectedObjectives,
-        avatar: selectedAvatar,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        avatar: selectedAvatar!
       };
 
-      setDebugInfo('Salvando no Supabase...');
-
-      // Tentar inserir primeiro (se não existir)
-      const { data: insertData, error: insertError } = await supabase
+      // Salvar no Supabase
+      const { error } = await supabase
         .from('user_profiles')
-        .insert(profileData);
+        .upsert(profileData, { onConflict: 'user_id' });
 
-      if (insertError) {
-        // Se der erro de duplicata, tentar update
-        if (insertError.code === '23505') {
-          setDebugInfo('Perfil existe, atualizando...');
-          
-          const { data: updateData, error: updateError } = await supabase
-            .from('user_profiles')
-            .update({
-              profile_type: profileType,
-              name: userName,
-              primary_condition: condition,
-              therapeutic_objectives: selectedObjectives,
-              avatar: selectedAvatar,
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', session.user.id);
-
-          if (updateError) {
-            throw updateError;
-          }
-        } else {
-          throw insertError;
-        }
+      if (error) {
+        throw error;
       }
 
-      setDebugInfo('Perfil salvo com sucesso! Redirecionando...');
+      setMessage('Perfil salvo com sucesso! Redirecionando...');
 
-      // Redirecionar baseado na condição (compatibilidade)
-      const redirectTo = getAppRoute(condition!);
-      
+      // Redirecionar após sucesso
       setTimeout(() => {
+        const redirectTo = getAppRoute(condition!);
         router.push(redirectTo);
-      }, 1000);
+      }, 1500);
       
     } catch (error: any) {
-      console.error('Erro detalhado:', error);
-      setDebugInfo(`ERRO: ${error.message}`);
-      
-      // Se for erro de tabela não existente, criar usuário básico
-      if (error.message.includes('relation "user_profiles" does not exist')) {
-        setDebugInfo('Tabela não existe. Criando perfil básico...');
-        
-        // Salvar em auth metadata como fallback
-        const { error: metaError } = await supabase.auth.updateUser({
-          data: {
-            profile_type: profileType,
-            name: userName,
-            primary_condition: condition,
-            therapeutic_objectives: selectedObjectives,
-            avatar: selectedAvatar
-          }
-        });
-
-        if (!metaError) {
-          setDebugInfo('Perfil salvo em metadata! Redirecionando...');
-          const redirectTo = getAppRoute(condition!);
-          setTimeout(() => router.push(redirectTo), 1000);
-          return;
-        }
-      }
-      
-      alert(`Erro ao salvar perfil: ${error.message}`);
-    } finally {
-      setIsLoading(false);
+      console.error('Erro ao salvar:', error);
+      setMessage(`Erro: ${error.message}`);
+      setIsSubmitting(false);
     }
   };
 
@@ -307,13 +174,27 @@ export default function ProfileSelection() {
     router.push('/login');
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-600">Verificando perfil...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-        {/* Debug Info */}
-        {debugInfo && (
-          <div className="mb-4 p-2 bg-yellow-100 rounded text-xs text-yellow-800">
-            Debug: {debugInfo}
+        
+        {/* Mensagem de status */}
+        {message && (
+          <div className="mb-4 p-3 bg-blue-100 rounded-lg text-blue-800 text-sm text-center">
+            {message}
           </div>
         )}
 
@@ -356,72 +237,40 @@ export default function ProfileSelection() {
             </div>
 
             <div className="space-y-4">
-              <button
-                onClick={() => setProfileType('child')}
-                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                  profileType === 'child'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center">
-                  <div className="text-2xl mr-3">👤</div>
-                  <div>
-                    <div className="font-semibold text-gray-800">Criança/Adolescente</div>
-                    <div className="text-sm text-gray-600">Vou usar o app sozinho(a)</div>
+              {[
+                { type: 'child' as ProfileType, icon: '👤', title: 'Criança/Adolescente', subtitle: 'Vou usar o app sozinho(a)' },
+                { type: 'parent' as ProfileType, icon: '👨‍👩‍👧‍👦', title: 'Pai/Mãe/Responsável', subtitle: 'Vou acompanhar meu filho(a)' },
+                { type: 'professional' as ProfileType, icon: '👩‍⚕️', title: 'Profissional', subtitle: 'Vou acompanhar pacientes' }
+              ].map((option) => (
+                <button
+                  key={option.type}
+                  onClick={() => setProfileType(option.type)}
+                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                    profileType === option.type
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <div className="text-2xl mr-3">{option.icon}</div>
+                    <div>
+                      <div className="font-semibold text-gray-800">{option.title}</div>
+                      <div className="text-sm text-gray-600">{option.subtitle}</div>
+                    </div>
                   </div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setProfileType('parent')}
-                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                  profileType === 'parent'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center">
-                  <div className="text-2xl mr-3">👨‍👩‍👧‍👦</div>
-                  <div>
-                    <div className="font-semibold text-gray-800">Pai/Mãe/Responsável</div>
-                    <div className="text-sm text-gray-600">Vou acompanhar meu filho(a)</div>
-                  </div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setProfileType('professional')}
-                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                  profileType === 'professional'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center">
-                  <div className="text-2xl mr-3">👩‍⚕️</div>
-                  <div>
-                    <div className="font-semibold text-gray-800">Profissional</div>
-                    <div className="text-sm text-gray-600">Vou acompanhar pacientes</div>
-                  </div>
-                </div>
-              </button>
+                </button>
+              ))}
             </div>
 
             <div className="flex justify-between pt-4">
-              <button
-                onClick={handleLogout}
-                className="px-6 py-2 text-gray-600 hover:text-gray-800"
-              >
+              <button onClick={handleLogout} className="px-6 py-2 text-gray-600 hover:text-gray-800">
                 Sair do Aplicativo
               </button>
               <button
                 onClick={nextStep}
                 disabled={!profileType}
                 className={`px-8 py-3 rounded-xl font-medium ${
-                  profileType
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  profileType ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
                 Próximo →
@@ -430,43 +279,33 @@ export default function ProfileSelection() {
           </div>
         )}
 
-        {/* [ETAPAS 2-4 permanecem iguais ao código anterior] */}
-        {/* ETAPA 2: VAMOS NOS CONHECER! */}
+        {/* ETAPA 2: NOME */}
         {currentStep === 2 && (
           <div className="space-y-6">
             <div className="text-center">
               <h2 className="text-xl font-bold text-gray-800 mb-2">Vamos nos conhecer!</h2>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nome
-                </label>
-                <input
-                  type="text"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  placeholder="Como você gostaria de ser chamado?"
-                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Nome</label>
+              <input
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                placeholder="Como você gostaria de ser chamado?"
+                className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
+              />
             </div>
 
             <div className="flex justify-between pt-4">
-              <button
-                onClick={prevStep}
-                className="px-6 py-2 text-gray-600 hover:text-gray-800"
-              >
+              <button onClick={prevStep} className="px-6 py-2 text-gray-600 hover:text-gray-800">
                 ← Voltar
               </button>
               <button
                 onClick={nextStep}
                 disabled={!userName.trim()}
                 className={`px-8 py-3 rounded-xl font-medium ${
-                  userName.trim()
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  userName.trim() ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
                 Próximo →
@@ -475,7 +314,7 @@ export default function ProfileSelection() {
           </div>
         )}
 
-        {/* ETAPA 3: SUAS NECESSIDADES */}
+        {/* ETAPA 3: CONDIÇÃO */}
         {currentStep === 3 && (
           <div className="space-y-6">
             <div className="text-center">
@@ -484,85 +323,38 @@ export default function ProfileSelection() {
             </div>
 
             <div className="space-y-4">
-              <button
-                onClick={() => setCondition('TEA')}
-                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                  condition === 'TEA'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center">
-                  <div className="text-2xl mr-3">🧩</div>
-                  <div>
-                    <div className="font-semibold text-gray-800">TEA (Transtorno do Espectro Autista)</div>
+              {[
+                { type: 'TEA' as Condition, icon: '🧩', title: 'TEA (Transtorno do Espectro Autista)' },
+                { type: 'TDAH' as Condition, icon: '⚡', title: 'TDAH (Transtorno do Déficit de Atenção)' },
+                { type: 'TEA_TDAH' as Condition, icon: '🔄', title: 'TEA + TDAH' },
+                { type: 'OTHER' as Condition, icon: '⭐', title: 'Outra condição' }
+              ].map((option) => (
+                <button
+                  key={option.type}
+                  onClick={() => setCondition(option.type)}
+                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                    condition === option.type
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <div className="text-2xl mr-3">{option.icon}</div>
+                    <div className="font-semibold text-gray-800">{option.title}</div>
                   </div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setCondition('TDAH')}
-                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                  condition === 'TDAH'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center">
-                  <div className="text-2xl mr-3">⚡</div>
-                  <div>
-                    <div className="font-semibold text-gray-800">TDAH (Transtorno do Déficit de Atenção)</div>
-                  </div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setCondition('TEA_TDAH')}
-                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                  condition === 'TEA_TDAH'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center">
-                  <div className="text-2xl mr-3">🔄</div>
-                  <div>
-                    <div className="font-semibold text-gray-800">TEA + TDAH</div>
-                  </div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setCondition('OTHER')}
-                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                  condition === 'OTHER'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center">
-                  <div className="text-2xl mr-3">⭐</div>
-                  <div>
-                    <div className="font-semibold text-gray-800">Outra condição</div>
-                  </div>
-                </div>
-              </button>
+                </button>
+              ))}
             </div>
 
             <div className="flex justify-between pt-4">
-              <button
-                onClick={prevStep}
-                className="px-6 py-2 text-gray-600 hover:text-gray-800"
-              >
+              <button onClick={prevStep} className="px-6 py-2 text-gray-600 hover:text-gray-800">
                 ← Voltar
               </button>
               <button
                 onClick={nextStep}
                 disabled={!condition}
                 className={`px-8 py-3 rounded-xl font-medium ${
-                  condition
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  condition ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
                 Próximo →
@@ -571,7 +363,7 @@ export default function ProfileSelection() {
           </div>
         )}
 
-        {/* ETAPA 4: OBJETIVOS INICIAIS (8 OBJETIVOS CIENTÍFICOS) */}
+        {/* ETAPA 4: OBJETIVOS */}
         {currentStep === 4 && (
           <div className="space-y-6">
             <div className="text-center">
@@ -592,9 +384,6 @@ export default function ProfileSelection() {
                 >
                   <div className="text-2xl mb-2">{objective.icon}</div>
                   <div className="text-sm font-medium text-gray-800">{objective.name}</div>
-                  {objective.evidenceLevel === 'A' && (
-                    <div className="text-xs text-green-600 mt-1">Evidência Nível A</div>
-                  )}
                 </button>
               ))}
             </div>
@@ -604,19 +393,14 @@ export default function ProfileSelection() {
             </div>
 
             <div className="flex justify-between pt-4">
-              <button
-                onClick={prevStep}
-                className="px-6 py-2 text-gray-600 hover:text-gray-800"
-              >
+              <button onClick={prevStep} className="px-6 py-2 text-gray-600 hover:text-gray-800">
                 ← Voltar
               </button>
               <button
                 onClick={nextStep}
                 disabled={selectedObjectives.length === 0}
                 className={`px-8 py-3 rounded-xl font-medium ${
-                  selectedObjectives.length > 0
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  selectedObjectives.length > 0 ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
                 Próximo →
@@ -625,7 +409,7 @@ export default function ProfileSelection() {
           </div>
         )}
 
-        {/* ETAPA 5: ESCOLHA SEU AVATAR */}
+        {/* ETAPA 5: AVATAR */}
         {currentStep === 5 && (
           <div className="space-y-6">
             <div className="text-center">
@@ -651,22 +435,17 @@ export default function ProfileSelection() {
             </div>
 
             <div className="flex justify-between pt-4">
-              <button
-                onClick={prevStep}
-                className="px-6 py-2 text-gray-600 hover:text-gray-800"
-              >
+              <button onClick={prevStep} className="px-6 py-2 text-gray-600 hover:text-gray-800">
                 ← Voltar
               </button>
               <button
                 onClick={handleFinish}
-                disabled={!selectedAvatar || isLoading}
+                disabled={!selectedAvatar || isSubmitting}
                 className={`px-8 py-3 rounded-xl font-medium ${
-                  selectedAvatar && !isLoading
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  selectedAvatar && !isSubmitting ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
-                {isLoading ? 'Salvando...' : 'Finalizar →'}
+                {isSubmitting ? 'Salvando...' : 'Finalizar →'}
               </button>
             </div>
           </div>
@@ -674,13 +453,8 @@ export default function ProfileSelection() {
 
         {/* Footer */}
         <div className="text-center mt-8">
-          <div className="text-xs text-gray-500">
-            Sistema baseado em evidências científicas
-          </div>
-          <button 
-            onClick={handleLogout}
-            className="text-xs text-orange-500 hover:text-orange-600 mt-1"
-          >
+          <div className="text-xs text-gray-500">Sistema baseado em evidências científicas</div>
+          <button onClick={handleLogout} className="text-xs text-orange-500 hover:text-orange-600 mt-1">
             🚪 Sair do Aplicativo
           </button>
         </div>
