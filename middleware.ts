@@ -7,7 +7,6 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
   const { pathname } = req.nextUrl
 
-  // Esta parte cria um cliente do Supabase de forma segura no servidor
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -26,49 +25,46 @@ export async function middleware(req: NextRequest) {
     }
   )
 
-  // Pega a sessão do usuário para saber se ele está logado
   const { data: { session } } = await supabase.auth.getSession()
 
-  // Se o usuário NÃO estiver logado...
+  // Se o usuário NÃO ESTÁ LOGADO
   if (!session) {
-    const publicRoutes = ['/login', '/signup', '/']
-    // E tentar acessar uma página protegida...
-    if (!publicRoutes.includes(pathname)) {
-      // ...nós o enviamos para a tela de login.
-      return NextResponse.redirect(new URL('/login', req.url))
+    // Se ele tentar acessar qualquer página interna, redireciona para o login.
+    // A página inicial '/' é pública.
+    if (pathname.startsWith('/home') || pathname.startsWith('/profileselection')) {
+      return NextResponse.redirect(new URL('/login', req.url));
     }
-    return res
+    return res;
   }
 
-  // Se o usuário ESTIVER LOGADO...
-  // Precisamos verificar se ele já completou o onboarding.
-  // Buscamos no banco de dados se a "condição primária" foi preenchida.
+  // Se o usuário ESTÁ LOGADO
   const { data: userProfile } = await supabase
     .from('user_profiles')
     .select('primary_condition')
     .eq('user_id', session.user.id)
     .single()
 
-  // Se "primary_condition" existir, o onboarding está completo.
-  const isOnboardingComplete = userProfile?.primary_condition;
+  const onboardingComplete = !!userProfile?.primary_condition;
 
-  const onboardingPath = '/profileselection';
+  // REGRA ESPECIAL: Se o usuário logado chegar na página inicial...
+  if (pathname === '/') {
+    // ... o enviamos para o lugar certo.
+    if (onboardingComplete) {
+      return NextResponse.redirect(new URL('/home', req.url)); // Vai para o app
+    } else {
+      return NextResponse.redirect(new URL('/profileselection', req.url)); // Vai para o onboarding
+    }
+  }
 
-  // Se o onboarding ESTÁ COMPLETO...
-  if (isOnboardingComplete) {
-    // ...e ele tentar acessar a página de onboarding...
-    if (pathname.startsWith(onboardingPath)) {
-      // ...nós o redirecionamos para a página principal do app (que criaremos no próximo passo).
-      return NextResponse.redirect(new URL('/home', req.url));
-    }
-  } 
-  // Se o onboarding NÃO ESTÁ COMPLETO...
-  else {
-    // ...e ele NÃO estiver na página de onboarding...
-    if (!pathname.startsWith(onboardingPath)) {
-       // ...nós o FORÇAMOS a ir para a página de onboarding.
-      return NextResponse.redirect(new URL(onboardingPath, req.url));
-    }
+  // Se o onboarding NÃO está completo, força o usuário a ir para lá,
+  // a menos que ele já esteja na página de onboarding ou login.
+  if (!onboardingComplete && !pathname.startsWith('/profileselection') && !pathname.startsWith('/login')) {
+    return NextResponse.redirect(new URL('/profileselection', req.url));
+  }
+
+  // Se o onboarding ESTÁ completo, impede o usuário de acessar o onboarding novamente.
+  if (onboardingComplete && pathname.startsWith('/profileselection')) {
+    return NextResponse.redirect(new URL('/home', req.url));
   }
 
   return res
