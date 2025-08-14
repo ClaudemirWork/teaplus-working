@@ -2,6 +2,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
+// NOVO: Importando funções de data para calcular a semana
+import { startOfWeek, isAfter } from 'date-fns';
 import { BarChart2, Award, Users, Star, CheckCircle, Zap, MessageCircle, BrainCircuit, PlayCircle, Target, MessageSquareText, FileText, Library, Settings } from 'lucide-react';
 
 import DashboardCharts from '@/components/charts/DashboardCharts';
@@ -17,7 +19,7 @@ type UserProfile = {
 
 const AVATAR_EMOJIS: { [key: string]: string } = {
   star: '⭐', rocket: '🚀', unicorn: '🦄', dragon: '🐉',
-  robot: '🤖', cat: '🐱', dog: '🐶', lion: '🦁',
+  robot: '🤖', cat: '🐱', dog: '�', lion: '🦁',
   fox: '🦊', headphone: '🎧', joystick: '🎮', compass: '🧭', shield: '🛡️'
 };
 
@@ -75,13 +77,34 @@ export default function DashboardPage() {
     fetchAllData();
   }, [supabase, router]);
 
+  // ================================================================
+  // ATUALIZADO: CÁLCULO DAS MÉTRICAS AGORA INCLUI A META SEMANAL
+  // ================================================================
   const kpiData = useMemo(() => {
     const totalActivities = sessions.length;
     const totalXP = totalActivities * 10;
     const achievements = 0;
     const socialLevel = 1;
 
-    return { totalActivities, totalXP, achievements, socialLevel };
+    // Lógica da Meta Semanal
+    const WEEKLY_GOAL = 10; // Nossa meta de exemplo: 10 atividades por semana
+    const startOfThisWeek = startOfWeek(new Date(), { weekStartsOn: 1 }); // Começa na Segunda-feira
+    
+    const completedThisWeek = sessions.filter(session => 
+        isAfter(new Date((session as any).data_fim), startOfThisWeek)
+    ).length;
+
+    const weeklyProgressPercentage = Math.round((completedThisWeek / WEEKLY_GOAL) * 100);
+
+    return { 
+        totalActivities, 
+        totalXP, 
+        achievements, 
+        socialLevel,
+        WEEKLY_GOAL,
+        completedThisWeek,
+        weeklyProgressPercentage
+    };
   }, [sessions]);
   
   if (loading) {
@@ -98,37 +121,18 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-         <div className="max-w-7xl mx-auto p-4">
-            <div className="flex items-center justify-between">
-                <h1 className="text-xl font-bold text-gray-800">TeaPlus</h1>
-                {profile && (
-                    <div className="text-right">
-                        <p className="font-semibold text-gray-800">{profile.name}</p>
-                        <p className="text-xs text-gray-500">{profile.primary_condition.replace('_', ' + ')}</p>
-                    </div>
-                )}
-            </div>
-         </div>
+         <div className="max-w-7xl mx-auto p-4"><div className="flex items-center justify-between"><h1 className="text-xl font-bold text-gray-800">TeaPlus</h1>{profile && (<div className="flex items-center space-x-4"><div className="text-right"><p className="font-semibold text-gray-800">{profile.name}</p><p className="text-xs text-gray-500">{profile.primary_condition.replace('_', ' + ')}</p></div></div>)}</div></div>
       </header>
 
       <main className="p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           
-          {/* ================================================================ */}
-          {/* BLOCO DE BOAS-VINDAS ATUALIZADO */}
-          {/* ================================================================ */}
           {profile && (
             <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 flex items-center space-x-6">
-                <div className="text-6xl bg-gray-200 p-3 rounded-full">
-                    {AVATAR_EMOJIS[profile.avatar] || '👤'}
-                </div>
+                <div className="text-6xl bg-gray-200 p-3 rounded-full">{AVATAR_EMOJIS[profile.avatar] || '👤'}</div>
                 <div>
-                    <h2 className="text-3xl font-bold text-gray-800">
-                        Olá, {profile.name.split(' ')[0]}!
-                    </h2>
-                    <p className="text-gray-600 mt-1">
-                        Acompanhe aqui a sua jornada de desenvolvimento e progresso.
-                    </p>
+                    <h2 className="text-3xl font-bold text-gray-800">Olá, {profile.name.split(' ')[0]}!</h2>
+                    <p className="text-gray-600 mt-1">Acompanhe aqui a sua jornada de desenvolvimento e progresso.</p>
                 </div>
             </div>
           )}
@@ -140,9 +144,17 @@ export default function DashboardPage() {
             <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div><div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">{kpiData.totalXP}</p></div></div>
           </div>
 
+          {/* ================================================================ */}
+          {/* ATUALIZADO: META SEMANAL AGORA É DINÂMICA */}
+          {/* ================================================================ */}
           <div className="bg-white p-6 rounded-2xl shadow-lg mb-8">
-            <div className="flex justify-between items-center mb-2"><h3 className="text-lg font-bold text-gray-800 flex items-center"><Target className="mr-2 text-indigo-500"/> Meta Semanal</h3><span className="text-sm font-semibold text-gray-600">63% de 75 atividades</span></div>
-            <div className="w-full bg-gray-200 rounded-full h-4"><div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full" style={{ width: `63%` }}></div></div>
+            <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-bold text-gray-800 flex items-center"><Target className="mr-2 text-indigo-500"/> Meta Semanal</h3>
+                <span className="text-sm font-semibold text-gray-600">{kpiData.completedThisWeek} de {kpiData.WEEKLY_GOAL} atividades</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-4">
+                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full" style={{ width: `${kpiData.weeklyProgressPercentage}%` }}></div>
+            </div>
           </div>
 
           {sessions.length > 0 ? (
