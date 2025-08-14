@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react'; // Adicionado useMemo
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { BarChart2, Award, Users, Star, CheckCircle, Zap, MessageCircle, BrainCircuit, PlayCircle, Target, MessageSquareText, FileText, Library, Settings } from 'lucide-react';
@@ -75,13 +75,9 @@ export default function DashboardPage() {
     fetchAllData();
   }, [supabase, router]);
 
-  // ================================================================
-  // NOVO: CÁLCULO DAS MÉTRICAS DOS CARDS
-  // ================================================================
   const kpiData = useMemo(() => {
     const totalActivities = sessions.length;
-    const totalXP = totalActivities * 10; // Exemplo: 10 XP por sessão
-    // Lógica para conquistas e nível virá no futuro
+    const totalXP = totalActivities * 10;
     const achievements = 0;
     const socialLevel = 1;
 
@@ -93,7 +89,7 @@ export default function DashboardPage() {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
             <div className="text-center">
                 <div className="w-16 h-16 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-600">Carregando seu dashboard...</p>
+                <p className="text-gray-600">A carregar o seu dashboard...</p>
             </div>
         </div>
     );
@@ -102,39 +98,46 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-         <div className="max-w-7xl mx-auto p-4"><div className="flex items-center justify-between"><h1 className="text-xl font-bold text-gray-800">TeaPlus</h1>{profile && (<div className="flex items-center space-x-4"><div className="text-right"><p className="font-semibold text-gray-800">{profile.name}</p><p className="text-xs text-gray-500">{profile.primary_condition.replace('_', ' + ')}</p></div><div className="text-4xl bg-gray-200 p-2 rounded-full">{AVATAR_EMOJIS[profile.avatar] || '👤'}</div></div>)}</div></div>
+         <div className="max-w-7xl mx-auto p-4">
+            <div className="flex items-center justify-between">
+                <h1 className="text-xl font-bold text-gray-800">TeaPlus</h1>
+                {profile && (
+                    <div className="text-right">
+                        <p className="font-semibold text-gray-800">{profile.name}</p>
+                        <p className="text-xs text-gray-500">{profile.primary_condition.replace('_', ' + ')}</p>
+                    </div>
+                )}
+            </div>
+         </div>
       </header>
 
       <main className="p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           
+          {/* ================================================================ */}
+          {/* BLOCO DE BOAS-VINDAS ATUALIZADO */}
+          {/* ================================================================ */}
           {profile && (
-            <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-                <h2 className="text-3xl font-bold text-gray-800">Olá, {profile.name.split(' ')[0]}!</h2>
-                <p className="text-gray-600 mt-1">Acompanhe aqui a sua jornada de desenvolvimento e progresso.</p>
+            <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 flex items-center space-x-6">
+                <div className="text-6xl bg-gray-200 p-3 rounded-full">
+                    {AVATAR_EMOJIS[profile.avatar] || '👤'}
+                </div>
+                <div>
+                    <h2 className="text-3xl font-bold text-gray-800">
+                        Olá, {profile.name.split(' ')[0]}!
+                    </h2>
+                    <p className="text-gray-600 mt-1">
+                        Acompanhe aqui a sua jornada de desenvolvimento e progresso.
+                    </p>
+                </div>
             </div>
           )}
 
-          {/* ================================================================ */}
-          {/* ATUALIZADO: CARDS DE RESUMO AGORA SÃO DINÂMICOS */}
-          {/* ================================================================ */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
-              <div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4"><BarChart2 size={24} /></div>
-              <div><p className="text-sm text-gray-500">Atividades Totais</p><p className="text-2xl font-bold text-gray-800">{kpiData.totalActivities}</p></div>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
-              <div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4"><Award size={24} /></div>
-              <div><p className="text-sm text-gray-500">Conquistas</p><p className="text-2xl font-bold text-gray-800">{kpiData.achievements}</p></div>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
-              <div className="bg-green-100 text-green-600 p-3 rounded-full mr-4"><Users size={24} /></div>
-              <div><p className="text-sm text-gray-500">Nível Social</p><p className="text-2xl font-bold text-gray-800">{kpiData.socialLevel}</p></div>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
-              <div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div>
-              <div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">{kpiData.totalXP}</p></div>
-            </div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4"><BarChart2 size={24} /></div><div><p className="text-sm text-gray-500">Atividades Totais</p><p className="text-2xl font-bold text-gray-800">{kpiData.totalActivities}</p></div></div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4"><Award size={24} /></div><div><p className="text-sm text-gray-500">Conquistas</p><p className="text-2xl font-bold text-gray-800">{kpiData.achievements}</p></div></div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-green-100 text-green-600 p-3 rounded-full mr-4"><Users size={24} /></div><div><p className="text-sm text-gray-500">Nível Social</p><p className="text-2xl font-bold text-gray-800">{kpiData.socialLevel}</p></div></div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div><div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">{kpiData.totalXP}</p></div></div>
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-lg mb-8">
@@ -147,8 +150,8 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               <div className="bg-white p-6 rounded-2xl shadow-lg">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center"><PlayCircle className="mr-3 text-green-500" />Comece sua Jornada por Aqui</h3>
-                <p className="text-gray-600 mb-5">Estes são seus objetivos iniciais. Clique em um para ver as atividades recomendadas e começar a progredir!</p>
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center"><PlayCircle className="mr-3 text-green-500" />Comece a sua Jornada por Aqui</h3>
+                <p className="text-gray-600 mb-5">Estes são os seus objetivos iniciais. Clique em um para ver as atividades recomendadas e começar a progredir!</p>
                 <div className="space-y-4">
                   {profile?.therapeutic_objectives?.map((objectiveId) => {
                     const details = OBJECTIVE_DETAILS[objectiveId];
@@ -163,7 +166,7 @@ export default function DashboardPage() {
               </div>
               <div className="bg-white p-6 rounded-2xl shadow-lg">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">O que esperar?</h3>
-                <p className="text-gray-600">À medida que você completar as atividades, este espaço se transformará! Gráficos e estatísticas detalhadas aparecerão aqui, mostrando sua evolução em cada um dos seus objetivos.</p>
+                <p className="text-gray-600">À medida que completar as atividades, este espaço irá transformar-se! Gráficos e estatísticas detalhadas aparecerão aqui, mostrando a sua evolução em cada um dos seus objetivos.</p>
               </div>
             </div>
           )}
