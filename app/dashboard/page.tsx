@@ -2,7 +2,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-// NOVO: Importando funções de data para calcular a semana
 import { startOfWeek, isAfter } from 'date-fns';
 import { BarChart2, Award, Users, Star, CheckCircle, Zap, MessageCircle, BrainCircuit, PlayCircle, Target, MessageSquareText, FileText, Library, Settings } from 'lucide-react';
 
@@ -17,9 +16,16 @@ type UserProfile = {
   therapeutic_objectives: string[];
 };
 
+type Session = {
+    id: number;
+    atividade_nome: string;
+    pontuacao_final: number;
+    data_fim: string;
+};
+
 const AVATAR_EMOJIS: { [key: string]: string } = {
   star: '⭐', rocket: '🚀', unicorn: '🦄', dragon: '🐉',
-  robot: '🤖', cat: '🐱', dog: '�', lion: '🦁',
+  robot: '🤖', cat: '🐱', dog: '🐶', lion: '🦁',
   fox: '🦊', headphone: '🎧', joystick: '🎮', compass: '🧭', shield: '🛡️'
 };
 
@@ -34,12 +40,22 @@ const OBJECTIVE_DETAILS: { [key: string]: { name: string; icon: React.ReactNode;
     'coordenacao_motora': { name: 'Coordenação Motora', icon: <BarChart2 size={24} />, color: 'text-orange-500' },
 };
 
+// NOVO: Mapeamento simplificado de atividades para objetivos para o cálculo do progresso
+const ACTIVITY_TO_OBJECTIVE_MAP: { [key: string]: string } = {
+    'Jogo do Semaforo Integrado': 'regulacao_emocional',
+    'Respiracao e Calma Social': 'regulacao_emocional',
+    'Dialogo Focado': 'comunicacao',
+    'Iniciando Conversas': 'comunicacao',
+    'Atenção Sustentada': 'foco_atencao',
+    'Contato Visual Progressivo': 'habilidades_sociais',
+    // Adicionar outros mapeamentos aqui conforme necessário
+};
 
 export default function DashboardPage() {
   const router = useRouter();
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [sessions, setSessions] = useState([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [supabase] = useState(() =>
@@ -77,35 +93,35 @@ export default function DashboardPage() {
     fetchAllData();
   }, [supabase, router]);
 
-  // ================================================================
-  // ATUALIZADO: CÁLCULO DAS MÉTRICAS AGORA INCLUI A META SEMANAL
-  // ================================================================
-  const kpiData = useMemo(() => {
+  const dashboardData = useMemo(() => {
     const totalActivities = sessions.length;
     const totalXP = totalActivities * 10;
     const achievements = 0;
     const socialLevel = 1;
 
-    // Lógica da Meta Semanal
-    const WEEKLY_GOAL = 10; // Nossa meta de exemplo: 10 atividades por semana
-    const startOfThisWeek = startOfWeek(new Date(), { weekStartsOn: 1 }); // Começa na Segunda-feira
-    
-    const completedThisWeek = sessions.filter(session => 
-        isAfter(new Date((session as any).data_fim), startOfThisWeek)
-    ).length;
+    const WEEKLY_GOAL = 10;
+    const startOfThisWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const completedThisWeek = sessions.filter(session => isAfter(new Date(session.data_fim), startOfThisWeek)).length;
+    const weeklyProgressPercentage = Math.min(100, Math.round((completedThisWeek / WEEKLY_GOAL) * 100));
 
-    const weeklyProgressPercentage = Math.round((completedThisWeek / WEEKLY_GOAL) * 100);
+    // NOVO: Cálculo do progresso dos objetivos
+    const objectivesProgress: { [key: string]: number } = {};
+    profile?.therapeutic_objectives?.forEach(objectiveId => {
+        const relevantSessions = sessions.filter(session => ACTIVITY_TO_OBJECTIVE_MAP[session.atividade_nome] === objectiveId);
+        if (relevantSessions.length > 0) {
+            const totalScore = relevantSessions.reduce((sum, session) => sum + session.pontuacao_final, 0);
+            objectivesProgress[objectiveId] = Math.round(totalScore / relevantSessions.length);
+        } else {
+            objectivesProgress[objectiveId] = 0; // Se não houver sessões, o progresso é 0
+        }
+    });
 
     return { 
-        totalActivities, 
-        totalXP, 
-        achievements, 
-        socialLevel,
-        WEEKLY_GOAL,
-        completedThisWeek,
-        weeklyProgressPercentage
+        totalActivities, totalXP, achievements, socialLevel,
+        WEEKLY_GOAL, completedThisWeek, weeklyProgressPercentage,
+        objectivesProgress
     };
-  }, [sessions]);
+  }, [sessions, profile]);
   
   if (loading) {
     return (
@@ -138,22 +154,43 @@ export default function DashboardPage() {
           )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4"><BarChart2 size={24} /></div><div><p className="text-sm text-gray-500">Atividades Totais</p><p className="text-2xl font-bold text-gray-800">{kpiData.totalActivities}</p></div></div>
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4"><Award size={24} /></div><div><p className="text-sm text-gray-500">Conquistas</p><p className="text-2xl font-bold text-gray-800">{kpiData.achievements}</p></div></div>
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-green-100 text-green-600 p-3 rounded-full mr-4"><Users size={24} /></div><div><p className="text-sm text-gray-500">Nível Social</p><p className="text-2xl font-bold text-gray-800">{kpiData.socialLevel}</p></div></div>
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div><div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">{kpiData.totalXP}</p></div></div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4"><BarChart2 size={24} /></div><div><p className="text-sm text-gray-500">Atividades Totais</p><p className="text-2xl font-bold text-gray-800">{dashboardData.totalActivities}</p></div></div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4"><Award size={24} /></div><div><p className="text-sm text-gray-500">Conquistas</p><p className="text-2xl font-bold text-gray-800">{dashboardData.achievements}</p></div></div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-green-100 text-green-600 p-3 rounded-full mr-4"><Users size={24} /></div><div><p className="text-sm text-gray-500">Nível Social</p><p className="text-2xl font-bold text-gray-800">{dashboardData.socialLevel}</p></div></div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div><div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">{dashboardData.totalXP}</p></div></div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-lg mb-8">
+            <div className="flex justify-between items-center mb-2"><h3 className="text-lg font-bold text-gray-800 flex items-center"><Target className="mr-2 text-indigo-500"/> Meta Semanal</h3><span className="text-sm font-semibold text-gray-600">{dashboardData.completedThisWeek} de {dashboardData.WEEKLY_GOAL} atividades</span></div>
+            <div className="w-full bg-gray-200 rounded-full h-4"><div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full" style={{ width: `${dashboardData.weeklyProgressPercentage}%` }}></div></div>
           </div>
 
           {/* ================================================================ */}
-          {/* ATUALIZADO: META SEMANAL AGORA É DINÂMICA */}
+          {/* ATUALIZADO: PRÓXIMOS MARCOS AGORA SÃO DINÂMICOS */}
           {/* ================================================================ */}
           <div className="bg-white p-6 rounded-2xl shadow-lg mb-8">
-            <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center"><Target className="mr-2 text-indigo-500"/> Meta Semanal</h3>
-                <span className="text-sm font-semibold text-gray-600">{kpiData.completedThisWeek} de {kpiData.WEEKLY_GOAL} atividades</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-4">
-                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full" style={{ width: `${kpiData.weeklyProgressPercentage}%` }}></div>
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Próximos Marcos</h3>
+            <div className="space-y-5">
+              {profile?.therapeutic_objectives?.map((objectiveId) => {
+                const details = OBJECTIVE_DETAILS[objectiveId];
+                const progress = dashboardData.objectivesProgress[objectiveId] || 0; // Pega o progresso real
+                if (!details) return null;
+
+                return (
+                  <div key={objectiveId}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className={`flex items-center font-semibold ${details.color}`}>
+                        {details.icon}
+                        <span className="ml-2">{details.name}</span>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-600">{progress}% concluído</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-4">
+                      <div className={`bg-gradient-to-r from-cyan-400 to-blue-500 h-4 rounded-full`} style={{ width: `${progress}%` }}></div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
