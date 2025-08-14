@@ -1,10 +1,7 @@
-// Copie e cole este código completo no seu arquivo app/profileselection/page.tsx
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-// ATUALIZAÇÃO IMPORTANTE: Usando a nova forma de criar o cliente Supabase
 import { createBrowserClient } from '@supabase/ssr';
 
 // =========================================
@@ -42,7 +39,6 @@ const AVATARS = [
 export default function ProfileSelection() {
   const router = useRouter();
   
-  // ATUALIZAÇÃO IMPORTANTE: Criando o cliente Supabase da forma correta e estável
   const [supabase] = useState(() =>
     createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -74,19 +70,17 @@ export default function ProfileSelection() {
           return;
         }
 
-        // Verificar se já tem perfil
         const { data: profile, error: profileError } = await supabase
           .from('user_profiles')
           .select('primary_condition, avatar')
           .eq('user_id', session.user.id)
           .single();
 
-        if (profileError && profileError.code !== 'PGRST116') { // Ignora erro "row not found"
+        if (profileError && profileError.code !== 'PGRST116') {
             throw profileError;
         }
 
         if (profile && profile.avatar) {
-          // Já tem perfil completo, redirecionar
           const redirectTo = getAppRoute(profile.primary_condition);
           router.push(redirectTo);
           return;
@@ -110,7 +104,7 @@ export default function ProfileSelection() {
       case 'TEA': return '/tea';
       case 'TDAH': return '/tdah';
       case 'TEA_TDAH': return '/combined';
-      default: return '/home'; // Rota padrão caso algo dê errado
+      default: return '/home';
     }
   };
 
@@ -136,9 +130,10 @@ export default function ProfileSelection() {
     );
   };
 
-  // Finalizar cadastro
+  // ================================================================
+  // FUNÇÃO CORRIGIDA
+  // ================================================================
   const handleFinish = async () => {
-    // Validação final para garantir que todos os dados foram preenchidos
     if (!profileType || !userName.trim() || !condition || selectedObjectives.length === 0 || !selectedAvatar) {
         setMessage('Por favor, preencha todas as etapas antes de finalizar.');
         return;
@@ -154,7 +149,7 @@ export default function ProfileSelection() {
         throw new Error('Não autenticado. Por favor, faça o login novamente.');
       }
 
-      // Dados para salvar
+      // Objeto de dados alinhado com a tabela, sem o campo "updated_at"
       const profileData = {
         user_id: session.user.id,
         profile_type: profileType,
@@ -162,22 +157,18 @@ export default function ProfileSelection() {
         primary_condition: condition,
         therapeutic_objectives: selectedObjectives,
         avatar: selectedAvatar,
-        updated_at: new Date().toISOString(), // Adiciona um timestamp de atualização
       };
 
-      // Salvar no Supabase usando upsert
       const { error } = await supabase
         .from('user_profiles')
         .upsert(profileData, { onConflict: 'user_id' });
 
       if (error) {
-        // Se houver um erro, lança para o bloco catch
         throw error;
       }
 
       setMessage('Perfil salvo com sucesso! Redirecionando...');
 
-      // Redirecionar após sucesso
       setTimeout(() => {
         const redirectTo = getAppRoute(condition!);
         router.push(redirectTo);
@@ -196,6 +187,9 @@ export default function ProfileSelection() {
     router.push('/login');
   };
 
+  // ================================================================
+  // O RESTANTE DO CÓDIGO (INTERFACE / JSX) PERMANECE O MESMO
+  // ================================================================
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -211,28 +205,11 @@ export default function ProfileSelection() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-lg">
         
-        {/* Header com Logo e Nome */}
         <div className="text-center mb-6">
             <h1 className="text-3xl font-bold text-gray-800">Configuração de Perfil</h1>
             <p className="text-gray-500">Siga os passos para personalizar sua jornada no TeaPlus</p>
         </div>
 
-        {/* Indicador de Progresso */}
-        <div className="flex justify-center items-center mb-6">
-            {/* ... (código da interface do usuário não precisa mudar) ... */}
-        </div>
-
-        {/* ETAPAS DO FORMULÁRIO (o código da interface não precisa mudar) */}
-        {/* ... (ETAPA 1, 2, 3, 4, 5) ... */}
-        
-        {/* O restante do seu código de interface (JSX) pode permanecer exatamente o mesmo. */}
-        {/* Apenas copie e cole o código acima para substituir todo o arquivo. */}
-        {/* O código JSX abaixo é apenas uma representação para manter a estrutura. */}
-
-        {/* ... Seu código JSX para as etapas 1 a 5 vai aqui ... */}
-        {/* Apenas para garantir, vou colar o seu código JSX aqui para que o arquivo fique completo */}
-
-        {/* Indicador de Progresso */}
         <div className="flex justify-center mb-8">
          {[1, 2, 3, 4, 5].map((step) => (
            <div
@@ -248,7 +225,6 @@ export default function ProfileSelection() {
          ))}
        </div>
 
-       {/* ETAPA 1: QUEM ESTÁ USANDO? */}
        {currentStep === 1 && (
          <div className="space-y-6 animate-fade-in">
            <div className="text-center">
@@ -280,7 +256,6 @@ export default function ProfileSelection() {
          </div>
        )}
 
-       {/* ETAPA 2: NOME */}
        {currentStep === 2 && (
          <div className="space-y-6 animate-fade-in">
            <div className="text-center">
@@ -299,7 +274,6 @@ export default function ProfileSelection() {
          </div>
        )}
 
-       {/* ETAPA 3: CONDIÇÃO */}
        {currentStep === 3 && (
          <div className="space-y-6 animate-fade-in">
            <div className="text-center">
@@ -330,7 +304,6 @@ export default function ProfileSelection() {
          </div>
        )}
 
-       {/* ETAPA 4: OBJETIVOS */}
        {currentStep === 4 && (
          <div className="space-y-6 animate-fade-in">
            <div className="text-center">
@@ -354,7 +327,6 @@ export default function ProfileSelection() {
          </div>
        )}
 
-       {/* ETAPA 5: AVATAR */}
        {currentStep === 5 && (
          <div className="space-y-6 animate-fade-in">
            <div className="text-center">
