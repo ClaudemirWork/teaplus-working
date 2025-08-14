@@ -2,12 +2,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
+import { BarChart2, Award, Users, Star } from 'lucide-react'; // Ícones para os novos cards
 
-// Importando os componentes e funções que já existem
+// Importando os componentes que já existem
 import DashboardCharts from '@/components/charts/DashboardCharts';
 import { fetchAllSessions } from './dashboardUtils';
 
-// Tipos e Constantes que vamos usar na página
+// Tipos e Constantes
 type UserProfile = {
   name: string;
   avatar: string;
@@ -23,12 +24,10 @@ const AVATAR_EMOJIS: { [key: string]: string } = {
 export default function DashboardPage() {
   const router = useRouter();
   
-  // Estados para guardar todos os dados que a página precisa
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Inicializa o cliente do Supabase
   const [supabase] = useState(() =>
     createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,14 +35,12 @@ export default function DashboardPage() {
     )
   );
 
-  // Efeito que busca todos os dados quando a página carrega
   useEffect(() => {
     const fetchAllData = async () => {
       setLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        // Busca o perfil do usuário E as sessões de atividades ao mesmo tempo
         const [profileResponse, sessionsResponse] = await Promise.all([
           supabase.from('user_profiles').select('name, avatar, primary_condition').eq('user_id', session.user.id).single(),
           fetchAllSessions()
@@ -58,7 +55,6 @@ export default function DashboardPage() {
         setSessions(sessionsResponse as any);
 
       } else {
-        // Se não estiver logado, volta para a tela de login
         router.push('/login');
       }
       setLoading(false);
@@ -67,7 +63,6 @@ export default function DashboardPage() {
     fetchAllData();
   }, [supabase, router]);
   
-  // Mostra uma mensagem de "carregando" enquanto busca os dados
   if (loading) {
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -81,14 +76,10 @@ export default function DashboardPage() {
   
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header Personalizado */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto p-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-gray-800">
-                TeaPlus
-            </h1>
-            
+            <h1 className="text-xl font-bold text-gray-800">TeaPlus</h1>
             {profile && (
                 <div className="flex items-center space-x-4">
                   <div className="text-right">
@@ -105,7 +96,6 @@ export default function DashboardPage() {
       <main className="p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           
-          {/* Bloco de Boas-Vindas */}
           {profile && (
             <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
                 <h2 className="text-3xl font-bold text-gray-800">
@@ -117,7 +107,48 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* O motor de gráficos, agora integrado e alimentado com os dados */}
+          {/* ================================================================ */}
+          {/* NOVOS CARDS DE RESUMO (KPIs) */}
+          {/* ================================================================ */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
+              <div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4">
+                <BarChart2 size={24} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Atividades Totais</p>
+                <p className="text-2xl font-bold text-gray-800">0</p>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
+              <div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4">
+                <Award size={24} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Conquistas</p>
+                <p className="text-2xl font-bold text-gray-800">0</p>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
+              <div className="bg-green-100 text-green-600 p-3 rounded-full mr-4">
+                <Users size={24} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Nível Social</p>
+                <p className="text-2xl font-bold text-gray-800">1</p>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
+              <div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4">
+                <Star size={24} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Pontos XP</p>
+                <p className="text-2xl font-bold text-gray-800">0</p>
+              </div>
+            </div>
+          </div>
+
           <DashboardCharts sessions={sessions} />
 
         </div>
