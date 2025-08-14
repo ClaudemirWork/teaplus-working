@@ -29,22 +29,36 @@ const AVATAR_EMOJIS: { [key: string]: string } = {
 };
 
 const OBJECTIVE_DETAILS: { [key: string]: { name: string; icon: React.ReactNode; color: string } } = {
-    'regulacao_emocional': { name: 'Regulação Emocional', icon: '🧘', color: 'text-yellow-600' },
-    'comunicacao': { name: 'Comunicação', icon: '💬', color: 'text-blue-600' },
-    'foco_atencao': { name: 'Foco e Atenção', icon: '🎯', color: 'text-green-600' },
-    'habilidades_sociais': { name: 'Habilidades Sociais', icon: '👥', color: 'text-purple-600' },
-    'rotina_diaria': { name: 'Rotina Diária', icon: '📅', color: 'text-indigo-600' },
-    'independencia': { name: 'Independência', icon: '🦋', color: 'text-pink-600' },
-    'gestao_ansiedade': { name: 'Gestão de Ansiedade', icon: '🧘', color: 'text-red-600' },
-    'coordenacao_motora': { name: 'Coordenação Motora', icon: '🤸', color: 'text-orange-600' },
+    'regulacao_emocional': { name: 'Regulação Emocional', icon: <Zap size={24} />, color: 'text-yellow-600' },
+    'comunicacao': { name: 'Comunicação', icon: <MessageCircle size={24} />, color: 'text-blue-600' },
+    'foco_atencao': { name: 'Foco e Atenção', icon: <BrainCircuit size={24} />, color: 'text-green-600' },
+    'habilidades_sociais': { name: 'Habilidades Sociais', icon: <Users size={24} />, color: 'text-purple-600' },
+    'rotina_diaria': { name: 'Rotina Diária', icon: <CheckCircle size={24} />, color: 'text-indigo-600' },
+    'independencia': { name: 'Independência', icon: <Star size={24} />, color: 'text-pink-600' },
+    'gestao_ansiedade': { name: 'Gestão de Ansiedade', icon: <Award size={24} />, color: 'text-red-600' },
+    'coordenacao_motora': { name: 'Coordenação Motora', icon: <BarChart2 size={24} />, color: 'text-orange-600' },
 };
 
+// ================================================================
+// MAPA ESTRATÉGICO EXPANDIDO PARA FOCO E ATENÇÃO
+// ================================================================
 const ACTIVITY_TO_OBJECTIVE_MAP: { [key: string]: { objectives: string[], path: string, phase: number } } = {
+    // --- Foco e Atenção ---
     'Atenção Sustentada': { objectives: ['foco_atencao'], path: '/attention-sustained', phase: 1 },
     'Foco Seletivo': { objectives: ['foco_atencao'], path: '/attention-selective', phase: 1 },
     'Stop-Go': { objectives: ['foco_atencao', 'regulacao_emocional'], path: '/stop-go', phase: 1 },
     'Atenção Dividida': { objectives: ['foco_atencao'], path: '/divided-attention', phase: 2 },
     'Foco Auditivo': { objectives: ['foco_atencao'], path: '/auditory-focus', phase: 2 },
+    'Atenção Rítmica': { objectives: ['foco_atencao'], path: '/rhythm-attention', phase: 2 },
+    'Desafio Multitarefa': { objectives: ['foco_atencao'], path: '/multitask-challenge', phase: 3 },
+    'Memória Sequencial Visual': { objectives: ['foco_atencao'], path: '/visual-memory-sequence', phase: 3 },
+    'Digit Span': { objectives: ['foco_atencao'], path: '/digit-span', phase: 3 },
+    'Dual N-Back': { objectives: ['foco_atencao'], path: '/dual-n-back', phase: 3 },
+    'Labirinto Mental': { objectives: ['foco_atencao'], path: '/mental-maze', phase: 3 },
+    'Padrões Visuais': { objectives: ['foco_atencao'], path: '/visual-patterns', phase: 2 },
+    'Controle Inibitório': { objectives: ['foco_atencao', 'regulacao_emocional'], path: '/inhibitory-control', phase: 1 },
+
+    // --- Outras Atividades Mapeadas ---
     'Respiração e Calma': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/breathing-techniques', phase: 1 },
     'Iniciando Conversas': { objectives: ['comunicacao', 'habilidades_sociais'], path: '/conversation-starters', phase: 1 },
 };
@@ -101,8 +115,9 @@ export default function DashboardPage() {
   
   const activitiesForSelectedObjective = useMemo(() => {
     if (!viewingObjective) return [];
+    // Por enquanto, mostraremos todas as fases para testar
     return Object.entries(ACTIVITY_TO_OBJECTIVE_MAP)
-      .filter(([_, value]) => value.objectives.includes(viewingObjective) && value.phase === 1)
+      .filter(([_, value]) => value.objectives.includes(viewingObjective))
       .map(([key, value]) => ({ name: key, path: value.path }));
   }, [viewingObjective]);
 
