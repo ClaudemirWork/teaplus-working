@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-import { startOfWeek, isAfter } from 'date-fns';
+import { startOfWeek, isAfter, isValid } from 'date-fns'; // Importando 'isValid' para a verificação
 import { BarChart2, Award, Users, Star, CheckCircle, Zap, MessageCircle, BrainCircuit, PlayCircle, Target, MessageSquareText, FileText, Library, Settings, ArrowLeft } from 'lucide-react';
 
 import DashboardCharts from '@/components/charts/DashboardCharts';
@@ -26,7 +26,7 @@ type Session = {
 const AVATAR_EMOJIS: { [key: string]: string } = {
   star: '⭐', rocket: '🚀', unicorn: '🦄', dragon: '🐉',
   robot: '🤖', cat: '🐱', dog: '🐶', lion: '🦁',
-  fox: '🦊', headphone: '🎧', joystick: '🎮', compass: '🧭', shield: '�️'
+  fox: '🦊', headphone: '🎧', joystick: '🎮', compass: '🧭', shield: '🛡️'
 };
 
 const OBJECTIVE_DETAILS: { [key: string]: { name: string; icon: React.ReactNode; color: string } } = {
@@ -101,7 +101,13 @@ export default function DashboardPage() {
 
     const WEEKLY_GOAL = 10;
     const startOfThisWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
-    const completedThisWeek = sessions.filter(session => isAfter(new Date(session.data_fim), startOfThisWeek)).length;
+    
+    // CORREÇÃO: Verificação de segurança para datas inválidas
+    const completedThisWeek = sessions.filter(session => {
+        const sessionDate = new Date(session.data_fim);
+        return isValid(sessionDate) && isAfter(sessionDate, startOfThisWeek);
+    }).length;
+
     const weeklyProgressPercentage = Math.min(100, Math.round((completedThisWeek / WEEKLY_GOAL) * 100));
 
     const objectivesProgress: { [key: string]: number } = {};
