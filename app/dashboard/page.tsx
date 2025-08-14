@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { BarChart2, Award, Users, Star, CheckCircle, Zap, MessageCircle, BrainCircuit, PlayCircle, Target, MessageSquareText, FileText, Library, Settings } from 'lucide-react';
 
+// Assumindo que este arquivo existe e está funcionando
 import { fetchUserSessions } from './dashboardUtils';
 
 // Tipos e Constantes
@@ -73,6 +74,19 @@ export default function DashboardPage() {
     fetchAllData();
   }, [supabase, router]);
 
+  // ================================================================
+  // MUDANÇA AQUI: Adicionando o cálculo dos KPIs
+  // ================================================================
+  const kpiData = useMemo(() => {
+    const totalActivities = sessions.length;
+    const totalXP = totalActivities * 10; // Exemplo: 10 XP por sessão
+    const achievements = 0; // Manteremos estático por enquanto
+    const socialLevel = 1; // Manteremos estático por enquanto
+
+    return { totalActivities, totalXP, achievements, socialLevel };
+  }, [sessions]);
+
+
   if (loading) {
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -91,9 +105,12 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
                 <h1 className="text-xl font-bold text-gray-800">TeaPlus</h1>
                 {profile && (
-                    <div className="text-right">
-                        <p className="font-semibold text-gray-800">{profile.name || 'Usuário'}</p>
-                        <p className="text-xs text-gray-500">{profile.primary_condition?.replace('_', ' + ') || 'Condição'}</p>
+                    <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                            <p className="font-semibold text-gray-800">{profile.name || 'Usuário'}</p>
+                            <p className="text-xs text-gray-500">{profile.primary_condition?.replace('_', ' + ') || 'Condição'}</p>
+                        </div>
+                        <div className="text-4xl bg-gray-200 p-2 rounded-full">{AVATAR_EMOJIS[profile.avatar || ''] || '👤'}</div>
                     </div>
                 )}
             </div>
@@ -105,7 +122,7 @@ export default function DashboardPage() {
           
           {profile && (
             <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 flex items-center space-x-6">
-                <div className="text-6xl bg-gray-200 p-3 rounded-full">
+                <div className="text-6xl">
                     {AVATAR_EMOJIS[profile.avatar || ''] || '👤'}
                 </div>
                 <div>
@@ -119,11 +136,14 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* ================================================================ */}
+          {/* MUDANÇA AQUI: Usando os dados calculados nos cards */}
+          {/* ================================================================ */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4"><BarChart2 size={24} /></div><div><p className="text-sm text-gray-500">Atividades Totais</p><p className="text-2xl font-bold text-gray-800">0</p></div></div>
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4"><Award size={24} /></div><div><p className="text-sm text-gray-500">Conquistas</p><p className="text-2xl font-bold text-gray-800">0</p></div></div>
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-green-100 text-green-600 p-3 rounded-full mr-4"><Users size={24} /></div><div><p className="text-sm text-gray-500">Nível Social</p><p className="text-2xl font-bold text-gray-800">1</p></div></div>
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div><div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">0</p></div></div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4"><BarChart2 size={24} /></div><div><p className="text-sm text-gray-500">Atividades Totais</p><p className="text-2xl font-bold text-gray-800">{kpiData.totalActivities}</p></div></div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4"><Award size={24} /></div><div><p className="text-sm text-gray-500">Conquistas</p><p className="text-2xl font-bold text-gray-800">{kpiData.achievements}</p></div></div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-green-100 text-green-600 p-3 rounded-full mr-4"><Users size={24} /></div><div><p className="text-sm text-gray-500">Nível Social</p><p className="text-2xl font-bold text-gray-800">{kpiData.socialLevel}</p></div></div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div><div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">{kpiData.totalXP}</p></div></div>
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-lg mb-8">
