@@ -1,5 +1,3 @@
-// Copie e cole este código completo no seu arquivo middleware.ts
-
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -29,9 +27,9 @@ export async function middleware(req: NextRequest) {
 
   // Se o usuário NÃO ESTÁ LOGADO
   if (!session) {
-    // Se ele tentar acessar qualquer página interna, redireciona para o login.
+    // Se ele tentar acessar uma página interna, redireciona para o login.
     // A página inicial '/' é pública.
-    if (pathname.startsWith('/home') || pathname.startsWith('/profileselection')) {
+    if (pathname.startsWith('/dashboard') || pathname.startsWith('/profileselection')) {
       return NextResponse.redirect(new URL('/login', req.url));
     }
     return res;
@@ -50,7 +48,8 @@ export async function middleware(req: NextRequest) {
   if (pathname === '/') {
     // ... o enviamos para o lugar certo.
     if (onboardingComplete) {
-      return NextResponse.redirect(new URL('/home', req.url)); // Vai para o app
+      // MUDANÇA AQUI: Redireciona para o novo dashboard
+      return NextResponse.redirect(new URL('/dashboard', req.url));
     } else {
       return NextResponse.redirect(new URL('/profileselection', req.url)); // Vai para o onboarding
     }
@@ -64,7 +63,8 @@ export async function middleware(req: NextRequest) {
 
   // Se o onboarding ESTÁ completo, impede o usuário de acessar o onboarding novamente.
   if (onboardingComplete && pathname.startsWith('/profileselection')) {
-    return NextResponse.redirect(new URL('/home', req.url));
+    // MUDANÇA AQUI: Redireciona para o novo dashboard
+    return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
   return res
