@@ -1,8 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react'; // Adicionado useMemo
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-// Ícones para Ações Rápidas
 import { BarChart2, Award, Users, Star, CheckCircle, Zap, MessageCircle, BrainCircuit, PlayCircle, Target, MessageSquareText, FileText, Library, Settings } from 'lucide-react';
 
 import DashboardCharts from '@/components/charts/DashboardCharts';
@@ -75,6 +74,19 @@ export default function DashboardPage() {
 
     fetchAllData();
   }, [supabase, router]);
+
+  // ================================================================
+  // NOVO: CÁLCULO DAS MÉTRICAS DOS CARDS
+  // ================================================================
+  const kpiData = useMemo(() => {
+    const totalActivities = sessions.length;
+    const totalXP = totalActivities * 10; // Exemplo: 10 XP por sessão
+    // Lógica para conquistas e nível virá no futuro
+    const achievements = 0;
+    const socialLevel = 1;
+
+    return { totalActivities, totalXP, achievements, socialLevel };
+  }, [sessions]);
   
   if (loading) {
     return (
@@ -103,8 +115,26 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* ================================================================ */}
+          {/* ATUALIZADO: CARDS DE RESUMO AGORA SÃO DINÂMICOS */}
+          {/* ================================================================ */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4"><BarChart2 size={24} /></div><div><p className="text-sm text-gray-500">Atividades Totais</p><p className="text-2xl font-bold text-gray-800">{sessions.length}</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4"><Award size={24} /></div><div><p className="text-sm text-gray-500">Conquistas</p><p className="text-2xl font-bold text-gray-800">0</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-green-100 text-green-600 p-3 rounded-full mr-4"><Users size={24} /></div><div><p className="text-sm text-gray-500">Nível Social</p><p className="text-2xl font-bold text-gray-800">1</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div><div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">0</p></div></div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
+              <div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4"><BarChart2 size={24} /></div>
+              <div><p className="text-sm text-gray-500">Atividades Totais</p><p className="text-2xl font-bold text-gray-800">{kpiData.totalActivities}</p></div>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
+              <div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4"><Award size={24} /></div>
+              <div><p className="text-sm text-gray-500">Conquistas</p><p className="text-2xl font-bold text-gray-800">{kpiData.achievements}</p></div>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
+              <div className="bg-green-100 text-green-600 p-3 rounded-full mr-4"><Users size={24} /></div>
+              <div><p className="text-sm text-gray-500">Nível Social</p><p className="text-2xl font-bold text-gray-800">{kpiData.socialLevel}</p></div>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-lg flex items-center">
+              <div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div>
+              <div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">{kpiData.totalXP}</p></div>
+            </div>
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-lg mb-8">
@@ -138,28 +168,13 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ================================================================ */}
-          {/* NOVA SEÇÃO: AÇÕES RÁPIDAS */}
-          {/* ================================================================ */}
           <div className="bg-white p-6 rounded-2xl shadow-lg">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Ações Rápidas</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <button className="flex flex-col items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors duration-200">
-                    <MessageSquareText className="text-blue-600 mb-2" size={32}/>
-                    <span className="font-semibold text-gray-700">Chat IA</span>
-                </button>
-                <button className="flex flex-col items-center justify-center p-4 bg-green-50 hover:bg-green-100 rounded-xl transition-colors duration-200">
-                    <FileText className="text-green-600 mb-2" size={32}/>
-                    <span className="font-semibold text-gray-700">Relatórios</span>
-                </button>
-                <button className="flex flex-col items-center justify-center p-4 bg-yellow-50 hover:bg-yellow-100 rounded-xl transition-colors duration-200">
-                    <Library className="text-yellow-600 mb-2" size={32}/>
-                    <span className="font-semibold text-gray-700">Biblioteca</span>
-                </button>
-                <button className="flex flex-col items-center justify-center p-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors duration-200">
-                    <Settings className="text-gray-600 mb-2" size={32}/>
-                    <span className="font-semibold text-gray-700">Configurações</span>
-                </button>
+                <button className="flex flex-col items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors duration-200"><MessageSquareText className="text-blue-600 mb-2" size={32}/><span className="font-semibold text-gray-700">Chat IA</span></button>
+                <button className="flex flex-col items-center justify-center p-4 bg-green-50 hover:bg-green-100 rounded-xl transition-colors duration-200"><FileText className="text-green-600 mb-2" size={32}/><span className="font-semibold text-gray-700">Relatórios</span></button>
+                <button className="flex flex-col items-center justify-center p-4 bg-yellow-50 hover:bg-yellow-100 rounded-xl transition-colors duration-200"><Library className="text-yellow-600 mb-2" size={32}/><span className="font-semibold text-gray-700">Biblioteca</span></button>
+                <button className="flex flex-col items-center justify-center p-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors duration-200"><Settings className="text-gray-600 mb-2" size={32}/><span className="font-semibold text-gray-700">Configurações</span></button>
             </div>
           </div>
 
