@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-import { BarChart2, Award, Users, Star, CheckCircle, Trophy, Sparkles, Zap, MessageCircle, BrainCircuit, PlayCircle, Target } from 'lucide-react';
+// Ícones para Ações Rápidas
+import { BarChart2, Award, Users, Star, CheckCircle, Zap, MessageCircle, BrainCircuit, PlayCircle, Target, MessageSquareText, FileText, Library, Settings } from 'lucide-react';
 
 import DashboardCharts from '@/components/charts/DashboardCharts';
 import { fetchUserSessions } from './dashboardUtils';
@@ -106,24 +107,15 @@ export default function DashboardPage() {
             <div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-4"><BarChart2 size={24} /></div><div><p className="text-sm text-gray-500">Atividades Totais</p><p className="text-2xl font-bold text-gray-800">{sessions.length}</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mr-4"><Award size={24} /></div><div><p className="text-sm text-gray-500">Conquistas</p><p className="text-2xl font-bold text-gray-800">0</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-green-100 text-green-600 p-3 rounded-full mr-4"><Users size={24} /></div><div><p className="text-sm text-gray-500">Nível Social</p><p className="text-2xl font-bold text-gray-800">1</p></div></div><div className="bg-white p-4 rounded-xl shadow-lg flex items-center"><div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-4"><Star size={24} /></div><div><p className="text-sm text-gray-500">Pontos XP</p><p className="text-2xl font-bold text-gray-800">0</p></div></div>
           </div>
 
-          {/* ================================================================ */}
-          {/* NOVA SEÇÃO: META SEMANAL */}
-          {/* ================================================================ */}
           <div className="bg-white p-6 rounded-2xl shadow-lg mb-8">
-            <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center"><Target className="mr-2 text-indigo-500"/> Meta Semanal</h3>
-                <span className="text-sm font-semibold text-gray-600">63% de 75 atividades</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-4">
-                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full" style={{ width: `63%` }}></div>
-            </div>
+            <div className="flex justify-between items-center mb-2"><h3 className="text-lg font-bold text-gray-800 flex items-center"><Target className="mr-2 text-indigo-500"/> Meta Semanal</h3><span className="text-sm font-semibold text-gray-600">63% de 75 atividades</span></div>
+            <div className="w-full bg-gray-200 rounded-full h-4"><div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full" style={{ width: `63%` }}></div></div>
           </div>
-
 
           {sessions.length > 0 ? (
             <DashboardCharts sessions={sessions} />
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               <div className="bg-white p-6 rounded-2xl shadow-lg">
                 <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center"><PlayCircle className="mr-3 text-green-500" />Comece sua Jornada por Aqui</h3>
                 <p className="text-gray-600 mb-5">Estes são seus objetivos iniciais. Clique em um para ver as atividades recomendadas e começar a progredir!</p>
@@ -145,6 +137,31 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
+
+          {/* ================================================================ */}
+          {/* NOVA SEÇÃO: AÇÕES RÁPIDAS */}
+          {/* ================================================================ */}
+          <div className="bg-white p-6 rounded-2xl shadow-lg">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Ações Rápidas</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button className="flex flex-col items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors duration-200">
+                    <MessageSquareText className="text-blue-600 mb-2" size={32}/>
+                    <span className="font-semibold text-gray-700">Chat IA</span>
+                </button>
+                <button className="flex flex-col items-center justify-center p-4 bg-green-50 hover:bg-green-100 rounded-xl transition-colors duration-200">
+                    <FileText className="text-green-600 mb-2" size={32}/>
+                    <span className="font-semibold text-gray-700">Relatórios</span>
+                </button>
+                <button className="flex flex-col items-center justify-center p-4 bg-yellow-50 hover:bg-yellow-100 rounded-xl transition-colors duration-200">
+                    <Library className="text-yellow-600 mb-2" size={32}/>
+                    <span className="font-semibold text-gray-700">Biblioteca</span>
+                </button>
+                <button className="flex flex-col items-center justify-center p-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors duration-200">
+                    <Settings className="text-gray-600 mb-2" size={32}/>
+                    <span className="font-semibold text-gray-700">Configurações</span>
+                </button>
+            </div>
+          </div>
 
         </div>
       </main>
