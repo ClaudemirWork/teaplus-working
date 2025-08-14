@@ -1,10 +1,15 @@
-// Cole este código em app/dashboard/dashboardUtils.ts
+// Cole este código completo em app/dashboard/dashboardUtils.ts
 
-// A importação do createClient pode variar dependendo da sua estrutura
-// Usando o caminho relativo a partir da raiz do 'app' que é mais estável.
-import { createClient } from '@/utils/supabaseClient';
+// IMPORTANTE: A lógica de conexão com o Supabase agora está diretamente aqui.
+import { createBrowserClient } from '@supabase/ssr';
 
-// O resto do arquivo permanece o mesmo
+// Esta função cria a conexão. Ela substitui a necessidade de importar o arquivo.
+const createClient = () => createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+// A função que busca as sessões agora usa a conexão criada aqui mesmo.
 export async function fetchUserSessions(userId: string) {
   const supabase = createClient();
   
