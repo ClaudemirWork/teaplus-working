@@ -40,27 +40,36 @@ const OBJECTIVE_DETAILS: { [key: string]: { name: string; icon: React.ReactNode;
 };
 
 // ================================================================
-// MAPA ESTRATÉGICO EXPANDIDO PARA FOCO E ATENÇÃO
+// MAPA ESTRATÉGICO EXPANDIDO
 // ================================================================
 const ACTIVITY_TO_OBJECTIVE_MAP: { [key: string]: { objectives: string[], path: string, phase: number } } = {
     // --- Foco e Atenção ---
     'Atenção Sustentada': { objectives: ['foco_atencao'], path: '/attention-sustained', phase: 1 },
     'Foco Seletivo': { objectives: ['foco_atencao'], path: '/attention-selective', phase: 1 },
     'Stop-Go': { objectives: ['foco_atencao', 'regulacao_emocional'], path: '/stop-go', phase: 1 },
+    'Controle Inibitório': { objectives: ['foco_atencao', 'regulacao_emocional'], path: '/inhibitory-control', phase: 1 },
     'Atenção Dividida': { objectives: ['foco_atencao'], path: '/divided-attention', phase: 2 },
     'Foco Auditivo': { objectives: ['foco_atencao'], path: '/auditory-focus', phase: 2 },
     'Atenção Rítmica': { objectives: ['foco_atencao'], path: '/rhythm-attention', phase: 2 },
+    'Padrões Visuais': { objectives: ['foco_atencao'], path: '/visual-patterns', phase: 2 },
     'Desafio Multitarefa': { objectives: ['foco_atencao'], path: '/multitask-challenge', phase: 3 },
     'Memória Sequencial Visual': { objectives: ['foco_atencao'], path: '/visual-memory-sequence', phase: 3 },
     'Digit Span': { objectives: ['foco_atencao'], path: '/digit-span', phase: 3 },
     'Dual N-Back': { objectives: ['foco_atencao'], path: '/dual-n-back', phase: 3 },
     'Labirinto Mental': { objectives: ['foco_atencao'], path: '/mental-maze', phase: 3 },
-    'Padrões Visuais': { objectives: ['foco_atencao'], path: '/visual-patterns', phase: 2 },
-    'Controle Inibitório': { objectives: ['foco_atencao', 'regulacao_emocional'], path: '/inhibitory-control', phase: 1 },
-
-    // --- Outras Atividades Mapeadas ---
-    'Respiração e Calma': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/breathing-techniques', phase: 1 },
+    
+    // --- Comunicação ---
+    'Escuta Ativa': { objectives: ['comunicacao', 'habilidades_sociais'], path: '/active-listening', phase: 1 },
     'Iniciando Conversas': { objectives: ['comunicacao', 'habilidades_sociais'], path: '/conversation-starters', phase: 1 },
+    'Cenas de Diálogo': { objectives: ['comunicacao', 'habilidades_sociais'], path: '/dialogue-scenes', phase: 1 },
+    'Narrativa Sequencial': { objectives: ['comunicacao'], path: '/sequential-narrative', phase: 1 },
+    'Tom de Voz': { objectives: ['comunicacao', 'habilidades_sociais'], path: '/tone-of-voice', phase: 1 },
+    'Comunicação Alternativa': { objectives: ['comunicacao'], path: '/caa', phase: 1 },
+    'Expressões Não-Verbais': { objectives: ['comunicacao', 'habilidades_sociais'], path: '/non-verbal-expressions', phase: 1 },
+    'Linguagem Corporal': { objectives: ['comunicacao', 'habilidades_sociais'], path: '/body-language', phase: 1 },
+
+    // --- Outras Atividades Mapeadas (Exemplos) ---
+    'Respiração e Calma': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/breathing-techniques', phase: 1 },
 };
 
 
