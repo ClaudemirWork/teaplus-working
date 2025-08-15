@@ -89,14 +89,14 @@ const ACTIVITY_TO_OBJECTIVE_MAP: { [key: string]: { objectives: string[], path: 
     'Exercícios de Autorregulação': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/emotion-regulation', phase: 1 },
     'Técnicas de Respiração': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/breathing-techniques', phase: 1 },
     'Estratégias Calmantes': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/calming-strategies', phase: 1 },
-    'Diário das Emoções': { objectives: ['regulacao_emocional'], path: '/emotion-diary', phase: 1 },
-    'Termômetro das Emoções': { objectives: ['regulacao_emocional'], path: '/emotion-thermometer', phase: 1 },
-    'Gestão de Frustração': { objectives: ['regulacao_emocional'], path: '/frustration-management', phase: 1 },
+    'Diário das Emoções': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/emotion-diary', phase: 1 }, // ALTERADO
+    'Termômetro das Emoções': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/emotion-thermometer', phase: 1 }, // ALTERADO
+    'Gestão de Frustração': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/frustration-management', phase: 1 }, // ALTERADO
     'Controle de Impulsos': { objectives: ['regulacao_emocional', 'foco_atencao'], path: '/impulse-control', phase: 1 },
-    'Jogo do Semáforo': { objectives: ['regulacao_emocional'], path: '/traffic-light-game', phase: 1 },
+    'Jogo do Semáforo': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/traffic-light-game', phase: 1 }, // ALTERADO
     'Diário de Reflexão': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/reflection-diary', phase: 1 },
     'Espelho das Emoções': { objectives: ['regulacao_emocional', 'habilidades_sociais'], path: '/emotion-mirror', phase: 1 },
-    'Escolha Consciente': { objectives: ['regulacao_emocional'], path: '/conscious-choice', phase: 1 },
+    'Escolha Consciente': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/conscious-choice', phase: 1 }, // ALTERADO
 };
 
 
