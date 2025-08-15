@@ -303,7 +303,7 @@ export default function StopGo() {
             className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
           >
             <ChevronLeft size={20} />
-            <span className="text-sm sm:text-base">Voltar para TDAH</span>
+            <span className="text-sm sm:text-base">← Voltar</span>
           </Link>
           
           {exercicioConcluido && (
