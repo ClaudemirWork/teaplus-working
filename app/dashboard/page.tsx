@@ -205,7 +205,11 @@ export default function DashboardPage() {
               <div className="bg-white p-6 rounded-2xl shadow-lg mb-6">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Os Seus Próximos Marcos</h3>
                 <div className="space-y-2">
-                  {profile?.therapeutic_objectives?.map((objectiveId) => {
+                  
+                  {/* // ################# ALTERAÇÃO DEFINITIVA PARA TESTES #################
+                    // Agora mostramos TODOS os 8 objetivos para facilitar o mapeamento completo.
+                  */}
+                  {['regulacao_emocional', 'comunicacao', 'foco_atencao', 'habilidades_sociais', 'rotina_diaria', 'independencia', 'gestao_ansiedade', 'coordenacao_motora'].map((objectiveId) => {
                     const details = OBJECTIVE_DETAILS[objectiveId];
                     if (!details) return null;
                     return (
