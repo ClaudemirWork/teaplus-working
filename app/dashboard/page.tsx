@@ -89,14 +89,24 @@ const ACTIVITY_TO_OBJECTIVE_MAP: { [key: string]: { objectives: string[], path: 
     'Exercícios de Autorregulação': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/emotion-regulation', phase: 1 },
     'Técnicas de Respiração': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/breathing-techniques', phase: 1 },
     'Estratégias Calmantes': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/calming-strategies', phase: 1 },
-    'Diário das Emoções': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/emotion-diary', phase: 1 }, // ALTERADO
-    'Termômetro das Emoções': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/emotion-thermometer', phase: 1 }, // ALTERADO
-    'Gestão de Frustração': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/frustration-management', phase: 1 }, // ALTERADO
+    'Diário das Emoções': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/emotion-diary', phase: 1 },
+    'Termômetro das Emoções': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/emotion-thermometer', phase: 1 },
+    'Gestão de Frustração': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/frustration-management', phase: 1 },
     'Controle de Impulsos': { objectives: ['regulacao_emocional', 'foco_atencao'], path: '/impulse-control', phase: 1 },
-    'Jogo do Semáforo': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/traffic-light-game', phase: 1 }, // ALTERADO
+    'Jogo do Semáforo': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/traffic-light-game', phase: 1 },
     'Diário de Reflexão': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/reflection-diary', phase: 1 },
     'Espelho das Emoções': { objectives: ['regulacao_emocional', 'habilidades_sociais'], path: '/emotion-mirror', phase: 1 },
-    'Escolha Consciente': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/conscious-choice', phase: 1 }, // ALTERADO
+    'Escolha Consciente': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/conscious-choice', phase: 1 },
+
+    // --- Rotina Diária & Independência ---
+    'Criador de Listas': { objectives: ['rotina_diaria', 'independencia'], path: '/checklist-maker', phase: 1 },
+    'Priorização de Tarefas': { objectives: ['rotina_diaria', 'independencia'], path: '/task-prioritization', phase: 1 },
+    'Gestão do Tempo': { objectives: ['rotina_diaria', 'independencia'], path: '/time-management', phase: 1 },
+    'Planeamento de Tempo': { objectives: ['rotina_diaria'], path: '/time-planning', phase: 1 },
+    'Metas SMART': { objectives: ['rotina_diaria', 'independencia'], path: '/smart-goals', phase: 1 },
+    'Pausas Estratégicas': { objectives: ['rotina_diaria'], path: '/strategic-breaks', phase: 1 },
+    'Tomada de Decisão': { objectives: ['independencia'], path: '/decision-making', phase: 1 },
+    'Flexibilidade Cognitiva': { objectives: ['independencia'], path: '/cognitive-flexibility', phase: 1 },
 };
 
 
