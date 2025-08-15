@@ -68,6 +68,23 @@ const ACTIVITY_TO_OBJECTIVE_MAP: { [key: string]: { objectives: string[], path: 
     'Expressões Não-Verbais': { objectives: ['comunicacao', 'habilidades_sociais'], path: '/non-verbal-expressions', phase: 1 },
     'Linguagem Corporal': { objectives: ['comunicacao', 'habilidades_sociais'], path: '/body-language', phase: 1 },
 
+    // --- Habilidades Sociais ---
+    'Expressões Faciais': { objectives: ['habilidades_sociais', 'comunicacao'], path: '/facial-expressions', phase: 1 },
+    'Contato Visual': { objectives: ['habilidades_sociais', 'comunicacao'], path: '/eye-contact', phase: 1 },
+    'Fazendo Amigos': { objectives: ['habilidades_sociais'], path: '/making-friends', phase: 1 },
+    'Pistas Sociais': { objectives: ['habilidades_sociais'], path: '/social-clues', phase: 1 },
+    'Trabalho em Equipe': { objectives: ['habilidades_sociais'], path: '/teamwork', phase: 1 },
+    'Respeitando a Vez': { objectives: ['habilidades_sociais', 'comunicacao'], path: '/turn-taking', phase: 1 },
+    'Compartilhando': { objectives: ['habilidades_sociais'], path: '/sharing', phase: 1 },
+    'Contexto Social': { objectives: ['habilidades_sociais'], path: '/social-context', phase: 1 },
+    'Roleplay Estruturado': { objectives: ['habilidades_sociais', 'comunicacao'], path: '/structured-roleplay', phase: 1 },
+    'Missões Sociais': { objectives: ['habilidades_sociais'], path: '/social-missions', phase: 1 },
+    'Rotinas Sociais': { objectives: ['habilidades_sociais'], path: '/social-routines', phase: 1 },
+    'Treino de Assertividade': { objectives: ['habilidades_sociais', 'comunicacao'], path: '/assertiveness-training', phase: 1 },
+    'Padrões Colaborativos': { objectives: ['habilidades_sociais'], path: '/pattern-match-collaborative', phase: 1 },
+    'Interação Social': { objectives: ['habilidades_sociais'], path: '/interaction', phase: 1 },
+    'Oficina do Perdão': { objectives: ['habilidades_sociais', 'regulacao_emocional'], path: '/forgiveness-workshop', phase: 1 },
+
     // --- Outras Atividades Mapeadas (Exemplos) ---
     'Respiração e Calma': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/breathing-techniques', phase: 1 },
 };
@@ -143,7 +160,7 @@ export default function DashboardPage() {
   
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-white rounded-xl shadow-md p-4 mt-4 mx-4 sm:mx-6">
+      <header className="bg-white rounded-xl shadow-md p-4 mt-4 mx-4 sm-mx-6">
          <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-gray-800">TeaPlus</h1>
