@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, Save } from 'lucide-react'
+import { Save } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '../utils/supabaseClient'
 
@@ -642,13 +642,13 @@ export default function DividedAttention() {
         alert(`Sessão de Atenção Dividida salva com sucesso!
         
 📊 Resumo da Performance:
-• Precisão Geral: ${precisaoGeral}%
-• Precisão Visual: ${precisaoObjetos}%  
-• Precisão Auditiva: ${precisaoTons}%
-• Tempo Reação Médio: ${Math.round((tempoMedioReacaoVisual + tempoMedioReacaoAuditivo) / 2)}ms
-• Custo Dual-Task: ${Math.round(custoDualTask * 100) / 100}%
-• Nível Atingido: ${nivel}
-• Duração: ${Math.round(duracaoFinalSegundos / 60)}min${duracaoFinalSegundos % 60}s`)
+- Precisão Geral: ${precisaoGeral}%
+- Precisão Visual: ${precisaoObjetos}%  
+- Precisão Auditiva: ${precisaoTons}%
+- Tempo Reação Médio: ${Math.round((tempoMedioReacaoVisual + tempoMedioReacaoAuditivo) / 2)}ms
+- Custo Dual-Task: ${Math.round(custoDualTask * 100) / 100}%
+- Nível Atingido: ${nivel}
+- Duração: ${Math.round(duracaoFinalSegundos / 60)}min${duracaoFinalSegundos % 60}s`)
         
         router.push('/profileselection')
       }
@@ -673,11 +673,10 @@ export default function DividedAttention() {
         <div className="p-4">
           <div className="flex items-center justify-between">
             <Link 
-              href="/tdah" 
+              href="/dashboard" 
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
-              <ChevronLeft size={20} />
-              <span>Voltar ao TDAH</span>
+              <span className="text-sm sm:text-base">← Voltar</span>
             </Link>
             
             <div className="text-center">
