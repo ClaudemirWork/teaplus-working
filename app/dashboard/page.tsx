@@ -85,8 +85,18 @@ const ACTIVITY_TO_OBJECTIVE_MAP: { [key: string]: { objectives: string[], path: 
     'Interação Social': { objectives: ['habilidades_sociais'], path: '/interaction', phase: 1 },
     'Oficina do Perdão': { objectives: ['habilidades_sociais', 'regulacao_emocional'], path: '/forgiveness-workshop', phase: 1 },
 
-    // --- Outras Atividades Mapeadas (Exemplos) ---
-    'Respiração e Calma': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/breathing-techniques', phase: 1 },
+    // --- Regulação Emocional & Gestão de Ansiedade ---
+    'Exercícios de Autorregulação': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/emotion-regulation', phase: 1 },
+    'Técnicas de Respiração': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/breathing-techniques', phase: 1 },
+    'Estratégias Calmantes': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/calming-strategies', phase: 1 },
+    'Diário das Emoções': { objectives: ['regulacao_emocional'], path: '/emotion-diary', phase: 1 },
+    'Termômetro das Emoções': { objectives: ['regulacao_emocional'], path: '/emotion-thermometer', phase: 1 },
+    'Gestão de Frustração': { objectives: ['regulacao_emocional'], path: '/frustration-management', phase: 1 },
+    'Controle de Impulsos': { objectives: ['regulacao_emocional', 'foco_atencao'], path: '/impulse-control', phase: 1 },
+    'Jogo do Semáforo': { objectives: ['regulacao_emocional'], path: '/traffic-light-game', phase: 1 },
+    'Diário de Reflexão': { objectives: ['regulacao_emocional', 'gestao_ansiedade'], path: '/reflection-diary', phase: 1 },
+    'Espelho das Emoções': { objectives: ['regulacao_emocional', 'habilidades_sociais'], path: '/emotion-mirror', phase: 1 },
+    'Escolha Consciente': { objectives: ['regulacao_emocional'], path: '/conscious-choice', phase: 1 },
 };
 
 
@@ -160,7 +170,7 @@ export default function DashboardPage() {
   
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-white rounded-xl shadow-md p-4 mt-4 mx-4 sm-mx-6">
+      <header className="bg-white rounded-xl shadow-md p-4 mt-4 mx-4 sm:mx-6">
          <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-gray-800">TeaPlus</h1>
