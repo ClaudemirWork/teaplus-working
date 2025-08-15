@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Play, Pause, RotateCcw, Award, Target, Clock, Brain, CheckCircle } from 'lucide-react'
+import { Play, Pause, RotateCcw, Award, Target, Clock, Brain, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
 const InhibitoryControlPage = () => {
@@ -138,8 +138,8 @@ const InhibitoryControlPage = () => {
         <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/tdah" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <ArrowLeft className="w-6 h-6 text-gray-600" />
+              <Link href="/dashboard" className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors">
+                <span className="text-sm sm:text-base">← Voltar</span>
               </Link>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">🛑 Controle Inibitório</h1>
@@ -480,9 +480,9 @@ const InhibitoryControlPage = () => {
                 >
                   Jogar novamente
                 </button>
-                <Link href="/tdah">
+                <Link href="/dashboard">
                   <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-8 rounded-xl font-semibold transition-colors">
-                    Voltar ao menu
+                    ← Voltar
                   </button>
                 </Link>
               </div>
