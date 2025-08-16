@@ -254,7 +254,7 @@ export default function RhythmAttention() {
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
               <ChevronLeft size={20} />
-              <span>Voltar ao Dashboard</span>
+              <span>← Voltar</span>
             </Link>
             
             <div className="flex items-center space-x-4">
