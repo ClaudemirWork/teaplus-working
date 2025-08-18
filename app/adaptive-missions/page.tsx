@@ -948,7 +948,7 @@ export default function AdaptiveMissionsPage() {
         <div className="bg-white shadow-md px-6 py-4">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => router.push('/combined')}
+              onClick={() => router.push('/dashboard')}
               className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
             >
               <span className="mr-2">←</span>

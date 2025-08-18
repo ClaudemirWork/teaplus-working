@@ -19,7 +19,7 @@ export default function SocialRoutines() {
         {/* Botao Voltar - Topo */}
         <div className="mb-6">
           <button
-            onClick={() => router.push('/combined')}
+            onClick={() => router.push('/dashboard')}
             className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
           >
             <span className="mr-2">←</span>

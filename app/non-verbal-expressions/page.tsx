@@ -254,11 +254,11 @@ export default function NonverbalExpressions() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
             <div className="flex items-center justify-between">
               <a 
-                href="/tea" 
+                href="/dashboard" 
                 className="flex items-center text-orange-600 hover:text-orange-700 transition-colors min-h-[44px] px-2 -ml-2"
               >
                 <span className="text-xl mr-2">←</span>
-                <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
+                <span className="text-sm sm:text-base font-medium">Voltar</span>
               </a>
               <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex-1 mx-4 flex items-center justify-center gap-2">
                 <span className="text-xl sm:text-2xl">😊</span>
@@ -305,7 +305,7 @@ export default function NonverbalExpressions() {
                     🔄 Jogar Novamente
                   </button>
                   <a
-                    href="/tea"
+                    href="/dashboard"
                     className="block w-full rounded-2xl border-2 border-gray-300 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-gray-700 transition-all hover:border-gray-400 hover:shadow-lg min-h-[48px] touch-manipulation"
                   >
                     🏠 Voltar à TEA
@@ -327,11 +327,11 @@ export default function NonverbalExpressions() {
           <div className="flex items-center justify-between">
             {/* Botão Voltar */}
             <a 
-              href="/tea" 
+              href="/dashboard" 
               className="flex items-center text-orange-600 hover:text-orange-700 transition-colors min-h-[44px] px-2 -ml-2"
             >
               <span className="text-xl mr-2">←</span>
-              <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
+              <span className="text-sm sm:text-base font-medium">Voltar</span>
             </a>
             
             {/* Título */}

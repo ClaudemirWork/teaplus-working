@@ -445,7 +445,7 @@ export default function TurnChallenge() {
         background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #cffafe 100%)',
         paddingTop: '80px'
       }}>
-        {/* Header Fixo - Voltar para TEA */}
+        {/* Header Fixo - Voltar */}
         <div style={{
           position: 'fixed',
           top: 0,
@@ -479,7 +479,7 @@ export default function TurnChallenge() {
               }}
             >
               <span style={{ fontSize: '18px' }}>←</span>
-              Voltar para TEA
+              Voltar
             </button>
             <div style={{
               width: '32px',
@@ -638,7 +638,7 @@ export default function TurnChallenge() {
       background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #cffafe 100%)',
       paddingTop: '80px'
     }}>
-      {/* Header Fixo - Voltar para TEA */}
+      {/* Header Fixo - Voltar */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -672,7 +672,7 @@ export default function TurnChallenge() {
             }}
           >
             <span style={{ fontSize: '18px' }}>←</span>
-            Voltar para TEA
+            Voltar
           </button>
           <div style={{
             width: '32px',

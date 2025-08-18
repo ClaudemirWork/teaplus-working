@@ -325,7 +325,7 @@ export default function FrustrationManagement() {
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(13, 148, 136, 0.1)'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              ← Voltar para TEA
+              ← Voltar
             </button>
           </div>
 

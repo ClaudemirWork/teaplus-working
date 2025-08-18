@@ -328,7 +328,7 @@ export default function EmotionMirror() {
               onClick={() => window.history.back()}
               className="mr-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
             >
-              ← Voltar para TEA
+              ← Voltar
             </button>
             <div className="flex items-center space-x-3">
               <span className="text-3xl">🌟</span>
@@ -374,7 +374,7 @@ export default function EmotionMirror() {
                     onClick={() => window.history.back()}
                     className="w-full rounded-2xl border-2 border-gray-300 px-8 py-4 text-lg font-semibold text-gray-700 transition-all hover:border-gray-400 hover:shadow-lg"
                   >
-                    🏠 Voltar para TEA
+                    🏠 Voltar
                   </button>
                 </div>
               </div>
@@ -396,7 +396,7 @@ export default function EmotionMirror() {
                 onClick={() => window.history.back()}
                 className="mr-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
               >
-                ← Voltar para TEA
+                ← Voltar
               </button>
               <div className="flex items-center space-x-3">
                 <span className="text-3xl">🌟</span>

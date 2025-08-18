@@ -277,7 +277,7 @@ export default function PatternMatchCollaborativePage() {
         <div className="bg-white shadow-md px-6 py-4">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => router.push('/combined')}
+              onClick={() => router.push('/dashboard')}
               className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
             >
               <span className="mr-2">←</span>
@@ -382,7 +382,7 @@ export default function PatternMatchCollaborativePage() {
             <p className="text-sm">Padrões Completados: {completedPatterns}</p>
           </div>
           <button
-            onClick={() => router.push('/combined')}
+            onClick={() => router.push('/dashboard')}
             className="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors"
           >
             Voltar ao Dashboard
@@ -409,7 +409,7 @@ export default function PatternMatchCollaborativePage() {
       <div className="bg-white shadow-md px-6 py-4">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => router.push('/combined')}
+            onClick={() => router.push('/dashboard')}
             className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
           >
             <span className="mr-2">←</span>

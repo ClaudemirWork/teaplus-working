@@ -497,13 +497,13 @@ export default function FriendshipAcademy() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <Link 
-                href="/tea" 
+                href="/dashboard" 
                 className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                <span className="font-medium">Voltar para TEA</span>
+                <span className="font-medium">Voltar</span>
               </Link>
               
               <div className="flex items-center space-x-3">
@@ -558,10 +558,10 @@ export default function FriendshipAcademy() {
                     🔄 Nova Jornada de Amizades
                   </button>
                   <Link
-                    href="/tea"
+                    href="/dashboard"
                     className="block w-full rounded-2xl border-2 border-gray-300 px-6 sm:px-8 py-3 sm:py-4 text-lg font-semibold text-gray-700 transition-all hover:border-gray-400 hover:shadow-lg"
                   >
-                    🏠 Voltar para TEA
+                    🏠 Voltar
                   </Link>
                 </div>
               </div>
@@ -579,13 +579,13 @@ export default function FriendshipAcademy() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link 
-              href="/tea" 
+              href="/dashboard" 
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              <span className="font-medium">Voltar para TEA</span>
+              <span className="font-medium">Voltar</span>
             </Link>
             
             <div className="flex items-center space-x-3">

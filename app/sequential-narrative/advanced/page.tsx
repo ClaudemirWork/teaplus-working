@@ -354,7 +354,7 @@ export default function AdvancedLevel() {
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => router.push('/combined')}
+                  onClick={() => router.push('/dashboard')}
                   className="flex-1 bg-purple-500 hover:bg-purple-600 text-white py-3 px-4 rounded-lg font-semibold transition-colors"
                 >
                   Voltar ao Dashboard

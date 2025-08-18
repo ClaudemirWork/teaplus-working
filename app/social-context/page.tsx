@@ -125,11 +125,11 @@ export default function SocialContextPage() {
           <div className="flex items-center justify-between">
             {/* Botão Voltar */}
             <a 
-              href="/tea" 
+              href="/dashboard" 
               className="flex items-center text-purple-600 hover:text-purple-700 transition-colors min-h-[44px] px-2 -ml-2"
             >
               <span className="text-xl mr-2">←</span>
-              <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
+              <span className="text-sm sm:text-base font-medium">Voltar</span>
             </a>
             
             {/* Título */}
@@ -336,7 +336,7 @@ export default function SocialContextPage() {
                         </button>
                       ) : (
                         <a
-                          href="/tea"
+                          href="/dashboard"
                           className="bg-gradient-to-r from-purple-400 to-blue-500 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-200 active:scale-95 min-h-[48px] touch-manipulation inline-block"
                         >
                           Finalizar Atividade ✓

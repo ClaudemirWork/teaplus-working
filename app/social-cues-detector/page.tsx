@@ -263,11 +263,11 @@ export default function SocialCuesDetectorPage() {
           <div className="flex items-center justify-between">
             {/* Botão Voltar */}
             <a 
-              href="/tea" 
+              href="/dashboard" 
               className="flex items-center text-blue-600 hover:text-blue-700 transition-colors min-h-[44px] px-2 -ml-2"
             >
               <span className="text-xl mr-2">←</span>
-              <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
+              <span className="text-sm sm:text-base font-medium">Voltar</span>
             </a>
             
             {/* Título */}

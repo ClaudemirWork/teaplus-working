@@ -420,7 +420,7 @@ export default function CareMission() {
         background: 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #f3e8ff 100%)',
         paddingTop: '80px'
       }}>
-        {/* Header Fixo - Voltar para TEA */}
+        {/* Header Fixo - Voltar */}
         <div style={{
           position: 'fixed',
           top: 0,
@@ -454,7 +454,7 @@ export default function CareMission() {
               }}
             >
               <span style={{ fontSize: '18px' }}>←</span>
-              Voltar para TEA
+              Voltar
             </button>
             <div style={{
               width: '32px',
@@ -613,7 +613,7 @@ export default function CareMission() {
       background: 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #f3e8ff 100%)',
       paddingTop: '80px'
     }}>
-      {/* Header Fixo - Voltar para TEA */}
+      {/* Header Fixo - Voltar */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -647,7 +647,7 @@ export default function CareMission() {
             }}
           >
             <span style={{ fontSize: '18px' }}>←</span>
-            Voltar para TEA
+            Voltar
           </button>
           <div style={{
             width: '32px',

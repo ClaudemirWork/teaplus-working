@@ -116,7 +116,7 @@ const StrategicBreaksPage = () => {
         <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/tdah" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <Link href="/dashboard" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <ArrowLeft className="w-6 h-6 text-gray-600" />
               </Link>
               <div>
@@ -442,7 +442,7 @@ const StrategicBreaksPage = () => {
                 >
                   Nova sessão
                 </button>
-                <Link href="/tdah">
+                <Link href="/dashboard">
                   <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-8 rounded-xl font-semibold transition-colors">
                     Voltar ao menu
                   </button>

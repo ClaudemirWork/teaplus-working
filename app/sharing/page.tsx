@@ -132,13 +132,13 @@ export default function SharingPage() {
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
             <Link 
-              href="/tea" 
+              href="/dashboard" 
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
             >
               <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              <span className="font-medium text-sm sm:text-base">Voltar para TEA</span>
+              <span className="font-medium text-sm sm:text-base">Voltar</span>
             </Link>
             
             <div className="flex items-center space-x-2 sm:space-x-3">
@@ -490,7 +490,7 @@ export default function SharingPage() {
                           </button>
                         ) : (
                           <Link
-                            href="/tea"
+                            href="/dashboard"
                             className="bg-gradient-to-r from-green-500 to-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-200 inline-block min-h-[48px] touch-manipulation flex items-center"
                             style={{ fontSize: 'clamp(1rem, 3vw, 1.125rem)' }}
                           >

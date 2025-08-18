@@ -463,7 +463,7 @@ export default function ActiveListening() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
             <div className="flex items-center justify-between">
               <Link 
-                href="/tea" 
+                href="/dashboard" 
                 className="flex items-center text-teal-600 hover:text-teal-700 transition-colors min-h-[44px] px-2 -ml-2"
               >
                 <span className="text-xl mr-2">←</span>
@@ -545,11 +545,11 @@ export default function ActiveListening() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <Link 
-              href="/tea" 
+              href="/dashboard" 
               className="flex items-center text-teal-600 hover:text-teal-700 transition-colors min-h-[44px] px-2 -ml-2"
             >
               <span className="text-xl mr-2">←</span>
-              <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
+              <span className="text-sm sm:text-base font-medium">Voltar</span>
             </Link>
             
             <button

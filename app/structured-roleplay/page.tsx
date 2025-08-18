@@ -55,7 +55,7 @@ export default function StructuredRoleplay() {
         {/* Header com botão voltar */}
         <div className="flex items-center justify-between mb-8">
           <button
-            onClick={() => router.push('/combined')}
+            onClick={() => router.push('/dashboard')}
             className="flex items-center text-white hover:text-purple-200 transition-colors"
           >
             <span className="mr-2">←</span>

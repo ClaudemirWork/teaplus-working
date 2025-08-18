@@ -125,13 +125,13 @@ export default function BodyLanguagePage() {
           <div className="flex items-center justify-between h-16">
             {/* Botão Voltar */}
             <Link 
-              href="/tea"
+              href="/dashboard"
               className="flex items-center space-x-2 text-orange-600 hover:text-orange-700 transition-colors group"
             >
               <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              <span className="font-medium hidden sm:inline">Voltar para TEA</span>
+              <span className="font-medium hidden sm:inline">Voltar</span>
               <span className="font-medium sm:hidden">Voltar</span>
             </Link>
 
@@ -350,7 +350,7 @@ export default function BodyLanguagePage() {
                         </button>
                       ) : (
                         <Link
-                          href="/tea"
+                          href="/dashboard"
                           className="bg-gradient-to-r from-orange-400 to-red-500 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-200 inline-block text-center w-full sm:w-auto"
                         >
                           Finalizar Atividade ✓

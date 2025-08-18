@@ -337,7 +337,7 @@ export default function MoodTrackerPage() {
             onClick={() => window.history.back()}
             className="mr-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
           >
-            ← Voltar para TEA
+            ← Voltar
           </button>
           <div className="flex items-center">
             <span className="text-3xl mr-3">🌟</span>

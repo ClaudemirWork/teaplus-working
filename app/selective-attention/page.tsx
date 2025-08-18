@@ -251,11 +251,11 @@ export default function SelectiveAttentionPage() {
             <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
                 <div className="p-3 sm:p-4 flex items-center justify-between">
                     <Link
-                        href="/tdah"
+                        href="/dashboard"
                         className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
                     >
                         <ChevronLeft size={20} />
-                        <span>Voltar para TDAH</span>
+                        <span>Voltar</span>
                     </Link>
                     <button 
                         onClick={handleSaveSession}

@@ -129,7 +129,7 @@ export default function MemoryGamePlus() {
         <div className="p-4">
           <div className="flex items-center justify-between">
             <Link 
-              href="/tdah" 
+              href="/dashboard" 
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
               <ChevronLeft size={20} />

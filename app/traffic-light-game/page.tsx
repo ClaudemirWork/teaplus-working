@@ -140,7 +140,7 @@ export default function JogoSemaforo() {
     
     if (origem.toLowerCase() === 'combined' || origem.toLowerCase() === 'tea_tdah') {
       setOrigemSecao('TEA_TDAH')
-      setVoltarPara('/combined')
+      setVoltarPara('/dashboard')
     } else if (origem.toLowerCase() === 'tdah') {
       setOrigemSecao('TDAH')
       setVoltarPara('/tdah')

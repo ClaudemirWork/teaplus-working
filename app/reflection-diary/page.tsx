@@ -182,7 +182,7 @@ export default function ReflectionDiary() {
                 onClick={goBackToTEA}
                 className="mr-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
               >
-                ← Voltar para TEA
+                ← Voltar
               </button>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-xl md:text-2xl">
@@ -270,7 +270,7 @@ export default function ReflectionDiary() {
             onClick={goBackToTEA}
             className="mr-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
           >
-            ← Voltar para TEA
+            ← Voltar
           </button>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-xl md:text-2xl">
