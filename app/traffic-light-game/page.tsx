@@ -106,7 +106,9 @@ export default function JogoSemaforo() {
   
   // 🎯 DETECTOR DE ORIGEM VIA URL
   const [origemSecao, setOrigemSecao] = useState<'TEA' | 'TDAH' | 'TEA_TDAH'>('TEA')
-  const [voltarPara, setVoltarPara] = useState('/tea')
+  const [voltarPara, setVoltarPara] = useState('/dashboard')
+
+
   
   // Estados do jogo
   const [currentScenario, setCurrentScenario] = useState(0)
@@ -143,10 +145,14 @@ export default function JogoSemaforo() {
       setVoltarPara('/dashboard')
     } else if (origem.toLowerCase() === 'tdah') {
       setOrigemSecao('TDAH')
-      setVoltarPara('/tdah')
+      setVoltarPara('/dashboard')
+
+
     } else {
       setOrigemSecao('TEA')
-      setVoltarPara('/tea')
+      setVoltarPara('/dashboard')
+
+
     }
   }, [])
 

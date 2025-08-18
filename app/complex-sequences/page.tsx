@@ -251,14 +251,14 @@ export default function SequenciasComplexas() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
         <div className="max-w-4xl mx-auto">
-          {/* Botão Voltar ao TDAH */}
+          {/* Botão Voltar */}
           <div className="mb-4">
             <button 
               onClick={() => router.push('/tdah')}
               className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              Voltar ao TDAH
+              Voltar
             </button>
           </div>
 

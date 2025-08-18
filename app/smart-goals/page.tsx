@@ -151,7 +151,7 @@ export default function SmartGoals() {
             className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span>Voltar ao TDAH</span>
+            <span>Voltar</span>
           </button>
         </div>
 
