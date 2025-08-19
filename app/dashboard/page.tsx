@@ -209,7 +209,7 @@ export default function DashboardPage() {
                 <h2 className="text-3xl font-bold text-gray-800 mb-5 flex items-center">
                     <span className="text-4xl mr-4">{OBJECTIVE_DETAILS[viewingObjective]?.icon}</span>
                     {OBJECTIVE_DETAILS[viewingObjective]?.name}
-                </b>
+                </h2>
                 <div className="border-t pt-5 space-y-3">
                     {activitiesForSelectedObjective.length > 0 ? activitiesForSelectedObjective.map(activity => (
                         <div key={activity.name} className="p-4 bg-gray-50 rounded-lg flex justify-between items-center hover:bg-gray-100 transition-colors">
