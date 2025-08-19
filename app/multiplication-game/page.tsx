@@ -2,25 +2,27 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Play, RotateCcw, Trophy, Brain, Target } from 'lucide-react';
+import { ChevronLeft, Play, RotateCcw, Trophy, Brain, Target, Save } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '../utils/supabaseClient';
 
 // Define as propriedades do estado do jogo
 interface GameState {
   board: ('X' | 'O' | null)[];
   currentPlayer: 'X' | 'O';
-  status: 'playing' | 'winner-X' | 'winner-O' | 'draw' | 'idle';
+  status: 'playing' | 'winner-X' | 'winner-O' | 'draw' | 'idle' | 'finished';
   currentProblem: { a: number; b: number; question: string; answer: number } | null;
   scoreX: number;
   scoreO: number;
 }
 
-// Define as propriedades do componente
 interface Props {
   initialState?: GameState;
 }
 
 export default function MultiplicationGame({ initialState }: Props) {
-  // Constantes para o tamanho do tabuleiro
+  const router = useRouter();
+  const supabase = createClient();
   const BOARD_SIZE = 9;
 
   // Estados do jogo
@@ -41,6 +43,12 @@ export default function MultiplicationGame({ initialState }: Props) {
   const [message, setMessage] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | null>(null);
+  const [salvando, setSalvando] = useState(false);
+
+  // Estados para métricas
+  const [inicioSessao, setInicioSessao] = useState<Date | null>(null);
+  const [acertos, setAcertos] = useState(0);
+  const [erros, setErros] = useState(0);
 
   // Gera um novo problema de multiplicação com base no nível
   const generateProblem = (level: number) => {
@@ -69,14 +77,17 @@ export default function MultiplicationGame({ initialState }: Props) {
 
   // Lida com o início de um novo jogo
   const handleStartGame = () => {
+    setInicioSessao(new Date());
+    setAcertos(0);
+    setErros(0);
     const newProblem = generateProblem(currentLevel);
     setGameState({
       board: Array(BOARD_SIZE).fill(null),
       currentPlayer: 'X',
       status: 'playing',
       currentProblem: newProblem,
-      scoreX: gameState.scoreX,
-      scoreO: gameState.scoreO,
+      scoreX: 0,
+      scoreO: 0,
     });
     setMessage('');
     setFeedbackType(null);
@@ -92,6 +103,9 @@ export default function MultiplicationGame({ initialState }: Props) {
       scoreX: 0,
       scoreO: 0,
     });
+    setInicioSessao(null);
+    setAcertos(0);
+    setErros(0);
     setMessage('');
     setFeedbackType(null);
   };
@@ -99,14 +113,9 @@ export default function MultiplicationGame({ initialState }: Props) {
   // Checa se há um vencedor ou empate
   const checkWinner = (board: ('X' | 'O' | null)[]) => {
     const lines = [
-      [0, 1, 2],
-      [3, 4, 5],
-      [6, 7, 8],
-      [0, 3, 6],
-      [1, 4, 7],
-      [2, 5, 8],
-      [0, 4, 8],
-      [2, 4, 6],
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6],
     ];
     for (let i = 0; i < lines.length; i++) {
       const [a, b, c] = lines[i];
@@ -130,10 +139,11 @@ export default function MultiplicationGame({ initialState }: Props) {
 
   // Lida com a submissão da resposta do usuário
   const handleAnswerSubmit = () => {
-    if (!currentCellIndex && currentCellIndex !== 0) return;
+    if (currentCellIndex === null) return;
     const answer = parseInt(userAnswer, 10);
+    
     if (!isNaN(answer) && answer === gameState.currentProblem?.answer) {
-      // Se a resposta estiver correta, atualiza o tabuleiro e checa por um vencedor
+      setAcertos(prev => prev + 1);
       const newBoard = [...gameState.board];
       newBoard[currentCellIndex] = gameState.currentPlayer;
       const winner = checkWinner(newBoard);
@@ -142,20 +152,19 @@ export default function MultiplicationGame({ initialState }: Props) {
         if (winner === 'draw') {
           setMessage('Empate!');
           setFeedbackType(null);
-          setGameState(prev => ({ ...prev, board: newBoard, status: 'draw' }));
+          setGameState(prev => ({ ...prev, board: newBoard, status: 'finished' }));
         } else {
           setMessage(`Jogador ${winner} venceu!`);
           setFeedbackType('success');
           setGameState(prev => ({
             ...prev,
             board: newBoard,
-            status: winner === 'X' ? 'winner-X' : 'winner-O',
+            status: 'finished',
             scoreX: winner === 'X' ? prev.scoreX + 1 : prev.scoreX,
             scoreO: winner === 'O' ? prev.scoreO + 1 : prev.scoreO,
           }));
         }
       } else {
-        // Se não houver vencedor, troca de turno e gera um novo problema
         const nextPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
         const newProblem = generateProblem(currentLevel);
         setGameState(prev => ({
@@ -170,7 +179,7 @@ export default function MultiplicationGame({ initialState }: Props) {
         setTimeout(() => setShowFeedback(false), 1500);
       }
     } else {
-      // Se a resposta estiver incorreta, dá feedback
+      setErros(prev => prev + 1);
       setMessage('Resposta incorreta! Tente novamente.');
       setFeedbackType('error');
       setShowFeedback(true);
@@ -179,6 +188,58 @@ export default function MultiplicationGame({ initialState }: Props) {
     setShowAnswerInput(false);
     setUserAnswer('');
     setCurrentCellIndex(null);
+  };
+  
+  // Função para salvar a sessão no Supabase
+  const handleSaveSession = async () => {
+    if (gameState.status === 'idle') {
+      alert('Inicie e finalize um jogo antes de salvar.');
+      return;
+    }
+    
+    setSalvando(true);
+    
+    const fimSessao = new Date();
+    const duracaoSegundos = inicioSessao ? Math.round((fimSessao.getTime() - inicioSessao.getTime()) / 1000) : 0;
+    const pontuacaoFinal = acertos - erros; // Pontuação baseada em acertos e erros
+    
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error('Erro ao obter usuário:', userError);
+        alert('Erro: Sessão expirada. Por favor, faça login novamente.');
+        router.push('/login');
+        return;
+      }
+      
+      const { error } = await supabase
+        .from('sessoes')
+        .insert([{
+          usuario_id: user.id,
+          atividade_nome: 'Jogo da Multiplicação',
+          pontuacao_final: pontuacaoFinal,
+          data_fim: fimSessao.toISOString(),
+          detalhes: {
+            nivel_dificuldade: currentLevel,
+            acertos: acertos,
+            erros: erros,
+            duracao_segundos: duracaoSegundos,
+          }
+        }]);
+
+      if (error) {
+        console.error('Erro ao salvar:', error);
+        alert(`Erro ao salvar a sessão: ${error.message}`);
+      } else {
+        alert('Sessão salva com sucesso!');
+        handleResetGame();
+      }
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      alert('Erro inesperado ao salvar a sessão.');
+    } finally {
+      setSalvando(false);
+    }
   };
 
   return (
@@ -195,10 +256,14 @@ export default function MultiplicationGame({ initialState }: Props) {
               <span>← Voltar</span>
             </Link>
             <div className="flex items-center space-x-4">
-              <div className="px-4 py-2 rounded-full bg-purple-500 text-white font-medium flex items-center space-x-2">
-                <Brain size={16} />
-                <span>Jogo da Multiplicação</span>
-              </div>
+              <button
+                onClick={handleSaveSession}
+                disabled={salvando || gameState.status !== 'finished'}
+                className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
+              >
+                <Save size={20} />
+                <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -282,7 +347,7 @@ export default function MultiplicationGame({ initialState }: Props) {
             </div>
 
             {/* Board and Controls */}
-            {gameState.status !== 'playing' ? (
+            {gameState.status !== 'playing' && gameState.status !== 'finished' ? (
               <div className="text-center">
                 <div className="mb-4">
                   <h3 className="text-xl font-semibold mb-2">Selecione o Nível de Dificuldade:</h3>
@@ -358,6 +423,16 @@ export default function MultiplicationGame({ initialState }: Props) {
                       </button>
                     </div>
                   </div>
+                )}
+                {/* Restart Button */}
+                {gameState.status === 'finished' && (
+                    <button
+                        onClick={handleResetGame}
+                        className="mt-6 flex items-center space-x-2 bg-gray-500 hover:bg-gray-600 text-white px-8 py-4 rounded-lg font-medium transition-colors"
+                    >
+                        <RotateCcw size={20} />
+                        <span>Jogar Novamente</span>
+                    </button>
                 )}
               </div>
             )}
