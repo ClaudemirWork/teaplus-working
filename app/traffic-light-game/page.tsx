@@ -27,7 +27,7 @@ const scenarios: Scenario[] = [
     situation: "Seu amigo está chorando porque perdeu o jogo que estava jogando. Você quer ajudá-lo.",
     options: {
       red: "Ignorar e continuar com suas coisas",
-      yellow: "Observar se ele realmente quer ajuda antes de agir", 
+      yellow: "Observar se ele realmente quer ajuda antes de agir",
       green: "Oferecer um abraço ou palavras de apoio imediatamente"
     },
     correctAnswer: 'green',
@@ -104,10 +104,6 @@ export default function JogoSemaforo() {
   const router = useRouter()
   const supabase = createClient()
   
-  // 🎯 DETECTOR DE ORIGEM VIA URL
-  const [origemSecao, setOrigemSecao] = useState<'TEA' | 'TDAH' | 'TEA_TDAH'>('TEA')
-  const [voltarPara, setVoltarPara] = useState('/tea')
-  
   // Estados do jogo
   const [currentScenario, setCurrentScenario] = useState(0)
   const [selectedOption, setSelectedOption] = useState<'red' | 'yellow' | 'green' | null>(null)
@@ -130,25 +126,6 @@ export default function JogoSemaforo() {
   const [variabilidadeContextual, setVariabilidadeContextual] = useState<{green: number, yellow: number, red: number}>({green: 0, yellow: 0, red: 0})
   
   const filteredScenarios = scenarios.filter(s => s.difficulty === currentDifficulty)
-
-  // 🎯 DETECTAR ORIGEM
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    
-    const urlParams = new URLSearchParams(window.location.search)
-    const origem = urlParams.get('origem') || 'tea'
-    
-    if (origem.toLowerCase() === 'combined' || origem.toLowerCase() === 'tea_tdah') {
-      setOrigemSecao('TEA_TDAH')
-      setVoltarPara('/combined')
-    } else if (origem.toLowerCase() === 'tdah') {
-      setOrigemSecao('TDAH')
-      setVoltarPara('/tdah')
-    } else {
-      setOrigemSecao('TEA')
-      setVoltarPara('/tea')
-    }
-  }, [])
 
   // Timer do jogo
   useEffect(() => {
@@ -322,9 +299,8 @@ export default function JogoSemaforo() {
       
       // 📊 DADOS CIENTÍFICOS PARA SUPABASE
       const observacoesData = {
-        origem_secao: origemSecao,
-        contexto_atividade: origemSecao === 'TEA' ? 'regulacao_emocional' : 
-                            origemSecao === 'TDAH' ? 'controle_inibitorio' : 'habilidades_essenciais',
+        origem_secao: 'Regulação Emocional', // Valor fixo, já que removemos a detecção
+        contexto_atividade: 'controle_inibitorio',
         nivel_dificuldade: currentDifficulty,
         duracao_sessao_segundos: duracaoTotalSegundos,
         
@@ -382,7 +358,7 @@ export default function JogoSemaforo() {
 • Flexibilidade: ${flexibilidadeContextual.diversidade_resposta}/3 tipos de resposta
 • Cenários completos: ${sequenciaTemporal.length}`)
         
-        router.push('/profileselection')
+        router.push('/dashboard') // Redireciona para o dashboard após salvar
       }
     } catch (error: any) {
       console.error('Erro inesperado:', error)
@@ -455,8 +431,9 @@ export default function JogoSemaforo() {
             maxWidth: '1200px',
             margin: '0 auto'
           }}>
+             {/* ===== BOTÃO 1 CORRIGIDO ===== */}
             <button
-              onClick={() => window.location.href = voltarPara}
+              onClick={() => router.push('/dashboard')}
               style={{
                 background: 'none',
                 border: 'none',
@@ -645,8 +622,9 @@ export default function JogoSemaforo() {
             maxWidth: '1200px',
             margin: '0 auto'
           }}>
+             {/* ===== BOTÃO 2 CORRIGIDO ===== */}
             <button
-              onClick={() => window.location.href = voltarPara}
+              onClick={() => router.push('/dashboard')}
               style={{
                 background: 'none',
                 border: 'none',
@@ -829,8 +807,9 @@ export default function JogoSemaforo() {
           maxWidth: '1200px',
           margin: '0 auto'
         }}>
+           {/* ===== BOTÃO 3 CORRIGIDO ===== */}
           <button
-            onClick={() => window.location.href = voltarPara}
+            onClick={() => router.push('/dashboard')}
             style={{
               background: 'none',
               border: 'none',
