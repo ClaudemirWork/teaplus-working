@@ -94,7 +94,7 @@ const GameInfo = () => (
   </div>
 );
 
-// Componente da Carta
+// Componente da Carta - COM TAMANHOS REDUZIDOS
 const Card = ({ card, onCardClick }: { card: Card; onCardClick: (id: number) => void }) => {
   const isFlipped = card.status === 'flipped' || card.status === 'matched';
   const isMatched = card.status === 'matched';
@@ -107,11 +107,11 @@ const Card = ({ card, onCardClick }: { card: Card; onCardClick: (id: number) => 
       <div className={`${styles.cardInner} shadow-md rounded-lg`}>
         {/* Verso da Carta */}
         <div className={`${styles.cardFace} ${styles.cardBack}`}>
-          <span className="text-white text-xs sm:text-2xl font-bold tracking-wider">TeaPlus</span>
+          <span className="text-white text-[10px] sm:text-sm md:text-xl font-bold tracking-wider">TeaPlus</span>
         </div>
         {/* Frente da Carta */}
         <div className={`${styles.cardFace} ${styles.cardFront} ${isMatched ? styles.matched : ''}`}>
-          <span className="text-3xl sm:text-5xl md:text-6xl">{card.emoji}</span>
+          <span className="text-2xl sm:text-3xl md:text-5xl">{card.emoji}</span>
         </div>
       </div>
     </div>
@@ -362,7 +362,8 @@ export default function MemoryGamePage() {
             </p>
           )}
         </div>
-        <div className={`grid ${LEVEL_CONFIG[level].grid} gap-2 sm:gap-3 md:gap-4 w-full max-w-xs sm:max-w-lg md:max-w-2xl`}>
+        {/* CONTAINER DO GRID COM TAMANHOS REDUZIDOS EM 30% */}
+        <div className={`grid ${LEVEL_CONFIG[level].grid} gap-1.5 sm:gap-2 md:gap-3 w-full max-w-[240px] sm:max-w-[360px] md:max-w-[480px]`}>
           {cards.map(card => (
             <Card 
               key={card.id} 
