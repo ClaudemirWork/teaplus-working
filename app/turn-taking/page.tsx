@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
 
 export default function TurnTakingPage() {
   const [gameStarted, setGameStarted] = useState(false);
@@ -116,7 +117,6 @@ export default function TurnTakingPage() {
       setSelectedAnswer('');
       setShowFeedback(false);
       
-      // Atualizar nível baseado nos pontos
       if (points >= 20 && level === 1) setLevel(2);
       if (points >= 40 && level === 2) setLevel(3);
     }
@@ -127,269 +127,109 @@ export default function TurnTakingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-blue-50">
-      {/* Header Fixo */}
       <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <Link 
-              href="/tea" 
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+              href="/dashboard" 
+              className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="font-medium">Voltar para TEA</span>
+              <ChevronLeft className="h-6 w-6" />
+              <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
             </Link>
-            
-            <div className="flex items-center space-x-3">
-              <span className="text-2xl">🔄</span>
-              <div className="text-right">
-                <div className="font-bold text-gray-800">Revezamento</div>
-                <div className="text-sm text-gray-600">Pontuação Total</div>
-              </div>
-              <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full font-bold">
-                {points} pts
-              </div>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex items-center gap-2">
+              🔄
+              <span>Respeitando a Vez</span>
+            </h1>
+            <div className="text-right w-24">
+              <div className="text-xs text-gray-500">Pontuação</div>
+              <div className="text-xl font-bold text-orange-600">{points}</div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Conteúdo Principal */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {!gameStarted ? (
-          // Tela Inicial
           <div className="space-y-8">
-            {/* Título */}
             <div className="text-center">
-              <div className="flex items-center justify-center space-x-3 mb-4">
-                <span className="text-6xl">🔄</span>
-                <h1 className="text-4xl sm:text-5xl font-bold text-gray-800">Revezamento</h1>
-              </div>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Desenvolver paciência e habilidades de esperar a vez através de situações 
-                práticas de filas, jogos e atividades em grupo
-              </p>
+              <h1 className="text-4xl sm:text-5xl font-bold text-gray-800 mb-2">Respeitando a Vez</h1>
+              <p className="text-xl text-gray-600">Aprenda a importância de esperar e revezar em diferentes situações.</p>
             </div>
-
-            {/* Cards Informativos */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Objetivo */}
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl border-l-4 border-red-400 p-6 shadow-lg">
-                <div className="flex items-center mb-3">
-                  <span className="text-2xl mr-3">🎯</span>
-                  <h3 className="text-xl font-bold text-red-600">Objetivo:</h3>
-                </div>
-                <p className="text-gray-700 leading-relaxed">
-                  Desenvolver paciência e habilidades de esperar a vez através de situações 
-                  práticas de filas, jogos e atividades em grupo
-                </p>
-              </div>
-
-              {/* Pontuação */}
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl border-l-4 border-blue-400 p-6 shadow-lg">
-                <div className="flex items-center mb-3">
-                  <span className="text-2xl mr-3">👑</span>
-                  <h3 className="text-xl font-bold text-blue-600">Pontuação:</h3>
-                </div>
-                <p className="text-gray-700 leading-relaxed">
-                  Cada resposta correta = +10 pontos. Você precisa de 50 pontos 
-                  para completar a atividade com sucesso
-                </p>
-              </div>
-
-              {/* Níveis */}
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl border-l-4 border-purple-400 p-6 shadow-lg">
-                <div className="flex items-center mb-3">
-                  <span className="text-2xl mr-3">📊</span>
-                  <h3 className="text-xl font-bold text-purple-600">Níveis:</h3>
-                </div>
-                <div className="text-gray-700 space-y-1">
-                  <p><strong className="text-purple-600">Nível 1:</strong> Filas e espera básica em locais públicos</p>
-                  <p><strong className="text-purple-600">Nível 2:</strong> Jogos e atividades com turnos organizados</p>
-                  <p><strong className="text-purple-600">Nível 3:</strong> Situações complexas e regras de fairness</p>
-                </div>
-              </div>
-
-              {/* Final */}
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl border-l-4 border-green-400 p-6 shadow-lg">
-                <div className="flex items-center mb-3">
-                  <span className="text-2xl mr-3">🏁</span>
-                  <h3 className="text-xl font-bold text-green-600">Final:</h3>
-                </div>
-                <p className="text-gray-700 leading-relaxed">
-                  Complete os 3 níveis com 50 pontos para finalizar a atividade 
-                  e dominar as habilidades de revezamento e paciência
-                </p>
-              </div>
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border-l-4 border-red-400 p-6 shadow-lg">
+              <h3 className="text-xl font-bold text-red-600 mb-2">🎯 Objetivo:</h3>
+              <p className="text-gray-700">Desenvolver paciência e habilidades de esperar a vez em filas, jogos e atividades em grupo.</p>
             </div>
-
-            {/* Botão Começar */}
             <div className="text-center">
               <button
                 onClick={handleStartGame}
-                className="bg-gradient-to-r from-orange-500 to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-medium hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                className="bg-gradient-to-r from-orange-500 to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-medium hover:shadow-lg transition-transform transform hover:scale-105"
               >
                 Começar Atividade
               </button>
             </div>
-
-            {/* Base Científica */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
-              <div className="flex items-center mb-4">
-                <span className="text-2xl mr-3">🧠</span>
-                <h3 className="text-xl font-bold text-gray-800">Base Científica:</h3>
-              </div>
-              <p className="text-gray-700 leading-relaxed">
-                Este exercício é baseado em princípios de autocontrole e regulação comportamental da terapia ABA 
-                para pessoas com TEA. O treino sistemático de habilidades de espera e revezamento desenvolve 
-                paciência, tolerância à frustração e competências sociais fundamentais para a convivência em grupo.
-              </p>
-            </div>
           </div>
         ) : (
-          // Conteúdo do Jogo
-          <div className="max-w-4xl mx-auto">
-            {/* Info do Jogo */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 mb-8 shadow-lg">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <div className="flex items-center space-x-3 mb-2">
-                    <span className="text-3xl">🔄</span>
-                    <h2 className="text-2xl font-bold text-gray-800">Revezamento</h2>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 sm:p-8">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">{currentExerciseData.title}</h2>
+              
+              {!exerciseStarted ? (
+                <div className="space-y-6">
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-lg text-left">
+                    <p className="text-gray-700 text-lg">{currentExerciseData.scenario}</p>
                   </div>
-                  <p className="text-gray-600">
-                    Nível {level} | Pontos: {points} | Exercício {currentExercise + 1}/{exercises.length}
-                  </p>
+                  <button onClick={handleStartExercise} className="bg-gradient-to-r from-orange-500 to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-medium hover:shadow-lg">
+                    Iniciar Exercício
+                  </button>
                 </div>
-                
-                <button 
-                  onClick={() => setGameStarted(false)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors self-start sm:self-auto"
-                >
-                  ← Voltar
-                </button>
-              </div>
-            </div>
-
-            {/* Exercício */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-6 sm:p-8">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">
-                  {currentExerciseData.title}
-                </h2>
-                
-                {!exerciseStarted ? (
-                  <div className="space-y-6">
-                    <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-lg text-left">
-                      <p className="text-gray-700 text-lg leading-relaxed">
-                        {currentExerciseData.scenario}
-                      </p>
-                    </div>
-                    
-                    <button
-                      onClick={handleStartExercise}
-                      className="bg-gradient-to-r from-orange-500 to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-medium hover:shadow-lg transition-all duration-200 transform hover:scale-105"
-                    >
-                      Iniciar Exercício
-                    </button>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-lg mb-6 text-left">
+                    <p className="text-gray-700 text-lg mb-4">{currentExerciseData.scenario}</p>
+                    <p className="text-gray-800 font-semibold text-lg">{currentExerciseData.question}</p>
                   </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-lg mb-6 text-left">
-                      <p className="text-gray-700 text-lg leading-relaxed mb-4">
-                        {currentExerciseData.scenario}
-                      </p>
-                      <p className="text-gray-800 font-semibold text-lg">
-                        {currentExerciseData.question}
-                      </p>
-                    </div>
-
-                    {/* Opções de Resposta - CORRIGIDO APENAS A VISIBILIDADE */}
-                    <div className="grid grid-cols-1 gap-4">
-                      {currentExerciseData.options.map((option) => (
-                        <button
-                          key={option.id}
-                          onClick={() => handleAnswerSelect(option.id)}
-                          disabled={showFeedback}
-                          className={`p-4 rounded-xl border-2 text-left transition-all duration-200 ${
-                            selectedAnswer === option.id
-                              ? showFeedback
-                                ? option.correct
-                                  ? 'border-green-500 bg-green-50 text-green-800'
-                                  : 'border-red-500 bg-red-50 text-red-800'
-                                : 'border-blue-500 bg-blue-50 text-blue-800'
-                              : showFeedback && option.correct
-                              ? 'border-green-500 bg-green-50 text-green-800'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-800 bg-white'
-                          }`}
-                        >
-                          <span className="font-medium">{option.id.toUpperCase()}) </span>
-                          {option.text}
-                          {showFeedback && option.correct && (
-                            <span className="ml-2 text-green-600">✓</span>
-                          )}
-                          {showFeedback && selectedAnswer === option.id && !option.correct && (
-                            <span className="ml-2 text-red-600">✗</span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Botão Confirmar */}
-                    {!showFeedback && selectedAnswer && (
+                  <div className="grid grid-cols-1 gap-4">
+                    {currentExerciseData.options.map((option) => (
                       <button
-                        onClick={handleSubmitAnswer}
-                        className="bg-gradient-to-r from-orange-500 to-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-200"
+                        key={option.id}
+                        onClick={() => handleAnswerSelect(option.id)}
+                        disabled={showFeedback}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                          selectedAnswer === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                        }`}
                       >
-                        Confirmar Resposta
+                        <span className="font-medium">{option.id.toUpperCase()}) </span>
+                        {option.text}
                       </button>
-                    )}
-
-                    {/* Feedback */}
-                    {showFeedback && (
-                      <div className={`p-6 rounded-xl ${
-                        isCorrectAnswer 
-                          ? 'bg-green-50 border-l-4 border-green-400' 
-                          : 'bg-yellow-50 border-l-4 border-yellow-400'
-                      }`}>
-                        <div className="flex items-center space-x-2 mb-3">
-                          <span className="text-2xl">
-                            {isCorrectAnswer ? '🎉' : '💡'}
-                          </span>
-                          <h3 className="text-lg font-semibold">
-                            {isCorrectAnswer ? 'Muito bem! +10 pontos' : 'Vamos aprender!'}
-                          </h3>
-                        </div>
-                        <p className="text-gray-700 leading-relaxed">
-                          {currentExerciseData.explanation}
-                        </p>
+                    ))}
+                  </div>
+                  {!showFeedback && selectedAnswer && (
+                    <button onClick={handleSubmitAnswer} className="bg-green-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-green-600 w-full sm:w-auto">
+                      Confirmar Resposta
+                    </button>
+                  )}
+                  {showFeedback && (
+                    <>
+                      <div className={`p-6 rounded-xl ${isCorrectAnswer ? 'bg-green-50 border-green-400' : 'bg-yellow-50 border-yellow-400'} border-l-4`}>
+                        <h3 className="text-lg font-semibold mb-2">{isCorrectAnswer ? '🎉 Muito bem! +10 pontos' : '💡 Vamos aprender!'}</h3>
+                        <p className="text-gray-700">{currentExerciseData.explanation}</p>
                       </div>
-                    )}
-
-                    {/* Navegação */}
-                    {showFeedback && (
                       <div className="flex justify-center">
                         {currentExercise < exercises.length - 1 ? (
-                          <button
-                            onClick={handleNextExercise}
-                            className="bg-gradient-to-r from-orange-500 to-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-200"
-                          >
+                          <button onClick={handleNextExercise} className="bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600">
                             Próximo Exercício →
                           </button>
                         ) : (
-                          <Link
-                            href="/tea"
-                            className="bg-gradient-to-r from-orange-500 to-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-200 inline-block"
-                          >
+                          <Link href="/dashboard" className="bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 inline-block">
                             Finalizar Atividade ✓
                           </Link>
                         )}
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
