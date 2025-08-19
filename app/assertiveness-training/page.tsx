@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 
@@ -318,6 +318,26 @@ const scenarios: Scenario[] = [
   }
 ]
 
+// Hook para embaralhar as respostas
+const useShuffledResponses = (scenario: Scenario | null) => {
+  const [shuffled, setShuffled] = useState<('passive' | 'aggressive' | 'assertive')[]>([]);
+
+  useEffect(() => {
+    if (scenario) {
+      const responses: ('passive' | 'aggressive' | 'assertive')[] = ['passive', 'aggressive', 'assertive'];
+      // Algoritmo de Fisher-Yates para embaralhar
+      for (let i = responses.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [responses[i], responses[j]] = [responses[j], responses[i]];
+      }
+      setShuffled(responses);
+    }
+  }, [scenario]);
+
+  return shuffled;
+};
+
+
 export default function AssertivenessTraining() {
   const [currentScenario, setCurrentScenario] = useState(0)
   const [selectedResponse, setSelectedResponse] = useState<'passive' | 'aggressive' | 'assertive' | null>(null)
@@ -328,6 +348,9 @@ export default function AssertivenessTraining() {
   const [currentDifficulty, setCurrentDifficulty] = useState<'iniciante' | 'intermediario' | 'avancado'>('iniciante')
   
   const filteredScenarios = scenarios.filter(s => s.difficulty === currentDifficulty)
+  const scenario = filteredScenarios[currentScenario];
+  const shuffledResponses = useShuffledResponses(scenario);
+
 
   const handleResponseSelect = (responseType: 'passive' | 'aggressive' | 'assertive') => {
     setSelectedResponse(responseType)
@@ -373,9 +396,7 @@ export default function AssertivenessTraining() {
     if (assertivePercentage >= 50) return "👏 Muito bom! Você está no caminho certo!"
     return "💪 Continue praticando! A assertividade se desenvolve com o tempo!"
   }
-
-  const scenario = filteredScenarios[currentScenario]
-
+  
   const GameHeader = () => (
     <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
@@ -433,11 +454,16 @@ export default function AssertivenessTraining() {
                 <div className="bg-green-50 p-4 rounded-lg"><div className="text-2xl font-bold text-green-700">{score.assertive}</div><div className="text-sm">Assertivas</div></div>
             </div>
             <p className="text-lg mb-6">{getScoreMessage()}</p>
-            <button onClick={resetGame} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-              Escolher Outro Nível
-            </button>
+            <div className="flex flex-col md:flex-row gap-4 justify-center">
+                <button onClick={() => startGame(currentDifficulty)} className="bg-white text-gray-800 px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-50">
+                    🔄 Treinar Novamente
+                </button>
+                <button onClick={resetGame} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+                    Escolher Outro Nível
+                </button>
+            </div>
           </div>
-        ) : (
+        ) : scenario && (
           <div>
             <div className="w-full h-2 bg-gray-200 rounded-full mb-6">
               <div className="h-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full" style={{ width: `${((currentScenario + 1) / filteredScenarios.length) * 100}%` }} />
@@ -450,7 +476,7 @@ export default function AssertivenessTraining() {
               </div>
             </div>
             <div className="space-y-3">
-              {(['passive', 'aggressive', 'assertive'] as const).map((type) => (
+              {shuffledResponses.map((type) => (
                 <button
                   key={type}
                   onClick={() => !showFeedback && handleResponseSelect(type)}
