@@ -151,7 +151,7 @@ export default function App() {
 
   // Efeito para iniciar o jogo automaticamente ao carregar a página
   useEffect(() => {
-    setupGame(1); // Inicia o jogo no nível 1
+    setupGame(1);
   }, []);
 
   // Efeito para o timer do jogo
