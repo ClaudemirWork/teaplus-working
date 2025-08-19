@@ -52,8 +52,6 @@ const ACTIVITY_TO_OBJECTIVE_MAP: { [key: string]: { objectives: string[], path: 
     'Foco Auditivo': { objectives: ['foco_atencao'], path: '/auditory-focus', phase: 2 },
     'Atenção Rítmica': { objectives: ['foco_atencao'], path: '/rhythm-attention', phase: 2 },
     'Padrões Visuais': { objectives: ['foco_atencao'], path: '/visual-patterns', phase: 2 },
-    // O jogo "Desafio Multitarefa" foi removido.
-    // Novo jogo "Jogo da Multiplicação" foi adicionado aqui.
     'Jogo da Multiplicação': { objectives: ['foco_atencao'], path: '/multiplication-game', phase: 1 },
     'Memória Sequencial Visual': { objectives: ['foco_atencao'], path: '/visual-memory-sequence', phase: 3 },
     'Digit Span': { objectives: ['foco_atencao'], path: '/digit-span', phase: 3 },
@@ -266,7 +264,7 @@ export default function DashboardPage() {
                         <div className="w-full bg-gray-200 rounded-full h-2.5 mt-3">
                             <div className="bg-gradient-to-r from-cyan-400 to-blue-500 h-2.5 rounded-full" style={{ width: `0%` }}></div>
                         </div>
-                      </div>
+                    </div>
                     );
                   })}
                 </div>
