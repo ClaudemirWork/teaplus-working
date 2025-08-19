@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // Importe o useRouter
 
 interface FrustrationExercise {
   id: number;
@@ -32,7 +33,7 @@ const exercises: FrustrationExercise[] = [
     duration: 180,
     steps: [
       "Inspire pelo nariz contando até 4",
-      "Segure a respiração contando até 7", 
+      "Segure a respiração contando até 7",
       "Expire pela boca contando até 8",
       "Repita 4 ciclos completos"
     ]
@@ -99,6 +100,7 @@ const frustratingScenarios = [
 ];
 
 export default function FrustrationManagement() {
+  const router = useRouter(); // Inicie o router
   const [currentExercise, setCurrentExercise] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -227,13 +229,6 @@ export default function FrustrationManagement() {
     }
   };
 
-  const handleBackToTEA = () => {
-    // Verificação segura para window
-    if (typeof window !== 'undefined') {
-      window.history.back();
-    }
-  };
-
   const getBreathingInstruction = () => {
     switch (breathingPhase) {
       case 'inhale': return `Inspire... ${breathingCount + 1}/4`;
@@ -303,10 +298,10 @@ export default function FrustrationManagement() {
         padding: windowWidth <= 768 ? '16px' : '20px'
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          {/* Back Button */}
+          {/* Back Button CORRIGIDO */}
           <div style={{ marginBottom: '20px' }}>
             <button
-              onClick={handleBackToTEA}
+              onClick={() => router.push('/dashboard')}
               style={{
                 backgroundColor: 'transparent',
                 border: 'none',
@@ -325,7 +320,7 @@ export default function FrustrationManagement() {
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(13, 148, 136, 0.1)'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              ← Voltar para TEA
+              ← Voltar
             </button>
           </div>
 
@@ -430,6 +425,29 @@ export default function FrustrationManagement() {
           gap: '16px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+             {/* Back Button ADICIONADO E CORRIGIDO */}
+            <button
+              onClick={() => router.push('/dashboard')}
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: '#0d9488',
+                fontSize: windowWidth <= 768 ? '14px' : '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px',
+                borderRadius: '8px',
+                transition: 'all 0.2s',
+                minHeight: '44px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(13, 148, 136, 0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              ←
+            </button>
             <div style={{
               width: windowWidth <= 768 ? '32px' : '40px',
               height: windowWidth <= 768 ? '32px' : '40px',
@@ -482,7 +500,7 @@ export default function FrustrationManagement() {
             }}>
               {exercise.type === 'breathing' ? '🫁' :
                 exercise.type === 'reframing' ? '🧠' :
-                exercise.type === 'reflection' ? '🤔' : '⚡'}
+                  exercise.type === 'reflection' ? '🤔' : '⚡'}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <h2 style={{
