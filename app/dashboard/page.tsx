@@ -40,7 +40,7 @@ const OBJECTIVE_DETAILS: { [key: string]: { name: string; icon: React.ReactNode;
 };
 
 // ================================================================
-// MAPA ESTRATÉGICO EXPANDIDO
+// MAPA ESTRATÉGICO EXPANDIDO - COM JOGOS DE MEMÓRIA
 // ================================================================
 const ACTIVITY_TO_OBJECTIVE_MAP: { [key: string]: { objectives: string[], path: string, phase: number } } = {
     // --- Foco e Atenção ---
@@ -48,6 +48,20 @@ const ACTIVITY_TO_OBJECTIVE_MAP: { [key: string]: { objectives: string[], path: 
     'Foco Seletivo': { objectives: ['foco_atencao'], path: '/attention-selective', phase: 1 },
     'Stop-Go': { objectives: ['foco_atencao', 'regulacao_emocional'], path: '/stop-go', phase: 1 },
     'Controle Inibitório': { objectives: ['foco_atencao', 'regulacao_emocional'], path: '/inhibitory-control', phase: 1 },
+    
+    // ========== JOGOS DE MEMÓRIA ADICIONADOS ==========
+    'Jogo da Memória': { 
+        objectives: ['foco_atencao'], 
+        path: '/memory-game', 
+        phase: 1 
+    },
+    'Jogo da Memória Plus': { 
+        objectives: ['foco_atencao', 'regulacao_emocional'], 
+        path: '/memory-game-plus', 
+        phase: 2 
+    },
+    // ==================================================
+    
     'Atenção Dividida': { objectives: ['foco_atencao'], path: '/divided-attention', phase: 2 },
     'Foco Auditivo': { objectives: ['foco_atencao'], path: '/auditory-focus', phase: 2 },
     'Atenção Rítmica': { objectives: ['foco_atencao'], path: '/rhythm-attention', phase: 2 },
