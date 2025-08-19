@@ -137,16 +137,15 @@ export default function ConsciousChoicePage() {
         <header className="bg-white shadow-sm border-b sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
-              {/* Botão Voltar */}
+              {/* ===== BOTÃO 1 CORRIGIDO ===== */}
               <button 
-                onClick={() => setGameStarted(false)}
+                onClick={() => router.push('/dashboard')}
                 className="flex items-center space-x-2 text-green-600 hover:text-green-700 transition-colors group"
               >
                 <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                <span className="font-medium hidden sm:inline">Voltar</span>
-                <span className="font-medium sm:hidden">Voltar</span>
+                <span className="font-medium">Voltar</span>
               </button>
 
               {/* Título central */}
@@ -310,17 +309,16 @@ export default function ConsciousChoicePage() {
       <header className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Botão Voltar */}
-            <Link 
-              href="/tea"
+             {/* ===== BOTÃO 2 CORRIGIDO ===== */}
+            <button 
+              onClick={() => router.push('/dashboard')}
               className="flex items-center space-x-2 text-green-600 hover:text-green-700 transition-colors group"
             >
               <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              <span className="font-medium hidden sm:inline">Voltar para TEA</span>
-              <span className="font-medium sm:hidden">Voltar</span>
-            </Link>
+              <span className="font-medium">Voltar</span>
+            </button>
 
             {/* Título central */}
             <div className="flex items-center space-x-2">
