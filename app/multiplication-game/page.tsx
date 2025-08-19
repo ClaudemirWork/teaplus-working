@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Play, RotateCcw, Trophy, Brain, Target, Save } from 'lucide-react';
+import { ChevronLeft, Play, RotateCcw, Trophy, Brain, Target, Save, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
 
@@ -108,6 +108,18 @@ export default function MultiplicationGame({ initialState }: Props) {
     setErros(0);
     setMessage('');
     setFeedbackType(null);
+  };
+  
+  // Função para avançar para o próximo nível
+  const handleNextLevel = () => {
+    const nextLevel = currentLevel + 1;
+    if (nextLevel <= 3) {
+      setCurrentLevel(nextLevel);
+      handleStartGame();
+    } else {
+      alert('Parabéns! Você concluiu todos os níveis.');
+      handleResetGame();
+    }
   };
 
   // Checa se há um vencedor ou empate
@@ -263,16 +275,6 @@ export default function MultiplicationGame({ initialState }: Props) {
               <ChevronLeft size={20} />
               <span>← Voltar</span>
             </Link>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={handleSaveSession}
-                disabled={salvando || gameState.status !== 'finished'}
-                className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
-              >
-                <Save size={20} />
-                <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
-              </button>
-            </div>
           </div>
         </div>
       </header>
@@ -432,15 +434,34 @@ export default function MultiplicationGame({ initialState }: Props) {
                     </div>
                   </div>
                 )}
-                {/* Restart Button */}
+                {/* Botões de controle após o jogo */}
                 {gameState.status === 'finished' && (
-                    <button
-                        onClick={handleResetGame}
-                        className="mt-6 flex items-center space-x-2 bg-gray-500 hover:bg-gray-600 text-white px-8 py-4 rounded-lg font-medium transition-colors"
-                    >
-                        <RotateCcw size={20} />
-                        <span>Jogar Novamente</span>
-                    </button>
+                    <div className="flex flex-wrap justify-center gap-4 mt-6">
+                        <button
+                            onClick={handleResetGame}
+                            className="flex items-center space-x-2 bg-gray-500 hover:bg-gray-600 text-white px-8 py-4 rounded-lg font-medium transition-colors"
+                        >
+                            <RotateCcw size={20} />
+                            <span>Jogar Novamente</span>
+                        </button>
+                        {currentLevel < 3 && (
+                            <button
+                                onClick={handleNextLevel}
+                                className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-lg font-medium transition-colors"
+                            >
+                                <span>Próximo Nível</span>
+                                <ChevronRight size={20} />
+                            </button>
+                        )}
+                        <button
+                          onClick={handleSaveSession}
+                          disabled={salvando}
+                          className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
+                        >
+                          <Save size={20} />
+                          <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
+                        </button>
+                    </div>
                 )}
               </div>
             )}
