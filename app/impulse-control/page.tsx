@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, Play, Pause, RotateCcw, Award, Target, Clock, Zap, CheckCircle, Hand } from 'lucide-react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'; // Importe o useRouter
 
 const ImpulseControlPage = () => {
+  const router = useRouter(); // Inicie o router
   const [gameState, setGameState] = useState<'intro' | 'instructions' | 'playing' | 'paused' | 'finished'>('intro')
   const [currentLevel, setCurrentLevel] = useState(1)
   const [score, setScore] = useState(0)
@@ -231,9 +232,10 @@ const ImpulseControlPage = () => {
         <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href="/tdah" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              {/* ===== BOTÃO 1 CORRIGIDO ===== */}
+              <button onClick={() => router.push('/dashboard')} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <ArrowLeft className="w-6 h-6 text-gray-600" />
-              </Link>
+              </button>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">⚡ Controle de Impulsos</h1>
                 <p className="text-gray-600 mt-1">Manejo de impulsividade</p>
@@ -582,11 +584,10 @@ const ImpulseControlPage = () => {
                 >
                   Jogar novamente
                 </button>
-                <Link href="/tdah">
-                  <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-8 rounded-xl font-semibold transition-colors">
-                    Voltar ao menu
-                  </button>
-                </Link>
+                 {/* ===== BOTÃO 2 CORRIGIDO ===== */}
+                <button onClick={() => router.push('/dashboard')} className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-8 rounded-xl font-semibold transition-colors">
+                  Voltar
+                </button>
               </div>
             </div>
           </div>
