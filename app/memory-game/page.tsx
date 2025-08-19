@@ -2,12 +2,25 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ChevronLeft, Brain, Timer, Move, Star, Repeat, Target, Gamepad2, Trophy } from 'lucide-react';
-import './memory-game.css'; // Arquivo CSS separado para os estilos 3D
+import styles from './memory-game.module.css';
+
+// --- TIPOS (TypeScript) ---
+interface Card {
+  id: number;
+  emoji: string;
+  status: 'hidden' | 'flipped' | 'matched';
+}
+
+interface LevelConfig {
+  pairs: number;
+  grid: string;
+  title: string;
+}
 
 // --- COMPONENTES ---
 
-// Componente do Cabeçalho Padrão
-const GameHeader = ({ onRestart, moves, timer }) => (
+// Componente do Cabeçalho
+const GameHeader = ({ onRestart, moves, timer }: { onRestart: () => void; moves: number; timer: number }) => (
   <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-20 w-full">
     <div className="max-w-5xl mx-auto px-4 sm:px-6">
       <div className="flex items-center justify-between h-16">
@@ -40,64 +53,64 @@ const GameHeader = ({ onRestart, moves, timer }) => (
   </header>
 );
 
-// Componente com as informações do jogo
+// Componente com informações do jogo
 const GameInfo = () => (
-    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 mb-6">
-        <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-red-400">
-                <h3 className="font-semibold text-gray-800 mb-1 flex items-center">
-                    <Target size={18} className="mr-2 text-red-500"/> 
-                    Objetivo:
-                </h3>
-                <p className="text-sm text-gray-600">
-                    Exercitar a memória de trabalho, atenção visual e concentração.
-                </p>
-            </div>
-            <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-blue-400">
-                <h3 className="font-semibold text-gray-800 mb-1 flex items-center">
-                    <Gamepad2 size={18} className="mr-2 text-blue-500"/> 
-                    Como Jogar:
-                </h3>
-                <ul className="text-sm text-gray-600 list-disc list-inside">
-                    <li>Memorize a posição das cartas.</li>
-                    <li>Clique para virar e encontrar os pares.</li>
-                    <li>Complete o nível para avançar.</li>
-                </ul>
-            </div>
-            <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-yellow-400">
-                <h3 className="font-semibold text-gray-800 mb-1 flex items-center">
-                    <Trophy size={18} className="mr-2 text-yellow-500"/> 
-                    Níveis:
-                </h3>
-                <ul className="text-sm text-gray-600 list-disc list-inside">
-                    <li>Nível 1: 4 cartas</li>
-                    <li>Nível 2: 6 cartas</li>
-                    <li>Nível 3: 8 cartas</li>
-                    <li>Nível 4: 10 cartas</li>
-                </ul>
-            </div>
-        </div>
+  <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 mb-6">
+    <div className="grid md:grid-cols-3 gap-4">
+      <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-red-400">
+        <h3 className="font-semibold text-gray-800 mb-1 flex items-center">
+          <Target size={18} className="mr-2 text-red-500"/> 
+          Objetivo:
+        </h3>
+        <p className="text-sm text-gray-600">
+          Exercitar a memória de trabalho, atenção visual e concentração.
+        </p>
+      </div>
+      <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-blue-400">
+        <h3 className="font-semibold text-gray-800 mb-1 flex items-center">
+          <Gamepad2 size={18} className="mr-2 text-blue-500"/> 
+          Como Jogar:
+        </h3>
+        <ul className="text-sm text-gray-600 list-disc list-inside">
+          <li>Memorize a posição das cartas.</li>
+          <li>Clique para virar e encontrar os pares.</li>
+          <li>Complete o nível para avançar.</li>
+        </ul>
+      </div>
+      <div className="bg-white rounded-xl shadow-md p-4 border-l-4 border-yellow-400">
+        <h3 className="font-semibold text-gray-800 mb-1 flex items-center">
+          <Trophy size={18} className="mr-2 text-yellow-500"/> 
+          Níveis:
+        </h3>
+        <ul className="text-sm text-gray-600 list-disc list-inside">
+          <li>Nível 1: 4 cartas</li>
+          <li>Nível 2: 6 cartas</li>
+          <li>Nível 3: 8 cartas</li>
+          <li>Nível 4: 10 cartas</li>
+        </ul>
+      </div>
     </div>
+  </div>
 );
 
-// Componente da Carta - CORRIGIDO
-const Card = ({ card, onCardClick }) => {
+// Componente da Carta
+const Card = ({ card, onCardClick }: { card: Card; onCardClick: (id: number) => void }) => {
   const isFlipped = card.status === 'flipped' || card.status === 'matched';
   const isMatched = card.status === 'matched';
   
   return (
     <div 
-      className={`card-container ${isFlipped ? 'flipped' : ''}`}
+      className={`${styles.cardContainer} ${isFlipped ? styles.flipped : ''}`}
       onClick={() => onCardClick(card.id)}
       style={{ aspectRatio: '2.5 / 3.5' }}
     >
-      <div className="card-inner shadow-md rounded-lg">
+      <div className={`${styles.cardInner} shadow-md rounded-lg`}>
         {/* Verso da Carta */}
-        <div className="card-face card-back">
+        <div className={`${styles.cardFace} ${styles.cardBack}`}>
           <span className="text-white text-2xl font-bold tracking-wider">TeaPlus</span>
         </div>
         {/* Frente da Carta */}
-        <div className={`card-face card-front ${isMatched ? 'matched' : ''}`}>
+        <div className={`${styles.cardFace} ${styles.cardFront} ${isMatched ? styles.matched : ''}`}>
           <span className="text-5xl md:text-6xl">{card.emoji}</span>
         </div>
       </div>
@@ -106,9 +119,21 @@ const Card = ({ card, onCardClick }) => {
 };
 
 // Componente da Tela de Vitória
-const WinScreen = ({ level, onNextLevel, onRestart, moves, timer }) => (
+const WinScreen = ({ 
+  level, 
+  onNextLevel, 
+  onRestart, 
+  moves, 
+  timer 
+}: { 
+  level: number; 
+  onNextLevel: () => void; 
+  onRestart: () => void; 
+  moves: number; 
+  timer: number;
+}) => (
   <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-30">
-    <div className="bg-white rounded-2xl p-8 shadow-2xl text-center max-w-sm mx-4 animate-fade-in">
+    <div className={`bg-white rounded-2xl p-8 shadow-2xl text-center max-w-sm mx-4 ${styles.animateFadeIn}`}>
       <Star className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
       <h2 className="text-3xl font-bold text-gray-800 mb-2">Nível {level} Completo!</h2>
       <p className="text-gray-600 mb-6">Você encontrou todos os pares. Excelente memória!</p>
@@ -145,11 +170,10 @@ const WinScreen = ({ level, onNextLevel, onRestart, moves, timer }) => (
 );
 
 // --- COMPONENTE PRINCIPAL ---
-
-export default function MemoryGame() {
+export default function MemoryGamePage() {
   const EMOJIS = useMemo(() => ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯'], []);
 
-  const LEVEL_CONFIG = useMemo(() => ({
+  const LEVEL_CONFIG = useMemo<Record<number, LevelConfig>>(() => ({
     1: { pairs: 2, grid: 'grid-cols-2', title: 'Fácil' },
     2: { pairs: 3, grid: 'grid-cols-3', title: 'Médio' },
     3: { pairs: 4, grid: 'grid-cols-4', title: 'Difícil' },
@@ -157,24 +181,24 @@ export default function MemoryGame() {
   }), []);
 
   const [level, setLevel] = useState(1);
-  const [cards, setCards] = useState([]);
-  const [flippedCards, setFlippedCards] = useState([]);
+  const [cards, setCards] = useState<Card[]>([]);
+  const [flippedCards, setFlippedCards] = useState<Card[]>([]);
   const [matchedPairs, setMatchedPairs] = useState(0);
   const [moves, setMoves] = useState(0);
   const [timer, setTimer] = useState(0);
-  const [gameState, setGameState] = useState('loading');
+  const [gameState, setGameState] = useState<'loading' | 'memorize' | 'playing' | 'won'>('loading');
   
-  const memorizeTimeoutRef = useRef(null);
-  const processTimeoutRef = useRef(null);
+  const memorizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const processTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Efeito para iniciar o jogo automaticamente ao carregar a página
+  // Iniciar o jogo ao carregar
   useEffect(() => {
     setupGame(1);
   }, []);
 
-  // Efeito para o timer do jogo
+  // Timer do jogo
   useEffect(() => {
-    let interval;
+    let interval: NodeJS.Timeout;
     if (gameState === 'playing') {
       interval = setInterval(() => {
         setTimer(prev => prev + 1);
@@ -183,7 +207,7 @@ export default function MemoryGame() {
     return () => clearInterval(interval);
   }, [gameState]);
 
-  // Efeito para checar os pares virados
+  // Verificar pares virados
   useEffect(() => {
     if (flippedCards.length === 2) {
       const [firstCard, secondCard] = flippedCards;
@@ -215,7 +239,7 @@ export default function MemoryGame() {
     }
   }, [flippedCards]);
 
-  // Efeito para checar vitória
+  // Verificar vitória
   useEffect(() => {
     if (cards.length > 0 && matchedPairs === LEVEL_CONFIG[level].pairs) {
       setGameState('won');
@@ -234,31 +258,33 @@ export default function MemoryGame() {
     };
   }, []);
 
-  // Função para iniciar o jogo/nível
-  const setupGame = (currentLevel) => {
+  // Função para configurar o jogo
+  const setupGame = (currentLevel: number) => {
     // Limpar timeouts anteriores
     if (memorizeTimeoutRef.current) {
-        clearTimeout(memorizeTimeoutRef.current);
+      clearTimeout(memorizeTimeoutRef.current);
     }
     if (processTimeoutRef.current) {
-        clearTimeout(processTimeoutRef.current);
+      clearTimeout(processTimeoutRef.current);
     }
 
+    // Resetar estados
     setMatchedPairs(0);
     setMoves(0);
     setTimer(0);
     setFlippedCards([]);
     setLevel(currentLevel);
 
+    // Criar cartas
     const numPairs = LEVEL_CONFIG[currentLevel].pairs;
     const gameEmojis = EMOJIS.slice(0, numPairs);
     const duplicatedEmojis = [...gameEmojis, ...gameEmojis];
     
-    const shuffledCards = duplicatedEmojis
+    const shuffledCards: Card[] = duplicatedEmojis
       .map((emoji, index) => ({ 
         id: index, 
         emoji, 
-        status: 'flipped' // Mostra os emojis inicialmente
+        status: 'flipped' as const
       }))
       .sort(() => Math.random() - 0.5);
 
@@ -270,27 +296,30 @@ export default function MemoryGame() {
       setCards(currentCards => 
         currentCards.map(card => ({ 
           ...card, 
-          status: 'hidden' // Esconde as cartas
+          status: 'hidden' as const
         }))
       );
       setGameState('playing');
     }, 5000);
   };
 
-  const handleCardClick = (id) => {
+  // Função para lidar com clique nas cartas
+  const handleCardClick = (id: number) => {
     if (gameState !== 'playing' || flippedCards.length === 2) return;
 
     const clickedCard = cards.find(card => card.id === id);
+    
     if (!clickedCard || clickedCard.status !== 'hidden') return;
     
-    // Incrementar movimentos no início de cada tentativa de par
+    // Incrementar movimentos
     if (flippedCards.length === 0) {
-        setMoves(prev => prev + 1);
+      setMoves(prev => prev + 1);
     }
 
+    // Virar a carta
     setCards(prevCards =>
       prevCards.map(card =>
-        card.id === id ? { ...card, status: 'flipped' } : card
+        card.id === id ? { ...card, status: 'flipped' as const } : card
       )
     );
     
@@ -310,9 +339,9 @@ export default function MemoryGame() {
   
   if (gameState === 'loading') {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-100 flex items-center justify-center">
-            <p className="text-xl font-semibold text-gray-600">Carregando jogo...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-100 flex items-center justify-center">
+        <p className="text-xl font-semibold text-gray-600">Carregando jogo...</p>
+      </div>
     );
   }
 
@@ -324,7 +353,9 @@ export default function MemoryGame() {
       </div>
       <main className="flex-grow flex flex-col items-center justify-center p-4 -mt-6">
         <div className="mb-4 text-center">
-          <h2 className="text-2xl font-bold text-gray-700">Nível {level}: {LEVEL_CONFIG[level].title}</h2>
+          <h2 className="text-2xl font-bold text-gray-700">
+            Nível {level}: {LEVEL_CONFIG[level].title}
+          </h2>
           {gameState === 'memorize' && (
             <p className="text-blue-600 font-semibold animate-pulse">
               Memorize as cartas! (5 segundos)
@@ -333,7 +364,11 @@ export default function MemoryGame() {
         </div>
         <div className={`grid ${LEVEL_CONFIG[level].grid} gap-3 sm:gap-4 w-full max-w-2xl`}>
           {cards.map(card => (
-            <Card key={card.id} card={card} onCardClick={handleCardClick} />
+            <Card 
+              key={card.id} 
+              card={card} 
+              onCardClick={handleCardClick} 
+            />
           ))}
         </div>
       </main>
