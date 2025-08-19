@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '../utils/supabaseClient'
-import { ChevronLeft, Save, MessageSquare, Timer, TrendingUp, Award, Target, Brain, Users, Heart } from 'lucide-react'
+import { ChevronLeft, Save, Timer, Target, Brain, Users, Heart } from 'lucide-react'
 
 // Usar o mesmo cliente do CAA
 const supabase = createClient()
@@ -51,7 +51,7 @@ export default function DialogueScenes() {
   const [gameCompleted, setGameCompleted] = useState(false)
   const [salvando, setSalvando] = useState(false)
 
-  // Estados para métricas científicas baseadas nas referências
+  // Estados para métricas científicas
   const [inicioSessao] = useState(new Date())
   const [temposResposta, setTemposResposta] = useState<number[]>([])
   const [inicioScene, setInicioScene] = useState<Date>(new Date())
@@ -464,19 +464,16 @@ export default function DialogueScenes() {
     }
   ]
 
-  // Calcular métricas científicas baseadas nas referências
   const calcularMetricas = () => {
     const duracaoMinutos = (new Date().getTime() - inicioSessao.getTime()) / 60000
     const tempoMedioResposta = temposResposta.length > 0 
       ? temposResposta.reduce((a, b) => a + b, 0) / temposResposta.length
       : 0
     
-    // Taxa de acerto geral
     const totalTentativas = Object.values(tentativasPorNivel).reduce((a, b) => a + b, 0)
     const totalAcertos = Object.values(acertosPorNivel).reduce((a, b) => a + b, 0)
     const taxaAcerto = totalTentativas > 0 ? (totalAcertos / totalTentativas) * 100 : 0
     
-    // Taxa de reciprocidade (baseado em respostas que incluem perguntas de volta)
     const taxaReciprocidade = totalCenas > 0 ? ((respostasContextuais / totalCenas) * 100) : 0
     
     return {
@@ -499,7 +496,6 @@ export default function DialogueScenes() {
   const handleAnswer = (optionId: number) => {
     if (selectedAnswer !== null) return
 
-    // Calcular tempo de resposta
     const tempoResposta = (new Date().getTime() - inicioScene.getTime()) / 1000
     setTemposResposta([...temposResposta, tempoResposta])
 
@@ -507,7 +503,6 @@ export default function DialogueScenes() {
     setShowResult(true)
     setTotalCenas(totalCenas + 1)
     
-    // Registrar tentativa
     setTentativasPorNivel(prev => ({
       ...prev,
       [currentLevel]: prev[currentLevel] + 1
@@ -516,10 +511,8 @@ export default function DialogueScenes() {
     const selectedOption = currentSceneData?.options.find(opt => opt.id === optionId)
     
     if (selectedOption) {
-      // Registrar habilidade praticada
       setHabilidadesPraticadas(prev => new Set(prev).add(selectedOption.skillType))
       
-      // Registrar dialogue act
       if (currentSceneData) {
         setDialogueActsUsados(prev => new Set(prev).add(currentSceneData.dialogueAct))
       }
@@ -529,13 +522,11 @@ export default function DialogueScenes() {
         setScore(score + points)
         setTotalScore(totalScore + points)
         
-        // Registrar acerto
         setAcertosPorNivel(prev => ({
           ...prev,
           [currentLevel]: prev[currentLevel] + 1
         }))
         
-        // Contar respostas empáticas e contextuais
         if (selectedOption.skillType === 'empathy') {
           setRespostasEmpaticas(respostasEmpaticas + 1)
         }
@@ -569,7 +560,6 @@ export default function DialogueScenes() {
           setGameCompleted(true)
         }
       } else {
-        // Reiniciar nível
         setCurrentScene(0)
         setScore(0)
         setInicioScene(new Date())
@@ -594,7 +584,6 @@ export default function DialogueScenes() {
     setInicioScene(new Date())
   }
 
-  // FUNÇÃO DE SALVAMENTO - IGUAL AO CAA E INICIANDO CONVERSAS
   const handleSaveSession = async () => {
     if (totalCenas === 0) {
       alert('Complete pelo menos uma cena antes de salvar.')
@@ -616,7 +605,6 @@ export default function DialogueScenes() {
         return
       }
       
-      // Salvar métricas detalhadas na coluna detalhes (JSONB)
       const detalhesMetricas = {
         tipo_atividade: 'dialogue_scenes',
         versao_metricas: '1.0',
@@ -634,14 +622,14 @@ export default function DialogueScenes() {
         duracao_minutos: parseFloat(metricas.duracaoMinutos)
       }
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('sessoes')
         .insert([{
           usuario_id: user.id,
           atividade_nome: 'Diálogos em Cenas',
           pontuacao_final: totalScore,
           data_fim: fimSessao.toISOString(),
-          detalhes: detalhesMetricas
+          metricas: detalhesMetricas
         }])
 
       if (error) {
@@ -650,16 +638,12 @@ export default function DialogueScenes() {
       } else {
         alert(`Sessão salva com sucesso!
         
-📊 Resumo das Métricas:
-• Pontuação total: ${totalScore} pontos
-• ${totalCenas} cenas completadas
+📊 Resumo:
+• Pontuação total: ${totalScore}
 • Taxa de acerto: ${metricas.taxaAcerto}%
-• Taxa de reciprocidade: ${metricas.taxaReciprocidade}%
-• ${metricas.diversidadeHabilidades} habilidades praticadas
-• ${metricas.respostasEmpaticas} respostas empáticas
-• Tempo médio: ${metricas.tempoMedioResposta}s por resposta`)
+• ${metricas.respostasEmpaticas} respostas empáticas`)
         
-        router.push('/profileselection')
+        router.push('/dashboard') // <<< CORRIGIDO
       }
     } catch (error: any) {
       console.error('Erro inesperado:', error)
@@ -669,91 +653,78 @@ export default function DialogueScenes() {
     }
   }
 
-  // Tela de conclusão
+  const GameHeader = () => (
+    <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between h-16">
+          <Link 
+            href="/dashboard" 
+            className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
+          >
+            <ChevronLeft className="h-6 w-6" />
+            <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
+          </Link>
+          
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center">
+            🎭 Diálogos em Cenas
+          </h1>
+          
+          <button
+            onClick={handleSaveSession}
+            disabled={salvando}
+            className="flex items-center space-x-2 px-3 py-2 sm:px-4 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition-colors disabled:bg-green-400"
+          >
+            <Save size={18} />
+            <span className="hidden sm:inline">{salvando ? 'Salvando...' : 'Salvar'}</span>
+          </button>
+        </div>
+      </div>
+    </header>
+  )
+
   if (gameCompleted) {
     const metricas = calcularMetricas()
     
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Header igual ao CAA */}
-        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-          <div className="p-3 sm:p-4 flex items-center justify-between">
-            <Link
-              href="/tea"
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
-            >
-              <ChevronLeft size={20} />
-              <span className="text-sm sm:text-base">Voltar para TEA</span>
-            </Link>
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <button 
-                onClick={handleSaveSession}
-                disabled={salvando}
-                className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
-              >
-                <Save size={20} />
-                <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
-              </button>
-            </div>
-          </div>
-        </header>
+        <GameHeader />
 
-        <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+        <main className="p-4 sm:p-6 max-w-4xl mx-auto w-full">
           <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold text-green-600 mb-4">🎉 Parabéns!</h2>
               <p className="text-xl text-gray-600">Você completou todos os níveis!</p>
             </div>
 
-            {/* Card de Resultados */}
-            <div className="bg-gradient-to-r from-green-400 to-green-600 text-white p-6 rounded-xl mb-8">
-              <div className="text-center">
+            <div className="bg-gradient-to-r from-green-400 to-green-600 text-white p-6 rounded-xl mb-8 text-center">
                 <div className="text-5xl mb-4">🏆</div>
                 <div className="text-2xl font-bold mb-2">
                   Pontuação Total: {totalScore} pontos
                 </div>
-                <div className="text-lg">
-                  {completedLevels.length} níveis dominados!
-                </div>
-              </div>
             </div>
 
-            {/* Métricas Científicas Finais */}
             <div className="bg-gray-50 p-6 rounded-xl mb-8">
-              <h3 className="text-xl font-bold text-gray-700 mb-4">📊 Análise de Desempenho (Role-Play Assessment)</h3>
+              <h3 className="text-xl font-bold text-gray-700 mb-4">📊 Análise de Desempenho</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className="text-blue-500" size={20} />
-                    <span className="text-sm text-gray-600">Taxa de Acerto</span>
-                  </div>
-                  <div className="text-xl font-bold text-gray-800">{metricas.taxaAcerto}%</div>
+                <div className="bg-white p-4 rounded-lg border">
+                  <div className="flex items-center gap-2 mb-2"><Target className="text-blue-500" size={20} /><span className="text-sm">Acerto</span></div>
+                  <div className="text-xl font-bold">{metricas.taxaAcerto}%</div>
                 </div>
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="text-green-500" size={20} />
-                    <span className="text-sm text-gray-600">Reciprocidade</span>
-                  </div>
-                  <div className="text-xl font-bold text-gray-800">{metricas.taxaReciprocidade}%</div>
+                <div className="bg-white p-4 rounded-lg border">
+                  <div className="flex items-center gap-2 mb-2"><Users className="text-green-500" size={20} /><span className="text-sm">Reciprocidade</span></div>
+                  <div className="text-xl font-bold">{metricas.taxaReciprocidade}%</div>
                 </div>
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Heart className="text-red-500" size={20} />
-                    <span className="text-sm text-gray-600">Empatia</span>
-                  </div>
-                  <div className="text-xl font-bold text-gray-800">{respostasEmpaticas}</div>
+                <div className="bg-white p-4 rounded-lg border">
+                  <div className="flex items-center gap-2 mb-2"><Heart className="text-red-500" size={20} /><span className="text-sm">Empatia</span></div>
+                  <div className="text-xl font-bold">{respostasEmpaticas}</div>
                 </div>
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Brain className="text-purple-500" size={20} />
-                    <span className="text-sm text-gray-600">Habilidades</span>
-                  </div>
-                  <div className="text-xl font-bold text-gray-800">{metricas.diversidadeHabilidades}</div>
+                <div className="bg-white p-4 rounded-lg border">
+                  <div className="flex items-center gap-2 mb-2"><Brain className="text-purple-500" size={20} /><span className="text-sm">Habilidades</span></div>
+                  <div className="text-xl font-bold">{metricas.diversidadeHabilidades}</div>
                 </div>
               </div>
             </div>
 
-            {/* Botões de ação */}
             <div className="flex flex-wrap justify-center gap-4">
               <button 
                 onClick={resetGame}
@@ -775,45 +746,20 @@ export default function DialogueScenes() {
     )
   }
 
-  // Tela principal do jogo
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header igual ao CAA */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="p-3 sm:p-4 flex items-center justify-between">
-          <Link
-            href="/tea"
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
-          >
-            <ChevronLeft size={20} />
-            <span className="text-sm sm:text-base">Voltar para TEA</span>
-          </Link>
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <button 
-              onClick={handleSaveSession}
-              disabled={salvando}
-              className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
-            >
-              <Save size={20} />
-              <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
-        {/* Cards de Informação - IGUAL AO CAA */}
+      <GameHeader />
+      <main className="p-4 sm:p-6 max-w-4xl mx-auto w-full">
         <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">🎭 Diálogos em Cenas</h1>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
-              <p className="text-sm text-gray-600">Desenvolver habilidades de conversação através de role-play, praticando scripts sociais e reciprocidade conversacional.</p>
+              <p className="text-sm text-gray-600">Desenvolver habilidades de conversação através de role-play e scripts sociais.</p>
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como Jogar:</h3>
               <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                <li>Leia o contexto e a fala do personagem</li>
+                <li>Leia o contexto da cena</li>
                 <li>Escolha a melhor resposta</li>
                 <li>Aprenda com o feedback</li>
               </ul>
@@ -821,60 +767,32 @@ export default function DialogueScenes() {
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <h3 className="font-semibold text-gray-800 mb-1">⭐ Níveis:</h3>
               <ul className="list-disc list-inside text-sm text-gray-600">
-                <li>Nível 1: Conversas básicas</li>
-                <li>Nível 2: Conversas intermediárias</li>
-                <li>Nível 3: Conversas avançadas</li>
+                <li>Básico, Intermediário e Avançado</li>
               </ul>
             </div>
           </div>
         </div>
 
-        {/* Card de Progresso da Sessão - IGUAL AO CAA */}
-        <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">📊 Progresso da Sessão</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-              <div className="text-xl font-bold text-blue-800">{totalCenas}</div>
-              <div className="text-xs text-blue-600">Cenas Completadas</div>
-            </div>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-              <div className="text-xl font-bold text-green-800">
-                {totalCenas > 0 ? ((Object.values(acertosPorNivel).reduce((a,b) => a+b, 0) / totalCenas) * 100).toFixed(0) : 0}%
-              </div>
-              <div className="text-xs text-green-600">Taxa de Acerto</div>
-            </div>
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
-              <div className="text-xl font-bold text-purple-800">{habilidadesPraticadas.size}</div>
-              <div className="text-xs text-purple-600">Habilidades Praticadas</div>
-            </div>
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
-              <div className="text-xl font-bold text-orange-800">{respostasEmpaticas}</div>
-              <div className="text-xs text-orange-600">Respostas Empáticas</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Área do Jogo */}
         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-8">
           <div className="mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-              <div className="mb-2 sm:mb-0">
+              <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                   Nível {currentLevel}: {currentLevelData?.name}
                 </h2>
                 <p className="text-sm sm:text-base text-gray-600">{currentLevelData?.description}</p>
               </div>
-              <div className="text-left sm:text-right">
-                <div className="text-xs sm:text-sm text-gray-500">Pontos do Nível</div>
-                <div className="text-lg sm:text-xl font-bold text-purple-600">
+              <div className="text-left sm:text-right mt-2 sm:mt-0">
+                <div className="text-xs text-gray-500">Pontos</div>
+                <div className="text-lg font-bold text-purple-600">
                   {score}/{currentLevelData?.pointsRequired}
                 </div>
               </div>
             </div>
             
-            <div className="mt-4 h-2 sm:h-3 rounded-full bg-gray-200">
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
               <div 
-                className="h-2 sm:h-3 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500"
+                className="bg-gradient-to-r from-purple-500 to-blue-500 h-2.5 rounded-full transition-all duration-500"
                 style={{ 
                   width: `${Math.min((score / (currentLevelData?.pointsRequired || 1)) * 100, 100)}%` 
                 }}
@@ -883,33 +801,28 @@ export default function DialogueScenes() {
           </div>
 
           {currentSceneData && (
-            <div className="mb-6">
+            <div>
               <div className="mb-6 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6">
-                <h3 className="mb-2 text-base sm:text-lg font-semibold text-gray-900">{currentSceneData.title}</h3>
-                <p className="mb-4 text-sm sm:text-base text-gray-700">{currentSceneData.context}</p>
-                <div className="flex gap-2">
-                  <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs sm:text-sm font-medium text-blue-600">
-                    Habilidade: {currentSceneData.socialSkill}
-                  </span>
-                  <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs sm:text-sm font-medium text-purple-600">
-                    Ato: {currentSceneData.dialogueAct}
-                  </span>
-                </div>
+                <h3 className="mb-2 font-semibold text-gray-900">{currentSceneData.title}</h3>
+                <p className="mb-4 text-sm text-gray-700">{currentSceneData.context}</p>
+                <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-medium text-blue-600">
+                  Habilidade: {currentSceneData.socialSkill}
+                </span>
               </div>
 
-              <div className="mb-6 flex items-start space-x-3 sm:space-x-4">
-                <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-gradient-to-r from-blue-400 to-purple-500 text-2xl sm:text-3xl text-white flex-shrink-0">
+              <div className="mb-6 flex items-start space-x-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-blue-400 to-purple-500 text-3xl text-white flex-shrink-0">
                   {currentSceneData.characterEmotion}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="mb-2 text-sm sm:text-base font-semibold text-gray-900">{currentSceneData.character}:</div>
-                  <div className="rounded-xl bg-gray-100 p-3 sm:p-4 text-sm sm:text-base text-gray-800">
+                <div className="flex-1">
+                  <div className="mb-2 font-semibold text-gray-900">{currentSceneData.character}:</div>
+                  <div className="rounded-xl bg-gray-100 p-4 text-gray-800">
                     "{currentSceneData.characterLine}"
                   </div>
                 </div>
               </div>
 
-              <h4 className="mb-4 text-base sm:text-lg font-semibold text-gray-900">Como você responderia?</h4>
+              <h4 className="mb-4 font-semibold text-gray-900">Como você responderia?</h4>
 
               <div className="space-y-3 mb-6">
                 {currentSceneData.options.map((option) => (
@@ -917,74 +830,42 @@ export default function DialogueScenes() {
                     key={option.id}
                     onClick={() => handleAnswer(option.id)}
                     disabled={selectedAnswer !== null}
-                    className={`w-full rounded-xl p-3 sm:p-4 text-left transition-all min-h-[48px] touch-manipulation ${
+                    className={`w-full rounded-xl p-4 text-left transition-all ${
                       selectedAnswer === null
-                        ? 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:shadow-lg active:bg-gray-200'
+                        ? 'bg-gray-50 hover:bg-gray-100'
                         : selectedAnswer === option.id
-                        ? option.isCorrect
-                          ? 'bg-green-100 text-green-800 border-2 border-green-300'
-                          : 'bg-red-100 text-red-800 border-2 border-red-300'
-                        : option.isCorrect && selectedAnswer !== null
-                        ? 'bg-green-100 text-green-800 border-2 border-green-300'
-                        : 'bg-gray-100 text-gray-400'
+                        ? option.isCorrect ? 'bg-green-100 border-2 border-green-300' : 'bg-red-100 border-2 border-red-300'
+                        : option.isCorrect ? 'bg-green-100' : 'bg-gray-100 text-gray-500'
                     }`}
                   >
-                    <div className="font-medium text-sm sm:text-base">{option.text}</div>
-                    {selectedAnswer === option.id && (
-                      <div className="mt-2 text-xs sm:text-sm">{option.feedback}</div>
-                    )}
+                    <div className="font-medium">{option.text}</div>
                   </button>
                 ))}
               </div>
 
-              {showResult && (
-                <div className={`mb-4 rounded-xl p-4 ${
-                  currentSceneData.options.find(opt => opt.id === selectedAnswer)?.isCorrect
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {currentSceneData.options.find(opt => opt.id === selectedAnswer)?.isCorrect ? (
-                    <div className="flex items-center">
-                      <span className="mr-2 text-xl sm:text-2xl">✅</span>
-                      <span className="text-base sm:text-lg font-semibold">Excelente resposta! +10 pontos</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center">
-                      <span className="mr-2 text-xl sm:text-2xl">💡</span>
-                      <span className="text-base sm:text-lg font-semibold">Vamos aprender com isso!</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {showExplanation && (
-                <div className="mb-6 rounded-xl bg-blue-50 p-4 sm:p-6">
-                  <h4 className="mb-2 text-sm sm:text-base font-semibold text-blue-900">💡 Dica Social (Script Social):</h4>
-                  <p className="text-sm sm:text-base text-blue-800">{currentSceneData.explanation}</p>
-                </div>
-              )}
-
-              {showExplanation && (
-                <div className="text-center">
-                  <button
-                    onClick={nextScene}
-                    className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white transition-all hover:from-blue-600 hover:to-purple-700 hover:shadow-lg min-h-[48px] touch-manipulation"
-                  >
-                    {currentScene < (currentLevelData?.scenes.length || 0) - 1 
-                      ? 'Próxima Cena' 
-                      : score >= (currentLevelData?.pointsRequired || 0)
-                      ? currentLevel < levels.length ? 'Próximo Nível' : 'Finalizar'
-                      : 'Tentar Nível Novamente'
-                    }
-                  </button>
-                </div>
+                <>
+                  <div className="mb-6 rounded-xl bg-blue-50 p-4">
+                    <h4 className="mb-2 font-semibold text-blue-900">💡 Dica Social:</h4>
+                    <p className="text-blue-800">{currentSceneData.explanation}</p>
+                  </div>
+                  <div className="text-center">
+                    <button
+                      onClick={nextScene}
+                      className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-3 font-semibold text-white transition-all hover:shadow-lg"
+                    >
+                      {currentScene < (currentLevelData?.scenes.length || 0) - 1 
+                        ? 'Próxima Cena' 
+                        : score >= (currentLevelData?.pointsRequired || 0)
+                        ? currentLevel < levels.length ? 'Próximo Nível' : 'Finalizar'
+                        : 'Tentar Nível Novamente'
+                      }
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           )}
-
-          <div className="mt-6 text-center text-xs sm:text-sm text-gray-500">
-            Cena {currentScene + 1} de {currentLevelData?.scenes.length} • Nível {currentLevel} de {levels.length}
-          </div>
         </div>
       </main>
     </div>
