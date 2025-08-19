@@ -84,8 +84,9 @@ export default function ReflectionDiary() {
     emotions: []
   })
 
-  const goBackToTEA = () => {
-    router.push('/tea')
+  // ===== FUNÇÃO CORRIGIDA =====
+  const goBackToDashboard = () => {
+    router.push('/dashboard')
   }
 
   useEffect(() => {
@@ -178,11 +179,12 @@ export default function ReflectionDiary() {
           {/* Header com navegação */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
+               {/* ===== BOTÃO 1 CORRIGIDO ===== */}
               <button 
-                onClick={goBackToTEA}
+                onClick={goBackToDashboard}
                 className="mr-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
               >
-                ← Voltar para TEA
+                ← Voltar
               </button>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-xl md:text-2xl">
@@ -266,11 +268,12 @@ export default function ReflectionDiary() {
       <div className="max-w-3xl mx-auto">
         {/* Header com navegação */}
         <div className="flex items-center mb-6">
+           {/* ===== BOTÃO 2 CORRIGIDO ===== */}
           <button 
-            onClick={goBackToTEA}
+            onClick={goBackToDashboard}
             className="mr-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
           >
-            ← Voltar para TEA
+            ← Voltar
           </button>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-xl md:text-2xl">
