@@ -26,7 +26,7 @@ type Session = {
 const AVATAR_EMOJIS: { [key: string]: string } = {
   star: '⭐', rocket: '🚀', unicorn: '🦄', dragon: '🐉',
   robot: '🤖', cat: '🐱', dog: '🐶', lion: '🦁',
-  fox: '🦊', headphone: '🎧', joystick: '🎮', compass: '🧭', shield: '🛡️'
+  fox: '🦊', headphone: '🎧', joystick: '🎮', compass: '�', shield: '🛡️'
 };
 
 const OBJECTIVE_DETAILS: { [key: string]: { name: string; icon: React.ReactNode; color: string } } = {
