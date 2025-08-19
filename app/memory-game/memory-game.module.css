@@ -4,6 +4,8 @@
 .cardContainer {
   perspective: 1000px;
   cursor: pointer;
+  width: 100%;
+  aspect-ratio: 1 / 1.4;
 }
 
 /* Elemento interno que realiza a rotação */
@@ -39,10 +41,20 @@
   background: linear-gradient(135deg, #14b8a6 0%, #2563eb 100%);
 }
 
+/* Texto do logo responsivo */
+.cardBack span {
+  font-size: clamp(0.875rem, 2.5vw, 1.5rem);
+}
+
 /* Frente da carta (lado com emoji) */
 .cardFront {
   background: white;
   transform: rotateY(180deg);
+}
+
+/* Emoji responsivo */
+.cardFront span {
+  font-size: clamp(2rem, 8vw, 3.75rem);
 }
 
 /* Estado quando o par foi encontrado */
@@ -79,4 +91,33 @@
 
 .animatePulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Media Queries para dispositivos móveis */
+@media (max-width: 640px) {
+  .cardContainer {
+    aspect-ratio: 1 / 1.2;
+  }
+  
+  .cardBack span {
+    font-size: 0.75rem;
+  }
+  
+  .cardFront span {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .cardContainer {
+    aspect-ratio: 1 / 1.1;
+  }
+  
+  .cardBack span {
+    font-size: 0.625rem;
+  }
+  
+  .cardFront span {
+    font-size: 1.5rem;
+  }
 }
