@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '../utils/supabaseClient'
@@ -473,14 +473,12 @@ export default function ConversationStartersPage() {
   const [iniciacoesCorretas, setIniciacoesCorretas] = useState(0)
   const [iniciacoesTotais, setIniciacoesTotais] = useState(0)
   
-  // Reiniciar quando muda de nível - CORRIGIDO
   const resetLevel = () => {
     setCurrentSituation(0)
     setAnswered(false)
     setSelectedOption(null)
     setShowFeedback(false)
     setInicioSituacao(new Date())
-    // NÃO resetar score e métricas para manter continuidade entre níveis
   }
 
   useEffect(() => {
@@ -490,7 +488,6 @@ export default function ConversationStartersPage() {
   const selectOption = (index: number, option: Option) => {
     if (answered) return
     
-    // Calcular tempo de resposta
     const tempoResposta = (new Date().getTime() - inicioSituacao.getTime()) / 1000
     setTemposResposta([...temposResposta, tempoResposta])
     
@@ -499,14 +496,11 @@ export default function ConversationStartersPage() {
     setShowFeedback(true)
     setIniciacoesTotais(iniciacoesTotais + 1)
     
-    // Registrar estratégia usada
     setEstrategiasUsadas(prev => new Set(prev).add(option.estrategia))
     
-    // Registrar contexto
     const situacao = gameData[currentLevel].situations[currentSituation]
     setContextosExplorados(prev => new Set(prev).add(situacao.contexto))
     
-    // Registrar elementos não-verbais
     if (option.elementosNaoVerbais) {
       setElementosNaoVerbais([...elementosNaoVerbais, ...option.elementosNaoVerbais])
     }
@@ -514,7 +508,7 @@ export default function ConversationStartersPage() {
     if (option.correct) {
       setScore(score + 1)
       setIniciacoesCorretas(iniciacoesCorretas + 1)
-      setTrocasReciprocas(trocasReciprocas + 1) // Simula uma troca recíproca bem-sucedida
+      setTrocasReciprocas(trocasReciprocas + 1)
     }
   }
 
@@ -542,7 +536,7 @@ export default function ConversationStartersPage() {
   }
 
   const calcularMetricas = () => {
-    const duracaoMinutos = (new Date().getTime() - inicioSessao.getTime()) / 60000
+    const duracaoMinutos = Math.max((new Date().getTime() - inicioSessao.getTime()) / 60000, 0.1) // Evitar divisão por zero
     const tempoMedioResposta = temposResposta.length > 0 
       ? (temposResposta.reduce((a, b) => a + b, 0) / temposResposta.length).toFixed(2)
       : '0.00'
@@ -574,12 +568,11 @@ export default function ConversationStartersPage() {
     const metricas = calcularMetricas()
     const fimSessao = new Date()
     
-    // Criar pontuação ponderada baseada nas métricas
     const pontuacaoFinal = Math.round(
-      (score * 10) + // Acertos valem mais
-      (parseFloat(metricas.taxaSucesso) * 0.5) + // Taxa de sucesso
-      (metricas.diversidadeEstrategias * 5) + // Diversidade de estratégias
-      (metricas.contextosVariados * 3) // Contextos explorados
+      (score * 10) +
+      (parseFloat(metricas.taxaSucesso) * 0.5) +
+      (metricas.diversidadeEstrategias * 5) +
+      (metricas.contextosVariados * 3)
     )
     
     try {
@@ -592,7 +585,6 @@ export default function ConversationStartersPage() {
         return
       }
       
-      // Salvar métricas detalhadas na coluna detalhes (JSONB)
       const detalhesMetricas = {
         tipo_atividade: 'iniciando_conversas',
         versao_metricas: '1.0',
@@ -610,14 +602,14 @@ export default function ConversationStartersPage() {
         contextosExplorados: Array.from(contextosExplorados)
       }
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('sessoes')
         .insert([{
           usuario_id: user.id,
           atividade_nome: 'Iniciando Conversas',
           pontuacao_final: pontuacaoFinal,
           data_fim: fimSessao.toISOString(),
-          detalhes: detalhesMetricas
+          metricas: detalhesMetricas
         }])
 
       if (error) {
@@ -628,13 +620,10 @@ export default function ConversationStartersPage() {
         
 📊 Resumo das Métricas:
 • ${score} acertos em ${iniciacoesTotais} situações
-• Tempo médio de resposta: ${metricas.tempoMedioResposta}s
 • Taxa de sucesso: ${metricas.taxaSucesso}%
-• ${metricas.diversidadeEstrategias} estratégias diferentes usadas
-• ${metricas.contextosVariados} contextos explorados
 • Pontuação final: ${pontuacaoFinal} pontos`)
         
-        router.push('/profileselection')
+        router.push('/dashboard') // <<< CORRIGIDO
       }
     } catch (error: any) {
       console.error('Erro inesperado:', error)
@@ -650,39 +639,42 @@ export default function ConversationStartersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header igual ao CAA */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="p-3 sm:p-4 flex items-center justify-between">
-          <Link
-            href="/tea"
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
-          >
-            <ChevronLeft size={20} />
-            <span className="text-sm sm:text-base">Voltar para TEA</span>
-          </Link>
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <button 
+      <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-16">
+            <Link 
+              href="/dashboard" 
+              className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
+            >
+              <ChevronLeft className="h-6 w-6" />
+              <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
+            </Link>
+            
+            <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center">
+              💬 Iniciando Conversas
+            </h1>
+            
+            <button
               onClick={handleSaveSession}
               disabled={salvando}
-              className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
+              className="flex items-center space-x-2 px-3 py-2 sm:px-4 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition-colors disabled:bg-green-400"
             >
-              <Save size={20} />
-              <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
+              <Save size={18} />
+              <span className="hidden sm:inline">{salvando ? 'Salvando...' : 'Salvar'}</span>
             </button>
           </div>
         </div>
       </header>
 
-      <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+      <main className="p-4 sm:p-6 max-w-4xl mx-auto w-full">
         {currentScreen === 'game' && (
           <>
-            {/* Card de Informações igual ao CAA */}
+            {/* Card de Informações */}
             <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-6">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">💬 Iniciando Conversas</h1>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
-                  <p className="text-sm text-gray-600">Desenvolver habilidades de iniciação e manutenção de conversas em diferentes contextos sociais.</p>
+                  <p className="text-sm text-gray-600">Desenvolver habilidades de iniciação e manutenção de conversas em diferentes contextos.</p>
                 </div>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como Jogar:</h3>
@@ -703,13 +695,13 @@ export default function ConversationStartersPage() {
               </div>
             </div>
 
-            {/* Card de Métricas igual ao CAA */}
+            {/* Card de Métricas */}
             <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">📊 Progresso da Sessão</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-3">📊 Progresso da Sessão</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
                   <div className="text-xl font-bold text-blue-800">{iniciacoesTotais}</div>
-                  <div className="text-xs text-blue-600">Iniciações Totais</div>
+                  <div className="text-xs text-blue-600">Iniciações</div>
                 </div>
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
                   <div className="text-xl font-bold text-green-800">
@@ -719,7 +711,7 @@ export default function ConversationStartersPage() {
                 </div>
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
                   <div className="text-xl font-bold text-purple-800">{estrategiasUsadas.size}</div>
-                  <div className="text-xs text-purple-600">Estratégias Usadas</div>
+                  <div className="text-xs text-purple-600">Estratégias</div>
                 </div>
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
                   <div className="text-xl font-bold text-orange-800">
@@ -727,7 +719,7 @@ export default function ConversationStartersPage() {
                       ? (temposResposta.reduce((a, b) => a + b, 0) / temposResposta.length).toFixed(1)
                       : '0.0'}s
                   </div>
-                  <div className="text-xs text-orange-600">Tempo Médio Resposta</div>
+                  <div className="text-xs text-orange-600">Tempo Médio</div>
                 </div>
               </div>
             </div>
@@ -754,7 +746,7 @@ export default function ConversationStartersPage() {
                     Situação
                   </h3>
                   <p className="text-blue-700 text-lg leading-relaxed">{currentSituationData.situation}</p>
-                  <div className="mt-3 flex items-center gap-2">
+                  <div className="mt-3">
                     <span className="bg-blue-200 text-blue-800 px-2 py-1 rounded text-xs font-semibold">
                       Contexto: {currentSituationData.contexto}
                     </span>
@@ -781,28 +773,7 @@ export default function ConversationStartersPage() {
                         }
                       `}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="text-2xl mt-1">
-                          {answered && (
-                            option.correct ? '✅' : selectedOption === index ? '❌' : '⚪'
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-base">{option.text}</p>
-                          {answered && selectedOption === index && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              <span className="text-xs bg-white/50 px-2 py-1 rounded">
-                                Estratégia: {option.estrategia}
-                              </span>
-                              {option.elementosNaoVerbais && option.elementosNaoVerbais.length > 0 && (
-                                <span className="text-xs bg-white/50 px-2 py-1 rounded">
-                                  Não-verbais: {option.elementosNaoVerbais.join(', ')}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      <p className="font-medium text-base">{option.text}</p>
                     </button>
                   ))}
                 </div>
@@ -837,91 +808,37 @@ export default function ConversationStartersPage() {
               <h2 className="text-3xl font-bold text-green-600 mb-4">🎉 Parabéns!</h2>
               <p className="text-xl text-gray-600">Você completou o nível {currentLevel}!</p>
             </div>
-
-            {/* Card de Resultados */}
-            <div className="bg-gradient-to-r from-green-400 to-green-600 text-white p-6 rounded-xl mb-8">
-              <div className="text-center">
-                <div className="text-5xl mb-4">⭐</div>
+            
+            <div className="bg-gradient-to-r from-green-400 to-green-600 text-white p-6 rounded-xl mb-8 text-center">
                 <div className="text-2xl font-bold mb-2">
                   Pontuação: {score}/{currentLevelData.situations.length}
                 </div>
-                <div className="text-lg">
-                  {score >= currentLevelData.situations.length * 0.8 ? 'Excelente trabalho!' : 
-                   score >= currentLevelData.situations.length * 0.6 ? 'Muito bom! Continue praticando!' : 
-                   'Bom trabalho! Pratique mais para melhorar!'}
-                </div>
-              </div>
             </div>
 
-            {/* Métricas Detalhadas */}
-            <div className="bg-gray-50 p-6 rounded-xl mb-8">
-              <h3 className="text-xl font-bold text-gray-700 mb-4">📊 Métricas de Desempenho</h3>
-              {(() => {
-                const metricas = calcularMetricas()
-                return (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white p-4 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Timer className="text-blue-500" size={20} />
-                        <span className="text-sm text-gray-600">Tempo Médio</span>
-                      </div>
-                      <div className="text-xl font-bold text-gray-800">{metricas.tempoMedioResposta}s</div>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp className="text-green-500" size={20} />
-                        <span className="text-sm text-gray-600">Taxa Sucesso</span>
-                      </div>
-                      <div className="text-xl font-bold text-gray-800">{metricas.taxaSucesso}%</div>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Award className="text-purple-500" size={20} />
-                        <span className="text-sm text-gray-600">Estratégias</span>
-                      </div>
-                      <div className="text-xl font-bold text-gray-800">{metricas.diversidadeEstrategias}</div>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2 mb-2">
-                        <MessageSquare className="text-orange-500" size={20} />
-                        <span className="text-sm text-gray-600">Contextos</span>
-                      </div>
-                      <div className="text-xl font-bold text-gray-800">{metricas.contextosVariados}</div>
-                    </div>
+            {(() => {
+              const metricas = calcularMetricas()
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                  <div className="bg-gray-50 p-4 rounded-lg border">
+                    <div className="flex items-center gap-2 mb-2"><Timer className="text-blue-500" size={20} /><span className="text-sm">Tempo Médio</span></div>
+                    <div className="text-xl font-bold">{metricas.tempoMedioResposta}s</div>
                   </div>
-                )
-              })()}
-            </div>
+                  <div className="bg-gray-50 p-4 rounded-lg border">
+                    <div className="flex items-center gap-2 mb-2"><TrendingUp className="text-green-500" size={20} /><span className="text-sm">Sucesso</span></div>
+                    <div className="text-xl font-bold">{metricas.taxaSucesso}%</div>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg border">
+                    <div className="flex items-center gap-2 mb-2"><Award className="text-purple-500" size={20} /><span className="text-sm">Estratégias</span></div>
+                    <div className="text-xl font-bold">{metricas.diversidadeEstrategias}</div>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg border">
+                    <div className="flex items-center gap-2 mb-2"><MessageSquare className="text-orange-500" size={20} /><span className="text-sm">Contextos</span></div>
+                    <div className="text-xl font-bold">{metricas.contextosVariados}</div>
+                  </div>
+                </div>
+              )
+            })()}
 
-            {/* Dicas baseadas no nível */}
-            <div className="bg-blue-50 p-6 rounded-xl mb-8 border-l-4 border-blue-500">
-              <h3 className="text-lg font-bold text-blue-700 mb-3">💡 Dicas para Aplicar</h3>
-              <ul className="text-blue-800 space-y-2">
-                {currentLevel === 1 && (
-                  <>
-                    <li>• Pratique cumprimentos simples diariamente</li>
-                    <li>• Observe situações compartilhadas para iniciar conversas</li>
-                    <li>• Use elogios sinceros como abridores</li>
-                  </>
-                )}
-                {currentLevel === 2 && (
-                  <>
-                    <li>• Desenvolva perguntas abertas</li>
-                    <li>• Pratique se juntar a grupos educadamente</li>
-                    <li>• Trabalhe na escuta ativa</li>
-                  </>
-                )}
-                {currentLevel === 3 && (
-                  <>
-                    <li>• Refine habilidades de mediação</li>
-                    <li>• Pratique networking profissional</li>
-                    <li>• Desenvolva argumentação respeitosa</li>
-                  </>
-                )}
-              </ul>
-            </div>
-
-            {/* Botão único de navegação - REMOVIDO BOTÃO "SALVAR E SAIR" */}
             <div className="flex justify-center">
               <button 
                 onClick={nextLevel}
