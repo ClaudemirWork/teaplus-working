@@ -387,7 +387,6 @@ export default function ActiveListening() {
     })
   }
 
-  // FUNÇÃO DE SALVAMENTO - IGUAL AO CAA
   const handleSaveSession = async () => {
     if (metrics.totalQuestions === 0) {
       alert('Nenhuma interação foi registrada para salvar.')
@@ -398,12 +397,8 @@ export default function ActiveListening() {
     
     const fimSessao = new Date()
     const duracaoSegundos = Math.round((fimSessao.getTime() - inicioSessao.getTime()) / 1000)
-    const avgResponseTime = metrics.responseTime.length > 0 
-      ? Math.floor(metrics.responseTime.reduce((a, b) => a + b, 0) / metrics.responseTime.length / 1000)
-      : 0
     
     try {
-      // Obter o usuário atual - EXATAMENTE COMO NO CAA
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       
       if (userError || !user) {
@@ -413,39 +408,36 @@ export default function ActiveListening() {
         return
       }
       
-      // Salvar na tabela sessoes - MESMA ESTRUTURA DO CAA
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('sessoes')
         .insert([{
           usuario_id: user.id,
           atividade_nome: 'Escuta Ativa',
           pontuacao_final: totalScore,
-          data_fim: fimSessao.toISOString()
+          data_fim: fimSessao.toISOString(),
+          metricas: { ...metrics, duracaoSegundos } // Adicionando métricas
         }])
 
       if (error) {
         console.error('Erro ao salvar:', error)
         alert(`Erro ao salvar: ${error.message}`)
       } else {
-        // Mostrar resumo antes de redirecionar
         const resumo = `Sessão salva com sucesso!
 
 📊 Métricas da Sessão:
 • Exercícios Completados: ${metrics.totalQuestions}
 • Taxa de Acerto: ${Math.round((metrics.correctAnswers / Math.max(metrics.totalQuestions, 1)) * 100)}%
 • Tempo Total: ${Math.floor(duracaoSegundos / 60)}min ${duracaoSegundos % 60}s
-• Compreensão Simples: ${metrics.simpleComprehension}
-• Compreensão Complexa: ${metrics.complexComprehension}
-• Compreensão Inferencial: ${metrics.inferentialComprehension}
 • Repetições de Áudio: ${metrics.audioRepeats}
 
-🎯 Métricas Científicas:
-• CELF-5 (Compreensão Auditiva): ${metrics.correctAnswers}/${metrics.totalQuestions}
-• ADOS-2 (Atenção): ${metrics.audioRepeats < 3 ? 'Adequada' : 'Necessita Suporte'}
-• Listener Feedback: ${metrics.listenerFeedback} interações`
+🎯 Desempenho em Habilidades:
+• Compreensão Simples: ${metrics.simpleComprehension} acertos
+• Compreensão Complexa: ${metrics.complexComprehension} acertos
+• Compreensão Inferencial: ${metrics.inferentialComprehension} acertos
+`
         
         alert(resumo)
-        router.push('/profileselection')
+        router.push('/dashboard') // Redireciona para o novo dashboard
       }
     } catch (error: any) {
       console.error('Erro inesperado:', error)
@@ -455,37 +447,40 @@ export default function ActiveListening() {
     }
   }
 
+  // ---- Componente de Cabeçalho Reutilizável ----
+  const GameHeader = () => (
+    <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between h-16">
+          <Link 
+            href="/dashboard" 
+            className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
+          >
+            <span className="text-2xl mr-2">←</span>
+            <span className="font-medium text-sm sm:text-base">Voltar</span>
+          </Link>
+          
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center">
+            👂 Escuta Ativa
+          </h1>
+          
+          <button
+            onClick={handleSaveSession}
+            disabled={salvando}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors disabled:bg-green-400 disabled:cursor-not-allowed"
+          >
+            {salvando ? 'Salvando...' : 'Finalizar e Salvar'}
+          </button>
+        </div>
+      </div>
+    </header>
+  )
+
   if (gameCompleted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-100">
-        {/* Header com Botão Finalizar */}
-        <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-            <div className="flex items-center justify-between">
-              <Link 
-                href="/tea" 
-                className="flex items-center text-teal-600 hover:text-teal-700 transition-colors min-h-[44px] px-2 -ml-2"
-              >
-                <span className="text-xl mr-2">←</span>
-                <span className="text-sm sm:text-base font-medium">Voltar</span>
-              </Link>
-              
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800">
-                👂 Escuta Ativa
-              </h1>
-              
-              <button
-                onClick={handleSaveSession}
-                disabled={salvando}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors disabled:bg-green-400"
-              >
-                {salvando ? 'Salvando...' : 'Finalizar e Salvar'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+        <GameHeader />
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
           <div className="flex min-h-[500px] items-center justify-center">
             <div className="max-w-2xl text-center">
               <div className="rounded-3xl bg-white p-8 sm:p-12 shadow-xl">
@@ -533,45 +528,19 @@ export default function ActiveListening() {
               </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-100">
-      {/* Header com Botão Finalizar Sempre Visível - IGUAL AO CAA */}
-      <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link 
-              href="/tea" 
-              className="flex items-center text-teal-600 hover:text-teal-700 transition-colors min-h-[44px] px-2 -ml-2"
-            >
-              <span className="text-xl mr-2">←</span>
-              <span className="text-sm sm:text-base font-medium">Voltar para TEA</span>
-            </Link>
-            
-            <button
-              onClick={handleSaveSession}
-              disabled={salvando}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full font-medium transition-colors disabled:bg-green-400 flex items-center space-x-2"
-            >
-              <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      <GameHeader />
 
-      {/* Título da Atividade */}
-      <div className="bg-white shadow-lg rounded-xl p-6 sm:p-8 mx-4 sm:mx-6 max-w-4xl mx-auto mt-6 mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Escuta Ativa</h1>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        {/* Cards de Instrução - Layout Padronizado IGUAL AO CAA */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+        {/* Cards de Instrução */}
         <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
               <p className="text-sm text-gray-600">
@@ -605,7 +574,7 @@ export default function ActiveListening() {
           </div>
         </div>
 
-        {/* Progresso da Sessão - 4 Métricas IGUAL AO CAA */}
+        {/* Progresso da Sessão */}
         <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
           <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">📊 Progresso da Sessão</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -665,7 +634,7 @@ export default function ActiveListening() {
           </div>
 
           {currentExerciseData && currentQuestionData && (
-            <div className="mb-6">
+            <div>
               <div className="mb-6 rounded-xl bg-gradient-to-r from-teal-50 to-blue-50 p-4 sm:p-6">
                 <h3 className="mb-2 text-base sm:text-lg font-semibold text-gray-900">{currentExerciseData.title}</h3>
                 <p className="mb-4 text-sm sm:text-base text-gray-700">{currentExerciseData.instruction}</p>
@@ -680,7 +649,7 @@ export default function ActiveListening() {
                     <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-gradient-to-r from-teal-400 to-blue-500 text-xl sm:text-2xl text-white mr-3 flex-shrink-0">
                       {currentExerciseData.speakerEmotion}
                     </div>
-                    <div className="min-w-0">
+                    <div>
                       <div className="font-semibold text-gray-900 text-sm sm:text-base">{currentExerciseData.speaker}</div>
                       <div className="text-xs sm:text-sm text-gray-600">
                         {isListening ? 'Reproduzindo áudio...' : 'Clique para ouvir a mensagem'}
@@ -691,10 +660,10 @@ export default function ActiveListening() {
                     <button
                       onClick={simulateAudioPlay}
                       disabled={isListening}
-                      className={`rounded-full p-2 sm:p-3 transition-all min-h-[44px] min-w-[44px] touch-manipulation ${
+                      className={`rounded-full p-2 sm:p-3 transition-all ${
                         isListening 
                           ? 'bg-gray-300 cursor-not-allowed' 
-                          : 'bg-teal-500 hover:bg-teal-600 active:bg-teal-700 text-white'
+                          : 'bg-teal-500 hover:bg-teal-600 text-white'
                       }`}
                       title="Reproduzir áudio"
                     >
@@ -703,7 +672,7 @@ export default function ActiveListening() {
                     <button
                       onClick={repeatAudio}
                       disabled={isListening}
-                      className="rounded-full p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white transition-all min-h-[44px] min-w-[44px] touch-manipulation"
+                      className="rounded-full p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 text-white transition-all"
                       title="Repetir áudio"
                     >
                       🔁
@@ -711,7 +680,7 @@ export default function ActiveListening() {
                     {isListening && (
                       <button
                         onClick={stopAudio}
-                        className="rounded-full p-2 sm:p-3 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white transition-all min-h-[44px] min-w-[44px] touch-manipulation"
+                        className="rounded-full p-2 sm:p-3 bg-red-500 hover:bg-red-600 text-white transition-all"
                         title="Parar áudio"
                       >
                         ⏹️
@@ -719,45 +688,27 @@ export default function ActiveListening() {
                     )}
                   </div>
                 </div>
-                
-                <div className="rounded-lg bg-white p-3 sm:p-4 border border-gray-200">
-                  <div className="text-gray-600 text-xs sm:text-sm mb-2">Mensagem de {currentExerciseData.speaker}:</div>
-                  <div className="text-gray-800 font-medium text-sm sm:text-base">"{currentExerciseData.message}"</div>
-                  <div className="text-gray-500 text-xs mt-2">
-                    💡 Contexto: {currentExerciseData.audioDescription}
-                  </div>
-                </div>
-                
-                {isListening && (
-                  <div className="mt-4 text-center">
-                    <div className="inline-flex items-center px-3 sm:px-4 py-2 bg-teal-100 text-teal-800 rounded-lg text-sm">
-                      <div className="animate-pulse mr-2">🎧</div>
-                      Reproduzindo áudio... (Escute com atenção!)
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="mb-6">
                 <h4 className="mb-4 text-base sm:text-lg font-semibold text-gray-900">
                   Pergunta {currentQuestion + 1}: {currentQuestionData.question}
                 </h4>
-
                 <div className="space-y-3">
                   {currentQuestionData.options.map((option, index) => (
                     <button
                       key={index}
                       onClick={() => handleAnswer(index)}
                       disabled={selectedAnswer !== null}
-                      className={`w-full rounded-xl p-3 sm:p-4 text-left transition-all min-h-[48px] touch-manipulation ${
+                      className={`w-full rounded-xl p-3 sm:p-4 text-left transition-all ${
                         selectedAnswer === null
-                          ? 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:shadow-lg active:bg-gray-200'
+                          ? 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                           : selectedAnswer === index
                           ? index === currentQuestionData.correct
                             ? 'bg-green-100 text-green-800 border-2 border-green-300'
                             : 'bg-red-100 text-red-800 border-2 border-red-300'
                           : index === currentQuestionData.correct
-                          ? 'bg-green-100 text-green-800 border-2 border-green-300'
+                          ? 'bg-green-100 text-green-800'
                           : 'bg-gray-100 text-gray-400'
                       }`}
                     >
@@ -775,13 +726,13 @@ export default function ActiveListening() {
                 }`}>
                   {selectedAnswer === currentQuestionData.correct ? (
                     <div className="flex items-center">
-                      <span className="mr-2 text-xl sm:text-2xl">✅</span>
-                      <span className="text-base sm:text-lg font-semibold">Excelente escuta! +10 pontos</span>
+                      <span className="mr-2 text-xl">✅</span>
+                      <span className="font-semibold">Excelente escuta! +10 pontos</span>
                     </div>
                   ) : (
                     <div className="flex items-center">
-                      <span className="mr-2 text-xl sm:text-2xl">👂</span>
-                      <span className="text-base sm:text-lg font-semibold">Boa tentativa! Vamos aprimorar a escuta.</span>
+                      <span className="mr-2 text-xl">👂</span>
+                      <span className="font-semibold">Boa tentativa! Vamos aprimorar a escuta.</span>
                     </div>
                   )}
                 </div>
@@ -798,7 +749,7 @@ export default function ActiveListening() {
                 <div className="text-center">
                   <button
                     onClick={nextQuestion}
-                    className="rounded-xl bg-gradient-to-r from-teal-500 to-blue-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white transition-all hover:from-teal-600 hover:to-blue-700 hover:shadow-lg min-h-[48px] touch-manipulation"
+                    className="rounded-xl bg-gradient-to-r from-teal-500 to-blue-600 px-8 py-3 text-lg font-semibold text-white transition-all hover:shadow-lg"
                   >
                     {currentQuestion < (currentExerciseData?.questions.length || 0) - 1 
                       ? 'Próxima Pergunta'
@@ -813,30 +764,8 @@ export default function ActiveListening() {
               )}
             </div>
           )}
-
-          {/* Indicadores de Progresso */}
-          <div className="mt-6 flex justify-center space-x-2">
-            {Array.from({ length: currentLevelData?.exercises.length || 0 }).map((_, idx) => (
-              <div
-                key={idx}
-                className={`h-2 w-2 rounded-full ${
-                  idx < currentExercise 
-                    ? 'bg-green-500'
-                    : idx === currentExercise
-                    ? 'bg-blue-500'
-                    : 'bg-gray-300'
-                }`}
-              />
-            ))}
-          </div>
-
-          <div className="mt-4 text-center text-xs sm:text-sm text-gray-500">
-            Exercício {currentExercise + 1} de {currentLevelData?.exercises.length} • 
-            Pergunta {currentQuestion + 1} • 
-            Nível {currentLevel} de {levels.length}
-          </div>
         </div>
-      </div>
+      </main>
     </div>
   )
 }
