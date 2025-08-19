@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation'; // Importe o useRouter
 
 export default function EmotionDiaryPage() {
   const [gameStarted, setGameStarted] = useState(false);
@@ -12,6 +13,7 @@ export default function EmotionDiaryPage() {
   const [situation, setSituation] = useState('');
   const [reflection, setReflection] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
+  const router = useRouter(); // Inicie o router
 
   const diaryPrompts = [
     {
@@ -129,11 +131,13 @@ export default function EmotionDiaryPage() {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <button 
-                onClick={() => window.history.back()}
-                className="mr-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+              {/* ===== BOTÃO 1 CORRIGIDO ===== */}
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="mr-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg flex items-center"
               >
-                ← Voltar para TEA
+                <span className="text-xl">←</span>
+                <span className="ml-2">Voltar</span>
               </button>
               <div className="flex items-center space-x-3">
                 <span className="text-3xl">📓</span>
@@ -154,11 +158,13 @@ export default function EmotionDiaryPage() {
           </div>
           
           {gameStarted && (
+            // ===== BOTÃO 2 CORRIGIDO =====
             <button
-              onClick={() => setGameStarted(false)}
-              className="mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors"
+              onClick={() => router.push('/dashboard')}
+              className="mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center"
             >
-              ← Voltar ao Início
+              <span className="text-xl">←</span>
+              <span className="ml-2">Voltar</span>
             </button>
           )}
         </div>
@@ -179,7 +185,7 @@ export default function EmotionDiaryPage() {
                   <h3 className="text-lg font-semibold text-red-600">Objetivo:</h3>
                 </div>
                 <p className="text-gray-700">
-                  Desenvolver autoconsciência emocional através do registro sistemático de emoções, 
+                  Desenvolva autoconsciência emocional através do registro sistemático de emoções, 
                   situações e reflexões pessoais
                 </p>
               </div>
@@ -415,11 +421,12 @@ export default function EmotionDiaryPage() {
                           Próxima Entrada →
                         </button>
                       ) : (
+                        // ===== BOTÃO 3 CORRIGIDO =====
                         <button
-                          onClick={() => window.history.back()}
+                          onClick={() => router.push('/dashboard')}
                           className={`w-full md:w-auto bg-gradient-to-r ${currentPrompt.color} text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-200`}
                         >
-                          Finalizar Atividade ✓
+                          Finalizar e Voltar ✓
                         </button>
                       )}
                     </div>
