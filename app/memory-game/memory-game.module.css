@@ -1,0 +1,82 @@
+/* Estilos para o Jogo da Memória - CSS Modules */
+
+/* Container da carta com perspectiva */
+.cardContainer {
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+/* Elemento interno que realiza a rotação */
+.cardInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.5s;
+  transform-style: preserve-3d;
+}
+
+/* Rotação quando a carta está virada */
+.cardContainer.flipped .cardInner {
+  transform: rotateY(180deg);
+}
+
+/* Estilo base para ambos os lados da carta */
+.cardFace {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+}
+
+/* Verso da carta (lado com logo TeaPlus) */
+.cardBack {
+  background: linear-gradient(135deg, #14b8a6 0%, #2563eb 100%);
+}
+
+/* Frente da carta (lado com emoji) */
+.cardFront {
+  background: white;
+  transform: rotateY(180deg);
+}
+
+/* Estado quando o par foi encontrado */
+.cardFront.matched {
+  background: #dcfce7;
+  border: 2px solid #86efac;
+}
+
+/* Animação de entrada para tela de vitória */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.9); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+}
+
+.animateFadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Animação de pulso para texto de memorização */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animatePulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
