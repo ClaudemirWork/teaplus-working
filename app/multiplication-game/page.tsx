@@ -231,7 +231,15 @@ export default function MultiplicationGame({ initialState }: Props) {
         console.error('Erro ao salvar:', error);
         alert(`Erro ao salvar a sessão: ${error.message}`);
       } else {
-        alert('Sessão salva com sucesso!');
+        alert(`Sessão salva com sucesso!
+        
+📊 Resumo:
+• Pontuação Final: ${pontuacaoFinal}
+• Nível de Dificuldade: ${currentLevel}
+• Acertos: ${acertos}
+• Erros: ${erros}
+• Duração: ${duracaoSegundos} segundos
+`);
         handleResetGame();
       }
     } catch (error) {
