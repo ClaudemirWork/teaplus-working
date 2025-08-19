@@ -82,12 +82,15 @@ export default function FacialExpressionsGame() {
     if (emocaoSelecionada === emocaoAtual) {
       setAcertos(prev => prev + 1);
       const novaPontuacao = pontuacao + 10;
-      setPontuacao(novaPontuacao);
 
       if (novaPontuacao >= 50 && nivel < 3) {
-        setNivel(prev => prev + 1);
         setPontuacao(0);
-      } else if (novaPontuacao < 50 || nivel < 3) {
+        setNivel(prev => prev + 1);
+      } else if (novaPontuacao >= 50 && nivel === 3) {
+        setPontuacao(novaPontuacao);
+        finalizarAtividade();
+      } else {
+        setPontuacao(novaPontuacao);
         gerarPergunta();
       }
     } else {
@@ -183,13 +186,39 @@ export default function FacialExpressionsGame() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100">
       <GameHeader />
       <main className="p-4 sm:p-6 max-w-4xl mx-auto w-full">
-        {/* Cards de Instruções e Progresso */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            {/* Cards de info aqui */}
-          </div>
-          {atividadeIniciada && !atividadeConcluida && (
-            <div>
+        {/* Cards de Instruções - RESTAURADO */}
+        {!atividadeIniciada && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                    <h3 className="text-lg font-bold text-gray-800 mb-2">🎯 Objetivo:</h3>
+                    <p className="text-gray-600 text-sm">Identifique corretamente as expressões faciais apresentadas.</p>
+                </div>
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                    <h3 className="text-lg font-bold text-gray-800 mb-2">📊 Níveis:</h3>
+                    <p className="text-gray-600 text-sm">3 níveis progressivos com emoções básicas e complexas.</p>
+                </div>
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                    <h3 className="text-lg font-bold text-gray-800 mb-2">🏆 Pontuação:</h3>
+                    <p className="text-gray-600 text-sm">10 pontos por acerto. 50 pontos para avançar de nível.</p>
+                </div>
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                    <h3 className="text-lg font-bold text-gray-800 mb-2">📚 Base Científica:</h3>
+                    <p className="text-gray-600 text-sm">Baseado em NEPSY-II e ADOS-2 para avaliação TEA.</p>
+                </div>
+            </div>
+        )}
+
+        {/* Progresso da Sessão - Mantido */}
+        {atividadeIniciada && !atividadeConcluida && (
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">📊 Progresso da Sessão</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg"><div className="text-2xl font-bold text-blue-600">{nivel}</div><div className="text-sm">Nível Atual</div></div>
+              <div className="text-center p-4 bg-green-50 rounded-lg"><div className="text-2xl font-bold text-green-600">{acertos}</div><div className="text-sm">Acertos</div></div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg"><div className="text-2xl font-bold text-purple-600">{tentativas > 0 ? (acertos/tentativas*100).toFixed(0) : 0}%</div><div className="text-sm">Taxa de Acerto</div></div>
+              <div className="text-center p-4 bg-orange-50 rounded-lg"><div className="text-2xl font-bold text-orange-600">{erros}</div><div className="text-sm">Erros</div></div>
+            </div>
+            <div className="mt-4">
               <div className="flex justify-between text-sm text-gray-600 mb-1">
                 <span>Progresso do Nível {nivel} ({getNomeNivel()})</span>
                 <span>{pontuacao}/50 pontos</span>
@@ -201,18 +230,17 @@ export default function FacialExpressionsGame() {
                 />
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Área do Jogo */}
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="min-h-[400px] flex items-center justify-center">
             {!atividadeIniciada ? (
               <div className="text-center">
-                <h3 className="text-xl font-semibold mb-4 text-gray-800">Reconhecimento de Expressões Faciais</h3>
                 <button 
                   onClick={iniciarAtividade}
-                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl text-lg"
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl text-lg hover:shadow-lg transition-transform transform hover:scale-105"
                 >
                   🎮 Iniciar Atividade
                 </button>
@@ -220,6 +248,11 @@ export default function FacialExpressionsGame() {
             ) : atividadeConcluida ? (
               <div className="text-center">
                 <h3 className="text-2xl font-bold text-green-600 mb-4">🎉 Parabéns! Atividade Concluída!</h3>
+                <div className="bg-green-50 p-6 rounded-lg mb-6">
+                  <h4 className="font-semibold text-gray-800 mb-3">📊 Resultados Finais:</h4>
+                  <p>Taxa de Acerto: {tentativas > 0 ? (acertos / tentativas * 100).toFixed(1) : 0}%</p>
+                  <p>Nível Alcançado: {nivel} ({getNomeNivel()})</p>
+                </div>
                 <button 
                   onClick={iniciarAtividade}
                   className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg"
