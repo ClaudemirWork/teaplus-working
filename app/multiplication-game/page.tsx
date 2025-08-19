@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Play, RotateCcw, Trophy, Brain, Target } from 'lucide-react';
 
-// Defines the properties of the game state
+// Define as propriedades do estado do jogo
 interface GameState {
   board: ('X' | 'O' | null)[];
   currentPlayer: 'X' | 'O';
@@ -14,16 +14,16 @@ interface GameState {
   scoreO: number;
 }
 
-// Defines the properties for the component
+// Define as propriedades do componente
 interface Props {
   initialState?: GameState;
 }
 
 export default function MultiplicationGame({ initialState }: Props) {
-  // Constants for the board size
+  // Constantes para o tamanho do tabuleiro
   const BOARD_SIZE = 9;
 
-  // State hooks for managing the game
+  // Estados do jogo
   const [gameState, setGameState] = useState<GameState>(
     initialState || {
       board: Array(BOARD_SIZE).fill(null),
@@ -34,22 +34,42 @@ export default function MultiplicationGame({ initialState }: Props) {
       scoreO: 0,
     }
   );
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [userAnswer, setUserAnswer] = useState('');
+  const [showAnswerInput, setShowAnswerInput] = useState(false);
+  const [currentCellIndex, setCurrentCellIndex] = useState<number | null>(null);
   const [message, setMessage] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | null>(null);
 
-  // Generates a new multiplication problem
-  const generateProblem = () => {
-    const a = Math.floor(Math.random() * 10) + 1;
-    const b = Math.floor(Math.random() * 10) + 1;
+  // Gera um novo problema de multiplicação com base no nível
+  const generateProblem = (level: number) => {
+    let a, b;
+    switch (level) {
+      case 1: // Nível Fácil: tabuada do 1
+        a = Math.floor(Math.random() * 10) + 1;
+        b = 1;
+        break;
+      case 2: // Nível Médio: tabuada do 2 ao 5
+        a = Math.floor(Math.random() * 4) + 2;
+        b = Math.floor(Math.random() * 10) + 1;
+        break;
+      case 3: // Nível Difícil: tabuada do 6 ao 10
+        a = Math.floor(Math.random() * 5) + 6;
+        b = Math.floor(Math.random() * 10) + 1;
+        break;
+      default:
+        a = Math.floor(Math.random() * 10) + 1;
+        b = Math.floor(Math.random() * 10) + 1;
+    }
     const answer = a * b;
     const question = `${a} x ${b}`;
     return { a, b, question, answer };
   };
 
-  // Handles starting a new game
+  // Lida com o início de um novo jogo
   const handleStartGame = () => {
-    const newProblem = generateProblem();
+    const newProblem = generateProblem(currentLevel);
     setGameState({
       board: Array(BOARD_SIZE).fill(null),
       currentPlayer: 'X',
@@ -62,7 +82,7 @@ export default function MultiplicationGame({ initialState }: Props) {
     setFeedbackType(null);
   };
 
-  // Resets the game to the initial state
+  // Reinicia o jogo para o estado inicial
   const handleResetGame = () => {
     setGameState({
       board: Array(BOARD_SIZE).fill(null),
@@ -76,7 +96,7 @@ export default function MultiplicationGame({ initialState }: Props) {
     setFeedbackType(null);
   };
 
-  // Checks for a winner or a draw
+  // Checa se há um vencedor ou empate
   const checkWinner = (board: ('X' | 'O' | null)[]) => {
     const lines = [
       [0, 1, 2],
@@ -100,25 +120,27 @@ export default function MultiplicationGame({ initialState }: Props) {
     return null;
   };
 
-  // Handles a cell click on the board
+  // Lida com o clique em uma célula do tabuleiro
   const handleCellClick = (index: number) => {
     if (gameState.status !== 'playing' || gameState.board[index]) return;
+    setShowAnswerInput(true);
+    setCurrentCellIndex(index);
+    setMessage(`Qual o resultado de ${gameState.currentProblem?.question}?`);
+  };
 
-    // Show a small message or modal for the user to answer the multiplication problem
-    // A simple prompt is used for demonstration, but a custom UI would be better
-    const userAnswer = window.prompt(`Qual o resultado de ${gameState.currentProblem?.question}?`);
-    
-    // Check if the user's answer is correct
-    if (userAnswer && parseInt(userAnswer, 10) === gameState.currentProblem?.answer) {
-      // If correct, update the board and check for a winner
+  // Lida com a submissão da resposta do usuário
+  const handleAnswerSubmit = () => {
+    if (!currentCellIndex && currentCellIndex !== 0) return;
+    const answer = parseInt(userAnswer, 10);
+    if (!isNaN(answer) && answer === gameState.currentProblem?.answer) {
+      // Se a resposta estiver correta, atualiza o tabuleiro e checa por um vencedor
       const newBoard = [...gameState.board];
-      newBoard[index] = gameState.currentPlayer;
-
+      newBoard[currentCellIndex] = gameState.currentPlayer;
       const winner = checkWinner(newBoard);
-      
+
       if (winner) {
         if (winner === 'draw') {
-          setMessage('Empate! O jogo recomeçará em breve.');
+          setMessage('Empate!');
           setFeedbackType(null);
           setGameState(prev => ({ ...prev, board: newBoard, status: 'draw' }));
         } else {
@@ -133,9 +155,9 @@ export default function MultiplicationGame({ initialState }: Props) {
           }));
         }
       } else {
-        // If no winner, switch turns and generate a new problem
+        // Se não houver vencedor, troca de turno e gera um novo problema
         const nextPlayer = gameState.currentPlayer === 'X' ? 'O' : 'X';
-        const newProblem = generateProblem();
+        const newProblem = generateProblem(currentLevel);
         setGameState(prev => ({
           ...prev,
           board: newBoard,
@@ -148,12 +170,15 @@ export default function MultiplicationGame({ initialState }: Props) {
         setTimeout(() => setShowFeedback(false), 1500);
       }
     } else {
-      // If incorrect, provide feedback
+      // Se a resposta estiver incorreta, dá feedback
       setMessage('Resposta incorreta! Tente novamente.');
       setFeedbackType('error');
       setShowFeedback(true);
       setTimeout(() => setShowFeedback(false), 1500);
     }
+    setShowAnswerInput(false);
+    setUserAnswer('');
+    setCurrentCellIndex(null);
   };
 
   return (
@@ -201,7 +226,7 @@ export default function MultiplicationGame({ initialState }: Props) {
               </div>
               <div className="p-6">
                 <p className="text-gray-700">
-                  Seja o primeiro a conseguir uma sequência de três peças (X ou O) na horizontal, vertical ou diagonal, respondendo corretamente às questões de multiplicação.
+                  Uma versão do "jogo da velha" para praticar tabuada. Seja o primeiro a conseguir uma sequência de três peças (X ou O) na horizontal, vertical ou diagonal, respondendo corretamente às questões de multiplicação.
                 </p>
               </div>
             </div>
@@ -259,6 +284,29 @@ export default function MultiplicationGame({ initialState }: Props) {
             {/* Board and Controls */}
             {gameState.status !== 'playing' ? (
               <div className="text-center">
+                <div className="mb-4">
+                  <h3 className="text-xl font-semibold mb-2">Selecione o Nível de Dificuldade:</h3>
+                  <div className="flex justify-center space-x-2">
+                    <button
+                      onClick={() => setCurrentLevel(1)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${currentLevel === 1 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
+                    >
+                      Nível 1 (Fácil)
+                    </button>
+                    <button
+                      onClick={() => setCurrentLevel(2)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${currentLevel === 2 ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
+                    >
+                      Nível 2 (Médio)
+                    </button>
+                    <button
+                      onClick={() => setCurrentLevel(3)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${currentLevel === 3 ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
+                    >
+                      Nível 3 (Difícil)
+                    </button>
+                  </div>
+                </div>
                 <p className="text-gray-600 mb-6">{gameState.status === 'idle' ? 'Clique em Iniciar Jogo para começar!' : 'Clique em Reiniciar Jogo para começar uma nova rodada.'}</p>
                 <button
                   onClick={gameState.status === 'idle' ? handleStartGame : handleResetGame}
@@ -287,6 +335,30 @@ export default function MultiplicationGame({ initialState }: Props) {
                     </button>
                   ))}
                 </div>
+                
+                {/* Answer Input Modal */}
+                {showAnswerInput && (
+                  <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl text-center space-y-4">
+                      <h3 className="text-xl font-semibold">{message}</h3>
+                      <input
+                        type="number"
+                        className="w-full text-center p-3 border border-gray-300 rounded-lg text-lg"
+                        placeholder="Sua resposta"
+                        value={userAnswer}
+                        onChange={(e) => setUserAnswer(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleAnswerSubmit()}
+                        autoFocus
+                      />
+                      <button
+                        onClick={handleAnswerSubmit}
+                        className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 rounded-lg transition-colors"
+                      >
+                        Enviar Resposta
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
