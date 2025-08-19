@@ -107,11 +107,11 @@ const Card = ({ card, onCardClick }: { card: Card; onCardClick: (id: number) => 
       <div className={`${styles.cardInner} shadow-md rounded-lg`}>
         {/* Verso da Carta */}
         <div className={`${styles.cardFace} ${styles.cardBack}`}>
-          <span className="text-white text-[10px] sm:text-sm md:text-xl font-bold tracking-wider">TeaPlus</span>
+          <span className="text-white text-[10px] sm:text-xs md:text-sm lg:text-base font-bold tracking-wider">TeaPlus</span>
         </div>
         {/* Frente da Carta */}
         <div className={`${styles.cardFace} ${styles.cardFront} ${isMatched ? styles.matched : ''}`}>
-          <span className="text-2xl sm:text-3xl md:text-5xl">{card.emoji}</span>
+          <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl">{card.emoji}</span>
         </div>
       </div>
     </div>
