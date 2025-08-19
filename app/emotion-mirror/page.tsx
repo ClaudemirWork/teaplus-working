@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation' // Importe o useRouter
 
 interface AudioExercise {
   id: number
@@ -29,6 +30,7 @@ interface Level {
 }
 
 export default function EmotionMirror() {
+  const router = useRouter() // Inicie o router
   const [currentLevel, setCurrentLevel] = useState(1)
   const [currentExercise, setCurrentExercise] = useState(0)
   const [currentQuestion, setCurrentQuestion] = useState(0)
@@ -324,11 +326,12 @@ export default function EmotionMirror() {
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="flex items-center mb-6">
+            {/* ===== BOTÃO 1 CORRIGIDO ===== */}
             <button 
-              onClick={() => window.history.back()}
+              onClick={() => router.push('/dashboard')}
               className="mr-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
             >
-              ← Voltar para TEA
+              ← Voltar
             </button>
             <div className="flex items-center space-x-3">
               <span className="text-3xl">🌟</span>
@@ -370,11 +373,12 @@ export default function EmotionMirror() {
                   >
                     🔄 Jogar Novamente
                   </button>
+                  {/* ===== BOTÃO 2 CORRIGIDO ===== */}
                   <button
-                    onClick={() => window.history.back()}
+                    onClick={() => router.push('/dashboard')}
                     className="w-full rounded-2xl border-2 border-gray-300 px-8 py-4 text-lg font-semibold text-gray-700 transition-all hover:border-gray-400 hover:shadow-lg"
                   >
-                    🏠 Voltar para TEA
+                    🏠 Voltar
                   </button>
                 </div>
               </div>
@@ -392,11 +396,12 @@ export default function EmotionMirror() {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
+               {/* ===== BOTÃO 3 CORRIGIDO ===== */}
               <button 
-                onClick={() => window.history.back()}
+                onClick={() => router.push('/dashboard')}
                 className="mr-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
               >
-                ← Voltar para TEA
+                ← Voltar
               </button>
               <div className="flex items-center space-x-3">
                 <span className="text-3xl">🌟</span>
@@ -513,7 +518,7 @@ export default function EmotionMirror() {
                   
                   {isObserving ? (
                     <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg text-sm md:text-base">
-                     ⏱️ Observe atentamente... {5 - observationTime}s
+                      ⏱️ Observe atentamente... {5 - observationTime}s
                     </div>
                   ) : (
                     <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg text-sm md:text-base">
