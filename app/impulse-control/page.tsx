@@ -130,15 +130,20 @@ export default function ImpulseControlPage() {
         setCurrentTask(task);
         setShowStimulus(false);
         
+        // CORREÇÃO 2: Pausa entre rodadas agora é progressiva
+        const interRoundDelay = Math.max(1500 - (currentLevel * 150), 700);
+
         const setupStimulusTimer = () => {
-            const displayTime = Math.max(2000 - (currentLevel * 100), 1000);
+            // CORREÇÃO 1: Tempo de exibição do estímulo ajustado
+            const displayTime = Math.max(2500 - (currentLevel * 200), 1200);
+
             stimulusTimerRef.current = setTimeout(() => {
                 if (task.shouldRespond) {
                     setResponses(prev => ({...prev, missed: prev.missed + 1}));
                     setStreak(0);
                 }
                 setShowStimulus(false);
-                setTimeout(() => startRound(), 800);
+                setTimeout(() => startRound(), interRoundDelay);
             }, displayTime);
         };
         
@@ -161,10 +166,8 @@ export default function ImpulseControlPage() {
         }
     }, [generateTask, currentLevel]);
 
-    // CORREÇÃO: useEffect para iniciar o ciclo do jogo quando o estado muda para 'playing'
     useEffect(() => {
         if (gameState === 'playing') {
-            // Inicia a primeira rodada após um pequeno delay para o jogador se preparar
             const startTimeout = setTimeout(() => {
                 startRound();
             }, 1000);
@@ -183,6 +186,8 @@ export default function ImpulseControlPage() {
 
         if (stimulusTimerRef.current) clearTimeout(stimulusTimerRef.current);
 
+        const interRoundDelay = Math.max(1500 - (currentLevel * 150), 700);
+
         if (currentTask.shouldRespond) {
             setScore(prev => prev + 10 + (currentLevel * 5) + (streak * 2));
             setResponses(prev => ({...prev, correct: prev.correct + 1}));
@@ -199,7 +204,7 @@ export default function ImpulseControlPage() {
         }
 
         setShowStimulus(false);
-        setTimeout(() => startRound(), 800);
+        setTimeout(() => startRound(), interRoundDelay);
     };
 
     const startGame = () => {
@@ -209,7 +214,7 @@ export default function ImpulseControlPage() {
         setResponses({correct: 0, incorrect: 0, premature: 0, missed: 0});
         setStreak(0);
         setMaxStreak(0);
-        setGameState('playing'); // Apenas muda o estado, o useEffect cuidará de iniciar o jogo
+        setGameState('playing');
     };
 
     const finishGame = () => {
