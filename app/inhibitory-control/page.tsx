@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Play, Pause, RotateCcw, Award, Target, Clock, Brain, CheckCircle, Save, BrainCircuit } from 'lucide-react'
+// IMPORT CORRIGIDO: Adicionado ChevronLeft
+import { Play, Pause, RotateCcw, Award, Target, Clock, Brain, CheckCircle, Save, BrainCircuit, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '../utils/supabaseClient'
