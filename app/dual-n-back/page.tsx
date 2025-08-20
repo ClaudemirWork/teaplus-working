@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Save, Brain, Play, RotateCcw, CheckCircle, XCircle, Trophy } from 'lucide-react';
+import { ChevronLeft, Save, Brain, Play, RotateCcw, CheckCircle, XCircle, Trophy, Target, Award, BookOpen } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
 
@@ -62,7 +62,7 @@ export default function DualNBack() {
     const [hasResponded, setHasResponded] = useState({ position: false, sound: false });
     const [isGameFinished, setIsGameFinished] = useState(false);
     const [salvando, setSalvando] = useState(false);
-    const [activeStimulus, setActiveStimulus] = useState<number | null>(null); // Novo estado para controle visual
+    const [activeStimulus, setActiveStimulus] = useState<number | null>(null);
 
     const levelConfig = {
         1: { nBack: 1, stimuliCount: 15, target: 80 },
@@ -97,18 +97,11 @@ export default function DualNBack() {
 
         const stimulus = stimuli[currentIndex];
         playSound(sounds[stimulus.sound]);
-        setActiveStimulus(stimulus.position); // Acende o quadrado
+        setActiveStimulus(stimulus.position);
         setHasResponded({ position: false, sound: false });
 
-        // Apaga o quadrado após 1 segundo
-        const showTimer = setTimeout(() => {
-            setActiveStimulus(null);
-        }, 1000);
-
-        // Avança para o próximo estímulo após 3 segundos no total
-        const advanceTimer = setTimeout(() => {
-            setCurrentIndex(prev => prev + 1);
-        }, 3000);
+        const showTimer = setTimeout(() => setActiveStimulus(null), 1000);
+        const advanceTimer = setTimeout(() => setCurrentIndex(prev => prev + 1), 3000);
 
         return () => {
             clearTimeout(showTimer);
@@ -130,9 +123,7 @@ export default function DualNBack() {
 
     const handleResponse = (type: 'position' | 'sound') => {
         if (hasResponded[type]) return;
-
         const config = levelConfig[currentLevel as keyof typeof levelConfig];
-        // Responde ao estímulo que acabou de ser apresentado (currentIndex)
         if (currentIndex < config.nBack) return;
 
         const currentStimulus = stimuli[currentIndex];
@@ -140,14 +131,14 @@ export default function DualNBack() {
         
         const isCorrect = currentStimulus[type] === compareStimulus[type];
         if (isCorrect) setScore(prev => prev + 10);
-        else setScore(prev => Math.max(0, prev - 5)); // Penalidade por erro
+        else setScore(prev => Math.max(0, prev - 5));
         
         setHasResponded(prev => ({ ...prev, [type]: true }));
     };
 
     const endGame = () => {
         setGamePhase('feedback');
-        setIsGameFinished(true); // O jogo terminou, pode salvar
+        setIsGameFinished(true);
         const config = levelConfig[currentLevel as keyof typeof levelConfig];
         if (score >= config.target) {
             if(currentLevel < 3){
@@ -166,6 +157,7 @@ export default function DualNBack() {
             const nextLevel = currentLevel + 1;
             setCurrentLevel(nextLevel);
             setScore(0);
+            setIsGameFinished(false);
             const nextConfig = levelConfig[nextLevel as keyof typeof levelConfig];
             const newStimuli = Array.from({ length: nextConfig.stimuliCount }, () => ({
                 position: Math.floor(Math.random() * 9),
@@ -175,7 +167,6 @@ export default function DualNBack() {
             setCurrentIndex(0);
             setGamePhase('playing');
         } else {
-            // Se não passou, ou se já está no último nível, volta para o menu
              resetActivity();
         }
         setFeedback(null);
@@ -235,17 +226,34 @@ export default function DualNBack() {
                 {!showActivity ? (
                     <div className="space-y-6">
                         <div className="bg-white rounded-2xl p-6 shadow-lg border-l-4 border-red-400">
-                            <h2 className="text-xl font-semibold text-gray-800 mb-3">🎯 Objetivo</h2>
-                            <p className="text-gray-700">Detecte quando a posição visual OU o som auditivo é igual ao apresentado N posições atrás.</p>
-                        </div>
-                        <div className="bg-white rounded-2xl p-6 shadow-lg">
-                            <h2 className="text-xl font-semibold text-gray-800 mb-4">📊 Níveis</h2>
-                            <div className="space-y-3">
-                                <p><strong className="text-blue-600">Nível 1 (1-Back):</strong> Corresponde ao estímulo anterior.</p>
-                                <p><strong className="text-blue-600">Nível 2 (2-Back):</strong> Corresponde ao estímulo de 2 rodadas atrás.</p>
-                                <p><strong className="text-blue-600">Nível 3 (3-Back):</strong> Corresponde ao estímulo de 3 rodadas atrás.</p>
+                            <div className="flex items-center gap-3 mb-4">
+                                <Target className="w-6 h-6 text-red-500" />
+                                <h2 className="text-xl font-semibold text-gray-800">Objetivo:</h2>
                             </div>
+                            <p className="text-gray-700 leading-relaxed">
+                                Desenvolver a capacidade máxima de memória de trabalho. Detecte quando a posição visual ou o som auditivo atual é igual ao apresentado N posições atrás, exercitando simultaneamente múltiplos sistemas da memória.
+                            </p>
                         </div>
+
+                        <div className="bg-white rounded-2xl p-6 shadow-lg border-l-4 border-purple-400">
+                             <h2 className="text-xl font-semibold text-gray-800 mb-4">📊 Níveis:</h2>
+                             <div className="space-y-3">
+                                 <p><strong className="text-blue-600">Nível 1 (1-Back):</strong> Detecte correspondência com o estímulo anterior.</p>
+                                 <p><strong className="text-blue-600">Nível 2 (2-Back):</strong> Detecte correspondência com o estímulo de 2 rodadas atrás.</p>
+                                 <p><strong className="text-blue-600">Nível 3 (3-Back):</strong> Detecte correspondência com o estímulo de 3 rodadas atrás.</p>
+                             </div>
+                        </div>
+
+                         <div className="bg-white rounded-2xl p-6 shadow-lg border-l-4 border-pink-400">
+                             <div className="flex items-center gap-3 mb-4">
+                                 <BookOpen className="w-6 h-6 text-pink-500" />
+                                 <h2 className="text-xl font-semibold text-gray-800">Base Científica:</h2>
+                             </div>
+                             <p className="text-gray-700 leading-relaxed">
+                                 O Dual N-Back é considerado o "padrão ouro" para treinamento de memória de trabalho. Estudos demonstram que este exercício pode aumentar a inteligência fluida e fortalecer redes neurais do córtex pré-frontal.
+                             </p>
+                         </div>
+
                         <div className="text-center pt-6">
                             <button className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all" onClick={() => setShowActivity(true)}>
                                 <Play className="w-5 h-5 inline-block mr-2" />
