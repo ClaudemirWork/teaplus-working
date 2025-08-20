@@ -227,65 +227,41 @@ export default function AttentionRoulettePage() {
         if (gameState !== 'awaiting_spin') return;
         
         setGameState('spinning');
+        
+        // Escolher aleatoriamente a cor que vai parar
         const resultIndex = Math.floor(Math.random() * currentConfig.options.length);
         const resultColor = currentConfig.options[resultIndex];
         
-        // Debug detalhado
+        // Debug
         console.log('=== NOVO GIRO ===');
-        console.log('Mapeamento de cores:');
-        currentConfig.options.forEach((cor, idx) => {
-            console.log(`  Índice ${idx}: ${cor}`);
-        });
-        console.log('');
-        console.log('Cor alvo (deve clicar se for esta):', targetColor);
-        console.log('Índice sorteado:', resultIndex);
-        console.log('Cor sorteada (deve aparecer na seta):', resultColor);
+        console.log('COR ALVO (deve clicar se for):', targetColor);
+        console.log('COR SORTEADA:', resultColor, `(índice ${resultIndex})`);
+        console.log('Opções:', currentConfig.options.join(', '));
         
-        // Cálculo da rotação
+        // Cálculo da rotação SIMPLIFICADO
         const sliceAngle = 360 / currentConfig.options.length;
         
-        // TESTE DIRETO: Sem ajustes, vamos ver o que acontece
-        // Para colocar a cor de índice X no topo:
-        // - Índice 0 já está no topo: 0 graus
-        // - Índice 1: girar -90 graus (sentido anti-horário)
-        // - Índice 2: girar -180 graus
-        // - Índice 3: girar -270 graus
+        // Para posicionar a cor de índice X no topo:
+        // - A primeira cor (índice 0) começa no topo
+        // - Para colocar índice 1 no topo: girar -90° (sentido anti-horário)
+        // - Para colocar índice 2 no topo: girar -180°
+        // - Para colocar índice 3 no topo: girar -270°
         
-        // Verificação: se quando queremos índice 2 (AZUL) aparece índice 1 (VERDE),
-        // então estamos girando 1 posição a menos do que deveríamos
-        // Solução: adicionar mais uma posição de rotação
+        const targetAngle = -resultIndex * sliceAngle;
         
-        const rotationOffset = 1; // Adiciona 1 posição extra de rotação
-        const adjustedRotation = -((resultIndex + rotationOffset) * sliceAngle);
+        // Adicionar voltas completas
+        const spins = 5 + Math.floor(Math.random() * 4); // 5-8 voltas
+        const totalRotation = (360 * spins) + targetAngle;
         
-        // Sempre gira múltiplas voltas completas
-        const minSpins = 5;
-        const maxSpins = 8;
-        const spins = Math.floor(Math.random() * (maxSpins - minSpins + 1)) + minSpins;
+        console.log(`Girando ${spins} voltas + ${targetAngle}° = ${totalRotation}° total`);
         
-        // Reset periódico
-        const baseRotation = roundCount % 10 === 0 ? 0 : rotation;
-        
-        // Rotação final
-        const newRotation = baseRotation + (360 * spins) + adjustedRotation;
-        
-        console.log('');
-        console.log('Cálculos de rotação:');
-        console.log(`  Ângulo de cada fatia: ${sliceAngle}°`);
-        console.log(`  Offset de correção: +${rotationOffset} posição`);
-        console.log(`  Rotação necessária: ${adjustedRotation}°`);
-        console.log(`  Voltas completas: ${spins}`);
-        console.log(`  Rotação total: ${newRotation}°`);
-        
-        setRotation(newRotation);
+        // Usar rotação acumulativa
+        setRotation(prev => prev + totalRotation);
 
         setTimeout(() => {
-            console.log('');
-            console.log('=== PARADA DA ROLETA ===');
-            console.log(`Sistema registrou: ${resultColor}`);
-            console.log(`VERIFIQUE: A cor na seta deve ser ${resultColor}`);
-            console.log('Se não for, informe qual cor apareceu visualmente.');
-            console.log('=============================');
+            console.log('=== PAROU ===');
+            console.log('Sistema diz:', resultColor);
+            console.log('Verifique se visual corresponde!');
             
             setRouletteResult(resultColor);
             setGameState('decision');
@@ -318,19 +294,26 @@ export default function AttentionRoulettePage() {
         const reactionTime = performance.now() - reactionStartRef.current;
         const wasCorrectClick = rouletteResult === targetColor;
         
-        // Debug
-        console.log('Clique - Cor alvo:', targetColor);
-        console.log('Clique - Cor da roleta:', rouletteResult);
-        console.log('Clique correto?', wasCorrectClick);
+        // Debug claro
+        console.log('');
+        console.log('=== CLIQUE DO USUÁRIO ===');
+        console.log('Cor alvo:', targetColor);
+        console.log('Cor da roleta:', rouletteResult);
+        console.log('Ação correta?', wasCorrectClick ? 'SIM ✅' : 'NÃO ❌');
 
         if (wasCorrectClick) {
+            // Clicou quando ERA a cor alvo = CORRETO
             setGoReactionTimes(prev => [...prev, reactionTime]);
             setScore(prev => prev + 100);
             setIsCorrect(true);
+            console.log('→ ACERTOU! Clicou na cor certa. +100 pontos');
         } else {
+            // Clicou quando NÃO era a cor alvo = ERRO
             setStopErrors(prev => prev + 1);
             setIsCorrect(false);
+            console.log('→ ERROU! Clicou na cor errada.');
         }
+        console.log('==========================');
 
         setGameState('feedback');
         setTimeout(startNewRound, 1500);
@@ -352,9 +335,27 @@ export default function AttentionRoulettePage() {
     };
 
     const resetGame = () => {
+        // Reset completo de todos os estados
         setGameState('initial');
         setRotation(0);
         setRoundCount(0);
+        setScore(0);
+        setTimeLeft(120);
+        setTargetColor('VERMELHO');
+        setRouletteResult('');
+        setIsCorrect(null);
+        setGoReactionTimes([]);
+        setGoOpportunities(0);
+        setStopErrors(0);
+        setStopOpportunities(0);
+        setMissedGo(0);
+        setNivelSelecionado(1);
+        
+        // Limpar timers pendentes
+        if (decisionTimerRef.current) {
+            clearTimeout(decisionTimerRef.current);
+            decisionTimerRef.current = null;
+        }
     };
 
     const handleSaveSession = async () => {
@@ -478,6 +479,11 @@ export default function AttentionRoulettePage() {
                 
                 {(gameState !== 'initial' && gameState !== 'finished') && (
                     <div className="bg-white rounded-xl shadow-lg p-6 text-center max-w-3xl mx-auto">
+                        {/* Aviso de DEBUG temporário */}
+                        <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                            ⚠️ MODO DEBUG: As cores estão sendo mostradas para verificação. Remover depois de testar.
+                        </div>
+                        
                         <div className="flex justify-between items-center mb-6">
                             <span className="bg-purple-100 text-purple-800 font-medium px-4 py-2 rounded-lg">Nível {currentLevel}</span>
                             <span className="bg-blue-100 text-blue-800 font-medium px-4 py-2 rounded-lg">Pontos: {score}</span>
@@ -497,6 +503,25 @@ export default function AttentionRoulettePage() {
                             </span>
                         </h2>
                         
+                        {/* Indicação visual TEMPORÁRIA para debug */}
+                        {gameState === 'decision' && rouletteResult && (
+                            <div className="mb-4 p-3 bg-gray-100 border-2 border-gray-300 rounded-lg">
+                                <p className="text-sm font-semibold text-gray-700">
+                                    🎯 Cor alvo: <span style={{ backgroundColor: colorsMap[targetColor]?.bg, color: colorsMap[targetColor]?.text }} className="px-2 py-1 rounded">{targetColor}</span>
+                                </p>
+                                <p className="text-sm font-semibold text-gray-700 mt-1">
+                                    🎰 Roleta parou em: <span style={{ backgroundColor: colorsMap[rouletteResult]?.bg, color: colorsMap[rouletteResult]?.text }} className="px-2 py-1 rounded">{rouletteResult}</span>
+                                </p>
+                                <p className="text-sm mt-2">
+                                    {rouletteResult === targetColor ? (
+                                        <span className="text-green-600 font-bold">✅ CLIQUE AGORA! (é a cor alvo)</span>
+                                    ) : (
+                                        <span className="text-red-600 font-bold">⛔ NÃO CLIQUE! (não é a cor alvo)</span>
+                                    )}
+                                </p>
+                            </div>
+                        )}
+                        
                         <RouletteWheel 
                             options={currentConfig.options}
                             rotation={rotation}
@@ -505,7 +530,7 @@ export default function AttentionRoulettePage() {
                             spinDuration={currentConfig.spinDuration}
                         />
 
-                        <div className="h-20 flex items-center justify-center">
+                        <div className="h-24 flex items-center justify-center">
                             {gameState === 'awaiting_spin' && (
                                 <button 
                                     onClick={handleSpin} 
@@ -526,16 +551,22 @@ export default function AttentionRoulettePage() {
                                 </button>
                             )}
                             {gameState === 'feedback' && (
-                                <div className="animate-bounce">
+                                <div className="text-center">
                                     {isCorrect ? (
-                                        <div className="flex items-center gap-2">
-                                            <CheckCircle size={48} className="text-green-500" />
-                                            <span className="text-2xl font-bold text-green-600">Correto!</span>
+                                        <div className="animate-bounce">
+                                            <CheckCircle size={56} className="text-green-500 mx-auto mb-2" />
+                                            <span className="text-2xl font-bold text-green-600">ACERTOU!</span>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                {rouletteResult === targetColor ? 'Clicou na cor certa!' : 'Não clicou na cor errada!'}
+                                            </p>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-2">
-                                            <XCircle size={48} className="text-red-500" />
-                                            <span className="text-2xl font-bold text-red-600">Errou!</span>
+                                        <div className="animate-bounce">
+                                            <XCircle size={56} className="text-red-500 mx-auto mb-2" />
+                                            <span className="text-2xl font-bold text-red-600">ERROU!</span>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                {rouletteResult === targetColor ? 'Deveria ter clicado!' : 'Não deveria ter clicado!'}
+                                            </p>
                                         </div>
                                     )}
                                 </div>
