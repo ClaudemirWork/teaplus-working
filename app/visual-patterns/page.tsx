@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Save, Shapes, Trophy, RotateCcw } from 'lucide-react';
+import { ChevronLeft, Save, Shapes, Trophy, RotateCcw, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '../utils/supabaseClient'; // Ajuste o caminho se necessário
+import { createClient } from '../utils/supabaseClient';
 
 // --- COMPONENTE DO CABEÇALHO PADRÃO ---
 const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: {
@@ -54,8 +54,8 @@ export default function VisualPatterns() {
     const router = useRouter();
     const supabase = createClient();
 
-    // Estados refatorados
-    const [gameState, setGameState] = useState<'initial' | 'ready_for_round' | 'showing_pattern' | 'waiting_input' | 'feedback' | 'finished'>('initial');
+    // Estado de jogo aprimorado para incluir a transição de nível
+    const [gameState, setGameState] = useState<'initial' | 'ready_for_round' | 'showing_pattern' | 'waiting_input' | 'feedback' | 'level_complete' | 'finished'>('initial');
     const [nivelSelecionado, setNivelSelecionado] = useState<number | null>(1);
     const [currentLevel, setCurrentLevel] = useState(1);
     const [score, setScore] = useState(0);
@@ -115,19 +115,29 @@ export default function VisualPatterns() {
         setGameState('feedback');
     };
 
-    const nextRound = () => {
+    const nextStep = () => {
         const config = niveis.find(n => n.id === currentLevel) || niveis[0];
+        // Verifica se atingiu a meta de pontos
         if (score >= config.target) {
+            // Se não for o último nível, vai para a tela de nível completo
             if (currentLevel < niveis.length) {
-                const newLevel = currentLevel + 1;
-                setCurrentLevel(newLevel);
-                setScore(0);
-                setAttempts(0);
+                setGameState('level_complete');
             } else {
+                // Se for o último nível, finaliza o jogo
                 setGameState('finished');
-                return;
             }
+        } else {
+            // Se não atingiu a meta, prepara para a próxima rodada no mesmo nível
+            setGameState('ready_for_round');
         }
+    };
+
+    // Nova função para iniciar o próximo nível
+    const startNextLevel = () => {
+        const newLevel = currentLevel + 1;
+        setCurrentLevel(newLevel);
+        setScore(0);
+        setAttempts(0);
         setGameState('ready_for_round');
     };
 
@@ -264,7 +274,14 @@ export default function VisualPatterns() {
                                     <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
                                     <h2 className="text-2xl font-bold text-gray-800">Parabéns!</h2>
                                     <p className="text-gray-600 mt-2">Você completou todos os níveis com sucesso.</p>
-                                    <button onClick={resetGame} className="mt-6 px-6 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow flex items-center gap-2 mx-auto"><RotateCcw className="w-5 h-5" />Reiniciar</button>
+                                    <button onClick={resetGame} className="mt-6 px-6 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow flex items-center gap-2 mx-auto"><RotateCcw className="w-5 h-5" />Jogar Novamente</button>
+                                </div>
+                            ) : gameState === 'level_complete' ? ( // TELA DE TRANSIÇÃO
+                                <div>
+                                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                                    <h2 className="text-2xl font-bold text-gray-800">Nível {currentLevel} Concluído!</h2>
+                                    <p className="text-gray-600 mt-2">Você está indo muito bem. Prepare-se para o próximo desafio.</p>
+                                    <button onClick={startNextLevel} className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow flex items-center gap-2 mx-auto"><ArrowRight className="w-5 h-5" />Próximo Nível</button>
                                 </div>
                             ) : gameState === 'ready_for_round' ? (
                                 <div>
@@ -287,8 +304,8 @@ export default function VisualPatterns() {
                                 <div>
                                     <h2 className={`text-2xl font-bold mb-4 ${feedback.correct ? 'text-green-600' : 'text-red-600'}`}>{feedback.message}</h2>
                                     {renderGrid()}
-                                    <button onClick={nextRound} className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow">
-                                        {score >= niveis.find(n=>n.id===currentLevel)!.target ? (currentLevel < niveis.length ? 'Próximo Nível' : 'Finalizar') : 'Próxima Rodada'}
+                                    <button onClick={nextStep} className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow">
+                                        Continuar
                                     </button>
                                 </div>
                             )}
