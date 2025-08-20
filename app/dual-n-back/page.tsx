@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { ArrowLeft, Play, Target, Award, Brain, Trophy, RotateCcw, CheckCircle, XCircle, Save, ChevronLeft } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '../utils/supabaseClient'
-import Link from 'next/link'
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { ChevronLeft, Save, Brain, Play, RotateCcw, CheckCircle, XCircle, Trophy } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '../utils/supabaseClient';
 
 // Componente do Cabeçalho Padrão
 const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }) => (
@@ -62,6 +62,7 @@ export default function DualNBack() {
     const [hasResponded, setHasResponded] = useState({ position: false, sound: false });
     const [isGameFinished, setIsGameFinished] = useState(false);
     const [salvando, setSalvando] = useState(false);
+    const [activeStimulus, setActiveStimulus] = useState<number | null>(null); // Novo estado para controle visual
 
     const levelConfig = {
         1: { nBack: 1, stimuliCount: 15, target: 80 },
@@ -90,20 +91,30 @@ export default function DualNBack() {
     
     useEffect(() => {
         if (gamePhase !== 'playing' || currentIndex >= stimuli.length) {
-            if (gamePhase === 'playing') endGame();
+            if (gamePhase === 'playing' && currentIndex > 0) endGame();
             return;
         }
 
-        const timer = setTimeout(() => {
-            const stimulus = stimuli[currentIndex];
-            playSound(sounds[stimulus.sound]);
-            setHasResponded({ position: false, sound: false });
+        const stimulus = stimuli[currentIndex];
+        playSound(sounds[stimulus.sound]);
+        setActiveStimulus(stimulus.position); // Acende o quadrado
+        setHasResponded({ position: false, sound: false });
+
+        // Apaga o quadrado após 1 segundo
+        const showTimer = setTimeout(() => {
+            setActiveStimulus(null);
+        }, 1000);
+
+        // Avança para o próximo estímulo após 3 segundos no total
+        const advanceTimer = setTimeout(() => {
             setCurrentIndex(prev => prev + 1);
-        }, 2000);
+        }, 3000);
 
-        return () => clearTimeout(timer);
+        return () => {
+            clearTimeout(showTimer);
+            clearTimeout(advanceTimer);
+        };
     }, [currentIndex, gamePhase, stimuli]);
-
 
     const startGame = () => {
         const config = levelConfig[currentLevel as keyof typeof levelConfig];
@@ -121,40 +132,53 @@ export default function DualNBack() {
         if (hasResponded[type]) return;
 
         const config = levelConfig[currentLevel as keyof typeof levelConfig];
-        if (currentIndex < config.nBack + 1) return;
+        // Responde ao estímulo que acabou de ser apresentado (currentIndex)
+        if (currentIndex < config.nBack) return;
 
-        const currentStimulus = stimuli[currentIndex - 1];
-        const compareStimulus = stimuli[currentIndex - 1 - config.nBack];
-
+        const currentStimulus = stimuli[currentIndex];
+        const compareStimulus = stimuli[currentIndex - config.nBack];
+        
         const isCorrect = currentStimulus[type] === compareStimulus[type];
-        if (isCorrect) setScore(prev => prev + 5);
+        if (isCorrect) setScore(prev => prev + 10);
+        else setScore(prev => Math.max(0, prev - 5)); // Penalidade por erro
         
         setHasResponded(prev => ({ ...prev, [type]: true }));
     };
 
     const endGame = () => {
         setGamePhase('feedback');
+        setIsGameFinished(true); // O jogo terminou, pode salvar
         const config = levelConfig[currentLevel as keyof typeof levelConfig];
         if (score >= config.target) {
             if(currentLevel < 3){
                 setFeedback({ correct: true, message: `Nível ${currentLevel} concluído!` });
             } else {
                 setFeedback({ correct: true, message: `Parabéns! Você completou todos os níveis!` });
-                setIsGameFinished(true);
             }
         } else {
             setFeedback({ correct: false, message: `Fim de jogo. Tente novamente!` });
-            setIsGameFinished(true); // Fim de jogo mesmo se não passar
         }
     };
     
     const nextRound = () => {
         const config = levelConfig[currentLevel as keyof typeof levelConfig];
         if (score >= config.target && currentLevel < 3) {
-            setCurrentLevel(prev => prev + 1);
+            const nextLevel = currentLevel + 1;
+            setCurrentLevel(nextLevel);
             setScore(0);
+            const nextConfig = levelConfig[nextLevel as keyof typeof levelConfig];
+            const newStimuli = Array.from({ length: nextConfig.stimuliCount }, () => ({
+                position: Math.floor(Math.random() * 9),
+                sound: Math.floor(Math.random() * 4),
+            }));
+            setStimuli(newStimuli);
+            setCurrentIndex(0);
+            setGamePhase('playing');
+        } else {
+            // Se não passou, ou se já está no último nível, volta para o menu
+             resetActivity();
         }
-        setGamePhase('ready');
+        setFeedback(null);
     };
 
     const resetActivity = () => {
@@ -212,14 +236,14 @@ export default function DualNBack() {
                     <div className="space-y-6">
                         <div className="bg-white rounded-2xl p-6 shadow-lg border-l-4 border-red-400">
                             <h2 className="text-xl font-semibold text-gray-800 mb-3">🎯 Objetivo</h2>
-                            <p className="text-gray-700">Detecte quando a posição visual ou o som auditivo atual é igual ao apresentado N posições atrás, exercitando simultaneamente múltiplos sistemas da memória.</p>
+                            <p className="text-gray-700">Detecte quando a posição visual OU o som auditivo é igual ao apresentado N posições atrás.</p>
                         </div>
                         <div className="bg-white rounded-2xl p-6 shadow-lg">
                             <h2 className="text-xl font-semibold text-gray-800 mb-4">📊 Níveis</h2>
                             <div className="space-y-3">
-                                <p><strong className="text-blue-600">Nível 1 (1-Back):</strong> Detecte correspondência com o estímulo anterior.</p>
-                                <p><strong className="text-blue-600">Nível 2 (2-Back):</strong> Detecte correspondência com o estímulo de 2 posições atrás.</p>
-                                <p><strong className="text-blue-600">Nível 3 (3-Back):</strong> Detecte correspondência com o estímulo de 3 posições atrás.</p>
+                                <p><strong className="text-blue-600">Nível 1 (1-Back):</strong> Corresponde ao estímulo anterior.</p>
+                                <p><strong className="text-blue-600">Nível 2 (2-Back):</strong> Corresponde ao estímulo de 2 rodadas atrás.</p>
+                                <p><strong className="text-blue-600">Nível 3 (3-Back):</strong> Corresponde ao estímulo de 3 rodadas atrás.</p>
                             </div>
                         </div>
                         <div className="text-center pt-6">
@@ -249,7 +273,7 @@ export default function DualNBack() {
                                 <div className="text-center">
                                     <h2 className="text-xl font-semibold mb-6">Estímulo {currentIndex}/{stimuli.length}</h2>
                                     <div className="grid grid-cols-3 gap-2 w-48 h-48 mx-auto mb-6">
-                                        {Array.from({ length: 9 }, (_, i) => <div key={i} className={`border-2 rounded-lg transition-all ${stimuli[currentIndex - 1]?.position === i ? 'bg-blue-500' : 'bg-gray-100'}`} />)}
+                                        {Array.from({ length: 9 }, (_, i) => <div key={i} className={`border-2 rounded-lg transition-all ${activeStimulus === i ? 'bg-blue-500' : 'bg-gray-100'}`} />)}
                                     </div>
                                     <div className="flex justify-center gap-4">
                                         <button onClick={() => handleResponse('position')} disabled={hasResponded.position} className="px-6 py-3 bg-green-500 text-white rounded-xl font-semibold disabled:opacity-50">Posição N-Back</button>
@@ -267,7 +291,7 @@ export default function DualNBack() {
                                         <button onClick={resetActivity} className="mt-6 px-6 py-3 bg-gray-500 text-white rounded-xl font-semibold">Reiniciar Jogo</button>
                                     ) : (
                                         <button onClick={nextRound} className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold">
-                                            {score >= levelConfig[currentLevel as keyof typeof levelConfig].target ? 'Próximo Nível' : 'Tentar Novamente'}
+                                            Próximo Nível
                                         </button>
                                     )}
                                 </div>
