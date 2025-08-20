@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Save, Zap, Play, Pause, RotateCcw, Award, CheckCircle, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -84,9 +84,9 @@ export default function ImpulseControlPage() {
         return () => { if (gameTimerRef.current) clearTimeout(gameTimerRef.current); };
     }, [timeLeft, gameState]);
 
-    const generateTask = () => {
+    const generateTask = useCallback(() => {
         const taskTypes = ['go', 'nogo', 'delay', 'choice'];
-        const weights = [0.3, 0.4, 0.2, 0.1]; // Mais tarefas "nogo" para testar o controle
+        const weights = [0.3, 0.4, 0.2, 0.1];
         let randomValue = Math.random();
         let taskType = 'go';
 
@@ -114,19 +114,18 @@ export default function ImpulseControlPage() {
                 stimulus = '⏰';
                 color = 'text-yellow-500';
                 shouldRespond = true;
-                delay = 1000 + (Math.random() * 2000); // Delay de 1 a 3 seg
+                delay = 1000 + (Math.random() * 2000);
                 break;
             case 'choice':
                 stimulus = stimuli.choice[Math.floor(Math.random() * stimuli.choice.length)];
                 color = stimulus === '🔵' ? 'text-blue-500' : stimulus === '🟡' ? 'text-yellow-500' : stimulus === '🟣' ? 'text-purple-500' : 'text-orange-500';
-                shouldRespond = stimulus === '🔵' || stimulus === '🟡'; // Responda apenas para azul/amarelo
+                shouldRespond = stimulus === '🔵' || stimulus === '🟡';
                 break;
         }
         return { type: taskType, stimulus, color, shouldRespond, delay };
-    };
+    }, [stimuli.go, stimuli.nogo, stimuli.choice]);
 
-    const startRound = () => {
-        if (gameState !== 'playing') return;
+    const startRound = useCallback(() => {
         const task = generateTask();
         setCurrentTask(task);
         setShowStimulus(false);
@@ -139,7 +138,7 @@ export default function ImpulseControlPage() {
                     setStreak(0);
                 }
                 setShowStimulus(false);
-                setTimeout(startRound, 800);
+                setTimeout(() => startRound(), 800);
             }, displayTime);
         };
         
@@ -160,7 +159,19 @@ export default function ImpulseControlPage() {
             setShowStimulus(true);
             setupStimulusTimer();
         }
-    };
+    }, [generateTask, currentLevel]);
+
+    // CORREÇÃO: useEffect para iniciar o ciclo do jogo quando o estado muda para 'playing'
+    useEffect(() => {
+        if (gameState === 'playing') {
+            // Inicia a primeira rodada após um pequeno delay para o jogador se preparar
+            const startTimeout = setTimeout(() => {
+                startRound();
+            }, 1000);
+
+            return () => clearTimeout(startTimeout);
+        }
+    }, [gameState, startRound]);
 
     const handleResponse = () => {
         if (gameState !== 'playing') return;
@@ -188,18 +199,17 @@ export default function ImpulseControlPage() {
         }
 
         setShowStimulus(false);
-        setTimeout(startRound, 800);
+        setTimeout(() => startRound(), 800);
     };
 
     const startGame = () => {
-        setGameState('playing');
         setTimeLeft(90);
         setCurrentLevel(1);
         setScore(0);
         setResponses({correct: 0, incorrect: 0, premature: 0, missed: 0});
         setStreak(0);
         setMaxStreak(0);
-        setTimeout(startRound, 1000);
+        setGameState('playing'); // Apenas muda o estado, o useEffect cuidará de iniciar o jogo
     };
 
     const finishGame = () => {
@@ -228,15 +238,14 @@ export default function ImpulseControlPage() {
             <GameHeader 
                 title="Controle de Impulsos"
                 icon={<Zap size={22} />}
-                onSave={() => {}} // Adicionar lógica de salvar
+                onSave={() => {}}
                 isSaveDisabled={salvando}
                 showSaveButton={gameState === 'finished'}
             />
 
             <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
                 {gameState === 'initial' && (
-                    <div className="space-y-6">
-                        {/* Bloco 1: Cards Informativos */}
+                     <div className="space-y-6">
                         <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -263,7 +272,6 @@ export default function ImpulseControlPage() {
                             </div>
                         </div>
 
-                        {/* Bloco 2: Botão Iniciar */}
                         <div className="text-center pt-4">
                             <button
                                 onClick={startGame}
