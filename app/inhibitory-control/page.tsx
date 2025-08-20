@@ -61,7 +61,8 @@ const RouletteWheel = ({ options, rotation, colorsMap, isSpinning, spinDuration 
     
     // Função para criar o caminho SVG de uma fatia
     const createSlicePath = (index: number) => {
-        const startAngle = index * sliceAngle - 90; // -90 para começar do topo
+        // Ajustado para começar com o centro da primeira cor embaixo (90 graus)
+        const startAngle = index * sliceAngle + 90 - (sliceAngle / 2);
         const endAngle = startAngle + sliceAngle;
         
         const startAngleRad = (startAngle * Math.PI) / 180;
@@ -79,18 +80,21 @@ const RouletteWheel = ({ options, rotation, colorsMap, isSpinning, spinDuration 
     
     // Função para posicionar o texto no centro da fatia
     const getTextPosition = (index: number) => {
-        const middleAngle = (index * sliceAngle + sliceAngle / 2 - 90) * Math.PI / 180;
+        // Ajustado para corresponder à nova posição das fatias
+        const middleAngle = (index * sliceAngle + 90) * Math.PI / 180;
         const textRadius = 85; // Distância do centro
         const x = 150 + textRadius * Math.cos(middleAngle);
         const y = 150 + textRadius * Math.sin(middleAngle);
-        return { x, y, rotation: (index * sliceAngle + sliceAngle / 2) };
+        // Rotação do texto para ficar sempre legível
+        const textRotation = index * sliceAngle + 90;
+        return { x, y, rotation: textRotation };
     };
 
     return (
         <div className="relative w-72 h-72 sm:w-80 sm:h-80 mx-auto my-8">
-            {/* Indicador (seta) */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-20">
-                <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[35px] border-b-red-600 drop-shadow-lg"></div>
+            {/* Indicador (seta) - AGORA EMBAIXO */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-2 z-20">
+                <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[35px] border-t-red-600 drop-shadow-lg"></div>
             </div>
             
             {/* Container da roleta */}
@@ -222,18 +226,25 @@ export default function AttentionRoulettePage() {
         const resultIndex = Math.floor(Math.random() * currentConfig.options.length);
         const resultColor = currentConfig.options[resultIndex];
         
-        // Cálculo melhorado da rotação
+        // Cálculo da rotação para alinhar o CENTRO da cor selecionada com o indicador embaixo
         const sliceAngle = 360 / currentConfig.options.length;
-        const targetAngle = resultIndex * sliceAngle;
         
-        // Sempre gira múltiplas voltas completas mais o ângulo final
-        const minSpins = 5; // Mínimo de voltas
-        const maxSpins = 8; // Máximo de voltas
+        // Ângulo do centro da fatia selecionada (considerando que a primeira fatia tem centro em 90 graus)
+        const currentCenterAngle = resultIndex * sliceAngle + 90;
+        
+        // Sempre gira múltiplas voltas completas
+        const minSpins = 5;
+        const maxSpins = 8;
         const spins = Math.floor(Math.random() * (maxSpins - minSpins + 1)) + minSpins;
         
-        // Reset a cada 10 rodadas para evitar acúmulo excessivo
+        // Reset periódico para evitar acúmulo
         const baseRotation = roundCount % 10 === 0 ? 0 : rotation;
-        const newRotation = baseRotation + (360 * spins) + (360 - targetAngle);
+        
+        // Para parar com o centro da cor selecionada embaixo (90 graus):
+        // Precisamos girar para que currentCenterAngle fique em 90
+        // Isso significa girar: voltas completas - (currentCenterAngle - 90)
+        const angleAdjustment = -(currentCenterAngle - 90);
+        const newRotation = baseRotation + (360 * spins) + angleAdjustment;
         
         setRotation(newRotation);
 
