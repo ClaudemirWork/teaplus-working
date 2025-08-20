@@ -2,486 +2,316 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Play, Pause, RotateCcw, Navigation, Timer, Target, Trophy, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ChevronLeft, Save, Trophy, RotateCcw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Navigation, ArrowRightCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '../utils/supabaseClient'; // Ajuste o caminho se necessário
 
+// --- COMPONENTE DO CABEÇALHO PADRÃO ---
+const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: {
+    onSave?: () => void;
+    isSaveDisabled?: boolean;
+    title: string;
+    icon: React.ReactNode;
+    showSaveButton?: boolean;
+}) => (
+    <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center justify-between h-16">
+                <Link
+                    href="/dashboard"
+                    className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
+                >
+                    <ChevronLeft className="h-6 w-6" />
+                    <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
+                </Link>
+                <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex items-center gap-2">
+                    {icon}
+                    <span>{title}</span>
+                </h1>
+                {showSaveButton && onSave ? (
+                    <button
+                        onClick={onSave}
+                        disabled={isSaveDisabled}
+                        className={`flex items-center space-x-2 px-3 py-2 sm:px-4 rounded-lg font-semibold transition-colors ${
+                            !isSaveDisabled
+                                ? 'bg-green-500 text-white hover:bg-green-600'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                    >
+                        <Save size={18} />
+                        <span className="hidden sm:inline">{isSaveDisabled ? 'Salvando...' : 'Salvar'}</span>
+                    </button>
+                ) : (
+                    <div className="w-24"></div>
+                )}
+            </div>
+        </div>
+    </header>
+);
+
+// --- PÁGINA DA ATIVIDADE ---
 export default function MentalMaze() {
-  const [level, setLevel] = useState(1);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [score, setScore] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(120);
-  const [playerPosition, setPlayerPosition] = useState({ x: 1, y: 1 });
-  const [moves, setMoves] = useState(0);
-  const [levelCompleted, setLevelCompleted] = useState(false);
-  const [gameCompleted, setGameCompleted] = useState(false);
-
-  // Maze configurations for different levels
-  const mazes = {
-    1: {
-      size: 7,
-      grid: [
-        [1,1,1,1,1,1,1],
-        [1,0,0,0,1,0,1],
-        [1,0,1,0,1,0,1],
-        [1,0,1,0,0,0,1],
-        [1,0,1,1,1,0,1],
-        [1,0,0,0,0,2,1],
-        [1,1,1,1,1,1,1]
-      ],
-      start: { x: 1, y: 1 },
-      end: { x: 5, y: 5 },
-      timeBonus: 100
-    },
-    2: {
-      size: 9,
-      grid: [
-        [1,1,1,1,1,1,1,1,1],
-        [1,0,0,0,1,0,0,0,1],
-        [1,0,1,0,1,0,1,0,1],
-        [1,0,1,0,0,0,1,0,1],
-        [1,0,1,1,1,1,1,0,1],
-        [1,0,0,0,0,0,0,0,1],
-        [1,1,1,0,1,1,1,0,1],
-        [1,0,0,0,1,0,0,2,1],
-        [1,1,1,1,1,1,1,1,1]
-      ],
-      start: { x: 1, y: 1 },
-      end: { x: 7, y: 7 },
-      timeBonus: 150
-    },
-    3: {
-      size: 11,
-      grid: [
-        [1,1,1,1,1,1,1,1,1,1,1],
-        [1,0,0,0,1,0,0,0,0,0,1],
-        [1,0,1,0,1,0,1,1,1,0,1],
-        [1,0,1,0,0,0,0,0,1,0,1],
-        [1,0,1,1,1,1,1,0,1,0,1],
-        [1,0,0,0,0,0,1,0,0,0,1],
-        [1,1,1,1,1,0,1,1,1,0,1],
-        [1,0,0,0,0,0,0,0,1,0,1],
-        [1,0,1,1,1,1,1,0,1,0,1],
-        [1,0,0,0,0,0,0,0,0,2,1],
-        [1,1,1,1,1,1,1,1,1,1,1]
-      ],
-      start: { x: 1, y: 1 },
-      end: { x: 9, y: 9 },
-      timeBonus: 200
-    }
-  };
-
-  const currentMaze = mazes[level as keyof typeof mazes];
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (isPlaying && timeRemaining > 0 && !levelCompleted) {
-      interval = setInterval(() => {
-        setTimeRemaining(time => time - 1);
-      }, 1000);
-    } else if (timeRemaining === 0) {
-      setIsPlaying(false);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isPlaying, timeRemaining, levelCompleted]);
-
-  const initializeLevel = useCallback(() => {
-    const maze = mazes[level as keyof typeof mazes];
-    setPlayerPosition(maze.start);
-    setMoves(0);
-    setLevelCompleted(false);
-    setTimeRemaining(120);
-  }, [level]);
-
-  useEffect(() => {
-    initializeLevel();
-  }, [level, initializeLevel]);
-
-  const startActivity = () => {
-    setIsPlaying(true);
-    setScore(0);
-    setLevel(1);
-    setGameCompleted(false);
-    initializeLevel();
-  };
-
-  const pauseActivity = () => {
-    setIsPlaying(false);
-  };
-
-  const resetActivity = () => {
-    setIsPlaying(false);
-    setScore(0);
-    setLevel(1);
-    setGameCompleted(false);
-    initializeLevel();
-  };
-
-  const movePlayer = useCallback((direction: string) => {
-    if (!isPlaying || levelCompleted) return;
-
-    const newPosition = { ...playerPosition };
+    const router = useRouter();
+    const supabase = createClient();
     
-    switch(direction) {
-      case 'up':
-        newPosition.y = Math.max(0, newPosition.y - 1);
-        break;
-      case 'down':
-        newPosition.y = Math.min(currentMaze.size - 1, newPosition.y + 1);
-        break;
-      case 'left':
-        newPosition.x = Math.max(0, newPosition.x - 1);
-        break;
-      case 'right':
-        newPosition.x = Math.min(currentMaze.size - 1, newPosition.x + 1);
-        break;
-    }
+    // Estados refatorados
+    const [gameState, setGameState] = useState<'initial' | 'playing' | 'paused' | 'level_complete' | 'finished'>('initial');
+    const [nivelSelecionado, setNivelSelecionado] = useState<number | null>(1);
+    const [currentLevel, setCurrentLevel] = useState(1);
+    const [score, setScore] = useState(0);
+    const [timeRemaining, setTimeRemaining] = useState(120);
+    const [playerPosition, setPlayerPosition] = useState({ x: 1, y: 1 });
+    const [moves, setMoves] = useState(0);
+    const [salvando, setSalvando] = useState(false);
 
-    // Check if the new position is valid (not a wall)
-    if (currentMaze.grid[newPosition.y][newPosition.x] !== 1) {
-      setPlayerPosition(newPosition);
-      setMoves(prev => prev + 1);
+    // Maze configurations moved into a standard 'niveis' array
+    const niveis = [
+        { id: 1, nome: "Nível 1", dificuldade: "Labirinto 7x7", size: 7, grid: [[1,1,1,1,1,1,1],[1,0,0,0,1,0,1],[1,0,1,0,1,0,1],[1,0,1,0,0,0,1],[1,0,1,1,1,0,1],[1,0,0,0,0,2,1],[1,1,1,1,1,1,1]], start: { x: 1, y: 1 }, end: { x: 5, y: 5 }, timeBonus: 100, timeLimit: 120, icone: "1️⃣" },
+        { id: 2, nome: "Nível 2", dificuldade: "Labirinto 9x9", size: 9, grid: [[1,1,1,1,1,1,1,1,1],[1,0,0,0,1,0,0,0,1],[1,0,1,0,1,0,1,0,1],[1,0,1,0,0,0,1,0,1],[1,0,1,1,1,1,1,0,1],[1,0,0,0,0,0,0,0,1],[1,1,1,0,1,1,1,0,1],[1,0,0,0,1,0,0,2,1],[1,1,1,1,1,1,1,1,1]], start: { x: 1, y: 1 }, end: { x: 7, y: 7 }, timeBonus: 150, timeLimit: 150, icone: "2️⃣" },
+        { id: 3, nome: "Nível 3", dificuldade: "Labirinto 11x11", size: 11, grid: [[1,1,1,1,1,1,1,1,1,1,1],[1,0,0,0,1,0,0,0,0,0,1],[1,0,1,0,1,0,1,1,1,0,1],[1,0,1,0,0,0,0,0,1,0,1],[1,0,1,1,1,1,1,0,1,0,1],[1,0,0,0,0,0,1,0,0,0,1],[1,1,1,1,1,0,1,1,1,0,1],[1,0,0,0,0,0,0,0,1,0,1],[1,0,1,1,1,1,1,0,1,0,1],[1,0,0,0,0,0,0,0,0,2,1],[1,1,1,1,1,1,1,1,1,1,1]], start: { x: 1, y: 1 }, end: { x: 9, y: 9 }, timeBonus: 200, timeLimit: 180, icone: "3️⃣" }
+    ];
 
-      // Check if player reached the end
-      if (newPosition.x === currentMaze.end.x && newPosition.y === currentMaze.end.y) {
-        setLevelCompleted(true);
-        const timeBonus = currentMaze.timeBonus + Math.floor(timeRemaining / 5) * 10;
-        const moveBonus = Math.max(0, 100 - moves * 2);
-        setScore(prev => prev + timeBonus + moveBonus);
-        setIsPlaying(false);
-      }
-    }
-  }, [isPlaying, levelCompleted, playerPosition, currentMaze, timeRemaining, moves]);
+    const currentMaze = niveis.find(n => n.id === currentLevel) || niveis[0];
 
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      switch(event.key) {
-        case 'ArrowUp':
-        case 'w':
-        case 'W':
-          event.preventDefault();
-          movePlayer('up');
-          break;
-        case 'ArrowDown':
-        case 's':
-        case 'S':
-          event.preventDefault();
-          movePlayer('down');
-          break;
-        case 'ArrowLeft':
-        case 'a':
-        case 'A':
-          event.preventDefault();
-          movePlayer('left');
-          break;
-        case 'ArrowRight':
-        case 'd':
-        case 'D':
-          event.preventDefault();
-          movePlayer('right');
-          break;
-      }
+    useEffect(() => {
+        let interval: NodeJS.Timeout | null = null;
+        if (gameState === 'playing' && timeRemaining > 0) {
+            interval = setInterval(() => {
+                setTimeRemaining(time => time - 1);
+            }, 1000);
+        } else if (timeRemaining === 0 && gameState === 'playing') {
+            setGameState('finished'); // Fim de jogo se o tempo acabar
+        }
+        return () => { if (interval) clearInterval(interval); };
+    }, [gameState, timeRemaining]);
+
+    const initializeLevel = useCallback((level: number) => {
+        const maze = niveis.find(n => n.id === level) || niveis[0];
+        setPlayerPosition(maze.start);
+        setMoves(0);
+        setTimeRemaining(maze.timeLimit);
+    }, [niveis]);
+
+    const startGame = () => {
+        if (nivelSelecionado === null) return;
+        setCurrentLevel(nivelSelecionado);
+        setScore(0);
+        initializeLevel(nivelSelecionado);
+        setGameState('playing');
+    };
+    
+    const movePlayer = useCallback((direction: string) => {
+        if (gameState !== 'playing') return;
+
+        const newPosition = { ...playerPosition };
+        
+        if (direction === 'up') newPosition.y = Math.max(0, newPosition.y - 1);
+        if (direction === 'down') newPosition.y = Math.min(currentMaze.size - 1, newPosition.y + 1);
+        if (direction === 'left') newPosition.x = Math.max(0, newPosition.x - 1);
+        if (direction === 'right') newPosition.x = Math.min(currentMaze.size - 1, newPosition.x + 1);
+
+        if (currentMaze.grid[newPosition.y][newPosition.x] !== 1) {
+            setPlayerPosition(newPosition);
+            setMoves(prev => prev + 1);
+
+            if (newPosition.x === currentMaze.end.x && newPosition.y === currentMaze.end.y) {
+                const timeBonus = currentMaze.timeBonus + Math.floor(timeRemaining / 5) * 10;
+                const moveBonus = Math.max(0, 100 - moves * 2);
+                setScore(prev => prev + timeBonus + moveBonus);
+                if (currentLevel < niveis.length) {
+                    setGameState('level_complete');
+                } else {
+                    setGameState('finished');
+                }
+            }
+        }
+    }, [gameState, playerPosition, currentMaze, timeRemaining, moves, currentLevel]);
+
+    useEffect(() => {
+        const handleKeyPress = (event: KeyboardEvent) => {
+            const keyMap: { [key: string]: string } = {
+                'ArrowUp': 'up', 'w': 'up', 'W': 'up',
+                'ArrowDown': 'down', 's': 'down', 'S': 'down',
+                'ArrowLeft': 'left', 'a': 'left', 'A': 'left',
+                'ArrowRight': 'right', 'd': 'right', 'D': 'right'
+            };
+            const direction = keyMap[event.key];
+            if (direction) {
+                event.preventDefault();
+                movePlayer(direction);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyPress);
+        return () => window.removeEventListener('keydown', handleKeyPress);
+    }, [movePlayer]);
+
+    const startNextLevel = () => {
+        const nextLevelId = currentLevel + 1;
+        setCurrentLevel(nextLevelId);
+        initializeLevel(nextLevelId);
+        setGameState('playing');
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [movePlayer]);
+    const resetGame = () => {
+        setGameState('initial');
+        setNivelSelecionado(1);
+    };
 
-  const nextLevel = () => {
-    if (level < 3) {
-      setLevel(prev => prev + 1);
-      setIsPlaying(true);
-    } else {
-      setGameCompleted(true);
-    }
-  };
+    const handleSaveSession = async () => {
+        setSalvando(true);
+        // ... Lógica de salvar no Supabase
+        router.push('/dashboard');
+    };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+    const formatTime = (seconds: number) => `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
 
-  const getCellClass = (x: number, y: number) => {
-    const cellValue = currentMaze.grid[y][x];
-    
-    if (playerPosition.x === x && playerPosition.y === y) {
-      return 'bg-blue-500 border-blue-600'; // Player position
-    } else if (x === currentMaze.end.x && y === currentMaze.end.y) {
-      return 'bg-green-500 border-green-600'; // End position
-    } else if (cellValue === 1) {
-      return 'bg-gray-800 border-gray-900'; // Wall
-    } else {
-      return 'bg-white border-gray-300'; // Path
-    }
-  };
+    const getCellClass = (x: number, y: number) => {
+        if (playerPosition.x === x && playerPosition.y === y) return 'bg-blue-500';
+        if (x === currentMaze.end.x && y === currentMaze.end.y) return 'bg-green-500';
+        return currentMaze.grid[y][x] === 1 ? 'bg-gray-800' : 'bg-gray-100';
+    };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="p-4">
-          <div className="flex items-center justify-between">
-            <Link 
-              href="/tdah" 
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              <ChevronLeft size={20} />
-              <span>Voltar ao Dashboard</span>
-            </Link>
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <GameHeader 
+                title="Labirinto Mental"
+                icon={<Navigation size={22} />}
+                onSave={handleSaveSession}
+                isSaveDisabled={salvando}
+                showSaveButton={gameState === 'finished'}
+            />
             
-            <div className="flex items-center space-x-4">
-              <div className="px-4 py-2 rounded-full bg-purple-500 text-white font-medium flex items-center space-x-2">
-                <Navigation size={16} />
-                <span>Labirinto Mental</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="p-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Title */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center">
-              <Navigation className="mr-3 text-purple-600" size={40} />
-              Labirinto Mental
-            </h1>
-          </div>
-
-          {/* Information Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Objetivo */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="bg-red-500 text-white px-6 py-3">
-                <h2 className="text-lg font-semibold flex items-center">
-                  🎯 Objetivo:
-                </h2>
-              </div>
-              <div className="p-6">
-                <p className="text-gray-700">
-                  Navegue pelo labirinto encontrando o caminho da posição azul (início) até a posição verde (fim). Desenvolva planejamento espacial, memória de trabalho e função executiva.
-                </p>
-              </div>
-            </div>
-
-            {/* Pontuação */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="bg-blue-500 text-white px-6 py-3">
-                <h2 className="text-lg font-semibold flex items-center">
-                  👥 Pontuação:
-                </h2>
-              </div>
-              <div className="p-6">
-                <p className="text-gray-700">
-                  Bônus de tempo: +10 pontos por cada 5 segundos restantes. Bônus de eficiência: +100 pontos menos 2 por movimento. Bônus de conclusão: Nível 1 (+100), Nível 2 (+150), Nível 3 (+200).
-                </p>
-              </div>
-            </div>
-
-            {/* Níveis */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="bg-purple-500 text-white px-6 py-3">
-                <h2 className="text-lg font-semibold flex items-center">
-                  📊 Níveis:
-                </h2>
-              </div>
-              <div className="p-6">
-                <div className="space-y-2">
-                  <p><strong className="text-purple-600">Nível 1:</strong> Labirinto 7x7 - Caminho direto (fácil)</p>
-                  <p><strong className="text-purple-600">Nível 2:</strong> Labirinto 9x9 - Múltiplos caminhos (médio)</p>
-                  <p><strong className="text-purple-600">Nível 3:</strong> Labirinto 11x11 - Complexo (difícil)</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Final */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="bg-green-500 text-white px-6 py-3">
-                <h2 className="text-lg font-semibold flex items-center">
-                  🏁 Final:
-                </h2>
-              </div>
-              <div className="p-6">
-                <p className="text-gray-700">
-                  Complete todos os 3 labirintos dentro do tempo limite de 2 minutos cada para finalizar com sucesso. Use teclas direcionais ou botões para navegar.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Game Area */}
-          {isPlaying || levelCompleted || gameCompleted ? (
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-              {/* Game Header */}
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-purple-100 px-4 py-2 rounded-lg">
-                    <span className="text-purple-800 font-medium">Nível {level}/3</span>
-                  </div>
-                  <div className="bg-blue-100 px-4 py-2 rounded-lg">
-                    <span className="text-blue-800 font-medium">Pontos: {score}</span>
-                  </div>
-                  <div className="bg-yellow-100 px-4 py-2 rounded-lg">
-                    <span className="text-yellow-800 font-medium">Movimentos: {moves}</span>
-                  </div>
-                </div>
-                <div className="bg-red-100 px-4 py-2 rounded-lg flex items-center">
-                  <Timer className="mr-2 text-red-600" size={16} />
-                  <span className="text-red-800 font-medium">{formatTime(timeRemaining)}</span>
-                </div>
-              </div>
-
-              {/* Level/Game Completed */}
-              {(levelCompleted || gameCompleted) && (
-                <div className="text-center mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <Trophy className="mx-auto text-green-600 mb-2" size={32} />
-                  <h3 className="text-lg font-semibold text-green-800 mb-2">
-                    {gameCompleted ? 'Jogo Completo!' : `Nível ${level} Concluído!`}
-                  </h3>
-                  <p className="text-green-700 mb-4">
-                    {gameCompleted 
-                      ? `Parabéns! Pontuação final: ${score} pontos` 
-                      : `Você completou o labirinto em ${moves} movimentos!`
-                    }
-                  </p>
-                  {!gameCompleted && level < 3 && (
-                    <button
-                      onClick={nextLevel}
-                      className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                    >
-                      Próximo Nível
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Maze Grid */}
-              <div className="mb-6">
-                <div className="flex justify-center">
-                  <div 
-                    className="grid gap-1 p-4 bg-gray-100 rounded-lg"
-                    style={{ 
-                      gridTemplateColumns: `repeat(${currentMaze.size}, 1fr)`,
-                      maxWidth: '400px'
-                    }}
-                  >
-                    {currentMaze.grid.map((row, y) =>
-                      row.map((cell, x) => (
-                        <div
-                          key={`${x}-${y}`}
-                          className={`w-8 h-8 border-2 rounded ${getCellClass(x, y)} transition-colors duration-200`}
-                        >
-                          {playerPosition.x === x && playerPosition.y === y && (
-                            <div className="w-full h-full flex items-center justify-center text-white text-sm font-bold">
-                              👤
+            <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+                {gameState === 'initial' && (
+                    <div className="space-y-6">
+                        {/* Bloco 1: Cards Informativos */}
+                        <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <h3 className="font-semibold text-gray-800 mb-1"> 🎯 Objetivo:</h3>
+                                    <p className="text-sm text-gray-600">
+                                        Navegar pelo labirinto do início (azul) ao fim (verde) no menor tempo possível. Exercita o planejamento espacial e a memória de trabalho.
+                                    </p>
+                                </div>
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <h3 className="font-semibold text-gray-800 mb-1"> 🕹️ Como Jogar:</h3>
+                                    <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                                        <li>Use as setas do teclado ou os botões na tela para se mover.</li>
+                                        <li>As paredes (cinza escuro) bloqueiam seu caminho.</li>
+                                        <li>Encontre a saída (verde) para completar o nível.</li>
+                                    </ul>
+                                </div>
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <h3 className="font-semibold text-gray-800 mb-1"> ⭐ Avaliação:</h3>
+                                    <p className="text-sm text-gray-600">
+                                       Sua pontuação é baseada na rapidez e eficiência (menos movimentos). Este exercício estimula áreas do cérebro responsáveis pela navegação e planejamento.
+                                    </p>
+                                </div>
                             </div>
-                          )}
-                          {x === currentMaze.end.x && y === currentMaze.end.y && playerPosition.x !== x && (
-                            <div className="w-full h-full flex items-center justify-center text-white text-sm">
-                              🏁
-                            </div>
-                          )}
                         </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
 
-              {/* Controls */}
-              <div className="text-center mb-6">
-                <p className="text-gray-600 mb-4">Use as teclas direcionais ou os botões abaixo para mover</p>
-                <div className="flex justify-center">
-                  <div className="grid grid-cols-3 gap-2 max-w-48">
-                    <div></div>
-                    <button
-                      onClick={() => movePlayer('up')}
-                      className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg transition-colors"
-                      disabled={!isPlaying || levelCompleted}
-                    >
-                      <ArrowUp size={20} />
-                    </button>
-                    <div></div>
-                    <button
-                      onClick={() => movePlayer('left')}
-                      className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg transition-colors"
-                      disabled={!isPlaying || levelCompleted}
-                    >
-                      <ArrowLeft size={20} />
-                    </button>
-                    <button
-                      onClick={() => movePlayer('down')}
-                      className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg transition-colors"
-                      disabled={!isPlaying || levelCompleted}
-                    >
-                      <ArrowDown size={20} />
-                    </button>
-                    <button
-                      onClick={() => movePlayer('right')}
-                      className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg transition-colors"
-                      disabled={!isPlaying || levelCompleted}
-                    >
-                      <ArrowRight size={20} />
-                    </button>
-                  </div>
-                </div>
-              </div>
+                        {/* Bloco 2: Seleção de Nível */}
+                        <div className="bg-white rounded-xl shadow-lg p-6">
+                            <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Nível do Labirinto</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                {niveis.map((nivel) => (
+                                    <button
+                                        key={nivel.id}
+                                        onClick={() => setNivelSelecionado(nivel.id)}
+                                        className={`p-4 rounded-lg font-medium transition-colors ${nivelSelecionado === nivel.id
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        <div className="text-2xl mb-1">{nivel.icone}</div>
+                                        <div className="text-sm">{nivel.nome}</div>
+                                        <div className="text-xs opacity-80">{`${nivel.dificuldade}`}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
-              {/* Control Buttons */}
-              <div className="flex justify-center space-x-4">
-                <button
-                  onClick={pauseActivity}
-                  className="flex items-center space-x-2 bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                  disabled={levelCompleted || gameCompleted}
-                >
-                  <Pause size={20} />
-                  <span>Pausar</span>
-                </button>
-                <button
-                  onClick={resetActivity}
-                  className="flex items-center space-x-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                >
-                  <RotateCcw size={20} />
-                  <span>Reiniciar</span>
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Start Screen */
-            <div className="bg-white rounded-xl shadow-lg p-8 text-center mb-6">
-              <div className="text-6xl mb-4">🧩</div>
-              <h3 className="text-2xl font-semibold text-gray-800 mb-4">
-                Pronto para navegar pelo labirinto?
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Clique em "Iniciar Navegação" para começar o desafio de planejamento espacial
-              </p>
-              <button
-                onClick={startActivity}
-                className="flex items-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-medium transition-colors mx-auto"
-              >
-                <Play size={20} />
-                <span>Iniciar Navegação</span>
-              </button>
-            </div>
-          )}
+                        {/* Bloco 3: Botão Iniciar */}
+                        <div className="text-center pt-4">
+                            <button
+                                onClick={startGame}
+                                disabled={nivelSelecionado === null}
+                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                                🚀 Iniciar Navegação
+                            </button>
+                        </div>
+                    </div>
+                )}
 
-          {/* Base Científica */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-              🧬 Base Científica:
-            </h2>
-            <p className="text-gray-700 leading-relaxed">
-              Este exercício é baseado em pesquisas sobre navegação espacial e funções executivas. 
-              Estimula o hipocampo (navegação espacial), córtex pré-frontal (planejamento) e lobo parietal (processamento visuoespacial). 
-              Desenvolve especificamente habilidades de planejamento, memória de trabalho espacial e flexibilidade cognitiva, áreas frequentemente comprometidas no TDAH.
-            </p>
-          </div>
+                {(gameState !== 'initial' && gameState !== 'finished') && (
+                     <div className="bg-white rounded-xl shadow-lg p-6">
+                         <div className="flex justify-between items-center mb-4">
+                             <div className="flex items-center gap-4">
+                                 <span className="bg-purple-100 text-purple-800 font-medium px-4 py-2 rounded-lg">Nível {currentLevel}</span>
+                                 <span className="bg-blue-100 text-blue-800 font-medium px-4 py-2 rounded-lg">Pontos: {score}</span>
+                                 <span className="bg-yellow-100 text-yellow-800 font-medium px-4 py-2 rounded-lg">Movimentos: {moves}</span>
+                             </div>
+                             <div className="bg-red-100 text-red-800 font-medium px-4 py-2 rounded-lg">
+                                 Tempo: {formatTime(timeRemaining)}
+                             </div>
+                         </div>
+
+                         <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                             {/* Maze Grid */}
+                             <div className="grid gap-1 p-2 bg-gray-200 rounded-lg" style={{ gridTemplateColumns: `repeat(${currentMaze.size}, 1fr)` }}>
+                                 {currentMaze.grid.map((row, y) =>
+                                     row.map((cell, x) => (
+                                         <div key={`${x}-${y}`} className={`w-8 h-8 rounded-sm ${getCellClass(x, y)}`}>
+                                             {playerPosition.x === x && playerPosition.y === y && (
+                                                 <div className="w-full h-full flex items-center justify-center text-lg">👤</div>
+                                             )}
+                                             {x === currentMaze.end.x && y === currentMaze.end.y && (
+                                                <div className="w-full h-full flex items-center justify-center text-lg">🏁</div>
+                                             )}
+                                         </div>
+                                     ))
+                                 )}
+                             </div>
+                             {/* On-screen Controls */}
+                             <div className="grid grid-cols-3 gap-2 w-48">
+                                 <div />
+                                 <button onClick={() => movePlayer('up')} className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg"><ArrowUp /></button>
+                                 <div />
+                                 <button onClick={() => movePlayer('left')} className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg"><ArrowLeft /></button>
+                                 <button onClick={() => movePlayer('down')} className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg"><ArrowDown /></button>
+                                 <button onClick={() => movePlayer('right')} className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg"><ArrowRight /></button>
+                             </div>
+                         </div>
+                     </div>
+                )}
+                
+                {(gameState === 'level_complete' || gameState === 'finished') && (
+                    <div className="bg-white rounded-xl shadow-lg p-8 text-center max-w-2xl mx-auto">
+                        <Trophy className="mx-auto text-yellow-500 mb-4" size={48}/>
+                        <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                            {gameState === 'finished' && timeRemaining === 0 ? "Tempo Esgotado!" : 
+                             gameState === 'finished' ? "Parabéns, Jogo Concluído!" : 
+                             `Nível ${currentLevel} Concluído!`}
+                        </h2>
+                        <p className="text-gray-600 mb-6">Sua pontuação total é {score}.</p>
+                        
+                        {gameState === 'level_complete' ? (
+                            <button onClick={startNextLevel} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 mx-auto">
+                                <ArrowRightCircle size={20}/>
+                                Ir para o Nível {currentLevel + 1}
+                            </button>
+                        ) : (
+                             <button onClick={resetGame} className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 mx-auto">
+                                <RotateCcw size={20}/>
+                                Jogar Novamente
+                             </button>
+                        )}
+                    </div>
+                )}
+
+            </main>
         </div>
-      </main>
-    </div>
-  );
+    );
 }
