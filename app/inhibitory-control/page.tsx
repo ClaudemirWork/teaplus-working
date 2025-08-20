@@ -61,7 +61,8 @@ const RouletteWheel = ({ options, rotation, colorsMap, isSpinning, spinDuration 
     
     // Função para criar o caminho SVG de uma fatia
     const createSlicePath = (index: number) => {
-        // Ajustado para começar com o centro da primeira cor no topo (-90 graus)
+        // Começar do topo (270 graus ou -90 graus) 
+        // e ir no sentido horário
         const startAngle = index * sliceAngle - 90 - (sliceAngle / 2);
         const endAngle = startAngle + sliceAngle;
         
@@ -80,21 +81,23 @@ const RouletteWheel = ({ options, rotation, colorsMap, isSpinning, spinDuration 
     
     // Função para posicionar o texto no centro da fatia
     const getTextPosition = (index: number) => {
-        // Ajustado para corresponder à nova posição das fatias
+        // Centro de cada fatia
         const middleAngle = (index * sliceAngle - 90) * Math.PI / 180;
-        const textRadius = 85; // Distância do centro
+        const textRadius = 85;
         const x = 150 + textRadius * Math.cos(middleAngle);
         const y = 150 + textRadius * Math.sin(middleAngle);
-        // Rotação do texto para ficar sempre legível
         const textRotation = index * sliceAngle - 90;
         return { x, y, rotation: textRotation };
     };
 
     return (
         <div className="relative w-72 h-72 sm:w-80 sm:h-80 mx-auto my-8">
-            {/* Indicador (seta) - DE VOLTA PARA CIMA */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-20">
-                <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[35px] border-b-red-600 drop-shadow-lg"></div>
+            {/* Indicador (seta) - PONTA PARA BAIXO, POSICIONADA EM CIMA */}
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-20">
+                <svg width="50" height="40" viewBox="0 0 50 40" className="drop-shadow-2xl">
+                    <path d="M 25 40 L 0 0 L 50 0 Z" fill="#dc2626" stroke="#7f1d1d" strokeWidth="2"/>
+                    <text x="25" y="15" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">▼</text>
+                </svg>
             </div>
             
             {/* Container da roleta */}
@@ -226,16 +229,24 @@ export default function AttentionRoulettePage() {
         const resultIndex = Math.floor(Math.random() * currentConfig.options.length);
         const resultColor = currentConfig.options[resultIndex];
         
-        // Debug
-        console.log('Cor alvo:', targetColor);
+        // Debug detalhado
+        console.log('=== NOVO GIRO ===');
+        console.log('Opções:', currentConfig.options.map((c, i) => `${i}: ${c}`).join(', '));
+        console.log('Cor alvo do jogo:', targetColor);
         console.log('Índice sorteado:', resultIndex);
-        console.log('Cor que deve parar:', resultColor);
+        console.log('Cor que deve parar na seta:', resultColor);
         
-        // Cálculo da rotação para alinhar o CENTRO da cor selecionada com o indicador no topo
+        // Cálculo da rotação
         const sliceAngle = 360 / currentConfig.options.length;
         
-        // Ângulo do centro da fatia selecionada (considerando que a primeira fatia tem centro em -90 graus/270 graus)
-        const currentCenterAngle = resultIndex * sliceAngle - 90;
+        // AJUSTE EXPERIMENTAL: Baseado na observação de que quando deveria ser AZUL (2)
+        // está mostrando VERDE (1), parece que precisamos ADICIONAR 1 ao índice
+        // Isso sugere que a roleta está deslocada em 1 posição no sentido horário
+        const visualOffset = -1; // Mudando para -1 para testar
+        const correctedIndex = (resultIndex - visualOffset + currentConfig.options.length) % currentConfig.options.length;
+        
+        // Para posicionar a cor no topo, rotacionamos
+        const targetRotation = correctedIndex * sliceAngle;
         
         // Sempre gira múltiplas voltas completas
         const minSpins = 5;
@@ -245,15 +256,21 @@ export default function AttentionRoulettePage() {
         // Reset periódico para evitar acúmulo
         const baseRotation = roundCount % 10 === 0 ? 0 : rotation;
         
-        // Para parar com o centro da cor selecionada no topo (-90 graus ou 270 graus):
-        // Precisamos girar para que currentCenterAngle fique em -90
-        // Isso significa girar: voltas completas - (currentCenterAngle - (-90))
-        const angleAdjustment = -(currentCenterAngle + 90);
-        const newRotation = baseRotation + (360 * spins) + angleAdjustment;
+        // Rotação final - tentando abordagem diferente
+        const newRotation = baseRotation + (360 * spins) - targetRotation;
+        
+        console.log('Índice visual corrigido:', correctedIndex);
+        console.log('Ângulo da fatia:', sliceAngle);
+        console.log('Rotação alvo:', targetRotation);
+        console.log('Rotação total aplicada:', newRotation);
         
         setRotation(newRotation);
 
         setTimeout(() => {
+            console.log('=== RESULTADO FINAL ===');
+            console.log('Cor registrada pelo sistema:', resultColor);
+            console.log('Por favor, verifique visualmente se está correto!');
+            
             setRouletteResult(resultColor);
             setGameState('decision');
             reactionStartRef.current = performance.now();
@@ -464,19 +481,24 @@ export default function AttentionRoulettePage() {
                             </span>
                         </h2>
                         
-                        {/* Debug: Mostrar qual cor parou */}
+                        {/* Debug: Mostrar qual cor parou - MELHORADO */}
                         {gameState === 'decision' && rouletteResult && (
-                            <div className="mb-4 text-lg">
-                                Roleta parou em: 
-                                <span 
-                                    className="inline-block ml-2 px-3 py-1 rounded shadow-sm" 
-                                    style={{ 
-                                        backgroundColor: colorsMap[rouletteResult]?.bg, 
-                                        color: colorsMap[rouletteResult]?.text 
-                                    }}
-                                >
-                                    {rouletteResult}
-                                </span>
+                            <div className="mb-4 p-3 bg-gray-100 rounded-lg">
+                                <div className="text-lg font-semibold">
+                                    Sistema registrou: 
+                                    <span 
+                                        className="inline-block ml-2 px-3 py-1 rounded shadow-sm" 
+                                        style={{ 
+                                            backgroundColor: colorsMap[rouletteResult]?.bg, 
+                                            color: colorsMap[rouletteResult]?.text 
+                                        }}
+                                    >
+                                        {rouletteResult}
+                                    </span>
+                                </div>
+                                <div className="text-sm text-gray-600 mt-1">
+                                    (Se visual não corresponder, há dessincronização)
+                                </div>
                             </div>
                         )}
                         
