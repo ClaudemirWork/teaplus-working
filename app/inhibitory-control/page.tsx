@@ -133,7 +133,7 @@ const RouletteWheel = ({ options, rotation, colorsMap, isSpinning, spinDuration 
                                     x={textPos.x}
                                     y={textPos.y}
                                     fill={colorsMap[color].text}
-                                    fontSize="14"
+                                    fontSize={options.length > 8 ? "11" : options.length > 6 ? "12" : "14"}
                                     fontWeight="bold"
                                     textAnchor="middle"
                                     dominantBaseline="middle"
@@ -167,7 +167,7 @@ export default function AttentionRoulettePage() {
     const [nivelSelecionado, setNivelSelecionado] = useState<number | null>(1);
     const [currentLevel, setCurrentLevel] = useState(1);
     const [score, setScore] = useState(0);
-    const [timeLeft, setTimeLeft] = useState(120);
+    const [timeLeft, setTimeLeft] = useState(180); // 3 minutos de jogo
     
     const [targetColor, setTargetColor] = useState('VERMELHO');
     const [rouletteResult, setRouletteResult] = useState('');
@@ -188,9 +188,12 @@ export default function AttentionRoulettePage() {
     const reactionStartRef = useRef<number>(0);
 
     const niveis = [
-        { id: 1, nome: "Nível 1", dificuldade: "4 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO'], spinDuration: 3000, decisionTime: 4000, icone: "🎨" },
-        { id: 2, nome: "Nível 2", dificuldade: "6 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA'], spinDuration: 2500, decisionTime: 3000, icone: "🖌️" },
-        { id: 3, nome: "Nível 3", dificuldade: "8 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA', 'ROSA', 'TURQUESA'], spinDuration: 2000, decisionTime: 2500, icone: "🖼️" },
+        { id: 1, nome: "Iniciante", dificuldade: "4 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO'], spinDuration: 3000, decisionTime: 4000, icone: "🎯" },
+        { id: 2, nome: "Básico", dificuldade: "5 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO'], spinDuration: 2800, decisionTime: 3500, icone: "🎨" },
+        { id: 3, nome: "Intermediário", dificuldade: "6 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA'], spinDuration: 2500, decisionTime: 3000, icone: "🖌️" },
+        { id: 4, nome: "Avançado", dificuldade: "7 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA', 'ROSA'], spinDuration: 2200, decisionTime: 2500, icone: "🎪" },
+        { id: 5, nome: "Expert", dificuldade: "8 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA', 'ROSA', 'TURQUESA'], spinDuration: 2000, decisionTime: 2000, icone: "🏆" },
+        { id: 6, nome: "Mestre", dificuldade: "10 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA', 'ROSA', 'TURQUESA', 'MARROM', 'CINZA'], spinDuration: 1800, decisionTime: 1800, icone: "👑" },
     ];
     
     const colorsMap: { [key: string]: { bg: string, text: string } } = {
@@ -201,7 +204,9 @@ export default function AttentionRoulettePage() {
         'ROXO': { bg: '#9333ea', text: '#ffffff' }, 
         'LARANJA': { bg: '#ea580c', text: '#ffffff' }, 
         'ROSA': { bg: '#ec4899', text: '#ffffff' }, 
-        'TURQUESA': { bg: '#06b6d4', text: '#ffffff' }
+        'TURQUESA': { bg: '#06b6d4', text: '#ffffff' },
+        'MARROM': { bg: '#92400e', text: '#ffffff' },
+        'CINZA': { bg: '#6b7280', text: '#ffffff' }
     };
     
     const currentConfig = niveis.find(n => n.id === currentLevel) || niveis[0];
@@ -232,37 +237,18 @@ export default function AttentionRoulettePage() {
         const resultIndex = Math.floor(Math.random() * currentConfig.options.length);
         const resultColor = currentConfig.options[resultIndex];
         
-        // Debug
-        console.log('=== NOVO GIRO ===');
-        console.log('COR ALVO (deve clicar se for):', targetColor);
-        console.log('COR SORTEADA:', resultColor, `(índice ${resultIndex})`);
-        console.log('Opções:', currentConfig.options.join(', '));
-        
-        // Cálculo da rotação SIMPLIFICADO
+        // Cálculo da rotação
         const sliceAngle = 360 / currentConfig.options.length;
-        
-        // Para posicionar a cor de índice X no topo:
-        // - A primeira cor (índice 0) começa no topo
-        // - Para colocar índice 1 no topo: girar -90° (sentido anti-horário)
-        // - Para colocar índice 2 no topo: girar -180°
-        // - Para colocar índice 3 no topo: girar -270°
-        
         const targetAngle = -resultIndex * sliceAngle;
         
-        // Adicionar voltas completas
+        // Adicionar voltas completas para efeito visual
         const spins = 5 + Math.floor(Math.random() * 4); // 5-8 voltas
         const totalRotation = (360 * spins) + targetAngle;
-        
-        console.log(`Girando ${spins} voltas + ${targetAngle}° = ${totalRotation}° total`);
         
         // Usar rotação acumulativa
         setRotation(prev => prev + totalRotation);
 
         setTimeout(() => {
-            console.log('=== PAROU ===');
-            console.log('Sistema diz:', resultColor);
-            console.log('Verifique se visual corresponde!');
-            
             setRouletteResult(resultColor);
             setGameState('decision');
             reactionStartRef.current = performance.now();
@@ -293,27 +279,17 @@ export default function AttentionRoulettePage() {
 
         const reactionTime = performance.now() - reactionStartRef.current;
         const wasCorrectClick = rouletteResult === targetColor;
-        
-        // Debug claro
-        console.log('');
-        console.log('=== CLIQUE DO USUÁRIO ===');
-        console.log('Cor alvo:', targetColor);
-        console.log('Cor da roleta:', rouletteResult);
-        console.log('Ação correta?', wasCorrectClick ? 'SIM ✅' : 'NÃO ❌');
 
         if (wasCorrectClick) {
             // Clicou quando ERA a cor alvo = CORRETO
             setGoReactionTimes(prev => [...prev, reactionTime]);
             setScore(prev => prev + 100);
             setIsCorrect(true);
-            console.log('→ ACERTOU! Clicou na cor certa. +100 pontos');
         } else {
             // Clicou quando NÃO era a cor alvo = ERRO
             setStopErrors(prev => prev + 1);
             setIsCorrect(false);
-            console.log('→ ERROU! Clicou na cor errada.');
         }
-        console.log('==========================');
 
         setGameState('feedback');
         setTimeout(startNewRound, 1500);
@@ -322,7 +298,7 @@ export default function AttentionRoulettePage() {
     const startGame = () => {
         if (nivelSelecionado === null) return;
         setCurrentLevel(nivelSelecionado);
-        setTimeLeft(120);
+        setTimeLeft(180); // 3 minutos
         setScore(0);
         setRotation(0);
         setRoundCount(0);
@@ -340,7 +316,7 @@ export default function AttentionRoulettePage() {
         setRotation(0);
         setRoundCount(0);
         setScore(0);
-        setTimeLeft(120);
+        setTimeLeft(180); // 3 minutos
         setTargetColor('VERMELHO');
         setRouletteResult('');
         setIsCorrect(null);
@@ -369,6 +345,7 @@ export default function AttentionRoulettePage() {
                     game_type: 'attention_roulette',
                     level: currentLevel,
                     score: score,
+                    duration_seconds: 180,
                     metrics: {
                         avg_reaction_time: calculateMetrics().avgRT,
                         go_accuracy: calculateMetrics().goAccuracy,
@@ -438,7 +415,7 @@ export default function AttentionRoulettePage() {
                                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                                     <h3 className="font-semibold text-gray-800 mb-1"> ⭐ Avaliação:</h3>
                                     <p className="text-sm text-gray-600">
-                                        Sua performance é medida pela velocidade dos acertos (clicar no alvo) e pela sua capacidade de não clicar nos distratores (controle de impulso).
+                                        Você tem 3 minutos para acumular pontos. Sua performance é medida pela velocidade dos acertos e controle de impulsos.
                                     </p>
                                 </div>
                             </div>
@@ -446,7 +423,7 @@ export default function AttentionRoulettePage() {
 
                         <div className="bg-white rounded-xl shadow-lg p-6">
                             <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Nível de Dificuldade</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                                 {niveis.map((nivel) => (
                                     <button
                                         key={nivel.id}
@@ -458,7 +435,7 @@ export default function AttentionRoulettePage() {
                                         }`}
                                     >
                                         <div className="text-2xl mb-1">{nivel.icone}</div>
-                                        <div className="text-sm">{nivel.nome}</div>
+                                        <div className="text-sm font-bold">{nivel.nome}</div>
                                         <div className="text-xs opacity-80">{nivel.dificuldade}</div>
                                     </button>
                                 ))}
@@ -471,7 +448,7 @@ export default function AttentionRoulettePage() {
                                 disabled={nivelSelecionado === null} 
                                 className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-lg text-lg transition-all transform hover:scale-105 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
                             >
-                                🚀 Iniciar Atividade
+                                🚀 Iniciar Jogo (3 minutos)
                             </button>
                         </div>
                     </div>
@@ -479,18 +456,13 @@ export default function AttentionRoulettePage() {
                 
                 {(gameState !== 'initial' && gameState !== 'finished') && (
                     <div className="bg-white rounded-xl shadow-lg p-6 text-center max-w-3xl mx-auto">
-                        {/* Aviso de DEBUG temporário */}
-                        <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
-                            ⚠️ MODO DEBUG: As cores estão sendo mostradas para verificação. Remover depois de testar.
-                        </div>
-                        
                         <div className="flex justify-between items-center mb-6">
                             <span className="bg-purple-100 text-purple-800 font-medium px-4 py-2 rounded-lg">Nível {currentLevel}</span>
                             <span className="bg-blue-100 text-blue-800 font-medium px-4 py-2 rounded-lg">Pontos: {score}</span>
                             <span className="bg-red-100 text-red-800 font-medium px-4 py-2 rounded-lg">Tempo: {timeLeft}s</span>
                         </div>
 
-                        <h2 className="text-2xl font-bold mb-4">
+                        <h2 className="text-2xl font-bold mb-6">
                             Clique se a roleta parar em: 
                             <span 
                                 className="inline-block ml-2 px-4 py-2 rounded-lg shadow-md" 
@@ -502,25 +474,6 @@ export default function AttentionRoulettePage() {
                                 {targetColor}
                             </span>
                         </h2>
-                        
-                        {/* Indicação visual TEMPORÁRIA para debug */}
-                        {gameState === 'decision' && rouletteResult && (
-                            <div className="mb-4 p-3 bg-gray-100 border-2 border-gray-300 rounded-lg">
-                                <p className="text-sm font-semibold text-gray-700">
-                                    🎯 Cor alvo: <span style={{ backgroundColor: colorsMap[targetColor]?.bg, color: colorsMap[targetColor]?.text }} className="px-2 py-1 rounded">{targetColor}</span>
-                                </p>
-                                <p className="text-sm font-semibold text-gray-700 mt-1">
-                                    🎰 Roleta parou em: <span style={{ backgroundColor: colorsMap[rouletteResult]?.bg, color: colorsMap[rouletteResult]?.text }} className="px-2 py-1 rounded">{rouletteResult}</span>
-                                </p>
-                                <p className="text-sm mt-2">
-                                    {rouletteResult === targetColor ? (
-                                        <span className="text-green-600 font-bold">✅ CLIQUE AGORA! (é a cor alvo)</span>
-                                    ) : (
-                                        <span className="text-red-600 font-bold">⛔ NÃO CLIQUE! (não é a cor alvo)</span>
-                                    )}
-                                </p>
-                            </div>
-                        )}
                         
                         <RouletteWheel 
                             options={currentConfig.options}
@@ -540,14 +493,17 @@ export default function AttentionRoulettePage() {
                                 </button>
                             )}
                             {gameState === 'spinning' && (
-                                <p className="text-xl animate-pulse text-gray-500">Girando...</p>
+                                <div className="flex flex-col items-center">
+                                    <div className="animate-spin h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div>
+                                    <p className="text-xl text-gray-500">Girando...</p>
+                                </div>
                             )}
                             {gameState === 'decision' && (
                                 <button 
                                     onClick={handleActionClick} 
-                                    className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-4 px-10 rounded-lg text-xl animate-bounce shadow-lg"
+                                    className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-4 px-10 rounded-lg text-xl animate-pulse shadow-lg transform hover:scale-105 transition-all"
                                 >
-                                    ✋ É esta cor!
+                                    👆 Clique se for a cor!
                                 </button>
                             )}
                             {gameState === 'feedback' && (
