@@ -1,26 +1,74 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Play, Pause, RotateCcw, Award, Target, Clock, Brain, CheckCircle, Save, BrainCircuit, ChevronLeft } from 'lucide-react'
+import { Play, Pause, RotateCcw, Award, Save, BrainCircuit, ChevronLeft } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createClient } from '../utils/supabaseClient'
+import { createClient } from '../utils/supabaseClient' // Ajuste o caminho se necessário
 
-// O GameHeader é importado de um local compartilhado, conforme o log.
-// import GameHeader from '../components/GameHeader'; 
+// --- COMPONENTE DO CABEÇALHO PADRÃO ---
+// Reintegrado diretamente no arquivo para garantir sua exibição.
+const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: {
+    onSave?: () => void;
+    isSaveDisabled?: boolean;
+    title: string;
+    icon: React.ReactNode;
+    showSaveButton?: boolean;
+}) => (
+    <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center justify-between h-16">
+                {/* 1. Botão Voltar (Esquerda) */}
+                <Link
+                    href="/dashboard"
+                    className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
+                >
+                    <ChevronLeft className="h-6 w-6" />
+                    <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
+                </Link>
 
+                {/* 2. Título Centralizado (Meio) */}
+                <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex items-center gap-2">
+                    {icon}
+                    <span>{title}</span>
+                </h1>
+
+                {/* 3. Botão de Ação ou Espaçador (Direita) */}
+                {showSaveButton && onSave ? (
+                    <button
+                        onClick={onSave}
+                        disabled={isSaveDisabled}
+                        className={`flex items-center space-x-2 px-3 py-2 sm:px-4 rounded-lg font-semibold transition-colors ${
+                            !isSaveDisabled
+                                ? 'bg-green-500 text-white hover:bg-green-600'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                    >
+                        <Save size={18} />
+                        <span className="hidden sm:inline">{isSaveDisabled ? 'Salvando...' : 'Salvar'}</span>
+                    </button>
+                ) : (
+                    <div className="w-24"></div> // Espaçador para manter o título centralizado
+                )}
+            </div>
+        </div>
+    </header>
+);
+
+
+// --- PÁGINA DA ATIVIDADE ---
 const InhibitoryControlPage = () => {
     const router = useRouter();
     const supabase = createClient();
 
-    // Estado inicial agora é 'initial' para a tela de pré-jogo padronizada
     const [gameState, setGameState] = useState<'initial' | 'playing' | 'paused' | 'finished'>('initial')
     const [currentRound, setCurrentRound] = useState(0)
     const [score, setScore] = useState(0)
-    const [timeLeft, setTimeLeft] = useState(90) // Tempo ajustado para 1.5min (Nível 1)
+    const [timeLeft, setTimeLeft] = useState(90)
     const [currentStimulus, setCurrentStimulus] = useState<{ color: string, word: string, isCongruent: boolean } | null>(null)
     const [responses, setResponses] = useState<{ correct: number, incorrect: number, missed: number }>({ correct: 0, incorrect: 0, missed: 0 })
     const [showStimulus, setShowStimulus] = useState(false)
-    const [nivelSelecionado, setNivelSelecionado] = useState<number | null>(1); // Inicia com o nível 1 selecionado
+    const [nivelSelecionado, setNivelSelecionado] = useState<number | null>(1);
     const [salvando, setSalvando] = useState(false);
 
     const stimulusTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -147,7 +195,7 @@ const InhibitoryControlPage = () => {
     }
 
     const resetGame = () => {
-        setGameState('initial') // Volta para a nova tela inicial
+        setGameState('initial')
         setCurrentRound(0)
         setScore(0)
         setResponses({ correct: 0, incorrect: 0, missed: 0 })
@@ -193,7 +241,7 @@ const InhibitoryControlPage = () => {
                 alert(`Erro ao salvar: ${error.message}`);
             } else {
                 alert(`Sessão salva com sucesso!`);
-                router.push('/dashboard'); // Redirecionamento padronizado
+                router.push('/dashboard');
             }
         } catch (error: any) {
             console.error('Erro inesperado:', error);
@@ -209,32 +257,27 @@ const InhibitoryControlPage = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* O GameHeader padrão será renderizado pelo layout global da aplicação */}
-            {/* <GameHeader 
+            {/* O GameHeader agora é renderizado aqui, garantindo que apareça em todas as telas */}
+            <GameHeader 
                 title="Controle Inibitório"
                 icon={<BrainCircuit size={22} />}
                 onSave={handleSaveSession}
                 isSaveDisabled={salvando}
                 showSaveButton={gameState === 'finished'}
-            /> */}
+            />
 
             {gameState === 'initial' && (
                 <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
                     <div className="space-y-6">
-
                         {/* Bloco 1: Cards Informativos */}
                         <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                                {/* Card de Objetivo */}
                                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                                     <h3 className="font-semibold text-gray-800 mb-1"> 🎯 Objetivo:</h3>
                                     <p className="text-sm text-gray-600">
                                         Desenvolver controle inibitório, inibindo a resposta automática de ler a palavra para focar na cor do texto.
                                     </p>
                                 </div>
-
-                                {/* Card de Como Jogar */}
                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                     <h3 className="font-semibold text-gray-800 mb-1"> 🕹️ Como Jogar:</h3>
                                     <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
@@ -243,15 +286,12 @@ const InhibitoryControlPage = () => {
                                         <li>Ignore o que a palavra diz. Seja rápido e preciso!</li>
                                     </ul>
                                 </div>
-
-                                {/* Card de Avaliação/Progresso */}
                                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                                     <h3 className="font-semibold text-gray-800 mb-1"> ⭐ Avaliação:</h3>
                                     <p className="text-sm text-gray-600">
                                         Sua pontuação é baseada na velocidade e precisão. Acertos aumentam a pontuação, enquanto erros a diminuem.
                                     </p>
                                 </div>
-
                             </div>
                         </div>
 
@@ -335,38 +375,20 @@ const InhibitoryControlPage = () => {
                               </div>
                               {showStimulus && gameState === 'playing' ? (
                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
-                                      <button
-                                          onClick={() => handleResponse('VERMELHO')}
-                                          className="bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-semibold transition-colors text-center"
-                                      >VERMELHO</button>
-                                      <button
-                                          onClick={() => handleResponse('AZUL')}
-                                          className="bg-blue-500 hover:bg-blue-600 text-white py-4 rounded-xl font-semibold transition-colors text-center"
-                                      >AZUL</button>
-                                      <button
-                                          onClick={() => handleResponse('VERDE')}
-                                          className="bg-green-500 hover:bg-green-600 text-white py-4 rounded-xl font-semibold transition-colors text-center"
-                                      >VERDE</button>
-                                      <button
-                                          onClick={() => handleResponse('AMARELO')}
-                                          className="bg-yellow-500 hover:bg-yellow-600 text-gray-800 py-4 rounded-xl font-semibold transition-colors text-center"
-                                      >AMARELO</button>
+                                      <button onClick={() => handleResponse('VERMELHO')} className="bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-semibold transition-colors text-center">VERMELHO</button>
+                                      <button onClick={() => handleResponse('AZUL')} className="bg-blue-500 hover:bg-blue-600 text-white py-4 rounded-xl font-semibold transition-colors text-center">AZUL</button>
+                                      <button onClick={() => handleResponse('VERDE')} className="bg-green-500 hover:bg-green-600 text-white py-4 rounded-xl font-semibold transition-colors text-center">VERDE</button>
+                                      <button onClick={() => handleResponse('AMARELO')} className="bg-yellow-500 hover:bg-yellow-600 text-gray-800 py-4 rounded-xl font-semibold transition-colors text-center">AMARELO</button>
                                   </div>
                               ) : <div className="min-h-[72px]"></div> }
                               <div className="flex justify-center gap-4 pt-4">
                                   {gameState === 'playing' && (
-                                      <button
-                                          onClick={pauseGame}
-                                          className="bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-6 rounded-xl font-medium transition-colors flex items-center gap-2"
-                                      >
+                                      <button onClick={pauseGame} className="bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-6 rounded-xl font-medium transition-colors flex items-center gap-2">
                                           <Pause className="w-4 h-4" />
                                           Pausar
                                       </button>
                                   )}
-                                  <button
-                                      onClick={finishGame}
-                                      className="bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-xl font-medium transition-colors flex items-center gap-2"
-                                  >
+                                  <button onClick={finishGame} className="bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-xl font-medium transition-colors flex items-center gap-2">
                                       <RotateCcw className="w-4 h-4" />
                                       Finalizar
                                   </button>
