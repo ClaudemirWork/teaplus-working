@@ -27,15 +27,13 @@ const GameHeader = ({ title, icon }) => (
 );
 
 // ============================================================================
-// 2. PÁGINA DA ATIVIDADE "GESTÃO DAS FRUSTRAÇÕES" COM NÍVEIS
+// 2. PÁGINA DA ATIVIDADE "GESTÃO DAS FRUSTRAÇÕES" (FLUXO LINEAR)
 // ============================================================================
 export default function FrustrationManagementPage() {
   const [gameStarted, setGameStarted] = useState(false);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [completedExercises, setCompletedExercises] = useState<number[]>([]);
   const [points, setPoints] = useState(0);
-  const [nivelSelecionado, setNivelSelecionado] = useState(1);
-  const [sessionExercises, setSessionExercises] = useState<any[]>([]);
   const router = useRouter();
 
   const [isActive, setIsActive] = useState(false);
@@ -43,10 +41,10 @@ export default function FrustrationManagementPage() {
   const [breathingCount, setBreathingCount] = useState(0);
 
   const allExercises = [
-    { id: 1, levels: [1, 2, 3], title: "Passo 1: Respiração 4-7-8", type: "breathing", description: "Use a respiração para acalmar o corpo e a mente.", instruction: "Concentre-se no círculo e siga o ritmo para ativar a resposta de relaxamento." },
-    { id: 2, levels: [2, 3], title: "Passo 2: Identificando Pensamentos", type: "reframing", description: "Reconheça os padrões de pensamento que geram frustração.", instruction: "Examine os exemplos de como nossos pensamentos podem nos enganar quando estamos frustrados." },
-    { id: 3, levels: [3], title: "Passo 3: Reescrevendo a Narrativa", type: "reflection", description: "Transforme pensamentos negativos em perspectivas equilibradas.", instruction: "Responda às perguntas para praticar uma visão mais realista e gentil sobre os problemas." },
-    { id: 4, levels: [3], title: "Passo 4: Técnica STOP", type: "action-plan", description: "Memorize uma estratégia para o momento da frustração.", instruction: "Estes são os 4 passos para usar quando sentir a raiva ou frustração crescendo." },
+    { id: 1, level: 1, title: "Passo 1: Respiração 4-7-8", type: "breathing", description: "Use a respiração para acalmar o corpo e a mente.", instruction: "Concentre-se no círculo e siga o ritmo para ativar a resposta de relaxamento." },
+    { id: 2, level: 2, title: "Passo 2: Identificando Pensamentos", type: "reframing", description: "Reconheça os padrões de pensamento que geram frustração.", instruction: "Examine os exemplos de como nossos pensamentos podem nos enganar quando estamos frustrados." },
+    { id: 3, level: 3, title: "Passo 3: Reescrevendo a Narrativa", type: "reflection", description: "Transforme pensamentos negativos em perspectivas equilibradas.", instruction: "Responda às perguntas para praticar uma visão mais realista e gentil sobre os problemas." },
+    { id: 4, level: 3, title: "Passo 4: Técnica STOP", type: "action-plan", description: "Memorize uma estratégia para o momento da frustração.", instruction: "Estes são os 4 passos para usar quando sentir a raiva ou frustração crescendo." },
   ];
   
   const frustratingScenarios = [
@@ -57,7 +55,7 @@ export default function FrustrationManagementPage() {
 
   useEffect(() => {
     let breathTimer: NodeJS.Timeout | null = null;
-    const currentExercise = sessionExercises[currentExerciseIndex];
+    const currentExercise = allExercises[currentExerciseIndex];
     if (isActive && currentExercise?.type === 'breathing') {
       breathTimer = setInterval(() => {
         setBreathingCount(prev => {
@@ -70,7 +68,7 @@ export default function FrustrationManagementPage() {
       }, 1000);
     }
     return () => { if (breathTimer) clearInterval(breathTimer); };
-  }, [isActive, breathingPhase, currentExerciseIndex, sessionExercises]);
+  }, [isActive, breathingPhase, currentExerciseIndex]);
 
   const startBreathing = () => { setIsActive(true); setBreathingPhase('inhale'); setBreathingCount(0); };
   const stopExercise = () => { setIsActive(false); setBreathingPhase('rest'); };
@@ -93,8 +91,6 @@ export default function FrustrationManagementPage() {
   };
 
   const handleStartGame = () => {
-    const filteredExercises = allExercises.filter(ex => ex.levels.includes(nivelSelecionado));
-    setSessionExercises(filteredExercises);
     setCurrentExerciseIndex(0);
     setPoints(0);
     setCompletedExercises([]);
@@ -102,19 +98,29 @@ export default function FrustrationManagementPage() {
   };
 
   const completeCurrentExercise = () => {
-    const currentId = sessionExercises[currentExerciseIndex]?.id;
+    const currentId = allExercises[currentExerciseIndex]?.id;
     if (currentId && !completedExercises.includes(currentId)) {
       setCompletedExercises(prev => [...prev, currentId]);
       setPoints(p => p + 10);
     }
   };
 
-  const nextExercise = () => { if (currentExerciseIndex < sessionExercises.length - 1) setCurrentExerciseIndex(c => c + 1) };
+  const nextExercise = () => { if (currentExerciseIndex < allExercises.length - 1) setCurrentExerciseIndex(c => c + 1) };
   const prevExercise = () => { if (currentExerciseIndex > 0) setCurrentExerciseIndex(c => c - 1) };
 
+  const getLevelIndicator = (level: number) => {
+    const levels = {
+        1: { title: "Nível 1: Acalmando o Corpo", color: "bg-blue-100 text-blue-800" },
+        2: { title: "Nível 2: Analisando os Pensamentos", color: "bg-purple-100 text-purple-800" },
+        3: { title: "Nível 3: Agindo com Consciência", color: "bg-green-100 text-green-800" },
+    };
+    const currentLevel = levels[level] || { title: "", color: "" };
+    return <div className={`text-center p-2 rounded-md font-semibold ${currentLevel.color}`}>{currentLevel.title}</div>
+  }
+
   // RENDERIZAÇÃO DA ATIVIDADE EM SI
-  if (gameStarted && sessionExercises.length > 0) {
-    const exercise = sessionExercises[currentExerciseIndex];
+  if (gameStarted) {
+    const exercise = allExercises[currentExerciseIndex];
     const isCompleted = completedExercises.includes(exercise.id);
 
     return (
@@ -124,17 +130,19 @@ export default function FrustrationManagementPage() {
                 <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm mb-6">
                     <div className="text-sm text-gray-600">Pontos: <span className="font-bold text-teal-600">{points}</span></div>
                     <div className="w-full max-w-xs mx-auto">
-                        <p className="text-center text-sm text-gray-600 mb-1">Passo {currentExerciseIndex + 1} de {sessionExercises.length}</p>
-                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-teal-500 h-2 rounded-full" style={{ width: `${((currentExerciseIndex + 1) / sessionExercises.length) * 100}%` }}></div></div>
+                        <p className="text-center text-sm text-gray-600 mb-1">Passo {currentExerciseIndex + 1} de {allExercises.length}</p>
+                        <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-teal-500 h-2 rounded-full" style={{ width: `${((currentExerciseIndex + 1) / allExercises.length) * 100}%` }}></div></div>
                     </div>
                 </div>
     
                 <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 space-y-6">
+                    {getLevelIndicator(exercise.level)}
+
                     <div className="text-center">
                         <h2 className="text-xl md:text-2xl font-bold text-gray-800">{exercise.title}</h2>
                         <p className="text-gray-600 mt-1">{exercise.description}</p>
                     </div>
-                    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md"><p className="text-gray-700">{exercise.instruction}</p></div>
+                    <div className="bg-gray-100 border-l-4 border-gray-400 p-4 rounded-md"><p className="text-gray-700">{exercise.instruction}</p></div>
     
                     {exercise.type === 'breathing' && (
                         <div className="text-center p-4 space-y-6">
@@ -170,25 +178,16 @@ export default function FrustrationManagementPage() {
                     </div>
                 </div>
     
-                {/* --- NAVEGAÇÃO CORRIGIDA --- */}
                 <div className="flex justify-between mt-6">
-                    <button onClick={prevExercise} disabled={currentExerciseIndex === 0} className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
-                        Anterior
-                    </button>
-                    <button 
-                        onClick={nextExercise} 
-                        disabled={!isCompleted || currentExerciseIndex === sessionExercises.length - 1} 
-                        className="px-6 py-2 rounded-lg font-semibold text-white transition-colors bg-teal-500 hover:bg-teal-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                    >
-                        Próximo
-                    </button>
+                    <button onClick={prevExercise} disabled={currentExerciseIndex === 0} className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">Anterior</button>
+                    <button onClick={nextExercise} disabled={!isCompleted || currentExerciseIndex === allExercises.length - 1} className="px-6 py-2 rounded-lg font-semibold text-white transition-colors bg-teal-500 hover:bg-teal-600 disabled:bg-gray-400 disabled:cursor-not-allowed">Próximo</button>
                 </div>
             </main>
         </div>
     );
   }
 
-  // RENDERIZAÇÃO DA TELA INICIAL
+  // RENDERIZAÇÃO DA TELA INICIAL (FLUXO LINEAR)
   return (
     <div className="min-h-screen bg-gray-50">
       <GameHeader title="Gestão da Frustração" icon={<ShieldCheck size={24} />} />
@@ -198,40 +197,24 @@ export default function FrustrationManagementPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
-                <p className="text-sm text-gray-600">Aprender uma técnica completa em 3 níveis para gerenciar a frustração, desde acalmar o corpo até mudar os pensamentos.</p>
+                <p className="text-sm text-gray-600">Aprender uma técnica completa, passo a passo, para gerenciar a frustração, desde acalmar o corpo até mudar os pensamentos.</p>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como Jogar:</h3>
                 <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                  <li>Escolha um nível para começar (sugerimos o Nível 1).</li>
+                  <li>A atividade é um treinamento com 4 passos.</li>
                   <li>Conclua cada passo para habilitar o botão "Próximo".</li>
-                  <li>Avance pelos níveis para dominar a estratégia completa.</li>
+                  <li>Avance por todas as etapas para dominar a estratégia.</li>
                 </ul>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-800 mb-1">⭐ Avaliação:</h3>
-                <p className="text-sm text-gray-600">Conclua os passos de cada nível para ganhar pontos e construir seu repertório de estratégias para momentos difíceis.</p>
+                <p className="text-sm text-gray-600">Conclua todos os passos para ganhar o máximo de pontos e construir seu repertório de estratégias para momentos difíceis.</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Nível</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {[
-                    { id: 1, nome: 'Nível 1', desc: 'Acalmar o Corpo', icone: '🫁' },
-                    { id: 2, nome: 'Nível 2', desc: 'Mudar o Pensamento', icone: '🧠' },
-                    { id: 3, nome: 'Nível 3', desc: 'Técnica Completa', icone: '🏆' },
-                ].map(nivel => (
-                    <button key={nivel.id} onClick={() => setNivelSelecionado(nivel.id)} className={`p-4 rounded-lg font-medium transition-colors ${nivelSelecionado === nivel.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}>
-                        <div className="text-2xl mb-1">{nivel.icone}</div>
-                        <div className="text-sm">{nivel.nome}</div>
-                        <div className="text-xs opacity-80">{nivel.desc}</div>
-                    </button>
-                ))}
-            </div>
-          </div>
           <div className="text-center pt-4">
-            <button onClick={handleStartGame} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors">🚀 Iniciar Atividade</button>
+            <button onClick={handleStartGame} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors">🚀 Iniciar Treinamento</button>
           </div>
         </div>
       </main>
