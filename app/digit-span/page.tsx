@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ArrowLeft, Play, Brain, Trophy, RotateCcw, CheckCircle, XCircle, Save, Hash, ChevronLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '../utils/supabaseClient'
+import Link from 'next/link'; // LINHA ADICIONADA
 
 // Componente do Cabeçalho Padrão
 const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }) => (
@@ -200,7 +201,7 @@ export default function SpanDigitos() {
                                 <div className="text-center">
                                     <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
                                     <h2 className="text-2xl font-bold text-gray-800">Parabéns!</h2>
-                                    <p className="text-gray-600 mt-2">Você concluiu todos os níveis com sucesso.</p>
+                                    <p className="text-gray-600 mt-2">Você completou todos os níveis com sucesso.</p>
                                     <button onClick={resetActivity} className="mt-6 px-6 py-3 bg-gray-500 text-white rounded-xl font-semibold hover:shadow-lg transition-shadow flex items-center gap-2 mx-auto"><RotateCcw className="w-5 h-5" />Reiniciar</button>
                                 </div>
                             ) : gamePhase === 'ready' ? (
