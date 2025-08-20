@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Save, Trophy, RotateCcw, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Navigation, ArrowRightCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '../utils/supabaseClient'; // Ajuste o caminho se necessário
+import { createClient } from '../utils/supabaseClient';
 
 // --- COMPONENTE DO CABEÇALHO PADRÃO ---
 const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: {
@@ -54,7 +54,6 @@ export default function MentalMaze() {
     const router = useRouter();
     const supabase = createClient();
     
-    // Estados refatorados
     const [gameState, setGameState] = useState<'initial' | 'playing' | 'paused' | 'level_complete' | 'finished'>('initial');
     const [nivelSelecionado, setNivelSelecionado] = useState<number | null>(1);
     const [currentLevel, setCurrentLevel] = useState(1);
@@ -64,11 +63,16 @@ export default function MentalMaze() {
     const [moves, setMoves] = useState(0);
     const [salvando, setSalvando] = useState(false);
 
-    // Maze configurations moved into a standard 'niveis' array
+    // --- NÍVEIS EXPANDIDOS ---
     const niveis = [
+        // Níveis Originais
         { id: 1, nome: "Nível 1", dificuldade: "Labirinto 7x7", size: 7, grid: [[1,1,1,1,1,1,1],[1,0,0,0,1,0,1],[1,0,1,0,1,0,1],[1,0,1,0,0,0,1],[1,0,1,1,1,0,1],[1,0,0,0,0,2,1],[1,1,1,1,1,1,1]], start: { x: 1, y: 1 }, end: { x: 5, y: 5 }, timeBonus: 100, timeLimit: 120, icone: "1️⃣" },
         { id: 2, nome: "Nível 2", dificuldade: "Labirinto 9x9", size: 9, grid: [[1,1,1,1,1,1,1,1,1],[1,0,0,0,1,0,0,0,1],[1,0,1,0,1,0,1,0,1],[1,0,1,0,0,0,1,0,1],[1,0,1,1,1,1,1,0,1],[1,0,0,0,0,0,0,0,1],[1,1,1,0,1,1,1,0,1],[1,0,0,0,1,0,0,2,1],[1,1,1,1,1,1,1,1,1]], start: { x: 1, y: 1 }, end: { x: 7, y: 7 }, timeBonus: 150, timeLimit: 150, icone: "2️⃣" },
-        { id: 3, nome: "Nível 3", dificuldade: "Labirinto 11x11", size: 11, grid: [[1,1,1,1,1,1,1,1,1,1,1],[1,0,0,0,1,0,0,0,0,0,1],[1,0,1,0,1,0,1,1,1,0,1],[1,0,1,0,0,0,0,0,1,0,1],[1,0,1,1,1,1,1,0,1,0,1],[1,0,0,0,0,0,1,0,0,0,1],[1,1,1,1,1,0,1,1,1,0,1],[1,0,0,0,0,0,0,0,1,0,1],[1,0,1,1,1,1,1,0,1,0,1],[1,0,0,0,0,0,0,0,0,2,1],[1,1,1,1,1,1,1,1,1,1,1]], start: { x: 1, y: 1 }, end: { x: 9, y: 9 }, timeBonus: 200, timeLimit: 180, icone: "3️⃣" }
+        { id: 3, nome: "Nível 3", dificuldade: "Labirinto 11x11", size: 11, grid: [[1,1,1,1,1,1,1,1,1,1,1],[1,0,0,0,1,0,0,0,0,0,1],[1,0,1,0,1,0,1,1,1,0,1],[1,0,1,0,0,0,0,0,1,0,1],[1,0,1,1,1,1,1,0,1,0,1],[1,0,0,0,0,0,1,0,0,0,1],[1,1,1,1,1,0,1,1,1,0,1],[1,0,0,0,0,0,0,0,1,0,1],[1,0,1,1,1,1,1,0,1,0,1],[1,0,0,0,0,0,0,0,0,2,1],[1,1,1,1,1,1,1,1,1,1,1]], start: { x: 1, y: 1 }, end: { x: 9, y: 9 }, timeBonus: 200, timeLimit: 180, icone: "3️⃣" },
+        // Novos Níveis
+        { id: 4, nome: "Nível 4", dificuldade: "Labirinto 13x13", size: 13, grid: [[1,1,1,1,1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,1,0,0,0,0,0,1],[1,0,1,1,1,0,1,0,1,1,1,0,1],[1,0,1,0,0,0,1,0,1,0,0,0,1],[1,0,1,0,1,1,1,0,1,0,1,0,1],[1,0,1,0,1,0,0,0,1,0,1,0,1],[1,0,1,1,1,0,1,1,1,1,1,0,1],[1,0,0,0,1,0,0,0,0,0,1,0,1],[1,1,1,0,1,1,1,1,1,0,1,0,1],[1,0,0,0,0,0,1,0,0,0,1,0,1],[1,0,1,1,1,0,1,0,1,1,1,0,1],[1,0,0,0,1,0,0,0,1,0,0,2,1],[1,1,1,1,1,1,1,1,1,1,1,1,1]], start: { x: 1, y: 1 }, end: { x: 11, y: 11 }, timeBonus: 250, timeLimit: 210, icone: "4️⃣" },
+        { id: 5, nome: "Nível 5", dificuldade: "Labirinto 15x15", size: 15, grid: [[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,0,1,0,0,0,0,0,1,0,0,0,0,0,1],[1,0,1,0,1,1,1,0,1,0,1,1,1,0,1],[1,0,0,0,1,0,1,0,1,0,1,0,0,0,1],[1,0,1,1,1,0,1,0,1,1,1,0,1,1,1],[1,0,1,0,0,0,1,0,0,0,1,0,1,0,1],[1,1,1,0,1,1,1,1,1,0,1,0,1,0,1],[1,0,0,0,1,0,0,0,1,0,1,0,1,0,1],[1,0,1,1,1,0,1,0,1,0,1,1,1,0,1],[1,0,1,0,0,0,1,0,0,0,1,0,0,0,1],[1,0,1,1,1,1,1,1,1,0,1,0,1,1,1],[1,0,0,0,1,0,0,0,1,0,1,0,1,0,1],[1,0,1,1,1,0,1,0,1,0,1,0,1,0,1],[1,0,0,0,1,0,0,0,1,0,0,0,1,2,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]], start: { x: 1, y: 1 }, end: { x: 13, y: 13 }, timeBonus: 300, timeLimit: 240, icone: "5️⃣" },
+        { id: 6, nome: "Nível 6", dificuldade: "Desafio Final 15x15", size: 15, grid: [[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,2,0,0,1,0,0,0,0,0,0,1,0,0,1],[1,1,1,0,1,0,1,1,1,1,0,1,0,1,1],[1,0,0,0,1,0,1,0,0,1,0,1,0,1,1],[1,0,1,1,1,0,1,0,1,1,0,1,0,0,1],[1,0,0,0,1,0,1,0,1,0,0,1,1,0,1],[1,1,1,0,1,1,1,0,1,0,1,1,0,0,1],[1,0,0,0,1,0,0,0,1,0,0,0,0,1,1],[1,0,1,1,1,0,1,1,1,1,1,1,0,1,1],[1,0,1,0,0,0,1,0,0,0,0,1,0,1,1],[1,0,1,0,1,1,1,0,1,1,0,1,0,1,1],[1,0,1,0,1,0,0,0,1,0,0,1,0,0,1],[1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],[1,0,0,0,1,0,0,0,0,0,1,0,0,0,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]], start: { x: 13, y: 13 }, end: { x: 1, y: 1 }, timeBonus: 350, timeLimit: 270, icone: "6️⃣" }
     ];
 
     const currentMaze = niveis.find(n => n.id === currentLevel) || niveis[0];
@@ -80,7 +84,7 @@ export default function MentalMaze() {
                 setTimeRemaining(time => time - 1);
             }, 1000);
         } else if (timeRemaining === 0 && gameState === 'playing') {
-            setGameState('finished'); // Fim de jogo se o tempo acabar
+            setGameState('finished');
         }
         return () => { if (interval) clearInterval(interval); };
     }, [gameState, timeRemaining]);
@@ -125,7 +129,7 @@ export default function MentalMaze() {
                 }
             }
         }
-    }, [gameState, playerPosition, currentMaze, timeRemaining, moves, currentLevel]);
+    }, [gameState, playerPosition, currentMaze, timeRemaining, moves, currentLevel, niveis.length]);
 
     useEffect(() => {
         const handleKeyPress = (event: KeyboardEvent) => {
@@ -185,20 +189,19 @@ export default function MentalMaze() {
             <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
                 {gameState === 'initial' && (
                     <div className="space-y-6">
-                        {/* Bloco 1: Cards Informativos */}
                         <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                                     <h3 className="font-semibold text-gray-800 mb-1"> 🎯 Objetivo:</h3>
                                     <p className="text-sm text-gray-600">
-                                        Navegar pelo labirinto do início (azul) ao fim (verde) no menor tempo possível. Exercita o planejamento espacial e a memória de trabalho.
+                                        Navegar pelo labirinto do início ao fim no menor tempo possível. Exercita o planejamento espacial e a memória de trabalho.
                                     </p>
                                 </div>
                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                     <h3 className="font-semibold text-gray-800 mb-1"> 🕹️ Como Jogar:</h3>
                                     <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
                                         <li>Use as setas do teclado ou os botões na tela para se mover.</li>
-                                        <li>As paredes (cinza escuro) bloqueiam seu caminho.</li>
+                                        <li>O seu personagem é o círculo azul (ou emoji).</li>
                                         <li>Encontre a saída (verde) para completar o nível.</li>
                                     </ul>
                                 </div>
@@ -211,10 +214,9 @@ export default function MentalMaze() {
                             </div>
                         </div>
 
-                        {/* Bloco 2: Seleção de Nível */}
                         <div className="bg-white rounded-xl shadow-lg p-6">
                             <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Nível do Labirinto</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {niveis.map((nivel) => (
                                     <button
                                         key={nivel.id}
@@ -232,7 +234,6 @@ export default function MentalMaze() {
                             </div>
                         </div>
 
-                        {/* Bloco 3: Botão Iniciar */}
                         <div className="text-center pt-4">
                             <button
                                 onClick={startGame}
@@ -247,7 +248,7 @@ export default function MentalMaze() {
 
                 {(gameState !== 'initial' && gameState !== 'finished') && (
                      <div className="bg-white rounded-xl shadow-lg p-6">
-                         <div className="flex justify-between items-center mb-4">
+                         <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
                              <div className="flex items-center gap-4">
                                  <span className="bg-purple-100 text-purple-800 font-medium px-4 py-2 rounded-lg">Nível {currentLevel}</span>
                                  <span className="bg-blue-100 text-blue-800 font-medium px-4 py-2 rounded-lg">Pontos: {score}</span>
@@ -259,22 +260,18 @@ export default function MentalMaze() {
                          </div>
 
                          <div className="flex flex-col md:flex-row items-center justify-center gap-8">
-                             {/* Maze Grid */}
-                             <div className="grid gap-1 p-2 bg-gray-200 rounded-lg" style={{ gridTemplateColumns: `repeat(${currentMaze.size}, 1fr)` }}>
+                             {/* Ajuste no tamanho das células para labirintos maiores */}
+                             <div className="grid gap-0.5 p-1 bg-gray-300 rounded-md" style={{ gridTemplateColumns: `repeat(${currentMaze.size}, 1fr)` }}>
                                  {currentMaze.grid.map((row, y) =>
                                      row.map((cell, x) => (
-                                         <div key={`${x}-${y}`} className={`w-8 h-8 rounded-sm ${getCellClass(x, y)}`}>
-                                             {playerPosition.x === x && playerPosition.y === y && (
-                                                 <div className="w-full h-full flex items-center justify-center text-lg">👤</div>
-                                             )}
-                                             {x === currentMaze.end.x && y === currentMaze.end.y && (
-                                                <div className="w-full h-full flex items-center justify-center text-lg">🏁</div>
-                                             )}
+                                         <div key={`${x}-${y}`} className={`w-6 h-6 md:w-8 md:h-8 flex items-center justify-center rounded-sm ${getCellClass(x, y)}`}>
+                                             {playerPosition.x === x && playerPosition.y === y && ('👤')}
+                                             {x === currentMaze.end.x && y === currentMaze.end.y && playerPosition.x !== x && ('🏁')}
                                          </div>
                                      ))
                                  )}
                              </div>
-                             {/* On-screen Controls */}
+                             {/* Controles na tela */}
                              <div className="grid grid-cols-3 gap-2 w-48">
                                  <div />
                                  <button onClick={() => movePlayer('up')} className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg"><ArrowUp /></button>
@@ -310,7 +307,6 @@ export default function MentalMaze() {
                         )}
                     </div>
                 )}
-
             </main>
         </div>
     );
