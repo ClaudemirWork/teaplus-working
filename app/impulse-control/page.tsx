@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Save, Zap, Play, Pause, RotateCcw, Award, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronLeft, Save, Zap, Play, Pause, RotateCcw, Award, CheckCircle, XCircle, ArrowUpCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
 
@@ -66,6 +66,9 @@ export default function ImpulseControlPage() {
     const [maxStreak, setMaxStreak] = useState(0);
     const [salvando, setSalvando] = useState(false);
     
+    // NOVO ESTADO: Para controlar a exibição do feedback de "passou de nível"
+    const [showLevelUp, setShowLevelUp] = useState(false);
+    
     const stimulusTimerRef = useRef<NodeJS.Timeout | null>(null);
     const gameTimerRef = useRef<NodeJS.Timeout | null>(null);
     
@@ -84,7 +87,6 @@ export default function ImpulseControlPage() {
         return () => { if (gameTimerRef.current) clearTimeout(gameTimerRef.current); };
     }, [timeLeft, gameState]);
 
-    // Função para obter o tempo de exibição com base na sua sugestão
     const getDisplayTimeForLevel = (level: number) => {
         switch (level) {
             case 1: return 5000; // 5 segundos
@@ -97,42 +99,18 @@ export default function ImpulseControlPage() {
     };
 
     const generateTask = useCallback(() => {
+        // Lógica para gerar tarefas (sem alterações)
         const taskTypes = ['go', 'nogo', 'delay', 'choice'];
         const weights = [0.3, 0.4, 0.2, 0.1];
         let randomValue = Math.random();
         let taskType = 'go';
-
-        for (let i = 0; i < taskTypes.length; i++) {
-            if (randomValue < weights[i]) {
-                taskType = taskTypes[i];
-                break;
-            }
-            randomValue -= weights[i];
-        }
-
+        for (let i = 0; i < taskTypes.length; i++) { if (randomValue < weights[i]) { taskType = taskTypes[i]; break; } randomValue -= weights[i]; }
         let stimulus = '', color = '', shouldRespond = false, delay;
         switch (taskType) {
-            case 'go':
-                stimulus = stimuli.go[Math.floor(Math.random() * stimuli.go.length)];
-                color = 'text-green-500';
-                shouldRespond = true;
-                break;
-            case 'nogo':
-                stimulus = stimuli.nogo[Math.floor(Math.random() * stimuli.nogo.length)];
-                color = 'text-red-500';
-                shouldRespond = false;
-                break;
-            case 'delay':
-                stimulus = '⏰';
-                color = 'text-yellow-500';
-                shouldRespond = true;
-                delay = 1000 + (Math.random() * 2000);
-                break;
-            case 'choice':
-                stimulus = stimuli.choice[Math.floor(Math.random() * stimuli.choice.length)];
-                color = stimulus === '🔵' ? 'text-blue-500' : stimulus === '🟡' ? 'text-yellow-500' : stimulus === '🟣' ? 'text-purple-500' : 'text-orange-500';
-                shouldRespond = stimulus === '🔵' || stimulus === '🟡';
-                break;
+            case 'go': stimulus = stimuli.go[Math.floor(Math.random() * stimuli.go.length)]; color = 'text-green-500'; shouldRespond = true; break;
+            case 'nogo': stimulus = stimuli.nogo[Math.floor(Math.random() * stimuli.nogo.length)]; color = 'text-red-500'; shouldRespond = false; break;
+            case 'delay': stimulus = '⏰'; color = 'text-yellow-500'; shouldRespond = true; delay = 1000 + (Math.random() * 2000); break;
+            case 'choice': stimulus = stimuli.choice[Math.floor(Math.random() * stimuli.choice.length)]; color = stimulus === '🔵' ? 'text-blue-500' : stimulus === '🟡' ? 'text-yellow-500' : stimulus === '🟣' ? 'text-purple-500' : 'text-orange-500'; shouldRespond = stimulus === '🔵' || stimulus === '🟡'; break;
         }
         return { type: taskType, stimulus, color, shouldRespond, delay };
     }, [stimuli.go, stimuli.nogo, stimuli.choice]);
@@ -142,11 +120,9 @@ export default function ImpulseControlPage() {
         setCurrentTask(task);
         setShowStimulus(false);
         
-        // VELOCIDADE AJUSTADA: Pausa entre rodadas bem mais longa
         const interRoundDelay = Math.max(3000 - (currentLevel * 200), 2000);
 
         const setupStimulusTimer = () => {
-            // VELOCIDADE AJUSTADA: Usando a nova função para definir o tempo
             const displayTime = getDisplayTimeForLevel(currentLevel);
 
             stimulusTimerRef.current = setTimeout(() => {
@@ -165,12 +141,7 @@ export default function ImpulseControlPage() {
             const countInterval = setInterval(() => {
                 count--;
                 setCountdown(count);
-                if (count <= 0) {
-                    clearInterval(countInterval);
-                    setCountdown(0);
-                    setShowStimulus(true);
-                    setupStimulusTimer();
-                }
+                if (count <= 0) { clearInterval(countInterval); setCountdown(0); setShowStimulus(true); setupStimulusTimer(); }
             }, 1000);
         } else {
             setShowStimulus(true);
@@ -179,42 +150,56 @@ export default function ImpulseControlPage() {
     }, [generateTask, currentLevel]);
 
     useEffect(() => {
-        if (gameState === 'playing') {
+        if (gameState === 'playing' && !showLevelUp) { // Só inicia o jogo se não estiver mostrando o feedback de nível
             const startTimeout = setTimeout(() => {
                 startRound();
             }, 1000);
-
             return () => clearTimeout(startTimeout);
         }
-    }, [gameState, startRound]);
+    }, [gameState, startRound, showLevelUp]);
 
     const handleResponse = () => {
-        if (gameState !== 'playing') return;
-        if (!currentTask || !showStimulus) {
-            setResponses(prev => ({...prev, premature: prev.premature + 1}));
-            setStreak(0);
+        if (gameState !== 'playing' || !currentTask || !showStimulus) {
+            if (gameState === 'playing') {
+                setResponses(prev => ({...prev, premature: prev.premature + 1}));
+                setStreak(0);
+            }
             return;
         }
 
         if (stimulusTimerRef.current) clearTimeout(stimulusTimerRef.current);
-
         const interRoundDelay = Math.max(3000 - (currentLevel * 200), 2000);
 
+        let wasCorrect = false;
         if (currentTask.shouldRespond) {
+            wasCorrect = true;
             setScore(prev => prev + 10 + (currentLevel * 5) + (streak * 2));
-            setResponses(prev => ({...prev, correct: prev.correct + 1}));
             const newStreak = streak + 1;
             setStreak(newStreak);
             setMaxStreak(current => Math.max(current, newStreak));
-            
-            if (responses.correct > 0 && (responses.correct + 1) % 15 === 0) {
-                setCurrentLevel(prev => Math.min(prev + 1, 5));
-            }
         } else {
             setResponses(prev => ({...prev, incorrect: prev.incorrect + 1}));
             setStreak(0);
         }
-
+        
+        // LÓGICA DE NÍVEL CORRIGIDA E COM FEEDBACK
+        const newCorrectCount = wasCorrect ? responses.correct + 1 : responses.correct;
+        if(wasCorrect) setResponses(prev => ({...prev, correct: newCorrectCount}));
+        
+        if (newCorrectCount > 0 && newCorrectCount % 15 === 0) {
+            const nextLevel = Math.min(currentLevel + 1, 5);
+            if(nextLevel > currentLevel) {
+                setCurrentLevel(nextLevel);
+                setShowLevelUp(true); // Ativa o feedback visual
+                setTimeout(() => {
+                    setShowLevelUp(false); // Desativa após 2.5s
+                    setShowStimulus(false);
+                    setTimeout(() => startRound(), interRoundDelay);
+                }, 2500);
+                return; // Pausa a rodada para mostrar o feedback
+            }
+        }
+        
         setShowStimulus(false);
         setTimeout(() => startRound(), interRoundDelay);
     };
@@ -261,6 +246,17 @@ export default function ImpulseControlPage() {
             />
 
             <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+                {/* NOVO: Modal/Overlay de Feedback de Nível */}
+                {showLevelUp && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-2xl p-8 text-center shadow-2xl transform transition-all scale-105">
+                            <ArrowUpCircle size={64} className="text-green-500 mx-auto mb-4 animate-bounce" />
+                            <h2 className="text-3xl font-bold text-gray-800">Parabéns!</h2>
+                            <p className="text-xl text-gray-600 mt-2">Você avançou para o <strong className="text-green-600">Nível {currentLevel}</strong>!</p>
+                        </div>
+                    </div>
+                )}
+
                 {gameState === 'initial' && (
                      <div className="space-y-6">
                         <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
