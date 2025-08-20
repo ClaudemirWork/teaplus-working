@@ -1,13 +1,12 @@
-'use client'
+'use client';
 
-import React, { useState, useEffect, useRef } from 'react'
-import { Play, Pause, RotateCcw, Award, Save, BrainCircuit, ChevronLeft } from 'lucide-react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { createClient } from '../utils/supabaseClient' // Ajuste o caminho se necessário
+import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { ChevronLeft, Save, Trophy, RotateCcw, Zap, Target, CheckCircle, ArrowRightCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '../utils/supabaseClient';
 
 // --- COMPONENTE DO CABEÇALHO PADRÃO ---
-// Reintegrado diretamente no arquivo para garantir sua exibição.
 const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: {
     onSave?: () => void;
     isSaveDisabled?: boolean;
@@ -16,9 +15,8 @@ const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: {
     showSaveButton?: boolean;
 }) => (
     <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between h-16">
-                {/* 1. Botão Voltar (Esquerda) */}
                 <Link
                     href="/dashboard"
                     className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
@@ -26,14 +24,10 @@ const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: {
                     <ChevronLeft className="h-6 w-6" />
                     <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
                 </Link>
-
-                {/* 2. Título Centralizado (Meio) */}
                 <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex items-center gap-2">
                     {icon}
                     <span>{title}</span>
                 </h1>
-
-                {/* 3. Botão de Ação ou Espaçador (Direita) */}
                 {showSaveButton && onSave ? (
                     <button
                         onClick={onSave}
@@ -48,396 +42,260 @@ const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: {
                         <span className="hidden sm:inline">{isSaveDisabled ? 'Salvando...' : 'Salvar'}</span>
                     </button>
                 ) : (
-                    <div className="w-24"></div> // Espaçador para manter o título centralizado
+                    <div className="w-24"></div>
                 )}
             </div>
         </div>
     </header>
 );
 
-
 // --- PÁGINA DA ATIVIDADE ---
-const InhibitoryControlPage = () => {
+export default function AttentionRoulettePage() {
     const router = useRouter();
     const supabase = createClient();
 
-    const [gameState, setGameState] = useState<'initial' | 'playing' | 'paused' | 'finished'>('initial')
-    const [currentRound, setCurrentRound] = useState(0)
-    const [score, setScore] = useState(0)
-    const [timeLeft, setTimeLeft] = useState(90)
-    const [currentStimulus, setCurrentStimulus] = useState<{ color: string, word: string, isCongruent: boolean } | null>(null)
-    const [responses, setResponses] = useState<{ correct: number, incorrect: number, missed: number }>({ correct: 0, incorrect: 0, missed: 0 })
-    const [showStimulus, setShowStimulus] = useState(false)
+    type GameState = 'initial' | 'awaiting_spin' | 'spinning' | 'decision' | 'feedback' | 'finished';
+
+    const [gameState, setGameState] = useState<GameState>('initial');
     const [nivelSelecionado, setNivelSelecionado] = useState<number | null>(1);
-    const [salvando, setSalvando] = useState(false);
+    const [currentLevel, setCurrentLevel] = useState(1);
+    const [score, setScore] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(120);
+    
+    const [targetColor, setTargetColor] = useState('VERMELHO');
+    const [rouletteResult, setRouletteResult] = useState('');
+    const [rotation, setRotation] = useState(0);
+    const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
 
-    const stimulusTimerRef = useRef<NodeJS.Timeout | null>(null)
-    const gameTimerRef = useRef<NodeJS.Timeout | null>(null)
+    // Métricas
+    const [goReactionTimes, setGoReactionTimes] = useState<number[]>([]);
+    const [goOpportunities, setGoOpportunities] = useState(0);
+    const [stopErrors, setStopErrors] = useState(0);
+    const [stopOpportunities, setStopOpportunities] = useState(0);
 
-    const colors = ['VERMELHO', 'AZUL', 'VERDE', 'AMARELO']
-    const colorClasses = {
-        'VERMELHO': 'text-red-500',
-        'AZUL': 'text-blue-500',
-        'VERDE': 'text-green-500',
-        'AMARELO': 'text-yellow-500'
-    }
+    const decisionTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const reactionStartRef = useRef<number>(0);
 
     const niveis = [
-        { id: 1, nome: "Nível 1", dificuldade: "Iniciante", duracao: 1.5, icone: "🚦" },
-        { id: 2, nome: "Nível 2", dificuldade: "Fácil", duracao: 1.5, icone: "🚗" },
-        { id: 3, nome: "Nível 3", dificuldade: "Médio", duracao: 2, icone: "✈️" },
-        { id: 4, nome: "Nível 4", dificuldade: "Difícil", duracao: 2, icone: "🚀" },
-        { id: 5, nome: "Nível 5", dificuldade: "Expert", duracao: 2.5, icone: "🌟" }
+        { id: 1, nome: "Nível 1", dificuldade: "4 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO'], spinDuration: 2000, decisionTime: 3000, icone: "🎨" },
+        { id: 2, nome: "Nível 2", dificuldade: "6 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA'], spinDuration: 1800, decisionTime: 2500, icone: "🖌️" },
+        { id: 3, nome: "Nível 3", dificuldade: "8 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA', 'PRETO', 'BRANCO'], spinDuration: 1500, decisionTime: 2000, icone: "🖼️" },
     ];
+    
+    const colorsMap: { [key: string]: string } = {
+        'VERMELHO': 'bg-red-500', 'VERDE': 'bg-green-500', 'AZUL': 'bg-blue-500', 'AMARELO': 'bg-yellow-400',
+        'ROXO': 'bg-purple-500', 'LARANJA': 'bg-orange-500', 'PRETO': 'bg-gray-800', 'BRANCO': 'bg-gray-100 text-black'
+    };
+    
+    const currentConfig = niveis.find(n => n.id === currentLevel) || niveis[0];
 
     useEffect(() => {
-        if (gameState === 'playing' && timeLeft > 0) {
-            gameTimerRef.current = setTimeout(() => {
-                setTimeLeft(prev => prev - 1)
-            }, 1000)
-        } else if (timeLeft === 0 && gameState === 'playing') {
-            finishGame()
+        let timer: NodeJS.Timeout | null = null;
+        if (gameState !== 'initial' && gameState !== 'finished' && timeLeft > 0) {
+            timer = setTimeout(() => setTimeLeft(t => t - 1), 1000);
+        } else if (timeLeft === 0) {
+            setGameState('finished');
         }
+        return () => { if (timer) clearTimeout(timer); };
+    }, [gameState, timeLeft]);
 
-        return () => {
-            if (gameTimerRef.current) clearTimeout(gameTimerRef.current)
-        }
-    }, [timeLeft, gameState])
 
-    useEffect(() => {
-        if (gameState === 'playing') {
-            startRound();
-        }
-    }, [gameState]);
-
-    const handleNivelSelect = (nivel: any) => {
-        setNivelSelecionado(nivel.id);
-        setTimeLeft(nivel.duracao * 60);
+    const startNewRound = () => {
+        const newTarget = currentConfig.options[Math.floor(Math.random() * currentConfig.options.length)];
+        setTargetColor(newTarget);
+        setGameState('awaiting_spin');
     };
 
-    const generateStimulus = () => {
-        const colorWord = colors[Math.floor(Math.random() * colors.length)]
-        const displayColor = colors[Math.floor(Math.random() * colors.length)]
-        const isCongruent = Math.random() > 0.5
+    const handleSpin = () => {
+        if (gameState !== 'awaiting_spin') return;
+        
+        setGameState('spinning');
+        const resultIndex = Math.floor(Math.random() * currentConfig.options.length);
+        const resultColor = currentConfig.options[resultIndex];
+        
+        const baseRotation = 360 * 5; // 5 giros completos
+        const sliceAngle = 360 / currentConfig.options.length;
+        const resultAngle = (resultIndex * sliceAngle) + (sliceAngle / 2);
+        const finalRotation = baseRotation + (360 - resultAngle);
 
-        return {
-            word: colorWord,
-            color: isCongruent ? colorWord : displayColor,
-            isCongruent
-        }
-    }
+        setRotation(finalRotation);
 
-    const startRound = () => {
-        if (gameState !== 'playing' || timeLeft === 0) return;
+        setTimeout(() => {
+            setRouletteResult(resultColor);
+            setGameState('decision');
+            reactionStartRef.current = performance.now(); // Inicia contagem para tempo de reação
 
-        const stimulus = generateStimulus()
-        setCurrentStimulus(stimulus)
-        setShowStimulus(true)
-        setCurrentRound(prev => prev + 1)
+            // Timer para o jogador tomar a decisão
+            decisionTimerRef.current = setTimeout(() => {
+                // Se o tempo acabar, verifica se era uma oportunidade 'stop' correta
+                if (resultColor !== targetColor) {
+                    setStopOpportunities(prev => prev + 1); // Acerto 'stop'
+                }
+                setGameState('feedback');
+                setIsCorrect(resultColor !== targetColor);
+                setTimeout(startNewRound, 1500);
+            }, currentConfig.decisionTime);
 
-        const delay = Math.max(2000 - (nivelSelecionado! * 150), 800)
-        stimulusTimerRef.current = setTimeout(() => {
-            if (stimulusTimerRef.current) {
-                setShowStimulus(false)
-                setResponses(prev => ({ ...prev, missed: prev.missed + 1 }))
-                setTimeout(() => startRound(), 500)
-            }
-        }, delay)
-    }
+        }, currentConfig.spinDuration);
+    };
 
-    const handleResponse = (selectedColor: string) => {
-        if (!currentStimulus || !showStimulus) return
+    const handleActionClick = () => {
+        if (gameState !== 'decision' || !rouletteResult) return;
+        if (decisionTimerRef.current) clearTimeout(decisionTimerRef.current);
 
-        if (stimulusTimerRef.current) {
-            clearTimeout(stimulusTimerRef.current)
-            stimulusTimerRef.current = null;
-        }
+        const reactionTime = performance.now() - reactionStartRef.current;
+        const wasCorrectClick = rouletteResult === targetColor;
 
-        const isCorrect = selectedColor === currentStimulus.color
-
-        if (isCorrect) {
-            setScore(prev => prev + 10 + (nivelSelecionado! * 5))
-            setResponses(prev => ({ ...prev, correct: prev.correct + 1 }))
+        if (wasCorrectClick) {
+            setGoReactionTimes(prev => [...prev, reactionTime]);
+            setGoOpportunities(prev => prev + 1);
+            setScore(prev => prev + 100);
+            setIsCorrect(true);
         } else {
-            setScore(prev => Math.max(0, prev - 5));
-            setResponses(prev => ({ ...prev, incorrect: prev.incorrect + 1 }))
+            setStopErrors(prev => prev + 1);
+            setStopOpportunities(prev => prev + 1);
+            setIsCorrect(false);
         }
 
-        setShowStimulus(false)
-        setTimeout(() => startRound(), 500)
-    }
+        setGameState('feedback');
+        setTimeout(startNewRound, 1500);
+    };
 
     const startGame = () => {
-        if (nivelSelecionado === null) {
-            alert("Por favor, selecione um nível para começar.");
-            return;
-        }
-        setCurrentRound(0)
-        setScore(0)
-        setResponses({ correct: 0, incorrect: 0, missed: 0 })
-        setGameState('playing')
-    }
-
-    const pauseGame = () => {
-        setGameState('paused')
-        if (stimulusTimerRef.current) clearTimeout(stimulusTimerRef.current)
-        if (gameTimerRef.current) clearTimeout(gameTimerRef.current)
-    }
-
-    const resumeGame = () => {
-        setGameState('playing')
-    }
-
-    const finishGame = () => {
-        setGameState('finished')
-        if (stimulusTimerRef.current) clearTimeout(stimulusTimerRef.current)
-        if (gameTimerRef.current) clearTimeout(gameTimerRef.current)
-    }
-
-    const resetGame = () => {
-        setGameState('initial')
-        setCurrentRound(0)
-        setScore(0)
-        setResponses({ correct: 0, incorrect: 0, missed: 0 })
-        setCurrentStimulus(null)
-        setShowStimulus(false)
-        setNivelSelecionado(1);
-        setTimeLeft(90);
-    }
-
-    const handleSaveSession = async () => {
-        if (currentRound === 0) {
-            alert('Complete pelo menos uma rodada antes de salvar.');
-            return;
-        }
-        setSalvando(true);
-        try {
-            const { data: { user }, error: userError } = await supabase.auth.getUser();
-            if (userError || !user) {
-                console.error('Erro ao obter usuário:', userError);
-                alert('Erro: Sessão expirada. Por favor, faça login novamente.');
-                router.push('/login');
-                return;
-            }
-            const { error } = await supabase
-                .from('sessoes')
-                .insert([{
-                    usuario_id: user.id,
-                    atividade_nome: 'Controle Inibitório',
-                    pontuacao_final: score,
-                    data_fim: new Date().toISOString(),
-                    nivel_final: nivelSelecionado,
-                    detalhes: {
-                        precisao: accuracy,
-                        respostas_corretas: responses.correct,
-                        respostas_incorretas: responses.incorrect,
-                        respostas_perdidas: responses.missed,
-                        rodadas_totais: currentRound,
-                    }
-                }]);
-
-            if (error) {
-                console.error('Erro ao salvar:', error);
-                alert(`Erro ao salvar: ${error.message}`);
-            } else {
-                alert(`Sessão salva com sucesso!`);
-                router.push('/dashboard');
-            }
-        } catch (error: any) {
-            console.error('Erro inesperado:', error);
-            alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
-        } finally {
-            setSalvando(false);
-        }
+        if (nivelSelecionado === null) return;
+        setCurrentLevel(nivelSelecionado);
+        setTimeLeft(120);
+        setScore(0);
+        setGoReactionTimes([]);
+        setGoOpportunities(0);
+        setStopErrors(0);
+        setStopOpportunities(0);
+        startNewRound();
     };
 
-    const accuracy = responses.correct + responses.incorrect > 0
-        ? Math.round((responses.correct / (responses.correct + responses.incorrect)) * 100)
-        : 0
+    const resetGame = () => setGameState('initial');
+
+    // Funções de cálculo de métricas para a tela final
+    const calculateMetrics = () => {
+        const avgRT = goReactionTimes.length > 0 ? goReactionTimes.reduce((a, b) => a + b, 0) / goReactionTimes.length : 0;
+        const goAccuracy = goOpportunities > 0 ? (goReactionTimes.length / goOpportunities) * 100 : 0;
+        const stopAccuracy = stopOpportunities > 0 ? ((stopOpportunities - stopErrors) / stopOpportunities) * 100 : 0;
+        return { avgRT, goAccuracy, stopAccuracy };
+    };
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* O GameHeader agora é renderizado aqui, garantindo que apareça em todas as telas */}
             <GameHeader 
-                title="Controle Inibitório"
-                icon={<BrainCircuit size={22} />}
-                onSave={handleSaveSession}
+                title="Roleta da Atenção"
+                icon={<Zap size={22} />}
+                onSave={() => {}}
                 isSaveDisabled={salvando}
                 showSaveButton={gameState === 'finished'}
             />
-
-            {gameState === 'initial' && (
-                <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
-                    <div className="space-y-6">
-                        {/* Bloco 1: Cards Informativos */}
+            <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+                {gameState === 'initial' && (
+                     <div className="space-y-6">
                         <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                                     <h3 className="font-semibold text-gray-800 mb-1"> 🎯 Objetivo:</h3>
                                     <p className="text-sm text-gray-600">
-                                        Desenvolver controle inibitório, inibindo a resposta automática de ler a palavra para focar na cor do texto.
+                                        Treinar a atenção seletiva e o controle inibitório, focando em um alvo específico enquanto ignora estímulos distratores apresentados de forma dinâmica.
                                     </p>
                                 </div>
                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                     <h3 className="font-semibold text-gray-800 mb-1"> 🕹️ Como Jogar:</h3>
                                     <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                                        <li>Palavras de cores aparecerão na tela.</li>
-                                        <li>Clique no botão que corresponde à <strong>cor da tinta</strong> da palavra.</li>
-                                        <li>Ignore o que a palavra diz. Seja rápido e preciso!</li>
+                                        <li>Observe a cor alvo indicada na tela.</li>
+                                        <li>Clique em "Girar" para rodar a roleta.</li>
+                                        <li>Se a roleta parar na cor alvo, clique em "É esta!".</li>
+                                        <li>Se parar em outra cor, **não clique** e aguarde a próxima rodada.</li>
                                     </ul>
                                 </div>
                                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                                     <h3 className="font-semibold text-gray-800 mb-1"> ⭐ Avaliação:</h3>
                                     <p className="text-sm text-gray-600">
-                                        Sua pontuação é baseada na velocidade e precisão. Acertos aumentam a pontuação, enquanto erros a diminuem.
+                                        Sua performance é medida pela velocidade e precisão dos seus acertos (clicar no alvo) e pela sua capacidade de não clicar nos distratores (controle de impulso).
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Bloco 2: Seleção de Nível */}
                         <div className="bg-white rounded-xl shadow-lg p-6">
-                            <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Nível</h2>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                            <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Nível de Dificuldade</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 {niveis.map((nivel) => (
                                     <button
                                         key={nivel.id}
-                                        onClick={() => handleNivelSelect(nivel)}
-                                        className={`p-4 rounded-lg font-medium transition-colors ${nivelSelecionado === nivel.id
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                                            }`}
+                                        onClick={() => setNivelSelecionado(nivel.id)}
+                                        className={`p-4 rounded-lg font-medium transition-colors ${nivelSelecionado === nivel.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
                                     >
                                         <div className="text-2xl mb-1">{nivel.icone}</div>
                                         <div className="text-sm">{nivel.nome}</div>
-                                        <div className="text-xs opacity-80">{`${nivel.dificuldade} (${nivel.duracao}min)`}</div>
+                                        <div className="text-xs opacity-80">{nivel.dificuldade}</div>
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Bloco 3: Botão Iniciar */}
                         <div className="text-center pt-4">
-                            <button
-                                onClick={startGame}
-                                disabled={nivelSelecionado === null}
-                                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                            >
+                            <button onClick={startGame} disabled={nivelSelecionado === null} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
                                 🚀 Iniciar Atividade
                             </button>
                         </div>
                     </div>
-                </main>
-            )}
+                )}
+                
+                {(gameState !== 'initial' && gameState !== 'finished') && (
+                    <div className="bg-white rounded-xl shadow-lg p-6 text-center max-w-3xl mx-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <span className="bg-purple-100 text-purple-800 font-medium px-4 py-2 rounded-lg">Nível {currentLevel}</span>
+                            <span className="bg-blue-100 text-blue-800 font-medium px-4 py-2 rounded-lg">Pontos: {score}</span>
+                            <span className="bg-red-100 text-red-800 font-medium px-4 py-2 rounded-lg">Tempo: {timeLeft}s</span>
+                        </div>
 
-            {(gameState === 'playing' || gameState === 'paused') && (
-                <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-                     <div className="space-y-6 bg-white p-8 rounded-xl shadow-lg">
-                              <div className="grid grid-cols-3 gap-4 text-center mb-4">
-                                  <div>
-                                      <div className="text-sm font-medium text-gray-500">Tempo</div>
-                                      <div className="text-2xl font-bold text-gray-900">{timeLeft}s</div>
-                                  </div>
-                                  <div>
-                                      <div className="text-sm font-medium text-gray-500">Pontuação</div>
-                                      <div className="text-2xl font-bold text-blue-600">{score}</div>
-                                  </div>
-                                  <div>
-                                      <div className="text-sm font-medium text-gray-500">Nível</div>
-                                      <div className="text-2xl font-bold text-purple-600">{nivelSelecionado}</div>
-                                  </div>
-                              </div>
-                      
-                              {gameState === 'paused' && (
-                                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
-                                      <div className="text-lg font-semibold text-yellow-800 mb-4">⏸️ Jogo pausado</div>
-                                      <button
-                                          onClick={resumeGame}
-                                          className="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-6 rounded-lg font-medium transition-colors"
-                                      >
-                                          Continuar
-                                      </button>
-                                  </div>
-                              )}
-                              <div className="bg-gray-50 rounded-2xl p-8 border border-gray-200 text-center min-h-[250px] flex items-center justify-center">
-                                  {showStimulus && currentStimulus && gameState === 'playing' ? (
-                                      <div className="space-y-4">
-                                          <div className={`text-7xl sm:text-8xl font-bold ${colorClasses[currentStimulus.color as keyof typeof colorClasses]}`}>
-                                              {currentStimulus.word}
-                                          </div>
-                                          <div className="text-base text-gray-600 font-medium">
-                                              Qual é a COR desta palavra?
-                                          </div>
-                                      </div>
-                                  ) : gameState === 'playing' ? (
-                                      <div className="text-gray-500 text-xl">Prepare-se...</div>
-                                  ) : null}
-                              </div>
-                              {showStimulus && gameState === 'playing' ? (
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
-                                      <button onClick={() => handleResponse('VERMELHO')} className="bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-semibold transition-colors text-center">VERMELHO</button>
-                                      <button onClick={() => handleResponse('AZUL')} className="bg-blue-500 hover:bg-blue-600 text-white py-4 rounded-xl font-semibold transition-colors text-center">AZUL</button>
-                                      <button onClick={() => handleResponse('VERDE')} className="bg-green-500 hover:bg-green-600 text-white py-4 rounded-xl font-semibold transition-colors text-center">VERDE</button>
-                                      <button onClick={() => handleResponse('AMARELO')} className="bg-yellow-500 hover:bg-yellow-600 text-gray-800 py-4 rounded-xl font-semibold transition-colors text-center">AMARELO</button>
-                                  </div>
-                              ) : <div className="min-h-[72px]"></div> }
-                              <div className="flex justify-center gap-4 pt-4">
-                                  {gameState === 'playing' && (
-                                      <button onClick={pauseGame} className="bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-6 rounded-xl font-medium transition-colors flex items-center gap-2">
-                                          <Pause className="w-4 h-4" />
-                                          Pausar
-                                      </button>
-                                  )}
-                                  <button onClick={finishGame} className="bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-xl font-medium transition-colors flex items-center gap-2">
-                                      <RotateCcw className="w-4 h-4" />
-                                      Finalizar
-                                  </button>
-                              </div>
-                          </div>
-                </main>
-            )}
-            
-            {gameState === 'finished' && (
-                <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-                    <div className="space-y-8 bg-white p-8 rounded-xl shadow-lg">
-                        <div className="text-center">
-                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <Award className="w-10 h-10 text-green-600" />
-                            </div>
-                            <h2 className="text-3xl font-bold text-gray-900 mb-4">Exercício concluído!</h2>
-                            <p className="text-gray-600 mb-8">Parabéns! Você completou o teste de controle inibitório.</p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 max-w-2xl mx-auto">
-                                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                    <div className="text-3xl font-bold text-blue-600 mb-2">{score}</div>
-                                    <div className="text-sm font-medium text-gray-600">Pontuação</div>
-                                </div>
-                                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                    <div className="text-3xl font-bold text-green-600 mb-2">{accuracy}%</div>
-                                    <div className="text-sm font-medium text-gray-600">Precisão</div>
-                                </div>
-                                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                    <div className="text-3xl font-bold text-purple-600 mb-2">{nivelSelecionado}</div>
-                                    <div className="text-sm font-medium text-gray-600">Nível</div>
-                                </div>
-                                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                                    <div className="text-3xl font-bold text-orange-600 mb-2">{currentRound}</div>
-                                    <div className="text-sm font-medium text-gray-600">Rodadas</div>
-                                </div>
-                            </div>
-                            <div className="flex gap-4 justify-center">
-                                <button
-                                    onClick={resetGame}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-8 rounded-xl font-semibold transition-colors"
-                                >
-                                    Jogar novamente
-                                </button>
+                        <h2 className="text-2xl font-bold mb-4">A Tarefa: Clique quando a roleta parar em <span style={{ color: targetColor.toLowerCase() }}>{targetColor}</span></h2>
+                        
+                        <div className="relative w-80 h-80 mx-auto my-8">
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2/3 text-4xl">🔻</div>
+                            <div 
+                                className="w-full h-full rounded-full border-8 border-white shadow-xl transition-transform duration-[2000ms] ease-out"
+                                style={{
+                                    background: `conic-gradient(${currentConfig.options.map((color, i) => `${colorsMap[color].split(' ')[0].replace('bg-', '')}-500 ${i * (100 / currentConfig.options.length)}%, ${colorsMap[color].split(' ')[0].replace('bg-', '')}-500 ${(i + 1) * (100 / currentConfig.options.length)}%`).join(', ')})`,
+                                    transform: `rotate(${rotation}deg)`
+                                }}
+                            >
                             </div>
                         </div>
-                    </div>
-                </main>
-            )}
-        </div>
-    )
-}
 
-export default InhibitoryControlPage;
+                        <div className="h-20">
+                            {gameState === 'awaiting_spin' && <button onClick={handleSpin} className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-10 rounded-lg text-xl">Girar</button>}
+                            {gameState === 'spinning' && <p className="text-xl animate-pulse">Girando...</p>}
+                            {gameState === 'decision' && <button onClick={handleActionClick} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-10 rounded-lg text-xl animate-bounce">É esta!</button>}
+                            {gameState === 'feedback' && ( isCorrect ? <CheckCircle size={48} className="text-green-500 mx-auto" /> : <XCircle size={48} className="text-red-500 mx-auto" />)}
+                        </div>
+                    </div>
+                )}
+
+                {gameState === 'finished' && (
+                    <div className="bg-white rounded-xl shadow-lg p-8 text-center max-w-2xl mx-auto">
+                        <Trophy className="mx-auto text-yellow-500 mb-4" size={48}/>
+                        <h2 className="text-3xl font-bold text-gray-800 mb-6">Sessão Concluída!</h2>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-8">
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{score}</div><div className="text-sm">Pontos</div></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{calculateMetrics().avgRT.toFixed(0)}ms</div><div className="text-sm">RT Médio</div></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{calculateMetrics().goAccuracy.toFixed(0)}%</div><div className="text-sm">Precisão GO</div></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{calculateMetrics().stopAccuracy.toFixed(0)}%</div><div className="text-sm">Precisão STOP</div></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{stopErrors}</div><div className="text-sm">Erros de Impulso</div></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{currentLevel}</div><div className="text-sm">Nível Final</div></div>
+                        </div>
+                        <button onClick={resetGame} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 mx-auto">
+                           <RotateCcw size={20}/>
+                           Jogar Novamente
+                        </button>
+                    </div>
+                )}
+            </main>
+        </div>
+    );
+}
