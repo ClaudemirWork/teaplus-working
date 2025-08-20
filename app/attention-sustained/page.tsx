@@ -6,32 +6,41 @@ import { ChevronLeft, Save } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '../utils/supabaseClient'
 
+// Interface de Tipagem para as configurações de nível
+interface NivelConfig {
+  duracao: number;
+  intervalo: number;
+  nome: string;
+  exposicao: number;
+}
+
 export default function AttentionSustained() {
   const router = useRouter()
   const supabase = createClient()
   
-  const [nivel, setNivel] = useState(1)
-  const [pontuacao, setPontuacao] = useState(0)
-  const = useState(30)
-  const = useState(30)
-  const [ativo, setAtivo] = useState(false)
-  const = useState(false)
-  const = useState({ x: 50, y: 50 })
-  const [acertos, setAcertos] = useState(0)
-  const = useState(0)
-  const [exercicioConcluido, setExercicioConcluido] = useState(false)
-  const [jogoIniciado, setJogoIniciado] = useState(false)
-  const = useState(false)
+  // CORRIGIDO: Declarações de useState com a sintaxe de desestruturação de array correta
+  const [nivel, setNivel] = useState(1);
+  const [pontuacao, setPontuacao] = useState(0);
+  const = useState(30);
+  const = useState(30);
+  const [ativo, setAtivo] = useState(false);
+  const = useState(false);
+  const = useState({ x: 50, y: 50 });
+  const [acertos, setAcertos] = useState(0);
+  const = useState(0);
+  const [exercicioConcluido, setExercicioConcluido] = useState(false);
+  const [jogoIniciado, setJogoIniciado] = useState(false);
+  const = useState(false);
   
-  // Métricas internas
-  const = useState<number>()
-  const [errosComissao, setErrosComissao] = useState(0)
-  const [errosOmissao, setErrosOmissao] = useState(0)
-  const = useState<number>(0)
-  const = useState<boolean>()
+  // Métricas internas - CORRIGIDO: Inicializadas como arrays vazios
+  const = useState<number>();
+  const [errosComissao, setErrosComissao] = useState(0);
+  const [errosOmissao, setErrosOmissao] = useState(0);
+  const = useState<number>(0);
+  const = useState<boolean>();
 
   // Configurações por nível
-  const niveis = {
+  const niveis: { [key: number]: NivelConfig } = {
     1: { duracao: 30, intervalo: 2500, nome: "Iniciante (30s)", exposicao: 1200 },
     2: { duracao: 60, intervalo: 2200, nome: "Básico (1min)", exposicao: 1100 },
     3: { duracao: 90, intervalo: 1900, nome: "Intermediário (1.5min)", exposicao: 1000 },
@@ -41,7 +50,7 @@ export default function AttentionSustained() {
 
   // Timer principal
   useEffect(() => {
-    let timer: NodeJS.Timeout
+    let timer: NodeJS.Timeout | undefined;
     if (ativo && tempoRestante > 0) {
       timer = setTimeout(() => {
         setTempoRestante(prev => prev - 1)
@@ -49,18 +58,22 @@ export default function AttentionSustained() {
     } else if (tempoRestante === 0 && ativo) {
       finalizarExercicio()
     }
-    return () => clearTimeout(timer)
+    return () => {
+      if (timer) clearTimeout(timer);
+    }
   },)
 
   // Controle de aparição do target
   useEffect(() => {
-    let interval: NodeJS.Timeout
+    let interval: NodeJS.Timeout | undefined;
     if (ativo) {
       interval = setInterval(() => {
         mostrarTarget()
       }, niveis[nivel as keyof typeof niveis].intervalo)
     }
-    return () => clearInterval(interval)
+    return () => {
+      if (interval) clearInterval(interval);
+    }
   }, [ativo, nivel])
 
   const handleClickArea = (event: React.MouseEvent) => {
@@ -77,10 +90,10 @@ export default function AttentionSustained() {
     setPontuacao(0)
     setAcertos(0)
     setTentativas(0)
-    setTemposReacao()
+    setTemposReacao() // CORRIGIDO: Resetando o array
     setErrosComissao(0)
     setErrosOmissao(0)
-    setSequenciaAcertos()
+    setSequenciaAcertos() // CORRIGIDO: Resetando o array
     setExercicioConcluido(false)
     setTargetVisible(false)
     setJogoIniciado(true)
@@ -98,18 +111,20 @@ export default function AttentionSustained() {
 
     const tempoExposicao = niveis[nivel as keyof typeof niveis].exposicao
     setTimeout(() => {
-      if (targetVisible) {
-        setErrosOmissao(prev => prev + 1)
-        setSequenciaAcertos(prev => [...prev, false])
-      }
-      setTargetVisible(false)
+      setTargetVisible(prev => {
+        if (prev) {
+          setErrosOmissao(oldErros => oldErros + 1)
+          setSequenciaAcertos(oldSeq =>)
+        }
+        return false
+      })
     }, tempoExposicao)
   }
 
   const clicarTarget = () => {
     if (targetVisible && ativo) {
       const tempoReacao = Date.now() - timestampTarget
-      setTemposReacao(prev =>)
+      setTemposReacao(prev =>) // CORRIGIDO: Usando o spread operator corretamente
       setSequenciaAcertos(prev => [...prev, true])
       
       setAcertos(prev => prev + 1)
@@ -139,7 +154,7 @@ export default function AttentionSustained() {
   const coeficienteVariacao = tempoReacaoMedio > 0? Math.round((variabilidadeRT / tempoReacaoMedio) * 100) : 0
   const podeAvancar = precisao >= 75 && nivel < 5 && coeficienteVariacao <= 30
 
-  // SALVAMENTO - IGUAL AO CAA
+  // SALVAMENTO
   const handleSaveSession = async () => {
     if (tentativas === 0) {
       alert('Complete pelo menos uma tentativa antes de salvar.')
@@ -149,7 +164,7 @@ export default function AttentionSustained() {
     setSalvando(true)
     
     try {
-      // Obter o usuário atual - EXATAMENTE COMO NO CAA
+      // Obter o usuário atual
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       
       if (userError ||!user) {
@@ -159,7 +174,7 @@ export default function AttentionSustained() {
         return
       }
       
-      // Salvar na tabela sessoes - MESMA ESTRUTURA DO CAA
+      // Salvar na tabela sessoes - CORRIGIDO: Passando o objeto de dados correto
       const { data, error } = await supabase
        .from('sessoes')
        .insert()
@@ -247,7 +262,7 @@ export default function AttentionSustained() {
 
       <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
         {!jogoIniciado? (
-          // Tela inicial
+          // Tela inicial LIMPA - SEM TERMOS TÉCNICOS
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -298,7 +313,7 @@ export default function AttentionSustained() {
               </div>
             </div>
 
-            {/* Botão Iniciar */}
+            {/* Botão Iniciar - SEM "AVALIAÇÃO CIENTÍFICA" */}
             <div className="text-center">
               <button
                 onClick={iniciarExercicio}
@@ -309,7 +324,7 @@ export default function AttentionSustained() {
             </div>
           </div>
         ) :!exercicioConcluido? (
-          // Área de jogo
+          // Área de jogo - LIMPA
           <div className="space-y-6">
             {/* Progresso */}
             <div className="bg-white rounded-xl shadow-lg p-4">
@@ -372,7 +387,7 @@ export default function AttentionSustained() {
             </div>
           </div>
         ) : (
-          // Tela de resultados
+          // Tela de resultados LIMPA
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="text-center mb-6">
               <div className="text-6xl mb-4">
@@ -388,7 +403,7 @@ export default function AttentionSustained() {
               </p>
             </div>
             
-            {/* Resultados */}
+            {/* Resultados - LAYOUT LIMPO */}
             <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
               <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">📊 Resultados da Sessão</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -411,7 +426,7 @@ export default function AttentionSustained() {
               </div>
             </div>
             
-            {/* Feedback */}
+            {/* Feedback - LINGUAGEM SIMPLES */}
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <h4 className="font-bold text-blue-800 mb-2">📊 Seu Desempenho:</h4>
               <div className="text-sm text-blue-700 space-y-1">
