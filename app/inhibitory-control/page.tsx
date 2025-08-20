@@ -61,8 +61,9 @@ const RouletteWheel = ({ options, rotation, colorsMap, isSpinning, spinDuration 
     
     // Função para criar o caminho SVG de uma fatia
     const createSlicePath = (index: number) => {
-        // Começar do topo (270 graus ou -90 graus) 
-        // e ir no sentido horário
+        // IMPORTANTE: Vamos mapear corretamente as posições
+        // A primeira cor (índice 0) deve começar no topo e ir no sentido horário
+        // Começamos em -90 - sliceAngle/2 para centralizar a primeira fatia no topo
         const startAngle = index * sliceAngle - 90 - (sliceAngle / 2);
         const endAngle = startAngle + sliceAngle;
         
@@ -81,7 +82,7 @@ const RouletteWheel = ({ options, rotation, colorsMap, isSpinning, spinDuration 
     
     // Função para posicionar o texto no centro da fatia
     const getTextPosition = (index: number) => {
-        // Centro de cada fatia
+        // Centro de cada fatia - deve corresponder ao centro real da fatia
         const middleAngle = (index * sliceAngle - 90) * Math.PI / 180;
         const textRadius = 85;
         const x = 150 + textRadius * Math.cos(middleAngle);
@@ -231,45 +232,60 @@ export default function AttentionRoulettePage() {
         
         // Debug detalhado
         console.log('=== NOVO GIRO ===');
-        console.log('Opções:', currentConfig.options.map((c, i) => `${i}: ${c}`).join(', '));
-        console.log('Cor alvo do jogo:', targetColor);
+        console.log('Mapeamento de cores:');
+        currentConfig.options.forEach((cor, idx) => {
+            console.log(`  Índice ${idx}: ${cor}`);
+        });
+        console.log('');
+        console.log('Cor alvo (deve clicar se for esta):', targetColor);
         console.log('Índice sorteado:', resultIndex);
-        console.log('Cor que deve parar na seta:', resultColor);
+        console.log('Cor sorteada (deve aparecer na seta):', resultColor);
         
         // Cálculo da rotação
         const sliceAngle = 360 / currentConfig.options.length;
         
-        // AJUSTE EXPERIMENTAL: Baseado na observação de que quando deveria ser AZUL (2)
-        // está mostrando VERDE (1), parece que precisamos ADICIONAR 1 ao índice
-        // Isso sugere que a roleta está deslocada em 1 posição no sentido horário
-        const visualOffset = -1; // Mudando para -1 para testar
-        const correctedIndex = (resultIndex - visualOffset + currentConfig.options.length) % currentConfig.options.length;
+        // TESTE DIRETO: Sem ajustes, vamos ver o que acontece
+        // Para colocar a cor de índice X no topo:
+        // - Índice 0 já está no topo: 0 graus
+        // - Índice 1: girar -90 graus (sentido anti-horário)
+        // - Índice 2: girar -180 graus
+        // - Índice 3: girar -270 graus
         
-        // Para posicionar a cor no topo, rotacionamos
-        const targetRotation = correctedIndex * sliceAngle;
+        // Verificação: se quando queremos índice 2 (AZUL) aparece índice 1 (VERDE),
+        // então estamos girando 1 posição a menos do que deveríamos
+        // Solução: adicionar mais uma posição de rotação
+        
+        const rotationOffset = 1; // Adiciona 1 posição extra de rotação
+        const adjustedRotation = -((resultIndex + rotationOffset) * sliceAngle);
         
         // Sempre gira múltiplas voltas completas
         const minSpins = 5;
         const maxSpins = 8;
         const spins = Math.floor(Math.random() * (maxSpins - minSpins + 1)) + minSpins;
         
-        // Reset periódico para evitar acúmulo
+        // Reset periódico
         const baseRotation = roundCount % 10 === 0 ? 0 : rotation;
         
-        // Rotação final - tentando abordagem diferente
-        const newRotation = baseRotation + (360 * spins) - targetRotation;
+        // Rotação final
+        const newRotation = baseRotation + (360 * spins) + adjustedRotation;
         
-        console.log('Índice visual corrigido:', correctedIndex);
-        console.log('Ângulo da fatia:', sliceAngle);
-        console.log('Rotação alvo:', targetRotation);
-        console.log('Rotação total aplicada:', newRotation);
+        console.log('');
+        console.log('Cálculos de rotação:');
+        console.log(`  Ângulo de cada fatia: ${sliceAngle}°`);
+        console.log(`  Offset de correção: +${rotationOffset} posição`);
+        console.log(`  Rotação necessária: ${adjustedRotation}°`);
+        console.log(`  Voltas completas: ${spins}`);
+        console.log(`  Rotação total: ${newRotation}°`);
         
         setRotation(newRotation);
 
         setTimeout(() => {
-            console.log('=== RESULTADO FINAL ===');
-            console.log('Cor registrada pelo sistema:', resultColor);
-            console.log('Por favor, verifique visualmente se está correto!');
+            console.log('');
+            console.log('=== PARADA DA ROLETA ===');
+            console.log(`Sistema registrou: ${resultColor}`);
+            console.log(`VERIFIQUE: A cor na seta deve ser ${resultColor}`);
+            console.log('Se não for, informe qual cor apareceu visualmente.');
+            console.log('=============================');
             
             setRouletteResult(resultColor);
             setGameState('decision');
@@ -480,27 +496,6 @@ export default function AttentionRoulettePage() {
                                 {targetColor}
                             </span>
                         </h2>
-                        
-                        {/* Debug: Mostrar qual cor parou - MELHORADO */}
-                        {gameState === 'decision' && rouletteResult && (
-                            <div className="mb-4 p-3 bg-gray-100 rounded-lg">
-                                <div className="text-lg font-semibold">
-                                    Sistema registrou: 
-                                    <span 
-                                        className="inline-block ml-2 px-3 py-1 rounded shadow-sm" 
-                                        style={{ 
-                                            backgroundColor: colorsMap[rouletteResult]?.bg, 
-                                            color: colorsMap[rouletteResult]?.text 
-                                        }}
-                                    >
-                                        {rouletteResult}
-                                    </span>
-                                </div>
-                                <div className="text-sm text-gray-600 mt-1">
-                                    (Se visual não corresponder, há dessincronização)
-                                </div>
-                            </div>
-                        )}
                         
                         <RouletteWheel 
                             options={currentConfig.options}
