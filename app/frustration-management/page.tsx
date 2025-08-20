@@ -35,14 +35,13 @@ export default function FrustrationManagementPage() {
   const [completedExercises, setCompletedExercises] = useState<number[]>([]);
   const [points, setPoints] = useState(0);
   const [nivelSelecionado, setNivelSelecionado] = useState(1);
-  const [sessionExercises, setSessionExercises] = useState([]); // Exercícios da sessão atual
+  const [sessionExercises, setSessionExercises] = useState<any[]>([]);
   const router = useRouter();
 
   const [isActive, setIsActive] = useState(false);
   const [breathingPhase, setBreathingPhase] = useState<'inhale' | 'hold' | 'exhale' | 'rest'>('rest');
   const [breathingCount, setBreathingCount] = useState(0);
 
-  // --- Dados da Atividade com NÍVEIS ---
   const allExercises = [
     { id: 1, levels: [1, 2, 3], title: "Passo 1: Respiração 4-7-8", type: "breathing", description: "Use a respiração para acalmar o corpo e a mente.", instruction: "Concentre-se no círculo e siga o ritmo para ativar a resposta de relaxamento." },
     { id: 2, levels: [2, 3], title: "Passo 2: Identificando Pensamentos", type: "reframing", description: "Reconheça os padrões de pensamento que geram frustração.", instruction: "Examine os exemplos de como nossos pensamentos podem nos enganar quando estamos frustrados." },
@@ -56,7 +55,6 @@ export default function FrustrationManagementPage() {
     { situation: "Alguém cortou sua fila no supermercado", distortedThought: "As pessoas são sempre desrespeitosas comigo. Ninguém me respeita.", reframedThought: "Pode ter sido um mal-entendido ou a pessoa pode estar com pressa por alguma emergência." }
   ];
 
-  // Lógica de respiração
   useEffect(() => {
     let breathTimer: NodeJS.Timeout | null = null;
     const currentExercise = sessionExercises[currentExerciseIndex];
@@ -64,14 +62,9 @@ export default function FrustrationManagementPage() {
       breathTimer = setInterval(() => {
         setBreathingCount(prev => {
           const newCount = prev + 1;
-          if (breathingPhase === 'inhale' && newCount >= 4) {
-            setBreathingPhase('hold'); return 0;
-          } else if (breathingPhase === 'hold' && newCount >= 7) {
-            setBreathingPhase('exhale'); return 0;
-          } else if (breathingPhase === 'exhale' && newCount >= 8) {
-            setBreathingPhase('inhale');
-            return 0;
-          }
+          if (breathingPhase === 'inhale' && newCount >= 4) { setBreathingPhase('hold'); return 0; }
+          if (breathingPhase === 'hold' && newCount >= 7) { setBreathingPhase('exhale'); return 0; }
+          if (breathingPhase === 'exhale' && newCount >= 8) { setBreathingPhase('inhale'); return 0; }
           return newCount;
         });
       }, 1000);
@@ -120,7 +113,7 @@ export default function FrustrationManagementPage() {
   const prevExercise = () => { if (currentExerciseIndex > 0) setCurrentExerciseIndex(c => c - 1) };
 
   // RENDERIZAÇÃO DA ATIVIDADE EM SI
-  if (gameStarted) {
+  if (gameStarted && sessionExercises.length > 0) {
     const exercise = sessionExercises[currentExerciseIndex];
     const isCompleted = completedExercises.includes(exercise.id);
 
@@ -185,7 +178,7 @@ export default function FrustrationManagementPage() {
                     <button 
                         onClick={nextExercise} 
                         disabled={!isCompleted || currentExerciseIndex === sessionExercises.length - 1} 
-                        className="px-6 py-2 rounded-lg bg-teal-500 text-white hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2 rounded-lg font-semibold text-white transition-colors bg-teal-500 hover:bg-teal-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
                     >
                         Próximo
                     </button>
@@ -211,8 +204,8 @@ export default function FrustrationManagementPage() {
                 <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como Jogar:</h3>
                 <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
                   <li>Escolha um nível para começar (sugerimos o Nível 1).</li>
-                  <li>Cada nível ensina uma parte da técnica completa.</li>
-                  <li>Avance pelos níveis para dominar a estratégia.</li>
+                  <li>Conclua cada passo para habilitar o botão "Próximo".</li>
+                  <li>Avance pelos níveis para dominar a estratégia completa.</li>
                 </ul>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
