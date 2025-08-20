@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Save, Trophy, RotateCcw, Zap, Target, CheckCircle, ArrowRightCircle } from 'lucide-react';
+import { ChevronLeft, Save, Trophy, RotateCcw, Zap, CheckCircle, XCircle, ArrowRightCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
 
@@ -49,7 +49,7 @@ const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: {
     </header>
 );
 
-// --- PÁGINA DA ATIVIDADE ---
+// --- PÁGINA DA NOVA ATIVIDADE ---
 export default function AttentionRoulettePage() {
     const router = useRouter();
     const supabase = createClient();
@@ -72,19 +72,22 @@ export default function AttentionRoulettePage() {
     const [goOpportunities, setGoOpportunities] = useState(0);
     const [stopErrors, setStopErrors] = useState(0);
     const [stopOpportunities, setStopOpportunities] = useState(0);
+    const [missedGo, setMissedGo] = useState(0);
 
     const decisionTimerRef = useRef<NodeJS.Timeout | null>(null);
     const reactionStartRef = useRef<number>(0);
 
     const niveis = [
-        { id: 1, nome: "Nível 1", dificuldade: "4 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO'], spinDuration: 2000, decisionTime: 3000, icone: "🎨" },
-        { id: 2, nome: "Nível 2", dificuldade: "6 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA'], spinDuration: 1800, decisionTime: 2500, icone: "🖌️" },
-        { id: 3, nome: "Nível 3", dificuldade: "8 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA', 'PRETO', 'BRANCO'], spinDuration: 1500, decisionTime: 2000, icone: "🖼️" },
+        { id: 1, nome: "Nível 1", dificuldade: "4 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO'], spinDuration: 2000, decisionTime: 4000, icone: "🎨" },
+        { id: 2, nome: "Nível 2", dificuldade: "6 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA'], spinDuration: 1800, decisionTime: 3000, icone: "🖌️" },
+        { id: 3, nome: "Nível 3", dificuldade: "8 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA', 'PRETO', 'BRANCO'], spinDuration: 1500, decisionTime: 2500, icone: "🖼️" },
     ];
     
-    const colorsMap: { [key: string]: string } = {
-        'VERMELHO': 'bg-red-500', 'VERDE': 'bg-green-500', 'AZUL': 'bg-blue-500', 'AMARELO': 'bg-yellow-400',
-        'ROXO': 'bg-purple-500', 'LARANJA': 'bg-orange-500', 'PRETO': 'bg-gray-800', 'BRANCO': 'bg-gray-100 text-black'
+    const colorsMap: { [key: string]: { bg: string, text: string } } = {
+        'VERMELHO': { bg: '#ef4444', text: '#ffffff' }, 'VERDE': { bg: '#22c55e', text: '#ffffff' }, 
+        'AZUL': { bg: '#3b82f6', text: '#ffffff' }, 'AMARELO': { bg: '#f59e0b', text: '#ffffff' },
+        'ROXO': { bg: '#8b5cf6', text: '#ffffff' }, 'LARANJA': { bg: '#f97316', text: '#ffffff' }, 
+        'PRETO': { bg: '#1f2937', text: '#ffffff' }, 'BRANCO': { bg: '#f9fafb', text: '#000000' }
     };
     
     const currentConfig = niveis.find(n => n.id === currentLevel) || niveis[0];
@@ -99,7 +102,6 @@ export default function AttentionRoulettePage() {
         return () => { if (timer) clearTimeout(timer); };
     }, [gameState, timeLeft]);
 
-
     const startNewRound = () => {
         const newTarget = currentConfig.options[Math.floor(Math.random() * currentConfig.options.length)];
         setTargetColor(newTarget);
@@ -113,7 +115,7 @@ export default function AttentionRoulettePage() {
         const resultIndex = Math.floor(Math.random() * currentConfig.options.length);
         const resultColor = currentConfig.options[resultIndex];
         
-        const baseRotation = 360 * 5; // 5 giros completos
+        const baseRotation = 360 * 5;
         const sliceAngle = 360 / currentConfig.options.length;
         const resultAngle = (resultIndex * sliceAngle) + (sliceAngle / 2);
         const finalRotation = baseRotation + (360 - resultAngle);
@@ -123,16 +125,22 @@ export default function AttentionRoulettePage() {
         setTimeout(() => {
             setRouletteResult(resultColor);
             setGameState('decision');
-            reactionStartRef.current = performance.now(); // Inicia contagem para tempo de reação
+            reactionStartRef.current = performance.now();
 
-            // Timer para o jogador tomar a decisão
+            if (resultColor === targetColor) {
+                setGoOpportunities(prev => prev + 1);
+            } else {
+                setStopOpportunities(prev => prev + 1);
+            }
+
             decisionTimerRef.current = setTimeout(() => {
-                // Se o tempo acabar, verifica se era uma oportunidade 'stop' correta
                 if (resultColor !== targetColor) {
-                    setStopOpportunities(prev => prev + 1); // Acerto 'stop'
+                    setIsCorrect(true); // Acertou ao não clicar
+                } else {
+                    setIsCorrect(false); // Errou ao não clicar (omissão)
+                    setMissedGo(prev => prev + 1);
                 }
                 setGameState('feedback');
-                setIsCorrect(resultColor !== targetColor);
                 setTimeout(startNewRound, 1500);
             }, currentConfig.decisionTime);
 
@@ -148,12 +156,10 @@ export default function AttentionRoulettePage() {
 
         if (wasCorrectClick) {
             setGoReactionTimes(prev => [...prev, reactionTime]);
-            setGoOpportunities(prev => prev + 1);
             setScore(prev => prev + 100);
             setIsCorrect(true);
         } else {
             setStopErrors(prev => prev + 1);
-            setStopOpportunities(prev => prev + 1);
             setIsCorrect(false);
         }
 
@@ -170,15 +176,15 @@ export default function AttentionRoulettePage() {
         setGoOpportunities(0);
         setStopErrors(0);
         setStopOpportunities(0);
+        setMissedGo(0);
         startNewRound();
     };
 
     const resetGame = () => setGameState('initial');
 
-    // Funções de cálculo de métricas para a tela final
     const calculateMetrics = () => {
         const avgRT = goReactionTimes.length > 0 ? goReactionTimes.reduce((a, b) => a + b, 0) / goReactionTimes.length : 0;
-        const goAccuracy = goOpportunities > 0 ? (goReactionTimes.length / goOpportunities) * 100 : 0;
+        const goAccuracy = goOpportunities > 0 ? ((goOpportunities - missedGo) / goOpportunities) * 100 : 0;
         const stopAccuracy = stopOpportunities > 0 ? ((stopOpportunities - stopErrors) / stopOpportunities) * 100 : 0;
         return { avgRT, goAccuracy, stopAccuracy };
     };
@@ -188,7 +194,7 @@ export default function AttentionRoulettePage() {
             <GameHeader 
                 title="Roleta da Atenção"
                 icon={<Zap size={22} />}
-                onSave={() => {}}
+                onSave={() => {}} // Lógica de salvar a implementar
                 isSaveDisabled={salvando}
                 showSaveButton={gameState === 'finished'}
             />
@@ -208,14 +214,14 @@ export default function AttentionRoulettePage() {
                                     <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
                                         <li>Observe a cor alvo indicada na tela.</li>
                                         <li>Clique em "Girar" para rodar a roleta.</li>
-                                        <li>Se a roleta parar na cor alvo, clique em "É esta!".</li>
+                                        <li>Se a roleta parar na cor alvo, clique no botão de ação.</li>
                                         <li>Se parar em outra cor, **não clique** e aguarde a próxima rodada.</li>
                                     </ul>
                                 </div>
                                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                                     <h3 className="font-semibold text-gray-800 mb-1"> ⭐ Avaliação:</h3>
                                     <p className="text-sm text-gray-600">
-                                        Sua performance é medida pela velocidade e precisão dos seus acertos (clicar no alvo) e pela sua capacidade de não clicar nos distratores (controle de impulso).
+                                        Sua performance é medida pela velocidade dos acertos (clicar no alvo) e pela sua capacidade de não clicar nos distratores (controle de impulso).
                                     </p>
                                 </div>
                             </div>
@@ -254,23 +260,42 @@ export default function AttentionRoulettePage() {
                             <span className="bg-red-100 text-red-800 font-medium px-4 py-2 rounded-lg">Tempo: {timeLeft}s</span>
                         </div>
 
-                        <h2 className="text-2xl font-bold mb-4">A Tarefa: Clique quando a roleta parar em <span style={{ color: targetColor.toLowerCase() }}>{targetColor}</span></h2>
+                        <h2 className="text-2xl font-bold mb-4">A Tarefa: Clique se a roleta parar em <span className="p-1 rounded" style={{ backgroundColor: colorsMap[targetColor]?.bg, color: colorsMap[targetColor]?.text }}>{targetColor}</span></h2>
                         
-                        <div className="relative w-80 h-80 mx-auto my-8">
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2/3 text-4xl">🔻</div>
+                        <div className="relative w-72 h-72 sm:w-80 sm:h-80 mx-auto my-8">
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full text-5xl text-gray-700">▼</div>
                             <div 
-                                className="w-full h-full rounded-full border-8 border-white shadow-xl transition-transform duration-[2000ms] ease-out"
+                                className="w-full h-full rounded-full border-8 border-white shadow-xl overflow-hidden"
                                 style={{
-                                    background: `conic-gradient(${currentConfig.options.map((color, i) => `${colorsMap[color].split(' ')[0].replace('bg-', '')}-500 ${i * (100 / currentConfig.options.length)}%, ${colorsMap[color].split(' ')[0].replace('bg-', '')}-500 ${(i + 1) * (100 / currentConfig.options.length)}%`).join(', ')})`,
+                                    transition: `transform ${currentConfig.spinDuration}ms cubic-bezier(0.25, 1, 0.5, 1)`,
                                     transform: `rotate(${rotation}deg)`
                                 }}
                             >
+                                {currentConfig.options.map((color, index) => {
+                                    const sliceAngle = 360 / currentConfig.options.length;
+                                    const rotationAngle = index * sliceAngle;
+                                    return (
+                                        <div key={color} className="absolute w-1/2 h-1/2 origin-bottom-right flex items-center justify-start pl-4"
+                                            style={{
+                                                backgroundColor: colorsMap[color].bg,
+                                                color: colorsMap[color].text,
+                                                transform: `rotate(${rotationAngle}deg)`,
+                                                clipPath: `polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)`,
+                                                width: '50%',
+                                                height: '50%',
+                                                transformOrigin: '100% 100%',
+                                                clipPath: `polygon(0 0, 100% 0, 100% 2px, 0 ${100 * Math.tan(sliceAngle/2 * Math.PI/180)}%)` // Aproximação de um setor circular
+                                            }}>
+                                                <span style={{transform: `rotate(${sliceAngle/2}deg) translate(-20%, -50%)`}} className="text-sm font-bold -ml-4">{color}</span>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </div>
 
-                        <div className="h-20">
+                        <div className="h-20 flex items-center justify-center">
                             {gameState === 'awaiting_spin' && <button onClick={handleSpin} className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-10 rounded-lg text-xl">Girar</button>}
-                            {gameState === 'spinning' && <p className="text-xl animate-pulse">Girando...</p>}
+                            {gameState === 'spinning' && <p className="text-xl animate-pulse text-gray-500">Girando...</p>}
                             {gameState === 'decision' && <button onClick={handleActionClick} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-10 rounded-lg text-xl animate-bounce">É esta!</button>}
                             {gameState === 'feedback' && ( isCorrect ? <CheckCircle size={48} className="text-green-500 mx-auto" /> : <XCircle size={48} className="text-red-500 mx-auto" />)}
                         </div>
@@ -283,11 +308,11 @@ export default function AttentionRoulettePage() {
                         <h2 className="text-3xl font-bold text-gray-800 mb-6">Sessão Concluída!</h2>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-8">
                             <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{score}</div><div className="text-sm">Pontos</div></div>
-                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{calculateMetrics().avgRT.toFixed(0)}ms</div><div className="text-sm">RT Médio</div></div>
-                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{calculateMetrics().goAccuracy.toFixed(0)}%</div><div className="text-sm">Precisão GO</div></div>
-                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{calculateMetrics().stopAccuracy.toFixed(0)}%</div><div className="text-sm">Precisão STOP</div></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{calculateMetrics().avgRT.toFixed(0)}ms</div><div className="text-sm">RT Médio (Go)</div></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{calculateMetrics().goAccuracy.toFixed(0)}%</div><div className="text-sm">Precisão (Go)</div></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{calculateMetrics().stopAccuracy.toFixed(0)}%</div><div className="text-sm">Precisão (Stop)</div></div>
                             <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{stopErrors}</div><div className="text-sm">Erros de Impulso</div></div>
-                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{currentLevel}</div><div className="text-sm">Nível Final</div></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{missedGo}</div><div className="text-sm">Omissões (Go)</div></div>
                         </div>
                         <button onClick={resetGame} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 mx-auto">
                            <RotateCcw size={20}/>
