@@ -1,16 +1,53 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, 'useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Save, Brain, Check, X, RotateCcw } from 'lucide-react';
+import { ChevronLeft, Save, Brain, Check, X, RotateCcw, ListOrdered } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
+
+// Componente do Cabeçalho Padrão
+const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }) => (
+    <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center justify-between h-16">
+                <Link
+                    href="/dashboard"
+                    className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
+                >
+                    <ChevronLeft className="h-6 w-6" />
+                    <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
+                </Link>
+                <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex items-center gap-2">
+                    {icon}
+                    <span>{title}</span>
+                </h1>
+                {showSaveButton && onSave ? (
+                    <button
+                        onClick={onSave}
+                        disabled={isSaveDisabled}
+                        className={`flex items-center space-x-2 px-3 py-2 sm:px-4 rounded-lg font-semibold transition-colors ${
+                            !isSaveDisabled
+                                ? 'bg-green-500 text-white hover:bg-green-600'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                    >
+                        <Save size={18} />
+                        <span className="hidden sm:inline">{isSaveDisabled ? 'Salvando...' : 'Salvar'}</span>
+                    </button>
+                ) : (
+                    <div className="w-24"></div>
+                )}
+            </div>
+        </div>
+    </header>
+);
+
 
 export default function VisualMemorySequencePage() {
     const router = useRouter();
     const supabase = createClient();
     
-    // Estados principais
     const [nivel, setNivel] = useState(1);
     const [sequenciaAtual, setSequenciaAtual] = useState<string[]>([]);
     const [sequenciaUsuario, setSequenciaUsuario] = useState<string[]>([]);
@@ -20,7 +57,6 @@ export default function VisualMemorySequencePage() {
     const [exercicioConcluido, setExercicioConcluido] = useState(false);
     const [salvando, setSalvando] = useState(false);
     
-    // Métricas e pontuação
     const [pontuacao, setPontuacao] = useState(0);
     const [acertos, setAcertos] = useState(0);
     const [erros, setErros] = useState(0);
@@ -28,20 +64,14 @@ export default function VisualMemorySequencePage() {
     const [errosNivel, setErrosNivel] = useState(0);
     const [tentativasTotal, setTentativasTotal] = useState(0);
     
-    // Métricas científicas
     const [inicioSessao] = useState(new Date());
     const [temposResposta, setTemposResposta] = useState<number[]>([]);
-    const [sequenciaTemporal, setSequenciaTemporal] = useState<any[]>([]);
     const [nivelMaximo, setNivelMaximo] = useState(1);
     const [spanMaximo, setSpanMaximo] = useState(0);
-    const inicioMemorizacao = useRef<Date | null>(null);
     const inicioResposta = useRef<Date | null>(null);
     
-    // Feedback visual
     const [feedbackAtivo, setFeedbackAtivo] = useState<'acerto' | 'erro' | null>(null);
-    const [simboloFeedback, setSimboloFeedback] = useState<string>('');
 
-    // Configurações por nível
     const niveis = {
         1: { tamanho: 3, tempo: 2000, nome: "Iniciante (3 símbolos)" },
         2: { tamanho: 4, tempo: 3000, nome: "Básico (4 símbolos)" },
@@ -50,57 +80,28 @@ export default function VisualMemorySequencePage() {
         5: { tamanho: 7, tempo: 6000, nome: "Expert (7 símbolos)" }
     };
 
-    // Símbolos disponíveis - emojis de alta visibilidade
     const simbolos = ['🔵', '🔴', '🟢', '🟡', '🟣', '🟠', '⬜', '⬛', '🔺', '💎'];
 
-    const activityInfo = {
-        title: 'Memória Visual Sequencial',
-        objective: 'Desenvolver a memória de trabalho visual e a capacidade de reter e reproduzir sequências, habilidades fundamentais para atenção e aprendizagem.',
-        levels: [
-            'Nível 1: Memorize 3 símbolos em 2 segundos',
-            'Nível 2: Memorize 4 símbolos em 3 segundos',
-            'Nível 3: Memorize 5 símbolos em 4 segundos',
-            'Nível 4: Memorize 6 símbolos em 5 segundos',
-            'Nível 5: Memorize 7 símbolos em 6 segundos'
-        ],
-        howToPlay: [
-            'Observe atentamente a sequência de símbolos',
-            'Memorize a ordem exata dos símbolos',
-            'Clique nos símbolos na mesma ordem',
-            'Acerte 3 sequências para avançar de nível',
-            '3 erros encerram a sessão'
-        ]
-    };
-
-    // Gerar nova sequência
-    const gerarSequencia = () => {
-        const config = niveis[nivel as keyof typeof niveis];
+    const gerarSequencia = (level: number) => {
+        const config = niveis[level as keyof typeof niveis];
         const novaSequencia: string[] = [];
         const simbolosDisponiveis = [...simbolos];
-        
         for (let i = 0; i < config.tamanho; i++) {
             const indice = Math.floor(Math.random() * simbolosDisponiveis.length);
-            novaSequencia.push(simbolosDisponiveis[indice]);
-            // Remove o símbolo para evitar repetição na mesma sequência
-            simbolosDisponiveis.splice(indice, 1);
+            novaSequencia.push(simbolosDisponiveis.splice(indice, 1)[0]);
         }
-        
         return novaSequencia;
     };
 
-    // Iniciar nova rodada
     const iniciarRodada = () => {
-        const novaSequencia = gerarSequencia();
+        const novaSequencia = gerarSequencia(nivel);
         setSequenciaAtual(novaSequencia);
         setSequenciaUsuario([]);
         setMostrandoSequencia(true);
         setAguardandoResposta(false);
         setFeedbackAtivo(null);
-        inicioMemorizacao.current = new Date();
         
         const config = niveis[nivel as keyof typeof niveis];
-        
-        // Mostrar sequência pelo tempo configurado
         setTimeout(() => {
             setMostrandoSequencia(false);
             setAguardandoResposta(true);
@@ -108,238 +109,120 @@ export default function VisualMemorySequencePage() {
         }, config.tempo);
     };
 
-    // Processar clique do usuário
+    const processarResultado = (correto: boolean) => {
+        if (!inicioResposta.current) return;
+        const tempoResposta = (new Date().getTime() - inicioResposta.current.getTime());
+        setTemposResposta(prev => [...prev, tempoResposta]);
+        setTentativasTotal(prev => prev + 1);
+        setAguardandoResposta(false);
+
+        if (correto) {
+            setAcertos(prev => prev + 1);
+            setAcertosNivel(prev => prev + 1);
+            setPontuacao(prev => prev + (nivel * 10));
+            setSpanMaximo(prev => Math.max(prev, sequenciaAtual.length));
+            setFeedbackAtivo('acerto');
+        } else {
+            setErros(prev => prev + 1);
+            setErrosNivel(prev => prev + 1);
+            setFeedbackAtivo('erro');
+        }
+
+        setTimeout(() => {
+            if (errosNivel + (correto ? 0 : 1) >= 3) {
+                finalizarExercicio();
+            } else if (acertosNivel + (correto ? 1 : 0) >= 3 && nivel < 5) {
+                avancarNivel();
+            } else if (nivel === 5 && acertosNivel + (correto ? 1 : 0) >= 3) {
+                finalizarExercicio();
+            } else {
+                iniciarRodada();
+            }
+        }, 2000);
+    };
+
     const handleSimboloClick = (simbolo: string) => {
-        if (!aguardandoResposta || feedbackAtivo) return;
-        
+        if (!aguardandoResposta) return;
         const novaSequenciaUsuario = [...sequenciaUsuario, simbolo];
         setSequenciaUsuario(novaSequenciaUsuario);
-        
-        // Verificar se o símbolo está correto na posição
+
         const posicao = novaSequenciaUsuario.length - 1;
-        const simboloCorreto = sequenciaAtual[posicao];
-        
-        if (simbolo !== simboloCorreto) {
-            // Erro imediato
-            processarErro(novaSequenciaUsuario);
+        if (simbolo !== sequenciaAtual[posicao]) {
+            processarResultado(false);
         } else if (novaSequenciaUsuario.length === sequenciaAtual.length) {
-            // Sequência completa e correta
-            processarAcerto(novaSequenciaUsuario);
+            processarResultado(true);
         }
-        // Continua aguardando mais cliques se ainda não completou
     };
 
-    // Processar acerto
-    const processarAcerto = (sequenciaRespondida: string[]) => {
-        if (!inicioResposta.current) return;
-        
-        const tempoResposta = (new Date().getTime() - inicioResposta.current.getTime()) / 1000;
-        
-        setAcertos(prev => prev + 1);
-        setAcertosNivel(prev => prev + 1);
-        setPontuacao(prev => prev + (nivel * 10));
-        setTemposResposta(prev => [...prev, tempoResposta]);
-        setTentativasTotal(prev => prev + 1);
-        
-        // Atualizar span máximo
-        const tamanhoSequencia = sequenciaAtual.length;
-        setSpanMaximo(prev => Math.max(prev, tamanhoSequencia));
-        
-        // Registrar na sequência temporal
-        setSequenciaTemporal(prev => [...prev, {
-            nivel,
-            sequencia: sequenciaAtual.join(''),
-            resposta: sequenciaRespondida.join(''),
-            acertou: true,
-            tempoMemorizacao: niveis[nivel as keyof typeof niveis].tempo / 1000,
-            tempoResposta,
-            timestamp: new Date()
-        }]);
-        
-        // Feedback visual
-        setFeedbackAtivo('acerto');
-        setAguardandoResposta(false);
-        
-        setTimeout(() => {
-            setFeedbackAtivo(null);
-            
-            // Verificar progressão
-            if (acertosNivel >= 3 && nivel < 5) {
-                avancarNivel();
-            } else if (nivel === 5 && acertosNivel >= 3) {
-                finalizarExercicio();
-            } else {
-                iniciarRodada();
-            }
-        }, 1500);
-    };
-
-    // Processar erro
-    const processarErro = (sequenciaRespondida: string[]) => {
-        if (!inicioResposta.current) return;
-        
-        const tempoResposta = (new Date().getTime() - inicioResposta.current.getTime()) / 1000;
-        
-        setErros(prev => prev + 1);
-        setErrosNivel(prev => prev + 1);
-        setTemposResposta(prev => [...prev, tempoResposta]);
-        setTentativasTotal(prev => prev + 1);
-        
-        // Registrar na sequência temporal
-        setSequenciaTemporal(prev => [...prev, {
-            nivel,
-            sequencia: sequenciaAtual.join(''),
-            resposta: sequenciaRespondida.join(''),
-            acertou: false,
-            tempoMemorizacao: niveis[nivel as keyof typeof niveis].tempo / 1000,
-            tempoResposta,
-            timestamp: new Date()
-        }]);
-        
-        // Mostrar sequência correta como feedback
-        setSimboloFeedback(sequenciaAtual.join(' → '));
-        setFeedbackAtivo('erro');
-        setAguardandoResposta(false);
-        
-        setTimeout(() => {
-            setFeedbackAtivo(null);
-            setSimboloFeedback('');
-            
-            // Verificar se deve encerrar
-            if (errosNivel + 1 >= 3) {
-                finalizarExercicio();
-            } else {
-                iniciarRodada();
-            }
-        }, 2500);
-    };
-
-    // Avançar nível
     const avancarNivel = () => {
         const novoNivel = nivel + 1;
         setNivel(novoNivel);
         setNivelMaximo(Math.max(nivelMaximo, novoNivel));
         setAcertosNivel(0);
         setErrosNivel(0);
-        setFeedbackAtivo(null);
-        
-        // Tela de transição
-        setTimeout(() => {
-            iniciarRodada();
-        }, 1000);
+        iniciarRodada();
     };
-
-    // Iniciar exercício
+    
     const iniciarExercicio = () => {
-        setJogoIniciado(true);
-        setExercicioConcluido(false);
+        setNivel(1);
         setPontuacao(0);
         setAcertos(0);
         setErros(0);
         setAcertosNivel(0);
         setErrosNivel(0);
         setTentativasTotal(0);
-        setSequenciaTemporal([]);
         setTemposResposta([]);
         setSpanMaximo(0);
-        
+        setNivelMaximo(1);
+        setJogoIniciado(true);
+        setExercicioConcluido(false);
         iniciarRodada();
     };
 
-    // Finalizar exercício
     const finalizarExercicio = () => {
         setJogoIniciado(false);
         setExercicioConcluido(true);
-        setAguardandoResposta(false);
-        setMostrandoSequencia(false);
     };
 
-    // Reiniciar
     const reiniciar = () => {
-        setNivel(1);
-        setNivelMaximo(1);
-        setExercicioConcluido(false);
         setJogoIniciado(false);
-        setSequenciaAtual([]);
-        setSequenciaUsuario([]);
+        setExercicioConcluido(false);
+        setNivel(1);
     };
 
-    // Calcular métricas
-    const calcularTempoMedioResposta = () => {
-        if (temposResposta.length === 0) return 0;
-        return temposResposta.reduce((a, b) => a + b, 0) / temposResposta.length;
-    };
+    const calcularTaxaAcerto = () => tentativasTotal > 0 ? (acertos / tentativasTotal) * 100 : 0;
 
-    const calcularTaxaAcerto = () => {
-        if (tentativasTotal === 0) return 0;
-        return (acertos / tentativasTotal) * 100;
-    };
-
-    // Salvar sessão - AGORA COM span_maximo
     const handleSaveSession = async () => {
-        if (tentativasTotal === 0) {
-            alert('Nenhuma atividade foi registrada para salvar.');
-            return;
-        }
-        
+        if (tentativasTotal === 0) return;
         setSalvando(true);
-        
         const fimSessao = new Date();
-        const duracaoSegundos = Math.round((fimSessao.getTime() - inicioSessao.getTime()) / 1000);
-        const tempoMedioResposta = calcularTempoMedioResposta();
-        const taxaAcerto = calcularTaxaAcerto();
-        
+        const tempoMedioResposta = temposResposta.length > 0 ? temposResposta.reduce((a, b) => a + b, 0) / temposResposta.length : 0;
+
         try {
             const { data: { user }, error: userError } = await supabase.auth.getUser();
-            
             if (userError || !user) {
-                console.error('Erro ao obter usuário:', userError);
-                alert('Erro: Sessão expirada. Por favor, faça login novamente.');
+                alert('Sessão expirada. Faça login novamente.');
                 router.push('/login');
                 return;
             }
-            
-            const { data, error } = await supabase
-                .from('sessoes')
-                .insert([{
-                    usuario_id: user.id,
-                    atividade_nome: 'Memoria_Visual_Sequencial',
-                    pontuacao_final: pontuacao,
-                    tempo_total: duracaoSegundos,
-                    data_fim: fimSessao.toISOString(),
-                    duracao_segundos: duracaoSegundos,
-                    nivel_maximo_atingido: nivelMaximo,
-                    tempo_reacao_medio: Number(tempoMedioResposta.toFixed(2)),
-                    taxa_acerto: Number(taxaAcerto.toFixed(2)),
-                    total_sequencias: tentativasTotal,
-                    span_maximo: spanMaximo, // AGORA FUNCIONA!
-                    observacoes: JSON.stringify({
-                        sequencia_temporal: sequenciaTemporal,
-                        tempos_resposta: temposResposta,
-                        acertos_total: acertos,
-                        erros_total: erros
-                    })
-                }]);
-
+            const { error } = await supabase.from('sessoes').insert([{
+                usuario_id: user.id,
+                atividade_nome: 'Memória Visual Sequencial',
+                pontuacao_final: pontuacao,
+                data_fim: fimSessao.toISOString(),
+                nivel_maximo_atingido: nivelMaximo,
+                tempo_reacao_medio: Math.round(tempoMedioResposta),
+                taxa_acerto: Math.round(calcularTaxaAcerto()),
+                observacoes: { span_maximo: spanMaximo }
+            }]);
             if (error) {
-                console.error('Erro ao salvar:', error);
                 alert(`Erro ao salvar: ${error.message}`);
             } else {
-                alert(`Sessão salva com sucesso!
-                
-📊 Resumo da Sessão:
-- Pontuação: ${pontuacao}
-- Taxa de acerto: ${taxaAcerto.toFixed(1)}%
-- Span máximo: ${spanMaximo} símbolos
-- Tempo médio: ${tempoMedioResposta.toFixed(1)}s
-- Nível máximo: ${nivelMaximo}
-- Total de sequências: ${tentativasTotal}`);
-                
-                router.push('/profileselection');
+                alert(`Sessão salva com sucesso!\nSpan máximo: ${spanMaximo} símbolos.`);
+                router.push('/dashboard');
             }
         } catch (error: any) {
-            console.error('Erro inesperado:', error);
-            alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
+            alert(`Erro: ${error.message}`);
         } finally {
             setSalvando(false);
         }
@@ -347,290 +230,86 @@ export default function VisualMemorySequencePage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header - Idêntico ao CAA */}
-            <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-                <div className="p-3 sm:p-4 flex items-center justify-between">
-                    <Link
-                        href="/tdah"
-                        className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
-                    >
-                        <ChevronLeft size={20} />
-                        <span className="text-sm sm:text-base">Voltar para TDAH</span>
-                    </Link>
-                    <div className="flex items-center space-x-2 sm:space-x-4">
-                        <button 
-                            onClick={handleSaveSession}
-                            disabled={salvando}
-                            className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
-                        >
-                            <Save size={20} />
-                            <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
-                        </button>
-                    </div>
-                </div>
-            </header>
+            <GameHeader 
+                title="Memória Visual Sequencial"
+                icon={<ListOrdered size={22} />}
+                onSave={handleSaveSession}
+                isSaveDisabled={salvando}
+                showSaveButton={exercicioConcluido}
+            />
 
-            <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
-                {/* Cards Informativos - Idêntico ao CAA */}
-                <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-6">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">{activityInfo.title}</h1>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
-                            <p className="text-sm text-gray-600">{activityInfo.objective}</p>
-                        </div>
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                            <h3 className="font-semibold text-gray-800 mb-1">🎮 Como Jogar:</h3>
-                            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                                {activityInfo.howToPlay.map((instruction, index) => (
-                                    <li key={index}>{instruction}</li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                            <h3 className="font-semibold text-gray-800 mb-1">⭐ Níveis:</h3>
-                            <ul className="list-disc list-inside text-sm text-gray-600">
-                                {activityInfo.levels.map((level, index) => (
-                                    <li key={index}>{level}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Progresso da Sessão */}
-                {jogoIniciado && (
-                    <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-                        <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
-                            <Brain className="mr-2" size={20} />
-                            Progresso da Sessão - Nível {nivel}
-                        </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                                <div className="text-xl font-bold text-blue-800">{pontuacao}</div>
-                                <div className="text-xs text-blue-600">Pontos</div>
-                            </div>
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                                <div className="text-xl font-bold text-green-800">{acertos}</div>
-                                <div className="text-xs text-green-600">Acertos Total</div>
-                            </div>
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-                                <div className="text-xl font-bold text-red-800">{erros}</div>
-                                <div className="text-xs text-red-600">Erros Total</div>
-                            </div>
-                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
-                                <div className="text-xl font-bold text-purple-800">{acertosNivel}/3</div>
-                                <div className="text-xs text-purple-600">Acertos Nível</div>
-                            </div>
-                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
-                                <div className="text-xl font-bold text-orange-800">{errosNivel}/3</div>
-                                <div className="text-xs text-orange-600">Erros Nível</div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Área Principal do Jogo */}
+            <main className="p-4 sm:p-6 max-w-4xl mx-auto w-full">
                 {!jogoIniciado && !exercicioConcluido ? (
-                    // Tela Inicial
-                    <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-                        <div className="text-6xl mb-4">🧠</div>
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                            Memória Visual Sequencial
-                        </h2>
-                        <p className="text-gray-600 mb-6">
-                            Desenvolva sua memória de trabalho visual
-                        </p>
-                        
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left max-w-md mx-auto">
-                            <h3 className="font-semibold text-yellow-900 mb-2">
-                                📊 Base Científica:
-                            </h3>
-                            <p className="text-sm text-yellow-800">
-                                Exercício validado por estudos em neurociência cognitiva para 
-                                melhorar a memória de trabalho visual, componente essencial 
-                                no TDAH (Martinussen et al., 2005; Kofler et al., 2018).
-                            </p>
+                    <div className="space-y-6">
+                         <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+                            <h1 className="text-3xl font-bold text-gray-800 mb-4">Memória Visual Sequencial</h1>
+                            <p className="text-gray-600 mb-6">Observe a sequência de símbolos e reproduza na ordem correta.</p>
+                            <button onClick={iniciarExercicio} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors">
+                                Iniciar Exercício
+                            </button>
                         </div>
-                        
-                        <button
-                            onClick={iniciarExercicio}
-                            className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors inline-flex items-center space-x-2"
-                        >
-                            <Brain size={24} />
-                            <span>Iniciar Exercício</span>
-                        </button>
                     </div>
                 ) : exercicioConcluido ? (
-                    // Tela de Resultado
                     <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-                        <div className="text-6xl mb-4">
-                            {calcularTaxaAcerto() >= 80 ? '🏆' : 
-                             calcularTaxaAcerto() >= 60 ? '🎉' : 
-                             calcularTaxaAcerto() >= 40 ? '💪' : '📈'}
+                        <div className="text-6xl mb-4">🏆</div>
+                        <h2 className="text-3xl font-bold text-gray-800 mb-6">Exercício Concluído!</h2>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mx-auto mb-8">
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{pontuacao}</div><div className="text-sm">Pontos</div></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{calcularTaxaAcerto().toFixed(0)}%</div><div className="text-sm">Precisão</div></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{spanMaximo}</div><div className="text-sm">Span Máximo</div></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{nivelMaximo}</div><div className="text-sm">Nível Máximo</div></div>
                         </div>
-                        
-                        <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                            {calcularTaxaAcerto() >= 80 ? 'Excelente Desempenho!' : 
-                             calcularTaxaAcerto() >= 60 ? 'Muito Bem!' : 
-                             calcularTaxaAcerto() >= 40 ? 'Bom Progresso!' : 'Continue Praticando!'}
-                        </h3>
-                        
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-8">
-                            <div className="bg-gray-50 rounded-lg p-4">
-                                <div className="text-2xl font-bold text-gray-800">{pontuacao}</div>
-                                <div className="text-sm text-gray-600">Pontos Totais</div>
-                            </div>
-                            <div className="bg-gray-50 rounded-lg p-4">
-                                <div className="text-2xl font-bold text-gray-800">
-                                    {calcularTaxaAcerto().toFixed(0)}%
-                                </div>
-                                <div className="text-sm text-gray-600">Taxa de Acerto</div>
-                            </div>
-                            <div className="bg-gray-50 rounded-lg p-4">
-                                <div className="text-2xl font-bold text-gray-800">{spanMaximo}</div>
-                                <div className="text-sm text-gray-600">Span Máximo</div>
-                            </div>
-                            <div className="bg-gray-50 rounded-lg p-4">
-                                <div className="text-2xl font-bold text-gray-800">{nivelMaximo}</div>
-                                <div className="text-sm text-gray-600">Nível Máximo</div>
-                            </div>
-                            <div className="bg-gray-50 rounded-lg p-4">
-                                <div className="text-2xl font-bold text-gray-800">
-                                    {calcularTempoMedioResposta().toFixed(1)}s
-                                </div>
-                                <div className="text-sm text-gray-600">Tempo Médio</div>
-                            </div>
-                            <div className="bg-gray-50 rounded-lg p-4">
-                                <div className="text-2xl font-bold text-gray-800">{tentativasTotal}</div>
-                                <div className="text-sm text-gray-600">Sequências</div>
-                            </div>
-                        </div>
-                        
-                        <button
-                            onClick={reiniciar}
-                            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors inline-flex items-center space-x-2"
-                        >
-                            <RotateCcw size={20} />
-                            <span>Jogar Novamente</span>
+                        <button onClick={reiniciar} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                            Jogar Novamente
                         </button>
                     </div>
                 ) : (
-                    // Área do Jogo Ativa
                     <div className="bg-white rounded-xl shadow-lg p-6">
-                        <div className="text-center mb-6">
-                            <h2 className="text-xl font-bold text-gray-800 mb-2">
-                                Nível {nivel} - {niveis[nivel as keyof typeof niveis].nome}
-                            </h2>
-                            {mostrandoSequencia && (
-                                <p className="text-green-600 font-medium animate-pulse">
-                                    🧠 Memorize a sequência...
-                                </p>
-                            )}
-                            {aguardandoResposta && !feedbackAtivo && (
-                                <p className="text-blue-600 font-medium">
-                                    👆 Clique na ordem correta
-                                </p>
-                            )}
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold">Nível {nivel}</h2>
+                            <div className="text-right">
+                                <p className="font-bold text-xl">{pontuacao} <span className="text-sm font-normal">pontos</span></p>
+                                <p className="text-sm text-gray-600">Acertos no nível: {acertosNivel}/3</p>
+                                <p className="text-sm text-gray-600">Erros no nível: {errosNivel}/3</p>
+                            </div>
                         </div>
-
-                        {/* Área de Exibição da Sequência */}
-                        {mostrandoSequencia && (
-                            <div className="bg-gray-100 rounded-lg p-8 mb-6">
+                        <div className="bg-gray-100 rounded-lg p-6 mb-6 min-h-[120px] flex items-center justify-center">
+                            {mostrandoSequencia && (
                                 <div className="flex justify-center items-center space-x-4">
                                     {sequenciaAtual.map((simbolo, index) => (
-                                        <div
-                                            key={index}
-                                            className="text-6xl animate-pulse"
-                                            style={{
-                                                animation: `fadeIn 0.3s ease-in-out ${index * 0.2}s`
-                                            }}
-                                        >
-                                            {simbolo}
-                                        </div>
+                                        <div key={index} className="text-6xl animate-pulse">{simbolo}</div>
                                     ))}
                                 </div>
-                            </div>
-                        )}
-
-                        {/* Área de Resposta */}
-                        {aguardandoResposta && (
-                            <div className="space-y-6">
-                                {/* Sequência do Usuário */}
-                                <div className="bg-gray-50 rounded-lg p-4 min-h-[100px] flex items-center justify-center">
-                                    {sequenciaUsuario.length > 0 ? (
-                                        <div className="flex space-x-3">
-                                            {sequenciaUsuario.map((simbolo, index) => (
-                                                <div key={index} className="text-5xl">
-                                                    {simbolo}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-gray-400">Sua resposta aparecerá aqui...</p>
-                                    )}
+                            )}
+                            {aguardandoResposta && (
+                                <div className="w-full">
+                                    <div className="h-16 flex items-center justify-center border-b-2 mb-4">
+                                        {sequenciaUsuario.map((s, i) => <span key={i} className="text-5xl mx-2">{s}</span>)}
+                                    </div>
+                                    <p className="text-center text-gray-500">Clique nos símbolos abaixo na ordem correta.</p>
                                 </div>
-
-                                {/* Grade de Símbolos para Clicar */}
-                                <div className="grid grid-cols-5 gap-3 sm:gap-4">
-                                    {simbolos.map((simbolo) => (
-                                        <button
-                                            key={simbolo}
-                                            onClick={() => handleSimboloClick(simbolo)}
-                                            disabled={feedbackAtivo !== null}
-                                            className="aspect-square bg-white border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:shadow-lg transition-all text-4xl sm:text-5xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {simbolo}
-                                        </button>
-                                    ))}
+                            )}
+                            {feedbackAtivo && (
+                                <div className={`text-5xl ${feedbackAtivo === 'acerto' ? 'text-green-500' : 'text-red-500'}`}>
+                                    {feedbackAtivo === 'acerto' ? <Check size={80} /> : <X size={80} />}
                                 </div>
-                            </div>
-                        )}
-
-                        {/* Feedback Visual */}
-                        {feedbackAtivo && (
-                            <div className={`rounded-lg p-6 text-center ${
-                                feedbackAtivo === 'acerto' 
-                                    ? 'bg-green-100 border-2 border-green-500' 
-                                    : 'bg-red-100 border-2 border-red-500'
-                            }`}>
-                                <div className="text-5xl mb-3">
-                                    {feedbackAtivo === 'acerto' ? <Check className="w-16 h-16 mx-auto text-green-600" /> : <X className="w-16 h-16 mx-auto text-red-600" />}
-                                </div>
-                                <p className={`text-xl font-bold ${
-                                    feedbackAtivo === 'acerto' ? 'text-green-800' : 'text-red-800'
-                                }`}>
-                                    {feedbackAtivo === 'acerto' ? 'Correto!' : 'Sequência Incorreta'}
-                                </p>
-                                {feedbackAtivo === 'erro' && simboloFeedback && (
-                                    <p className="text-red-700 mt-3">
-                                        Sequência correta: {simboloFeedback}
-                                    </p>
-                                )}
-                                {feedbackAtivo === 'acerto' && (
-                                    <p className="text-green-700 mt-2">
-                                        +{nivel * 10} pontos
-                                    </p>
-                                )}
-                            </div>
-                        )}
+                            )}
+                        </div>
+                        <div className="grid grid-cols-5 gap-3">
+                            {simbolos.map(simbolo => (
+                                <button
+                                    key={simbolo}
+                                    onClick={() => handleSimboloClick(simbolo)}
+                                    disabled={!aguardandoResposta}
+                                    className="aspect-square bg-white border-2 border-gray-300 rounded-lg text-4xl flex items-center justify-center transition hover:bg-gray-200 disabled:opacity-50"
+                                >
+                                    {simbolo}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 )}
             </main>
-
-            {/* CSS para animações */}
-            <style jsx>{`
-                @keyframes fadeIn {
-                    from {
-                        opacity: 0;
-                        transform: scale(0.8);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                }
-            `}</style>
         </div>
     );
 }
