@@ -61,8 +61,8 @@ const RouletteWheel = ({ options, rotation, colorsMap, isSpinning, spinDuration 
     
     // Função para criar o caminho SVG de uma fatia
     const createSlicePath = (index: number) => {
-        // Ajustado para começar com o centro da primeira cor embaixo (90 graus)
-        const startAngle = index * sliceAngle + 90 - (sliceAngle / 2);
+        // Ajustado para começar com o centro da primeira cor no topo (-90 graus)
+        const startAngle = index * sliceAngle - 90 - (sliceAngle / 2);
         const endAngle = startAngle + sliceAngle;
         
         const startAngleRad = (startAngle * Math.PI) / 180;
@@ -81,20 +81,20 @@ const RouletteWheel = ({ options, rotation, colorsMap, isSpinning, spinDuration 
     // Função para posicionar o texto no centro da fatia
     const getTextPosition = (index: number) => {
         // Ajustado para corresponder à nova posição das fatias
-        const middleAngle = (index * sliceAngle + 90) * Math.PI / 180;
+        const middleAngle = (index * sliceAngle - 90) * Math.PI / 180;
         const textRadius = 85; // Distância do centro
         const x = 150 + textRadius * Math.cos(middleAngle);
         const y = 150 + textRadius * Math.sin(middleAngle);
         // Rotação do texto para ficar sempre legível
-        const textRotation = index * sliceAngle + 90;
+        const textRotation = index * sliceAngle - 90;
         return { x, y, rotation: textRotation };
     };
 
     return (
         <div className="relative w-72 h-72 sm:w-80 sm:h-80 mx-auto my-8">
-            {/* Indicador (seta) - AGORA EMBAIXO */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-2 z-20">
-                <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[35px] border-t-red-600 drop-shadow-lg"></div>
+            {/* Indicador (seta) - DE VOLTA PARA CIMA */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-20">
+                <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[35px] border-b-red-600 drop-shadow-lg"></div>
             </div>
             
             {/* Container da roleta */}
@@ -226,11 +226,16 @@ export default function AttentionRoulettePage() {
         const resultIndex = Math.floor(Math.random() * currentConfig.options.length);
         const resultColor = currentConfig.options[resultIndex];
         
-        // Cálculo da rotação para alinhar o CENTRO da cor selecionada com o indicador embaixo
+        // Debug
+        console.log('Cor alvo:', targetColor);
+        console.log('Índice sorteado:', resultIndex);
+        console.log('Cor que deve parar:', resultColor);
+        
+        // Cálculo da rotação para alinhar o CENTRO da cor selecionada com o indicador no topo
         const sliceAngle = 360 / currentConfig.options.length;
         
-        // Ângulo do centro da fatia selecionada (considerando que a primeira fatia tem centro em 90 graus)
-        const currentCenterAngle = resultIndex * sliceAngle + 90;
+        // Ângulo do centro da fatia selecionada (considerando que a primeira fatia tem centro em -90 graus/270 graus)
+        const currentCenterAngle = resultIndex * sliceAngle - 90;
         
         // Sempre gira múltiplas voltas completas
         const minSpins = 5;
@@ -240,10 +245,10 @@ export default function AttentionRoulettePage() {
         // Reset periódico para evitar acúmulo
         const baseRotation = roundCount % 10 === 0 ? 0 : rotation;
         
-        // Para parar com o centro da cor selecionada embaixo (90 graus):
-        // Precisamos girar para que currentCenterAngle fique em 90
-        // Isso significa girar: voltas completas - (currentCenterAngle - 90)
-        const angleAdjustment = -(currentCenterAngle - 90);
+        // Para parar com o centro da cor selecionada no topo (-90 graus ou 270 graus):
+        // Precisamos girar para que currentCenterAngle fique em -90
+        // Isso significa girar: voltas completas - (currentCenterAngle - (-90))
+        const angleAdjustment = -(currentCenterAngle + 90);
         const newRotation = baseRotation + (360 * spins) + angleAdjustment;
         
         setRotation(newRotation);
@@ -279,6 +284,11 @@ export default function AttentionRoulettePage() {
 
         const reactionTime = performance.now() - reactionStartRef.current;
         const wasCorrectClick = rouletteResult === targetColor;
+        
+        // Debug
+        console.log('Clique - Cor alvo:', targetColor);
+        console.log('Clique - Cor da roleta:', rouletteResult);
+        console.log('Clique correto?', wasCorrectClick);
 
         if (wasCorrectClick) {
             setGoReactionTimes(prev => [...prev, reactionTime]);
@@ -453,6 +463,22 @@ export default function AttentionRoulettePage() {
                                 {targetColor}
                             </span>
                         </h2>
+                        
+                        {/* Debug: Mostrar qual cor parou */}
+                        {gameState === 'decision' && rouletteResult && (
+                            <div className="mb-4 text-lg">
+                                Roleta parou em: 
+                                <span 
+                                    className="inline-block ml-2 px-3 py-1 rounded shadow-sm" 
+                                    style={{ 
+                                        backgroundColor: colorsMap[rouletteResult]?.bg, 
+                                        color: colorsMap[rouletteResult]?.text 
+                                    }}
+                                >
+                                    {rouletteResult}
+                                </span>
+                            </div>
+                        )}
                         
                         <RouletteWheel 
                             options={currentConfig.options}
