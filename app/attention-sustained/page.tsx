@@ -12,23 +12,23 @@ export default function AttentionSustained() {
   
   const [nivel, setNivel] = useState(1)
   const [pontuacao, setPontuacao] = useState(0)
-  const [duracao, setDuracao] = useState(30)
-  const [tempoRestante, setTempoRestante] = useState(30)
+  const = useState(30)
+  const = useState(30)
   const [ativo, setAtivo] = useState(false)
-  const [targetVisible, setTargetVisible] = useState(false)
-  const [posicaoTarget, setPosicaoTarget] = useState({ x: 50, y: 50 })
+  const = useState(false)
+  const = useState({ x: 50, y: 50 })
   const [acertos, setAcertos] = useState(0)
-  const [tentativas, setTentativas] = useState(0)
+  const = useState(0)
   const [exercicioConcluido, setExercicioConcluido] = useState(false)
   const [jogoIniciado, setJogoIniciado] = useState(false)
-  const [salvando, setSalvando] = useState(false)
+  const = useState(false)
   
   // Métricas internas
-  const [temposReacao, setTemposReacao] = useState<number[]>([])
+  const = useState<number>()
   const [errosComissao, setErrosComissao] = useState(0)
   const [errosOmissao, setErrosOmissao] = useState(0)
-  const [timestampTarget, setTimestampTarget] = useState<number>(0)
-  const [sequenciaAcertos, setSequenciaAcertos] = useState<boolean[]>([])
+  const = useState<number>(0)
+  const = useState<boolean>()
 
   // Configurações por nível
   const niveis = {
@@ -50,7 +50,7 @@ export default function AttentionSustained() {
       finalizarExercicio()
     }
     return () => clearTimeout(timer)
-  }, [ativo, tempoRestante])
+  },)
 
   // Controle de aparição do target
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function AttentionSustained() {
   }, [ativo, nivel])
 
   const handleClickArea = (event: React.MouseEvent) => {
-    if (ativo && !targetVisible) {
+    if (ativo &&!targetVisible) {
       setErrosComissao(prev => prev + 1)
     }
   }
@@ -77,10 +77,10 @@ export default function AttentionSustained() {
     setPontuacao(0)
     setAcertos(0)
     setTentativas(0)
-    setTemposReacao([])
+    setTemposReacao()
     setErrosComissao(0)
     setErrosOmissao(0)
-    setSequenciaAcertos([])
+    setSequenciaAcertos()
     setExercicioConcluido(false)
     setTargetVisible(false)
     setJogoIniciado(true)
@@ -109,7 +109,7 @@ export default function AttentionSustained() {
   const clicarTarget = () => {
     if (targetVisible && ativo) {
       const tempoReacao = Date.now() - timestampTarget
-      setTemposReacao(prev => [...prev, tempoReacao])
+      setTemposReacao(prev =>)
       setSequenciaAcertos(prev => [...prev, true])
       
       setAcertos(prev => prev + 1)
@@ -125,8 +125,8 @@ export default function AttentionSustained() {
   }
 
   // Cálculos para métricas
-  const precisao = tentativas > 0 ? Math.round((acertos / tentativas) * 100) : 0
-  const tempoReacaoMedio = temposReacao.length > 0 ? Math.round(temposReacao.reduce((a, b) => a + b, 0) / temposReacao.length) : 0
+  const precisao = tentativas > 0? Math.round((acertos / tentativas) * 100) : 0
+  const tempoReacaoMedio = temposReacao.length > 0? Math.round(temposReacao.reduce((a, b) => a + b, 0) / temposReacao.length) : 0
   
   const calcularVariabilidade = () => {
     if (temposReacao.length < 2) return 0
@@ -136,7 +136,7 @@ export default function AttentionSustained() {
   }
   
   const variabilidadeRT = calcularVariabilidade()
-  const coeficienteVariacao = tempoReacaoMedio > 0 ? Math.round((variabilidadeRT / tempoReacaoMedio) * 100) : 0
+  const coeficienteVariacao = tempoReacaoMedio > 0? Math.round((variabilidadeRT / tempoReacaoMedio) * 100) : 0
   const podeAvancar = precisao >= 75 && nivel < 5 && coeficienteVariacao <= 30
 
   // SALVAMENTO - IGUAL AO CAA
@@ -152,7 +152,7 @@ export default function AttentionSustained() {
       // Obter o usuário atual - EXATAMENTE COMO NO CAA
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       
-      if (userError || !user) {
+      if (userError ||!user) {
         console.error('Erro ao obter usuário:', userError)
         alert('Erro: Sessão expirada. Por favor, faça login novamente.')
         router.push('/login')
@@ -161,13 +161,8 @@ export default function AttentionSustained() {
       
       // Salvar na tabela sessoes - MESMA ESTRUTURA DO CAA
       const { data, error } = await supabase
-        .from('sessoes')
-        .insert([{
-          usuario_id: user.id,
-          atividade_nome: 'Atenção Sustentada',
-          pontuacao_final: pontuacao,
-          data_fim: new Date().toISOString()
-        }])
+       .from('sessoes')
+       .insert()
 
       if (error) {
         console.error('Erro ao salvar:', error)
@@ -185,11 +180,14 @@ export default function AttentionSustained() {
 - Nível ${nivel} completado
 - ${pontuacao} pontos`)
         
-        router.push('/profileselection')
+        // CORRIGIDO: Redirecionamento final para o dashboard
+        router.push('/dashboard')
       }
     } catch (error: any) {
       console.error('Erro inesperado:', error)
-      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`)
+      alert(`Erro ao salvar: ${error.message |
+
+| 'Erro desconhecido'}`)
     } finally {
       setSalvando(false)
     }
@@ -212,40 +210,46 @@ export default function AttentionSustained() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header PADRONIZADO igual ao CAA */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="p-3 sm:p-4 flex items-center justify-between">
-          <Link 
+      {/* HEADER PADRONIZADO E CENTRALIZADO */}
+      <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto p-3 sm:p-4 flex items-center justify-between h-16">
+          {/* Botão Voltar (Esquerda) */}
+          <Link
             href="/dashboard"
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
+            className="flex items-center text-gray-600 hover:text-gray-800 transition-colors min-h-[44px] touch-manipulation"
           >
             <ChevronLeft size={20} />
             <span className="text-sm sm:text-base">← Voltar</span>
           </Link>
           
-          {/* BOTÃO SEMPRE NO MESMO LUGAR - IGUAL CAA */}
-          {exercicioConcluido && (
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <button 
-                onClick={handleSaveSession}
-                disabled={salvando}
-                className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
-              >
-                <Save size={20} />
-                <span>{salvando ? 'Salvando...' : 'Finalizar e Salvar'}</span>
-              </button>
-            </div>
+          {/* Título Centralizado (Meio) */}
+          <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex-grow flex items-center justify-center gap-2">
+            <span>⚡</span>
+            <span>Atenção Sustentada</span>
+          </h1>
+
+          {/* Botão de Ação ou Espaçador (Direita) */}
+          {exercicioConcluido? (
+            <button
+              onClick={handleSaveSession}
+              disabled={salvando}
+              className="flex items-center space-x-2 px-4 py-2 rounded-full bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:bg-green-400"
+            >
+              <Save size={20} />
+              <span>{salvando? 'Salvando...' : 'Finalizar e Salvar'}</span>
+            </button>
+          ) : (
+            // Espaçador para manter o título centralizado
+            <div className="min-w-[124px] touch-manipulation"></div>
           )}
         </div>
       </header>
 
       <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
-        {!jogoIniciado ? (
-          // Tela inicial LIMPA - SEM TERMOS TÉCNICOS
+        {!jogoIniciado? (
+          // Tela inicial
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">⚡ Atenção Sustentada</h1>
-              
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
@@ -282,7 +286,7 @@ export default function AttentionSustained() {
                     onClick={() => setNivel(Number(key))}
                     className={`p-4 rounded-lg font-medium transition-colors ${
                       nivel === Number(key)
-                        ? 'bg-blue-600 text-white'
+                       ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                     }`}
                   >
@@ -294,7 +298,7 @@ export default function AttentionSustained() {
               </div>
             </div>
 
-            {/* Botão Iniciar - SEM "AVALIAÇÃO CIENTÍFICA" */}
+            {/* Botão Iniciar */}
             <div className="text-center">
               <button
                 onClick={iniciarExercicio}
@@ -304,8 +308,8 @@ export default function AttentionSustained() {
               </button>
             </div>
           </div>
-        ) : !exercicioConcluido ? (
-          // Área de jogo - LIMPA
+        ) :!exercicioConcluido? (
+          // Área de jogo
           <div className="space-y-6">
             {/* Progresso */}
             <div className="bg-white rounded-xl shadow-lg p-4">
@@ -333,13 +337,13 @@ export default function AttentionSustained() {
             {/* Área de Jogo */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="h-2 bg-gray-200">
-                <div 
+                <div
                   className="h-full bg-orange-500 transition-all duration-1000"
                   style={{ width: `${((duracao - tempoRestante) / duracao) * 100}%` }}
                 />
               </div>
 
-              <div 
+              <div
                 className="relative bg-gradient-to-br from-blue-50 to-purple-50 cursor-crosshair"
                 style={{ height: '500px', width: '100%' }}
                 onClick={handleClickArea}
@@ -348,8 +352,8 @@ export default function AttentionSustained() {
                   <button
                     onClick={clicarTarget}
                     className="absolute w-20 h-20 bg-red-500 hover:bg-red-600 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center text-white text-2xl animate-pulse border-4 border-white"
-                    style={{ 
-                      left: `${posicaoTarget.x}%`, 
+                    style={{
+                      left: `${posicaoTarget.x}%`,
                       top: `${posicaoTarget.y}%`,
                       transform: 'translate(-50%, -50%)'
                     }}
@@ -368,15 +372,15 @@ export default function AttentionSustained() {
             </div>
           </div>
         ) : (
-          // Tela de resultados LIMPA
+          // Tela de resultados
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="text-center mb-6">
               <div className="text-6xl mb-4">
-                {precisao >= 90 ? '🏆' : precisao >= 75 ? '🎉' : '💪'}
+                {precisao >= 90? '🏆' : precisao >= 75? '🎉' : '💪'}
               </div>
               
               <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                {precisao >= 90 ? 'Excelente!' : precisao >= 75 ? 'Muito bem!' : 'Continue praticando!'}
+                {precisao >= 90? 'Excelente!' : precisao >= 75? 'Muito bem!' : 'Continue praticando!'}
               </h3>
               
               <p className="text-gray-600">
@@ -384,7 +388,7 @@ export default function AttentionSustained() {
               </p>
             </div>
             
-            {/* Resultados - LAYOUT LIMPO */}
+            {/* Resultados */}
             <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
               <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">📊 Resultados da Sessão</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -407,15 +411,15 @@ export default function AttentionSustained() {
               </div>
             </div>
             
-            {/* Feedback - LINGUAGEM SIMPLES */}
+            {/* Feedback */}
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <h4 className="font-bold text-blue-800 mb-2">📊 Seu Desempenho:</h4>
               <div className="text-sm text-blue-700 space-y-1">
-                <p>• Precisão: {precisao >= 75 ? '✅ Ótima!' : '⚠️ Precisa melhorar'}</p>
-                <p>• Velocidade: {tempoReacaoMedio < 600 ? '✅ Rápido' : tempoReacaoMedio < 800 ? '⚠️ Moderado' : '🔴 Lento'}</p>
-                <p>• Consistência: {coeficienteVariacao <= 30 ? '✅ Estável' : '⚠️ Variável'}</p>
-                <p>• Atenção: {errosOmissao <= 2 ? '✅ Focado' : '⚠️ Distraído'}</p>
-                <p>• Controle: {errosComissao <= 2 ? '✅ Controlado' : '⚠️ Impulsivo'}</p>
+                <p>• Precisão: {precisao >= 75? '✅ Ótima!' : '⚠️ Precisa melhorar'}</p>
+                <p>• Velocidade: {tempoReacaoMedio < 600? '✅ Rápido' : tempoReacaoMedio < 800? '⚠️ Moderado' : '🔴 Lento'}</p>
+                <p>• Consistência: {coeficienteVariacao <= 30? '✅ Estável' : '⚠️ Variável'}</p>
+                <p>• Atenção: {errosOmissao <= 2? '✅ Focado' : '⚠️ Distraído'}</p>
+                <p>• Controle: {errosComissao <= 2? '✅ Controlado' : '⚠️ Impulsivo'}</p>
               </div>
             </div>
             
