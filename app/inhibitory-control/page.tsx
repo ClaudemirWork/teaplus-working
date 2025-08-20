@@ -49,6 +49,105 @@ const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: {
     </header>
 );
 
+// --- COMPONENTE DA ROLETA SVG ---
+const RouletteWheel = ({ options, rotation, colorsMap, isSpinning, spinDuration }: {
+    options: string[];
+    rotation: number;
+    colorsMap: { [key: string]: { bg: string, text: string } };
+    isSpinning: boolean;
+    spinDuration: number;
+}) => {
+    const sliceAngle = 360 / options.length;
+    
+    // Função para criar o caminho SVG de uma fatia
+    const createSlicePath = (index: number) => {
+        const startAngle = index * sliceAngle - 90; // -90 para começar do topo
+        const endAngle = startAngle + sliceAngle;
+        
+        const startAngleRad = (startAngle * Math.PI) / 180;
+        const endAngleRad = (endAngle * Math.PI) / 180;
+        
+        const x1 = 150 + 140 * Math.cos(startAngleRad);
+        const y1 = 150 + 140 * Math.sin(startAngleRad);
+        const x2 = 150 + 140 * Math.cos(endAngleRad);
+        const y2 = 150 + 140 * Math.sin(endAngleRad);
+        
+        const largeArcFlag = sliceAngle > 180 ? 1 : 0;
+        
+        return `M 150 150 L ${x1} ${y1} A 140 140 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+    };
+    
+    // Função para posicionar o texto no centro da fatia
+    const getTextPosition = (index: number) => {
+        const middleAngle = (index * sliceAngle + sliceAngle / 2 - 90) * Math.PI / 180;
+        const textRadius = 85; // Distância do centro
+        const x = 150 + textRadius * Math.cos(middleAngle);
+        const y = 150 + textRadius * Math.sin(middleAngle);
+        return { x, y, rotation: (index * sliceAngle + sliceAngle / 2) };
+    };
+
+    return (
+        <div className="relative w-72 h-72 sm:w-80 sm:h-80 mx-auto my-8">
+            {/* Indicador (seta) */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-20">
+                <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[35px] border-b-red-600 drop-shadow-lg"></div>
+            </div>
+            
+            {/* Container da roleta */}
+            <div className="w-full h-full rounded-full shadow-2xl">
+                <svg
+                    width="300"
+                    height="300"
+                    viewBox="0 0 300 300"
+                    className="w-full h-full"
+                    style={{
+                        transform: `rotate(${rotation}deg)`,
+                        transition: isSpinning ? `transform ${spinDuration}ms cubic-bezier(0.17, 0.67, 0.12, 0.99)` : 'none',
+                    }}
+                >
+                    {/* Borda externa */}
+                    <circle cx="150" cy="150" r="149" fill="none" stroke="#1f2937" strokeWidth="2"/>
+                    
+                    {/* Fatias da roleta */}
+                    {options.map((color, index) => {
+                        const textPos = getTextPosition(index);
+                        return (
+                            <g key={`${color}-${index}`}>
+                                {/* Fatia colorida */}
+                                <path
+                                    d={createSlicePath(index)}
+                                    fill={colorsMap[color].bg}
+                                    stroke="#ffffff"
+                                    strokeWidth="2"
+                                />
+                                {/* Texto da cor */}
+                                <text
+                                    x={textPos.x}
+                                    y={textPos.y}
+                                    fill={colorsMap[color].text}
+                                    fontSize="14"
+                                    fontWeight="bold"
+                                    textAnchor="middle"
+                                    dominantBaseline="middle"
+                                    transform={`rotate(${textPos.rotation} ${textPos.x} ${textPos.y})`}
+                                    style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
+                                >
+                                    {color}
+                                </text>
+                            </g>
+                        );
+                    })}
+                    
+                    {/* Centro da roleta */}
+                    <circle cx="150" cy="150" r="25" fill="#1f2937" stroke="#ffffff" strokeWidth="3"/>
+                    <circle cx="150" cy="150" r="15" fill="#374151"/>
+                    <circle cx="150" cy="150" r="8" fill="#6b7280"/>
+                </svg>
+            </div>
+        </div>
+    );
+};
+
 // --- PÁGINA DA NOVA ATIVIDADE ---
 export default function AttentionRoulettePage() {
     const router = useRouter();
@@ -66,8 +165,8 @@ export default function AttentionRoulettePage() {
     const [rouletteResult, setRouletteResult] = useState('');
     const [rotation, setRotation] = useState(0);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+    const [roundCount, setRoundCount] = useState(0); // Contador de rodadas para resetar rotação
 
-    // ESTADO FALTANDO (CORRIGIDO)
     const [salvando, setSalvando] = useState(false);
 
     // Métricas
@@ -81,16 +180,20 @@ export default function AttentionRoulettePage() {
     const reactionStartRef = useRef<number>(0);
 
     const niveis = [
-        { id: 1, nome: "Nível 1", dificuldade: "4 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO'], spinDuration: 2000, decisionTime: 4000, icone: "🎨" },
-        { id: 2, nome: "Nível 2", dificuldade: "6 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA'], spinDuration: 1800, decisionTime: 3000, icone: "🖌️" },
-        { id: 3, nome: "Nível 3", dificuldade: "8 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA', 'PRETO', 'BRANCO'], spinDuration: 1500, decisionTime: 2500, icone: "🖼️" },
+        { id: 1, nome: "Nível 1", dificuldade: "4 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO'], spinDuration: 3000, decisionTime: 4000, icone: "🎨" },
+        { id: 2, nome: "Nível 2", dificuldade: "6 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA'], spinDuration: 2500, decisionTime: 3000, icone: "🖌️" },
+        { id: 3, nome: "Nível 3", dificuldade: "8 Cores", options: ['VERMELHO', 'VERDE', 'AZUL', 'AMARELO', 'ROXO', 'LARANJA', 'ROSA', 'TURQUESA'], spinDuration: 2000, decisionTime: 2500, icone: "🖼️" },
     ];
     
     const colorsMap: { [key: string]: { bg: string, text: string } } = {
-        'VERMELHO': { bg: '#ef4444', text: '#ffffff' }, 'VERDE': { bg: '#22c55e', text: '#ffffff' }, 
-        'AZUL': { bg: '#3b82f6', text: '#ffffff' }, 'AMARELO': { bg: '#f59e0b', text: '#ffffff' },
-        'ROXO': { bg: '#8b5cf6', text: '#ffffff' }, 'LARANJA': { bg: '#f97316', text: '#ffffff' }, 
-        'PRETO': { bg: '#1f2937', text: '#ffffff' }, 'BRANCO': { bg: '#f9fafb', text: '#000000' }
+        'VERMELHO': { bg: '#dc2626', text: '#ffffff' }, 
+        'VERDE': { bg: '#16a34a', text: '#ffffff' }, 
+        'AZUL': { bg: '#2563eb', text: '#ffffff' }, 
+        'AMARELO': { bg: '#eab308', text: '#000000' },
+        'ROXO': { bg: '#9333ea', text: '#ffffff' }, 
+        'LARANJA': { bg: '#ea580c', text: '#ffffff' }, 
+        'ROSA': { bg: '#ec4899', text: '#ffffff' }, 
+        'TURQUESA': { bg: '#06b6d4', text: '#ffffff' }
     };
     
     const currentConfig = niveis.find(n => n.id === currentLevel) || niveis[0];
@@ -105,11 +208,11 @@ export default function AttentionRoulettePage() {
         return () => { if (timer) clearTimeout(timer); };
     }, [gameState, timeLeft]);
 
-
     const startNewRound = () => {
         const newTarget = currentConfig.options[Math.floor(Math.random() * currentConfig.options.length)];
         setTargetColor(newTarget);
         setGameState('awaiting_spin');
+        setRoundCount(prev => prev + 1);
     };
 
     const handleSpin = () => {
@@ -119,12 +222,20 @@ export default function AttentionRoulettePage() {
         const resultIndex = Math.floor(Math.random() * currentConfig.options.length);
         const resultColor = currentConfig.options[resultIndex];
         
-        const baseRotation = 360 * 5;
+        // Cálculo melhorado da rotação
         const sliceAngle = 360 / currentConfig.options.length;
-        const resultAngle = (resultIndex * sliceAngle) + (sliceAngle / 2);
-        const finalRotation = baseRotation + (360 - resultAngle);
-
-        setRotation(finalRotation);
+        const targetAngle = resultIndex * sliceAngle;
+        
+        // Sempre gira múltiplas voltas completas mais o ângulo final
+        const minSpins = 5; // Mínimo de voltas
+        const maxSpins = 8; // Máximo de voltas
+        const spins = Math.floor(Math.random() * (maxSpins - minSpins + 1)) + minSpins;
+        
+        // Reset a cada 10 rodadas para evitar acúmulo excessivo
+        const baseRotation = roundCount % 10 === 0 ? 0 : rotation;
+        const newRotation = baseRotation + (360 * spins) + (360 - targetAngle);
+        
+        setRotation(newRotation);
 
         setTimeout(() => {
             setRouletteResult(resultColor);
@@ -176,6 +287,8 @@ export default function AttentionRoulettePage() {
         setCurrentLevel(nivelSelecionado);
         setTimeLeft(120);
         setScore(0);
+        setRotation(0);
+        setRoundCount(0);
         setGoReactionTimes([]);
         setGoOpportunities(0);
         setStopErrors(0);
@@ -184,15 +297,51 @@ export default function AttentionRoulettePage() {
         startNewRound();
     };
 
-    const resetGame = () => setGameState('initial');
+    const resetGame = () => {
+        setGameState('initial');
+        setRotation(0);
+        setRoundCount(0);
+    };
 
-    // FUNÇÃO PARA SALVAR SESSÃO (ADICIONADA)
     const handleSaveSession = async () => {
         setSalvando(true);
-        // Lógica para salvar os dados da sessão no Supabase...
-        console.log("Salvando sessão...");
-        // Após salvar:
-        router.push('/dashboard');
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            if (user) {
+                const sessionData = {
+                    user_id: user.id,
+                    game_type: 'attention_roulette',
+                    level: currentLevel,
+                    score: score,
+                    metrics: {
+                        avg_reaction_time: calculateMetrics().avgRT,
+                        go_accuracy: calculateMetrics().goAccuracy,
+                        stop_accuracy: calculateMetrics().stopAccuracy,
+                        stop_errors: stopErrors,
+                        missed_go: missedGo,
+                        go_opportunities: goOpportunities,
+                        stop_opportunities: stopOpportunities
+                    },
+                    created_at: new Date().toISOString()
+                };
+                
+                const { error } = await supabase
+                    .from('game_sessions')
+                    .insert([sessionData]);
+                    
+                if (error) {
+                    console.error('Erro ao salvar sessão:', error);
+                } else {
+                    console.log('Sessão salva com sucesso!');
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao salvar sessão:', error);
+        } finally {
+            setSalvando(false);
+            router.push('/dashboard');
+        }
     };
 
     const calculateMetrics = () => {
@@ -203,7 +352,7 @@ export default function AttentionRoulettePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
             <GameHeader 
                 title="Roleta da Atenção"
                 icon={<Zap size={22} />}
@@ -228,7 +377,7 @@ export default function AttentionRoulettePage() {
                                         <li>Observe a cor alvo indicada na tela.</li>
                                         <li>Clique em "Girar" para rodar a roleta.</li>
                                         <li>Se a roleta parar na cor alvo, clique no botão de ação.</li>
-                                        <li>Se parar em outra cor, **não clique** e aguarde a próxima rodada.</li>
+                                        <li>Se parar em outra cor, <strong>não clique</strong> e aguarde a próxima rodada.</li>
                                     </ul>
                                 </div>
                                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -247,7 +396,11 @@ export default function AttentionRoulettePage() {
                                     <button
                                         key={nivel.id}
                                         onClick={() => setNivelSelecionado(nivel.id)}
-                                        className={`p-4 rounded-lg font-medium transition-colors ${nivelSelecionado === nivel.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                                        className={`p-4 rounded-lg font-medium transition-all transform hover:scale-105 ${
+                                            nivelSelecionado === nivel.id 
+                                                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg' 
+                                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                        }`}
                                     >
                                         <div className="text-2xl mb-1">{nivel.icone}</div>
                                         <div className="text-sm">{nivel.nome}</div>
@@ -258,7 +411,11 @@ export default function AttentionRoulettePage() {
                         </div>
 
                         <div className="text-center pt-4">
-                            <button onClick={startGame} disabled={nivelSelecionado === null} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
+                            <button 
+                                onClick={startGame} 
+                                disabled={nivelSelecionado === null} 
+                                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-lg text-lg transition-all transform hover:scale-105 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
+                            >
                                 🚀 Iniciar Atividade
                             </button>
                         </div>
@@ -273,38 +430,62 @@ export default function AttentionRoulettePage() {
                             <span className="bg-red-100 text-red-800 font-medium px-4 py-2 rounded-lg">Tempo: {timeLeft}s</span>
                         </div>
 
-                        <h2 className="text-2xl font-bold mb-4">A Tarefa: Clique se a roleta parar em <span className="p-1 rounded" style={{ backgroundColor: colorsMap[targetColor]?.bg, color: colorsMap[targetColor]?.text }}>{targetColor}</span></h2>
-                        
-                        <div className="relative w-72 h-72 sm:w-80 sm:h-80 mx-auto my-8">
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full text-5xl text-gray-700">▼</div>
-                            <div 
-                                className="w-full h-full rounded-full border-8 border-white shadow-xl overflow-hidden"
-                                style={{
-                                    transition: `transform ${currentConfig.spinDuration}ms cubic-bezier(0.25, 1, 0.5, 1)`,
-                                    transform: `rotate(${rotation}deg)`
+                        <h2 className="text-2xl font-bold mb-4">
+                            Clique se a roleta parar em: 
+                            <span 
+                                className="inline-block ml-2 px-4 py-2 rounded-lg shadow-md" 
+                                style={{ 
+                                    backgroundColor: colorsMap[targetColor]?.bg, 
+                                    color: colorsMap[targetColor]?.text 
                                 }}
                             >
-                                {currentConfig.options.map((color) => {
-                                    return (
-                                        <div key={color} className="absolute w-full h-full" style={{transform: `rotate(${360 / currentConfig.options.length * currentConfig.options.indexOf(color)}deg)`}}>
-                                            <div style={{
-                                                background: colorsMap[color].bg,
-                                                color: colorsMap[color].text,
-                                                clipPath: `polygon(50% 50%, 100% 0, 100% 100%)` // Cria um triângulo
-                                            }} className="w-1/2 h-1/2 absolute top-0 left-1/2 origin-bottom-left flex items-center justify-center">
-                                                <span style={{transform: `rotate(${(360 / currentConfig.options.length / 2) - 90}deg) translate(40px)`}} className="text-sm font-bold">{color}</span>
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
+                                {targetColor}
+                            </span>
+                        </h2>
+                        
+                        <RouletteWheel 
+                            options={currentConfig.options}
+                            rotation={rotation}
+                            colorsMap={colorsMap}
+                            isSpinning={gameState === 'spinning'}
+                            spinDuration={currentConfig.spinDuration}
+                        />
 
                         <div className="h-20 flex items-center justify-center">
-                            {gameState === 'awaiting_spin' && <button onClick={handleSpin} className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-10 rounded-lg text-xl">Girar</button>}
-                            {gameState === 'spinning' && <p className="text-xl animate-pulse text-gray-500">Girando...</p>}
-                            {gameState === 'decision' && <button onClick={handleActionClick} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-10 rounded-lg text-xl animate-bounce">É esta!</button>}
-                            {gameState === 'feedback' && ( isCorrect ? <CheckCircle size={48} className="text-green-500 mx-auto" /> : <XCircle size={48} className="text-red-500 mx-auto" />)}
+                            {gameState === 'awaiting_spin' && (
+                                <button 
+                                    onClick={handleSpin} 
+                                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-10 rounded-lg text-xl shadow-lg transform hover:scale-105 transition-all"
+                                >
+                                    🎲 Girar Roleta
+                                </button>
+                            )}
+                            {gameState === 'spinning' && (
+                                <p className="text-xl animate-pulse text-gray-500">Girando...</p>
+                            )}
+                            {gameState === 'decision' && (
+                                <button 
+                                    onClick={handleActionClick} 
+                                    className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-4 px-10 rounded-lg text-xl animate-bounce shadow-lg"
+                                >
+                                    ✋ É esta cor!
+                                </button>
+                            )}
+                            {gameState === 'feedback' && (
+                                <div className="animate-bounce">
+                                    {isCorrect ? (
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle size={48} className="text-green-500" />
+                                            <span className="text-2xl font-bold text-green-600">Correto!</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <XCircle size={48} className="text-red-500" />
+                                            <span className="text-2xl font-bold text-red-600">Errou!</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -314,14 +495,35 @@ export default function AttentionRoulettePage() {
                         <Trophy className="mx-auto text-yellow-500 mb-4" size={48}/>
                         <h2 className="text-3xl font-bold text-gray-800 mb-6">Sessão Concluída!</h2>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-8">
-                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{score}</div><div className="text-sm">Pontos</div></div>
-                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{calculateMetrics().avgRT.toFixed(0)}ms</div><div className="text-sm">RT Médio (Go)</div></div>
-                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{calculateMetrics().goAccuracy.toFixed(0)}%</div><div className="text-sm">Precisão (Go)</div></div>
-                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{calculateMetrics().stopAccuracy.toFixed(0)}%</div><div className="text-sm">Precisão (Stop)</div></div>
-                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{stopErrors}</div><div className="text-sm">Erros de Impulso</div></div>
-                            <div className="bg-gray-100 p-4 rounded-lg"><div className="text-2xl font-bold">{missedGo}</div><div className="text-sm">Omissões (Go)</div></div>
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
+                                <div className="text-2xl font-bold text-blue-800">{score}</div>
+                                <div className="text-sm text-blue-600">Pontos</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg">
+                                <div className="text-2xl font-bold text-green-800">{calculateMetrics().avgRT.toFixed(0)}ms</div>
+                                <div className="text-sm text-green-600">RT Médio (Go)</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg">
+                                <div className="text-2xl font-bold text-purple-800">{calculateMetrics().goAccuracy.toFixed(0)}%</div>
+                                <div className="text-sm text-purple-600">Precisão (Go)</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-lg">
+                                <div className="text-2xl font-bold text-indigo-800">{calculateMetrics().stopAccuracy.toFixed(0)}%</div>
+                                <div className="text-sm text-indigo-600">Precisão (Stop)</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg">
+                                <div className="text-2xl font-bold text-red-800">{stopErrors}</div>
+                                <div className="text-sm text-red-600">Erros de Impulso</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg">
+                                <div className="text-2xl font-bold text-orange-800">{missedGo}</div>
+                                <div className="text-sm text-orange-600">Omissões (Go)</div>
+                            </div>
                         </div>
-                        <button onClick={resetGame} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2 mx-auto">
+                        <button 
+                            onClick={resetGame} 
+                            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 flex items-center gap-2 mx-auto shadow-lg"
+                        >
                            <RotateCcw size={20}/>
                            Jogar Novamente
                         </button>
