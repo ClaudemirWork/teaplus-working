@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-// IMPORT CORRIGIDO: Adicionado ChevronLeft
 import { Play, Pause, RotateCcw, Award, Target, Clock, Brain, CheckCircle, Save, BrainCircuit, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -12,7 +11,6 @@ const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }) => 
     <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between h-16">
-                {/* 1. Botão Voltar (Esquerda) */}
                 <Link
                     href="/dashboard"
                     className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
@@ -20,14 +18,10 @@ const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }) => 
                     <ChevronLeft className="h-6 w-6" />
                     <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
                 </Link>
-
-                {/* 2. Título Centralizado (Meio) */}
                 <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex items-center gap-2">
                     {icon}
                     <span>{title}</span>
                 </h1>
-
-                {/* 3. Botão de Ação ou Espaçador (Direita) */}
                 {showSaveButton && onSave ? (
                     <button
                         onClick={onSave}
@@ -42,14 +36,12 @@ const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }) => 
                         <span className="hidden sm:inline">{isSaveDisabled ? 'Salvando...' : 'Salvar'}</span>
                     </button>
                 ) : (
-                    // Espaçador para manter o título centralizado
                     <div className="w-24"></div>
                 )}
             </div>
         </div>
     </header>
 );
-
 
 const InhibitoryControlPage = () => {
     const router = useRouter();
@@ -76,6 +68,7 @@ const InhibitoryControlPage = () => {
         'AMARELO': 'text-yellow-500'
     }
 
+    // Efeito para controlar o timer principal do jogo
     useEffect(() => {
         if (gameState === 'playing' && timeLeft > 0) {
             gameTimerRef.current = setTimeout(() => {
@@ -89,6 +82,15 @@ const InhibitoryControlPage = () => {
             if (gameTimerRef.current) clearTimeout(gameTimerRef.current)
         }
     }, [timeLeft, gameState])
+    
+    // **CORREÇÃO APLICADA AQUI**
+    // Efeito para iniciar o jogo quando o estado muda para 'playing'
+    useEffect(() => {
+        if (gameState === 'playing') {
+            startRound();
+        }
+    }, [gameState]);
+
 
     const generateStimulus = () => {
         const colorWord = colors[Math.floor(Math.random() * colors.length)]
@@ -103,17 +105,21 @@ const InhibitoryControlPage = () => {
     }
 
     const startRound = () => {
-        if (gameState !== 'playing') return;
+        // Esta verificação de segurança é mantida
+        if (gameState !== 'playing' || timeLeft === 0) return;
+
         const stimulus = generateStimulus()
         setCurrentStimulus(stimulus)
         setShowStimulus(true)
         setCurrentRound(prev => prev + 1)
 
-        const delay = Math.max(1500 - (level * 100), 800)
+        const delay = Math.max(2000 - (level * 150), 800) // Aumentado um pouco o tempo inicial
         stimulusTimerRef.current = setTimeout(() => {
-            setShowStimulus(false)
-            setResponses(prev => ({ ...prev, missed: prev.missed + 1 }))
-            setTimeout(() => startRound(), 500)
+            if (stimulusTimerRef.current) { // Checa se o timer ainda é o mesmo
+                setShowStimulus(false)
+                setResponses(prev => ({ ...prev, missed: prev.missed + 1 }))
+                setTimeout(() => startRound(), 500)
+            }
         }, delay)
     }
 
@@ -122,6 +128,7 @@ const InhibitoryControlPage = () => {
 
         if (stimulusTimerRef.current) {
             clearTimeout(stimulusTimerRef.current)
+            stimulusTimerRef.current = null;
         }
 
         const isCorrect = selectedColor === currentStimulus.color
@@ -131,24 +138,25 @@ const InhibitoryControlPage = () => {
             setResponses(prev => ({ ...prev, correct: prev.correct + 1 }))
             
             if (responses.correct > 0 && (responses.correct + 1) % 10 === 0) {
-                setLevel(prev => Math.min(prev + 1, 5)) // Limita ao nível 5
+                setLevel(prev => Math.min(prev + 1, 5))
             }
         } else {
+            setScore(prev => Math.max(0, prev - 5)); // Penalidade por erro
             setResponses(prev => ({ ...prev, incorrect: prev.incorrect + 1 }))
         }
 
         setShowStimulus(false)
-        setTimeout(() => startRound(), 800)
+        setTimeout(() => startRound(), 500) // Próxima rodada um pouco mais rápido
     }
 
     const startGame = () => {
-        setGameState('playing')
         setTimeLeft(60)
         setCurrentRound(0)
         setScore(0)
         setResponses({correct: 0, incorrect: 0, missed: 0})
         setLevel(1)
-        startRound()
+        // A chamada para startRound() foi removida daqui
+        setGameState('playing') // Apenas muda o estado
     }
 
     const pauseGame = () => {
@@ -168,7 +176,7 @@ const InhibitoryControlPage = () => {
     }
 
     const resetGame = () => {
-        setGameState('instructions') // Volta para as instruções ao invés do início
+        setGameState('instructions')
         setCurrentRound(0)
         setScore(0)
         setResponses({correct: 0, incorrect: 0, missed: 0})
@@ -177,7 +185,6 @@ const InhibitoryControlPage = () => {
         setLevel(1)
     }
     
-    // FUNÇÃO DE SALVAMENTO - ADICIONADA E PADRONIZADA
     const handleSaveSession = async () => {
         if (currentRound === 0) {
             alert('Complete pelo menos uma rodada antes de salvar.');
@@ -203,7 +210,6 @@ const InhibitoryControlPage = () => {
                     atividade_nome: 'Controle Inibitório',
                     pontuacao_final: score,
                     data_fim: new Date().toISOString(),
-                    // Opcional: pode-se salvar mais métricas em uma coluna 'metadata' JSON
                 }]);
 
             if (error) {
@@ -229,14 +235,12 @@ const InhibitoryControlPage = () => {
         }
     };
 
-
     const accuracy = responses.correct + responses.incorrect > 0 
         ? Math.round((responses.correct / (responses.correct + responses.incorrect)) * 100)
         : 0
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header PADRONIZADO implementado */}
             <GameHeader 
                 title="Controle Inibitório"
                 icon={<BrainCircuit size={22} />}
@@ -244,11 +248,7 @@ const InhibitoryControlPage = () => {
                 isSaveDisabled={salvando}
                 showSaveButton={gameState === 'finished'}
             />
-
-            {/* HEADER ANTIGO REMOVIDO */}
-
             <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-                {/* Intro */}
                 {gameState === 'intro' && (
                     <div className="space-y-8">
                         <div className="bg-white rounded-2xl p-8 border border-gray-200">
@@ -261,7 +261,6 @@ const InhibitoryControlPage = () => {
                                     <p className="text-gray-600">Teste de Stroop para controle inibitório</p>
                                 </div>
                             </div>
-                            
                             <div className="grid md:grid-cols-2 gap-8 mb-8">
                                 <div>
                                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -273,7 +272,6 @@ const InhibitoryControlPage = () => {
                                         onde você deve inibir a resposta automática de ler a palavra e focar na cor do texto.
                                     </p>
                                 </div>
-                                
                                 <div>
                                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                                         <CheckCircle className="w-5 h-5 text-green-500" />
@@ -296,7 +294,6 @@ const InhibitoryControlPage = () => {
                                 </div>
                             </div>
                         </div>
-
                         <div className="text-center">
                             <button
                                 onClick={() => setGameState('instructions')}
@@ -308,11 +305,9 @@ const InhibitoryControlPage = () => {
                     </div>
                 )}
 
-                {/* Instructions */}
                 {gameState === 'instructions' && (
                     <div className="space-y-8 bg-white p-8 rounded-xl shadow-lg">
                         <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">📋 Como jogar</h2>
-                        
                         <div className="space-y-8">
                             <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
                                 <h3 className="text-lg font-semibold text-blue-900 mb-4">🎯 Regra principal</h3>
@@ -320,7 +315,6 @@ const InhibitoryControlPage = () => {
                                     Palavras de cores aparecerão na tela. Você deve responder baseado na <strong>COR do texto</strong>, não na palavra escrita.
                                 </p>
                             </div>
-
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="bg-green-50 rounded-xl p-6 border border-green-200">
                                     <h3 className="text-lg font-semibold text-green-800 mb-4">✅ Exemplo correto</h3>
@@ -332,7 +326,6 @@ const InhibitoryControlPage = () => {
                                         <span className="text-sm">(cor do texto, não a palavra)</span>
                                     </p>
                                 </div>
-
                                 <div className="bg-red-50 rounded-xl p-6 border border-red-200">
                                     <h3 className="text-lg font-semibold text-red-800 mb-4">❌ Erro comum</h3>
                                     <div className="text-center mb-4">
@@ -345,7 +338,6 @@ const InhibitoryControlPage = () => {
                                 </div>
                             </div>
                         </div>
-
                         <div className="flex gap-4 justify-center pt-6">
                             <button
                                 onClick={() => setGameState('intro')}
@@ -364,10 +356,8 @@ const InhibitoryControlPage = () => {
                     </div>
                 )}
 
-                {/* Game */}
                 {(gameState === 'playing' || gameState === 'paused') && (
                     <div className="space-y-6 bg-white p-8 rounded-xl shadow-lg">
-
                          <div className="grid grid-cols-3 gap-4 text-center mb-4">
                              <div>
                                  <div className="text-sm font-medium text-gray-500">Tempo</div>
@@ -394,7 +384,6 @@ const InhibitoryControlPage = () => {
                                 </button>
                             </div>
                         )}
-
                         <div className="bg-gray-50 rounded-2xl p-8 border border-gray-200 text-center min-h-[250px] flex items-center justify-center">
                             {showStimulus && currentStimulus && gameState === 'playing' ? (
                                 <div className="space-y-4">
@@ -409,7 +398,6 @@ const InhibitoryControlPage = () => {
                                 <div className="text-gray-500 text-xl">Prepare-se...</div>
                             ) : null}
                         </div>
-
                         {showStimulus && gameState === 'playing' ? (
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
                                 <button
@@ -430,8 +418,6 @@ const InhibitoryControlPage = () => {
                                 >AMARELO</button>
                             </div>
                         ) : <div className="min-h-[72px]"></div> }
-
-
                         <div className="flex justify-center gap-4 pt-4">
                             {gameState === 'playing' && (
                                 <button
@@ -453,17 +439,14 @@ const InhibitoryControlPage = () => {
                     </div>
                 )}
 
-                {/* Finished */}
                 {gameState === 'finished' && (
                     <div className="space-y-8 bg-white p-8 rounded-xl shadow-lg">
                         <div className="text-center">
                             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <Award className="w-10 h-10 text-green-600" />
                             </div>
-                            
                             <h2 className="text-3xl font-bold text-gray-900 mb-4">Exercício concluído!</h2>
                             <p className="text-gray-600 mb-8">Parabéns! Você completou o teste de controle inibitório.</p>
-                            
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 max-w-2xl mx-auto">
                                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                                     <div className="text-3xl font-bold text-blue-600 mb-2">{score}</div>
@@ -482,7 +465,6 @@ const InhibitoryControlPage = () => {
                                     <div className="text-sm font-medium text-gray-600">Rodadas</div>
                                 </div>
                             </div>
-                            
                             <div className="flex gap-4 justify-center">
                                 <button
                                     onClick={resetGame}
