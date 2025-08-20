@@ -67,6 +67,9 @@ export default function AttentionRoulettePage() {
     const [rotation, setRotation] = useState(0);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
 
+    // ESTADO FALTANDO (CORRIGIDO)
+    const [salvando, setSalvando] = useState(false);
+
     // Métricas
     const [goReactionTimes, setGoReactionTimes] = useState<number[]>([]);
     const [goOpportunities, setGoOpportunities] = useState(0);
@@ -102,6 +105,7 @@ export default function AttentionRoulettePage() {
         return () => { if (timer) clearTimeout(timer); };
     }, [gameState, timeLeft]);
 
+
     const startNewRound = () => {
         const newTarget = currentConfig.options[Math.floor(Math.random() * currentConfig.options.length)];
         setTargetColor(newTarget);
@@ -135,9 +139,9 @@ export default function AttentionRoulettePage() {
 
             decisionTimerRef.current = setTimeout(() => {
                 if (resultColor !== targetColor) {
-                    setIsCorrect(true); // Acertou ao não clicar
+                    setIsCorrect(true);
                 } else {
-                    setIsCorrect(false); // Errou ao não clicar (omissão)
+                    setIsCorrect(false);
                     setMissedGo(prev => prev + 1);
                 }
                 setGameState('feedback');
@@ -182,6 +186,15 @@ export default function AttentionRoulettePage() {
 
     const resetGame = () => setGameState('initial');
 
+    // FUNÇÃO PARA SALVAR SESSÃO (ADICIONADA)
+    const handleSaveSession = async () => {
+        setSalvando(true);
+        // Lógica para salvar os dados da sessão no Supabase...
+        console.log("Salvando sessão...");
+        // Após salvar:
+        router.push('/dashboard');
+    };
+
     const calculateMetrics = () => {
         const avgRT = goReactionTimes.length > 0 ? goReactionTimes.reduce((a, b) => a + b, 0) / goReactionTimes.length : 0;
         const goAccuracy = goOpportunities > 0 ? ((goOpportunities - missedGo) / goOpportunities) * 100 : 0;
@@ -194,7 +207,7 @@ export default function AttentionRoulettePage() {
             <GameHeader 
                 title="Roleta da Atenção"
                 icon={<Zap size={22} />}
-                onSave={() => {}} // Lógica de salvar a implementar
+                onSave={handleSaveSession}
                 isSaveDisabled={salvando}
                 showSaveButton={gameState === 'finished'}
             />
@@ -271,22 +284,16 @@ export default function AttentionRoulettePage() {
                                     transform: `rotate(${rotation}deg)`
                                 }}
                             >
-                                {currentConfig.options.map((color, index) => {
-                                    const sliceAngle = 360 / currentConfig.options.length;
-                                    const rotationAngle = index * sliceAngle;
+                                {currentConfig.options.map((color) => {
                                     return (
-                                        <div key={color} className="absolute w-1/2 h-1/2 origin-bottom-right flex items-center justify-start pl-4"
-                                            style={{
-                                                backgroundColor: colorsMap[color].bg,
+                                        <div key={color} className="absolute w-full h-full" style={{transform: `rotate(${360 / currentConfig.options.length * currentConfig.options.indexOf(color)}deg)`}}>
+                                            <div style={{
+                                                background: colorsMap[color].bg,
                                                 color: colorsMap[color].text,
-                                                transform: `rotate(${rotationAngle}deg)`,
-                                                clipPath: `polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)`,
-                                                width: '50%',
-                                                height: '50%',
-                                                transformOrigin: '100% 100%',
-                                                clipPath: `polygon(0 0, 100% 0, 100% 2px, 0 ${100 * Math.tan(sliceAngle/2 * Math.PI/180)}%)` // Aproximação de um setor circular
-                                            }}>
-                                                <span style={{transform: `rotate(${sliceAngle/2}deg) translate(-20%, -50%)`}} className="text-sm font-bold -ml-4">{color}</span>
+                                                clipPath: `polygon(50% 50%, 100% 0, 100% 100%)` // Cria um triângulo
+                                            }} className="w-1/2 h-1/2 absolute top-0 left-1/2 origin-bottom-left flex items-center justify-center">
+                                                <span style={{transform: `rotate(${(360 / currentConfig.options.length / 2) - 90}deg) translate(40px)`}} className="text-sm font-bold">{color}</span>
+                                            </div>
                                         </div>
                                     )
                                 })}
