@@ -99,7 +99,6 @@ export default function FrustrationManagementPage() {
     }
   };
 
-  // --- LÓGICA DE JOGO ATUALIZADA ---
   const handleStartGame = () => {
     const filteredExercises = allExercises.filter(ex => ex.levels.includes(nivelSelecionado));
     setSessionExercises(filteredExercises);
@@ -146,14 +145,8 @@ export default function FrustrationManagementPage() {
     
                     {exercise.type === 'breathing' && (
                         <div className="text-center p-4 space-y-6">
-                            <div className="flex justify-center items-center">
-                                <div className={`w-48 h-48 rounded-full flex items-center justify-center text-white font-bold text-2xl transition-all duration-1000 ${getBreathingStyle()}`}>
-                                    {getBreathingInstruction()}
-                                </div>
-                            </div>
-                            <button onClick={!isActive ? startBreathing : stopExercise} className={`px-6 py-3 rounded-lg font-semibold text-white transition-colors ${!isActive ? 'bg-blue-500 hover:bg-blue-600' : 'bg-red-500 hover:bg-red-600'}`}>
-                                {!isActive ? "Iniciar Respiração" : "Parar"}
-                            </button>
+                            <div className="flex justify-center items-center"><div className={`w-48 h-48 rounded-full flex items-center justify-center text-white font-bold text-2xl transition-all duration-1000 ${getBreathingStyle()}`}>{getBreathingInstruction()}</div></div>
+                            <button onClick={!isActive ? startBreathing : stopExercise} className={`px-6 py-3 rounded-lg font-semibold text-white transition-colors ${!isActive ? 'bg-blue-500 hover:bg-blue-600' : 'bg-red-500 hover:bg-red-600'}`}>{!isActive ? "Iniciar Respiração" : "Parar"}</button>
                         </div>
                     )}
                     {exercise.type === 'reframing' && (
@@ -184,16 +177,25 @@ export default function FrustrationManagementPage() {
                     </div>
                 </div>
     
+                {/* --- NAVEGAÇÃO CORRIGIDA --- */}
                 <div className="flex justify-between mt-6">
-                    <button onClick={prevExercise} disabled={currentExerciseIndex === 0} className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">Anterior</button>
-                    <button onClick={nextExercise} disabled={currentExerciseIndex === sessionExercises.length - 1} className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">Próximo</button>
+                    <button onClick={prevExercise} disabled={currentExerciseIndex === 0} className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Anterior
+                    </button>
+                    <button 
+                        onClick={nextExercise} 
+                        disabled={!isCompleted || currentExerciseIndex === sessionExercises.length - 1} 
+                        className="px-6 py-2 rounded-lg bg-teal-500 text-white hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Próximo
+                    </button>
                 </div>
             </main>
         </div>
     );
   }
 
-  // RENDERIZAÇÃO DA TELA INICIAL COM TEXTOS ATUALIZADOS
+  // RENDERIZAÇÃO DA TELA INICIAL
   return (
     <div className="min-h-screen bg-gray-50">
       <GameHeader title="Gestão da Frustração" icon={<ShieldCheck size={24} />} />
@@ -203,9 +205,7 @@ export default function FrustrationManagementPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
-                <p className="text-sm text-gray-600">
-                  Aprender uma técnica completa em 3 níveis para gerenciar a frustração, desde acalmar o corpo até mudar os pensamentos.
-                </p>
+                <p className="text-sm text-gray-600">Aprender uma técnica completa em 3 níveis para gerenciar a frustração, desde acalmar o corpo até mudar os pensamentos.</p>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como Jogar:</h3>
@@ -217,13 +217,10 @@ export default function FrustrationManagementPage() {
               </div>
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-800 mb-1">⭐ Avaliação:</h3>
-                <p className="text-sm text-gray-600">
-                  Conclua os passos de cada nível para ganhar pontos e construir seu repertório de estratégias para momentos difíceis.
-                </p>
+                <p className="text-sm text-gray-600">Conclua os passos de cada nível para ganhar pontos e construir seu repertório de estratégias para momentos difíceis.</p>
               </div>
             </div>
           </div>
-
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Nível</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -240,11 +237,8 @@ export default function FrustrationManagementPage() {
                 ))}
             </div>
           </div>
-
           <div className="text-center pt-4">
-            <button onClick={handleStartGame} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors">
-              🚀 Iniciar Atividade
-            </button>
+            <button onClick={handleStartGame} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors">🚀 Iniciar Atividade</button>
           </div>
         </div>
       </main>
