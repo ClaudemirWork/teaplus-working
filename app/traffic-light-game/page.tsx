@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link'; // LINHA CORRIGIDA
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Save } from 'lucide-react';
@@ -46,7 +47,6 @@ const GameHeader = ({ title, icon, onSave, isSaveDisabled, showSaveButton }) => 
 // 2. PÁGINA DA ATIVIDADE "JOGO DO SEMÁFORO"
 // ============================================================================
 export default function JogoSemaforoPage() {
-    // ... (TODA A SUA LÓGICA DE ESTADOS E FUNÇÕES FOI MANTIDA INTACТА)
     const [currentScenario, setCurrentScenario] = useState(0)
     const [selectedOption, setSelectedOption] = useState<'red' | 'yellow' | 'green' | null>(null)
     const [showResult, setShowResult] = useState(false)
