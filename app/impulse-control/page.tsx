@@ -84,6 +84,18 @@ export default function ImpulseControlPage() {
         return () => { if (gameTimerRef.current) clearTimeout(gameTimerRef.current); };
     }, [timeLeft, gameState]);
 
+    // Função para obter o tempo de exibição com base na sua sugestão
+    const getDisplayTimeForLevel = (level: number) => {
+        switch (level) {
+            case 1: return 5000; // 5 segundos
+            case 2: return 4000; // 4 segundos
+            case 3: return 3500; // 3.5 segundos
+            case 4: return 3000; // 3 segundos
+            case 5: return 2500; // 2.5 segundos
+            default: return 5000;
+        }
+    };
+
     const generateTask = useCallback(() => {
         const taskTypes = ['go', 'nogo', 'delay', 'choice'];
         const weights = [0.3, 0.4, 0.2, 0.1];
@@ -130,12 +142,12 @@ export default function ImpulseControlPage() {
         setCurrentTask(task);
         setShowStimulus(false);
         
-        // VELOCIDADE AJUSTADA: Pausa entre rodadas agora é bem mais longa e progressiva
-        const interRoundDelay = Math.max(2500 - (currentLevel * 100), 1500);
+        // VELOCIDADE AJUSTADA: Pausa entre rodadas bem mais longa
+        const interRoundDelay = Math.max(3000 - (currentLevel * 200), 2000);
 
         const setupStimulusTimer = () => {
-            // VELOCIDADE AJUSTADA: Tempo de exibição do estímulo agora é bem mais longo e progressivo
-            const displayTime = Math.max(3500 - (currentLevel * 150), 2000);
+            // VELOCIDADE AJUSTADA: Usando a nova função para definir o tempo
+            const displayTime = getDisplayTimeForLevel(currentLevel);
 
             stimulusTimerRef.current = setTimeout(() => {
                 if (task.shouldRespond) {
@@ -186,7 +198,7 @@ export default function ImpulseControlPage() {
 
         if (stimulusTimerRef.current) clearTimeout(stimulusTimerRef.current);
 
-        const interRoundDelay = Math.max(2500 - (currentLevel * 100), 1500);
+        const interRoundDelay = Math.max(3000 - (currentLevel * 200), 2000);
 
         if (currentTask.shouldRespond) {
             setScore(prev => prev + 10 + (currentLevel * 5) + (streak * 2));
