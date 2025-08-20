@@ -130,12 +130,12 @@ export default function ImpulseControlPage() {
         setCurrentTask(task);
         setShowStimulus(false);
         
-        // CORREÇÃO 2: Pausa entre rodadas agora é progressiva
-        const interRoundDelay = Math.max(1500 - (currentLevel * 150), 700);
+        // VELOCIDADE AJUSTADA: Pausa entre rodadas agora é bem mais longa e progressiva
+        const interRoundDelay = Math.max(2500 - (currentLevel * 100), 1500);
 
         const setupStimulusTimer = () => {
-            // CORREÇÃO 1: Tempo de exibição do estímulo ajustado
-            const displayTime = Math.max(2500 - (currentLevel * 200), 1200);
+            // VELOCIDADE AJUSTADA: Tempo de exibição do estímulo agora é bem mais longo e progressivo
+            const displayTime = Math.max(3500 - (currentLevel * 150), 2000);
 
             stimulusTimerRef.current = setTimeout(() => {
                 if (task.shouldRespond) {
@@ -186,7 +186,7 @@ export default function ImpulseControlPage() {
 
         if (stimulusTimerRef.current) clearTimeout(stimulusTimerRef.current);
 
-        const interRoundDelay = Math.max(1500 - (currentLevel * 150), 700);
+        const interRoundDelay = Math.max(2500 - (currentLevel * 100), 1500);
 
         if (currentTask.shouldRespond) {
             setScore(prev => prev + 10 + (currentLevel * 5) + (streak * 2));
