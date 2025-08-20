@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Save, ChevronLeft, Spline } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '../utils/supabaseClient' // Ajuste o caminho se necessário
+import { createClient } from '../utils/supabaseClient'
 
 // --- COMPONENTE DO CABEÇALHO PADRÃO ---
 const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: {
@@ -54,7 +54,6 @@ export default function DividedAttention() {
     const router = useRouter()
     const supabase = createClient()
     
-    // Estados principais refatorados
     const [gameState, setGameState] = useState<'initial' | 'playing' | 'finished'>('initial');
     const [nivelSelecionado, setNivelSelecionado] = useState<number | null>(1);
     const [pontuacao, setPontuacao] = useState(0)
@@ -63,27 +62,21 @@ export default function DividedAttention() {
     const [audioDisponivel, setAudioDisponivel] = useState(false)
     const [audioTestado, setAudioTestado] = useState(false)
     
-    // Estados do jogo
-    const [objetosContados, setObjetosContados] = useState(0)
     const [objetosCorretos, setObjetosCorretos] = useState(0)
-    const [tonsIdentificados, setTonsIdentificados] = useState(0)
     const [tonsCorretos, setTonsCorretos] = useState(0)
     const [totalObjetosAlvo, setTotalObjetosAlvo] = useState(0)
     const [totalTonsAlvo, setTotalTonsAlvo] = useState(0)
     
-    // Estados visuais
     const [objetosNaTela, setObjetosNaTela] = useState<Array<{id: number, x: number, y: number, tipo: 'alvo' | 'distrator', cor: string}>>([])
     const [ultimoTom, setUltimoTom] = useState<'alvo' | 'distrator' | null>(null)
     const [aguardandoTom, setAguardandoTom] = useState(false)
     
-    // Estados para salvamento e métricas
     const [salvando, setSalvando] = useState(false)
     const [temposReacaoVisuais, setTemposReacaoVisuais] = useState<number[]>([])
     const [temposReacaoAuditivos, setTemposReacaoAuditivos] = useState<number[]>([])
     const [timestampUltimoObjeto, setTimestampUltimoObjeto] = useState<number | null>(null)
     const [timestampUltimoTom, setTimestampUltimoTom] = useState<number | null>(null)
     
-    // Refs
     const audioContextRef = useRef<AudioContext | null>(null)
     const gainNodeRef = useRef<GainNode | null>(null)
     const gameLoopRef = useRef<NodeJS.Timeout | null>(null)
@@ -100,7 +93,6 @@ export default function DividedAttention() {
     const tons = { alvo: 800, distrator1: 400, distrator2: 600, distrator3: 1000 }
     const cores = { alvo: '#10B981', distrator1: '#EF4444', distrator2: '#3B82F6', distrator3: '#F59E0B', distrator4: '#8B5CF6' }
 
-    // --- Efeitos e Lógica do Jogo (sem alterações significativas) ---
     useEffect(() => {
         const initAudio = async () => {
             try {
@@ -138,18 +130,28 @@ export default function DividedAttention() {
         return () => clearTimeout(timer);
     }, [gameState, tempoRestante]);
 
-    const setupGameLoops = useCallback(() => {
+    const gerarObjetos = useCallback(() => {
         const config = niveis.find(n => n.id === nivelSelecionado);
         if (!config) return;
 
-        gameLoopRef.current = setInterval(gerarObjetos, config.intervalObjetos);
-        audioLoopRef.current = setInterval(reproduzirTomJogo, config.intervalTons);
+        const novosObjetos: any[] = [];
+        const timestamp = Date.now();
+        setTimestampUltimoObjeto(timestamp);
+
+        for (let i = 0; i < config.quantidadeObjetos; i++) {
+            const isAlvo = Math.random() < config.probObjetoAlvo;
+            if (isAlvo) setTotalObjetosAlvo(prev => prev + 1);
+            novosObjetos.push({ 
+                id: Date.now() + Math.random(), 
+                x: Math.random() * 80 + 10, 
+                y: Math.random() * 70 + 15, 
+                tipo: isAlvo ? 'alvo' : 'distrator', 
+                cor: isAlvo ? cores.alvo : [cores.distrator1, cores.distrator2, cores.distrator3, cores.distrator4][Math.floor(Math.random() * 4)]
+            });
+        }
+        setObjetosNaTela(novosObjetos);
+        setTimeout(() => setObjetosNaTela([]), config.velocidadeObjetos - 500);
     }, [nivelSelecionado]);
-    
-    const clearGameLoops = () => {
-        if (gameLoopRef.current) clearInterval(gameLoopRef.current);
-        if (audioLoopRef.current) clearInterval(audioLoopRef.current);
-    };
 
     const reproduzirTom = useCallback(async (frequencia: number, duracao: number = 600): Promise<boolean> => {
         try {
@@ -172,7 +174,7 @@ export default function DividedAttention() {
 
     const reproduzirTomJogo = useCallback(() => {
         const config = niveis.find(n => n.id === nivelSelecionado);
-        if (!config || gameState !== 'playing') return;
+        if (!config) return;
         
         const isAlvo = Math.random() < config.probTomAlvo;
         const tipo = isAlvo ? 'alvo' : 'distrator';
@@ -181,7 +183,7 @@ export default function DividedAttention() {
         if (isAlvo) setTotalTonsAlvo(prev => prev + 1);
         
         reproduzirTom(frequencia, 600).then(sucesso => {
-            if (sucesso && gameState === 'playing') {
+            if (sucesso) {
                 const timestamp = Date.now();
                 setTimestampUltimoTom(timestamp);
                 setUltimoTom(tipo);
@@ -189,30 +191,35 @@ export default function DividedAttention() {
                 setTimeout(() => setAguardandoTom(false), 1500);
             }
         });
-    }, [reproduzirTom, nivelSelecionado, gameState]);
-    
-    const gerarObjetos = useCallback(() => {
-        const config = niveis.find(n => n.id === nivelSelecionado);
-        if (!config || gameState !== 'playing') return;
+    }, [reproduzirTom, nivelSelecionado]);
 
-        const novosObjetos: any[] = [];
-        const timestamp = Date.now();
-        setTimestampUltimoObjeto(timestamp);
+    // CORREÇÃO: useEffect para controlar os loops do jogo
+    useEffect(() => {
+        if (gameState === 'playing') {
+            const config = niveis.find(n => n.id === nivelSelecionado);
+            if (!config) return;
 
-        for (let i = 0; i < config.quantidadeObjetos; i++) {
-            const isAlvo = Math.random() < config.probObjetoAlvo;
-            if (isAlvo) setTotalObjetosAlvo(prev => prev + 1);
-            novosObjetos.push({ 
-                id: Date.now() + Math.random(), 
-                x: Math.random() * 80 + 10, 
-                y: Math.random() * 70 + 15, 
-                tipo: isAlvo ? 'alvo' : 'distrator', 
-                cor: isAlvo ? cores.alvo : [cores.distrator1, cores.distrator2, cores.distrator3, cores.distrator4][Math.floor(Math.random() * 4)]
-            });
+            // Inicia os loops
+            gameLoopRef.current = setInterval(gerarObjetos, config.intervalObjetos);
+            audioLoopRef.current = setInterval(reproduzirTomJogo, config.intervalTons);
+            
+            // Inicia os primeiros eventos com um pequeno delay
+            setTimeout(gerarObjetos, 1000);
+            setTimeout(reproduzirTomJogo, 2000);
+
+        } else {
+            // Limpa os loops se o jogo não estiver em 'playing'
+            if (gameLoopRef.current) clearInterval(gameLoopRef.current);
+            if (audioLoopRef.current) clearInterval(audioLoopRef.current);
         }
-        setObjetosNaTela(novosObjetos);
-        setTimeout(() => setObjetosNaTela([]), config.velocidadeObjetos - 500);
-    }, [nivelSelecionado, gameState]);
+
+        // Função de limpeza para quando o componente desmontar ou o estado mudar
+        return () => {
+            if (gameLoopRef.current) clearInterval(gameLoopRef.current);
+            if (audioLoopRef.current) clearInterval(audioLoopRef.current);
+        };
+    }, [gameState, nivelSelecionado, gerarObjetos, reproduzirTomJogo]);
+
 
     const testarAudio = useCallback(async () => {
         const sucesso = await reproduzirTom(tons.alvo, 1000);
@@ -228,7 +235,6 @@ export default function DividedAttention() {
         } else {
             setPontuacao(prev => Math.max(0, prev - 8));
         }
-        setObjetosContados(prev => prev + 1);
         setObjetosNaTela(prev => prev.filter(obj => obj.id !== objeto.id));
     };
 
@@ -242,7 +248,6 @@ export default function DividedAttention() {
         } else {
             setPontuacao(prev => Math.max(0, prev - 5));
         }
-        setTonsIdentificados(prev => prev + 1);
         setAguardandoTom(false);
     };
 
@@ -256,9 +261,7 @@ export default function DividedAttention() {
 
         setTempoRestante(config.duracao);
         setPontuacao(0);
-        setObjetosContados(0);
         setObjetosCorretos(0);
-        setTonsIdentificados(0);
         setTonsCorretos(0);
         setTotalObjetosAlvo(0);
         setTotalTonsAlvo(0);
@@ -267,20 +270,14 @@ export default function DividedAttention() {
         
         setGameState('playing');
         if (audioContextRef.current?.state === 'suspended') audioContextRef.current.resume();
-        
-        setTimeout(gerarObjetos, 1000);
-        setTimeout(reproduzirTomJogo, 2000);
-        setupGameLoops();
     };
 
     const finalizarExercicio = () => {
-        clearGameLoops();
         setGameState('finished');
         setObjetosNaTela([]);
     };
 
     const resetGame = () => {
-        clearGameLoops();
         setGameState('initial');
         setNivelSelecionado(1);
         setAudioTestado(false);
@@ -296,14 +293,18 @@ export default function DividedAttention() {
             return;
         }
         setSalvando(true);
-        // ... (lógica de salvar no Supabase, igual à anterior, mas usando nivelSelecionado)
+        // ... (lógica de salvar no Supabase)
         try {
-            router.push('/dashboard');
+            // Simulação de salvamento e redirecionamento
+            console.log("Salvando sessão...");
+            setTimeout(() => {
+                router.push('/dashboard');
+            }, 1000);
         } finally {
-            setSalvando(false);
+             // setSalvando(false) // Comentado para simulação
         }
     };
-
+    
     return (
         <div className="min-h-screen bg-gray-50">
             <GameHeader 
