@@ -1,6 +1,6 @@
 'use client';
 
-import React, 'useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Save, Brain, Check, X, RotateCcw, ListOrdered } from 'lucide-react';
 import { useRouter } from 'next/navigation';
