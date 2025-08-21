@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link'; // LINHA ADICIONADA
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, BookText, History } from 'lucide-react';
