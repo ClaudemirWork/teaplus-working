@@ -30,7 +30,6 @@ const GameHeader = ({ title, icon }) => (
 // 2. PÁGINA DA ATIVIDADE "ESPELHO DE EMOÇÕES"
 // ============================================================================
 export default function EmotionMirrorPage() {
-    // ... (TODA A SUA LÓGICA DE ESTADOS E FUNÇÕES FOI MANTIDA INTACТА)
     const [view, setView] = useState<'home' | 'game' | 'completed'>('home');
     const [currentLevel, setCurrentLevel] = useState(1);
     const [currentExercise, setCurrentExercise] = useState(0);
@@ -42,17 +41,26 @@ export default function EmotionMirrorPage() {
     const [completedLevels, setCompletedLevels] = useState<number[]>([]);
     const router = useRouter();
     
-    // Dados do Jogo
     const levels = [
         { id: 1, name: "Emoções Básicas", description: "Reconhecer emoções fundamentais", pointsRequired: 20, exercises: [
             { id: 1, title: "Alegria Genuína", emotion: "Felicidade", emotionIcon: "😊", facialDescription: "Olhos brilhantes, cantos da boca elevados, bochechas levantadas.", context: "Maria recebeu uma boa notícia.", skillFocus: "Reconhecimento de alegria", questions: [
                 { id: 1, question: "Qual emoção esta pessoa está expressando?", options: ["Tristeza", "Felicidade", "Raiva"], correct: 1, explanation: "A expressão mostra felicidade: olhos brilhantes e sorriso natural." },
                 { id: 2, question: "Como você sabe que a alegria é verdadeira?", options: ["Apenas os lábios sorriem", "Os olhos também 'sorriem'", "A testa está franzida"], correct: 1, explanation: "Na alegria genuína, os olhos se contraem levemente, criando o 'sorriso dos olhos'." }
             ]},
-            // Outros exercícios do nível 1...
+            { id: 2, title: "Tristeza Profunda", emotion: "Tristeza", emotionIcon: "😢", facialDescription: "Cantos da boca para baixo, olhos com lágrimas, sobrancelhas em 'V' invertido.", context: "João sentiu falta do seu amigo.", skillFocus: "Identificação de tristeza", questions: [
+              { id: 1, question: "Qual a principal característica facial da tristeza?", options: ["Boca aberta", "Cantos da boca para baixo", "Dentes cerrados"], correct: 1, explanation: "Na tristeza, os cantos da boca se voltam para baixo e as sobrancelhas formam um 'V' invertido." }
+            ]},
         ]},
-        { id: 2, name: "Emoções Intermediárias", description: "Reconhecer emoções mais sutis", pointsRequired: 20, exercises: [ /* ... */ ]},
-        { id: 3, name: "Emoções Complexas", description: "Interpretar emoções mistas", pointsRequired: 20, exercises: [ /* ... */ ]},
+        { id: 2, name: "Emoções Intermediárias", description: "Reconhecer emoções mais sutis", pointsRequired: 20, exercises: [
+            { id: 3, title: "Nervosismo e Ansiedade", emotion: "Nervosismo", emotionIcon: "😰", facialDescription: "Olhos arregalados, sobrancelhas elevadas, lábios mordidos.", context: "Pedro está nervoso para a apresentação.", skillFocus: "Identificação de ansiedade", questions: [
+              { id: 1, question: "Como identificar nervosismo?", options: ["Expressão relaxada", "Sinais de tensão sutil", "Sorriso constante"], correct: 1, explanation: "O nervosismo se manifesta através de tensão sutil: lábios entreabertos e sobrancelhas elevadas." }
+            ]}
+        ]},
+        { id: 3, name: "Emoções Complexas", description: "Interpretar emoções mistas", pointsRequired: 20, exercises: [
+            { id: 4, title: "Sarcasmo Sutil", emotion: "Sarcasmo", emotionIcon: "😏", facialDescription: "Meio sorriso assimétrico, sobrancelha elevada, olhar de lado.", context: "Roberto fez um comentário irônico.", skillFocus: "Reconhecimento de ironia", questions: [
+              { id: 1, question: "Como reconhecer sarcasmo?", options: ["Sorriso simétrico", "Sorriso assimétrico", "Expressão neutra"], correct: 1, explanation: "O sarcasmo geralmente se manifesta por um sorriso assimétrico e olhar de lado." }
+            ]}
+        ]},
     ];
 
     const currentLevelData = levels.find(level => level.id === currentLevel);
@@ -80,7 +88,7 @@ export default function EmotionMirrorPage() {
             setCurrentExercise(e => e + 1);
             setCurrentQuestion(0);
         } else {
-            if (score >= currentLevelData.pointsRequired) {
+            if (currentLevelData && score >= currentLevelData.pointsRequired) {
                 if (!completedLevels.includes(currentLevel)) {
                     setCompletedLevels(prev => [...prev, currentLevel]);
                 }
@@ -92,7 +100,7 @@ export default function EmotionMirrorPage() {
                 } else {
                     setView('completed');
                 }
-            } else { // Repete o nível
+            } else {
                 setCurrentExercise(0);
                 setCurrentQuestion(0);
                 setScore(0);
@@ -167,6 +175,16 @@ export default function EmotionMirrorPage() {
         );
     }
 
+    // --- CORREÇÃO APLICADA AQUI ---
+    // Adiciona uma verificação para garantir que os dados estão prontos
+    if (!currentLevelData || !currentExerciseData || !currentQuestionData) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <p>Carregando atividade...</p>
+            </div>
+        );
+    }
+
     // TELA DO JOGO ATIVO
     return (
         <div className="min-h-screen bg-gray-50">
@@ -174,7 +192,7 @@ export default function EmotionMirrorPage() {
             <main className="p-4 sm:p-6 max-w-4xl mx-auto w-full">
                 <div className="bg-white p-3 rounded-lg shadow-sm mb-6">
                     <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-semibold text-gray-700">Nível {currentLevel}: {currentLevelData?.name}</span>
+                        <span className="text-sm font-semibold text-gray-700">Nível {currentLevel}: {currentLevelData.name}</span>
                         <span className="text-sm font-semibold text-gray-700">Pontos: <span className="text-teal-600">{totalScore}</span></span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
