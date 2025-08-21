@@ -1,9 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
+import { useRouter } from 'next/navigation' // useRouter não estava sendo usado, mas mantive por padrão
+import { createClient } from '@/utils/supabaseClient' // Corrigindo o caminho do import
 
+// 1. IMPORTANDO O CABEÇALHO PADRÃO E ÍCONE
+import { GameHeader } from '@/components/GameHeader'
+import { Smile } from 'lucide-react'
+
+// As interfaces Expression e Level permanecem as mesmas
 interface Expression {
   id: number
   image: string
@@ -33,6 +39,8 @@ export default function NonverbalExpressions() {
   const [completedLevels, setCompletedLevels] = useState<number[]>([])
   const [gameCompleted, setGameCompleted] = useState(false)
 
+  // A lógica de levels, handleAnswer, nextExpression, etc., permanece 100% a mesma.
+  // ... (toda a sua lógica de jogo que já estava aqui)
   const levels: Level[] = [
     {
       id: 1,
@@ -167,7 +175,6 @@ export default function NonverbalExpressions() {
       ]
     }
   ]
-
   const currentLevelData = levels.find(level => level.id === currentLevel)
   const currentExpressionData = currentLevelData?.expressions[currentExpression]
 
@@ -245,26 +252,16 @@ export default function NonverbalExpressions() {
     }
   }
 
+
   if (gameCompleted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100">
-        <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <div className="flex items-center justify-between h-16">
-              <Link 
-                href="/dashboard" 
-                className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
-              >
-                <ChevronLeft className="h-6 w-6" />
-                <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
-              </Link>
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center">
-                😊 Expressões Não-Verbais
-              </h1>
-              <div className="w-24"></div>
-            </div>
-          </div>
-        </header>
+        {/* 2. CABEÇALHO PADRÃO APLICADO NA TELA DE CONCLUSÃO */}
+        <GameHeader
+          title="Expressões Não-Verbais"
+          icon={<Smile className="h-6 w-6" />}
+          showSaveButton={false} // Pode adicionar um botão de salvar aqui se quiser
+        />
 
         <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
           <div className="flex min-h-[500px] items-center justify-center">
@@ -287,9 +284,7 @@ export default function NonverbalExpressions() {
                   <button onClick={resetGame} className="w-full rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-4 text-lg font-semibold text-white transition-all hover:shadow-lg">
                     🔄 Jogar Novamente
                   </button>
-                  <Link href="/dashboard" className="block w-full rounded-2xl border-2 border-gray-300 px-8 py-4 text-lg font-semibold text-gray-700 transition-all hover:border-gray-400">
-                    🏠 Voltar ao Painel
-                  </Link>
+                  {/* O botão de voltar ao painel já existe no GameHeader */}
                 </div>
               </div>
             </div>
@@ -301,27 +296,13 @@ export default function NonverbalExpressions() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100">
-      <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
-            <Link 
-              href="/dashboard" 
-              className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
-            >
-              <ChevronLeft className="h-6 w-6" />
-              <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
-            </Link>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center">
-              😊 Expressões Não-Verbais
-            </h1>
-            <div className="text-right w-24">
-              <div className="text-xs text-gray-500">Pontuação</div>
-              <div className="text-xl font-bold text-orange-600">{totalScore}</div>
-            </div>
-          </div>
-        </div>
-      </header>
-
+       {/* 3. CABEÇALHO PADRÃO APLICADO NA TELA PRINCIPAL DO JOGO */}
+       <GameHeader
+        title="Expressões Não-Verbais"
+        icon={<Smile className="h-6 w-6" />}
+        showSaveButton={false}
+      />
+      {/* O conteúdo original da <main> foi mantido, pois é a lógica do jogo */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         <div className="rounded-xl sm:rounded-3xl bg-white p-4 sm:p-8 shadow-xl">
           <div className="mb-8">
@@ -336,7 +317,7 @@ export default function NonverbalExpressions() {
               </div>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div 
+              <div
                 className="bg-gradient-to-r from-purple-500 to-blue-500 h-2.5 rounded-full transition-all"
                 style={{ width: `${Math.min((score / (currentLevelData?.pointsRequired || 1)) * 100, 100)}%` }}
               ></div>
@@ -380,8 +361,8 @@ export default function NonverbalExpressions() {
                     <p className="text-blue-800">{currentExpressionData.explanation}</p>
                   </div>
                   <button onClick={nextExpression} className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-3 text-lg font-semibold text-white transition-all hover:shadow-lg">
-                    {currentExpression < (currentLevelData?.expressions.length || 0) - 1 
-                      ? 'Próxima Expressão' 
+                    {currentExpression < (currentLevelData?.expressions.length || 0) - 1
+                      ? 'Próxima Expressão'
                       : score >= (currentLevelData?.pointsRequired || 0)
                       ? currentLevel < levels.length ? 'Próximo Nível' : 'Finalizar'
                       : 'Tentar Nível Novamente'
