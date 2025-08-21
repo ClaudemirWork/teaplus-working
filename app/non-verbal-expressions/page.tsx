@@ -25,11 +25,8 @@ interface Level {
 }
 
 export default function NonverbalExpressions() {
-  // NOVO ESTADO para controlar a tela inicial
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState(1);
-  
-  // Estados existentes do jogo
   const [currentLevel, setCurrentLevel] = useState(1)
   const [currentExpression, setCurrentExpression] = useState(0)
   const [score, setScore] = useState(0)
@@ -118,8 +115,8 @@ export default function NonverbalExpressions() {
     setShowExplanation(false)
   }
 
-  // FUNÇÃO RESET ATUALIZADA para voltar à tela inicial
   const resetGame = () => {
+    setSelectedLevel(1); // Reseta o nível selecionado para o próximo jogo
     setCurrentLevel(1)
     setCurrentExpression(0)
     setScore(0)
@@ -129,22 +126,36 @@ export default function NonverbalExpressions() {
     setShowExplanation(false)
     setCompletedLevels([])
     setGameCompleted(false)
-    setIsGameStarted(false) // <-- Volta para o menu
+    setIsGameStarted(false)
   }
 
-  // NOVA FUNÇÃO para iniciar o jogo a partir do menu
   const handleStartGame = () => {
     setCurrentLevel(selectedLevel);
+    // Zera o score do nível atual ao iniciar
+    setScore(0);
+    setCurrentExpression(0);
     setIsGameStarted(true);
   }
 
-  const getIntensityColor = (intensity: string) => { /* ... sua função ... */ }
-  const getIntensityBg = (intensity: string) => { /* ... sua função ... */ }
+  const getIntensityColor = (intensity: string) => {
+    switch (intensity) {
+      case 'sutil': return 'text-blue-600'
+      case 'moderada': return 'text-yellow-600'
+      case 'intensa': return 'text-red-600'
+      default: return 'text-gray-600'
+    }
+  }
 
+  const getIntensityBg = (intensity: string) => {
+    switch (intensity) {
+      case 'sutil': return 'bg-blue-100'
+      case 'moderada': return 'bg-yellow-100'
+      case 'intensa': return 'bg-red-100'
+      default: return 'bg-gray-100'
+    }
+  }
 
-  // LÓGICA DE RENDERIZAÇÃO CONDICIONAL
   if (!isGameStarted) {
-    // TELA INICIAL PADRÃO
     return (
       <>
         <GameHeader
@@ -154,7 +165,6 @@ export default function NonverbalExpressions() {
         />
         <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
           <div className="space-y-6">
-            {/* Bloco 1: Cards Informativos */}
             <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
@@ -175,8 +185,6 @@ export default function NonverbalExpressions() {
                 </div>
               </div>
             </div>
-
-            {/* Bloco 2: Seleção de Nível */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Nível Inicial</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -196,8 +204,6 @@ export default function NonverbalExpressions() {
                 ))}
               </div>
             </div>
-
-            {/* Bloco 3: Botão Iniciar */}
             <div className="text-center pt-4">
               <button
                 onClick={handleStartGame}
@@ -211,74 +217,114 @@ export default function NonverbalExpressions() {
       </>
     )
   }
-
-  // O CÓDIGO DO JOGO EM SI (já existente)
-  // Envolvido em um fragmento <> para ter um elemento pai único com o GameHeader
+  
+  // O JOGO EM SI
   return (
-    <>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100">
       <GameHeader
         title="Expressões Não-Verbais"
         icon={<Smile className="h-6 w-6" />}
-        showSaveButton={gameCompleted} // O botão salvar pode aparecer no final
-        // onSave={suaFuncaoDeSalvar} // Você pode adicionar a função de salvar aqui
+        showSaveButton={gameCompleted}
+        // onSave={suaFuncaoDeSalvar}
       />
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-100">
-        {gameCompleted ? (
-          // Tela de Conclusão Final
-          <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-            <div className="flex min-h-[500px] items-center justify-center">
-              <div className="max-w-2xl text-center">
-                <div className="rounded-3xl bg-white p-8 sm:p-12 shadow-xl">
-                  {/* ... conteúdo da tela de parabéns ... */}
-                  <div className="mb-8">
-                    <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-r from-green-400 to-blue-500 text-4xl">🏆</div>
-                    <h1 className="mb-4 text-4xl font-bold text-gray-900">Parabéns!</h1>
-                    <p className="text-xl text-gray-600">Você dominou a leitura de expressões não-verbais!</p>
+      {gameCompleted ? (
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+          <div className="flex min-h-[500px] items-center justify-center">
+            <div className="max-w-2xl text-center">
+              <div className="rounded-3xl bg-white p-8 sm:p-12 shadow-xl">
+                <div className="mb-8">
+                  <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-r from-green-400 to-blue-500 text-4xl">🏆</div>
+                  <h1 className="mb-4 text-4xl font-bold text-gray-900">Parabéns!</h1>
+                  <p className="text-xl text-gray-600">Você dominou a leitura de expressões não-verbais!</p>
+                </div>
+                <div className="mb-8 space-y-4">
+                  <div className="rounded-2xl bg-gradient-to-r from-blue-50 to-purple-50 p-6">
+                    <h3 className="mb-2 text-lg font-semibold text-gray-900">Pontuação Final</h3>
+                    <p className="text-3xl font-bold text-blue-600">{totalScore} pontos</p>
                   </div>
-                  <div className="mb-8 space-y-4">
-                    <div className="rounded-2xl bg-gradient-to-r from-blue-50 to-purple-50 p-6">
-                      <h3 className="mb-2 text-lg font-semibold text-gray-900">Pontuação Final</h3>
-                      <p className="text-3xl font-bold text-blue-600">{totalScore} pontos</p>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <button onClick={resetGame} className="w-full rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-4 text-lg font-semibold text-white transition-all hover:shadow-lg">
-                      🔄 Jogar Novamente
+                </div>
+                <div className="space-y-4">
+                  <button onClick={resetGame} className="w-full rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-4 text-lg font-semibold text-white transition-all hover:shadow-lg">
+                    🔄 Jogar Novamente
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      ) : (
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+          <div className="rounded-xl sm:rounded-3xl bg-white p-4 sm:p-8 shadow-xl">
+            <div className="mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Nível {currentLevel}: {currentLevelData?.name}</h2>
+                  <p className="text-gray-600">{currentLevelData?.description}</p>
+                </div>
+                <div className="text-left sm:text-right mt-2 sm:mt-0">
+                  <div className="text-sm text-gray-500">Pontos do Nível</div>
+                  <div className="text-xl font-bold text-purple-600">{score}/{currentLevelData?.pointsRequired}</div>
+                </div>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div className="bg-gradient-to-r from-purple-500 to-blue-500 h-2.5 rounded-full transition-all" style={{ width: `${Math.min((score / (currentLevelData?.pointsRequired || 1)) * 100, 100)}%` }}></div>
+              </div>
+            </div>
+            
+            {/* ### INÍCIO DO BLOCO CORRIGIDO ### */}
+            {currentExpressionData && (
+              <div className="text-center">
+                <div className="mx-auto mb-4 flex h-32 w-32 items-center justify-center rounded-full bg-gray-100 text-8xl">
+                  {currentExpressionData.image}
+                </div>
+                <div className={`inline-flex items-center rounded-full px-3 py-1 font-medium mb-6 ${getIntensityBg(currentExpressionData.intensity)} ${getIntensityColor(currentExpressionData.intensity)}`}>
+                  Intensidade: {currentExpressionData.intensity}
+                </div>
+
+                <h3 className="mb-6 text-xl font-semibold text-gray-900">Que emoção esta expressão representa?</h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                  {currentExpressionData.options.map((option, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleAnswer(index)}
+                      disabled={selectedAnswer !== null}
+                      className={`rounded-xl p-4 text-lg font-semibold transition-all ${
+                        selectedAnswer === null
+                          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : selectedAnswer === index
+                          ? index === currentExpressionData.correct ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                          : index === currentExpressionData.correct ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'
+                      }`}
+                    >
+                      {option}
                     </button>
-                  </div>
+                  ))}
                 </div>
+
+                {showExplanation && (
+                  <>
+                    <div className="mb-6 rounded-xl bg-blue-50 p-6 text-left">
+                      <h4 className="mb-2 font-semibold text-blue-900 text-base">Explicação:</h4>
+                      <p className="text-blue-800">{currentExpressionData.explanation}</p>
+                    </div>
+                    <button onClick={nextExpression} className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-3 text-lg font-semibold text-white transition-all hover:shadow-lg">
+                      {currentExpression < (currentLevelData?.expressions.length || 0) - 1
+                        ? 'Próxima Expressão'
+                        : score >= (currentLevelData?.pointsRequired || 0)
+                        ? currentLevel < levels.length ? 'Próximo Nível' : 'Finalizar'
+                        : 'Tentar Nível Novamente'
+                      }
+                    </button>
+                  </>
+                )}
               </div>
-            </div>
-          </main>
-        ) : (
-          // Tela do Jogo Principal
-          <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-            <div className="rounded-xl sm:rounded-3xl bg-white p-4 sm:p-8 shadow-xl">
-              {/* ... todo o resto da sua lógica e JSX do jogo principal ... */}
-              <div className="mb-8">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Nível {currentLevel}: {currentLevelData?.name}</h2>
-                    <p className="text-gray-600">{currentLevelData?.description}</p>
-                  </div>
-                  <div className="text-left sm:text-right mt-2 sm:mt-0">
-                    <div className="text-sm text-gray-500">Pontos do Nível</div>
-                    <div className="text-xl font-bold text-purple-600">{score}/{currentLevelData?.pointsRequired}</div>
-                  </div>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div className="bg-gradient-to-r from-purple-500 to-blue-500 h-2.5 rounded-full transition-all" style={{ width: `${Math.min((score / (currentLevelData?.pointsRequired || 1)) * 100, 100)}%` }}></div>
-                </div>
-              </div>
-              {currentExpressionData && (
-                <div className="text-center">
-                  {/* ... resto do seu JSX ... */}
-                </div>
-              )}
-            </div>
-          </main>
-        )}
-      </div>
-    </>
+            )}
+            {/* ### FIM DO BLOCO CORRIGIDO ### */}
+
+          </div>
+        </main>
+      )}
+    </div>
   )
 }
