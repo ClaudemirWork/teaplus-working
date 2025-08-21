@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-// 1. IMPORTANDO O CABEÇALHO PADRÃO E ÍCONES
 import { GameHeader } from '@/components/GameHeader';
 import { Users, Trophy, Gamepad2 } from 'lucide-react';
 
@@ -25,7 +24,7 @@ export default function BodyLanguagePage() {
   const [gameStarted, setGameStarted] = useState(false);
   const [currentExercise, setCurrentExercise] = useState(0);
   const [points, setPoints] = useState(0);
-  const [exerciseStarted, setExerciseStarted] = useState(false); // Esta lógica interna foi mantida
+  const [exerciseStarted, setExerciseStarted] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
 
@@ -94,7 +93,7 @@ export default function BodyLanguagePage() {
 
   const currentEx = exercises[currentExercise];
 
-  // A lógica do jogo foi 100% preservada
+  // ### INÍCIO DO BLOCO DE LÓGICA RESTAURADO ###
   const handleStartGame = () => {
     setGameStarted(true);
     setCurrentExercise(0);
@@ -103,27 +102,51 @@ export default function BodyLanguagePage() {
     setSelectedAnswer('');
     setShowFeedback(false);
   };
-  const handleStartExercise = () => { /* ... sua função ... */ };
-  const handleAnswerSelect = (answerId: string) => { /* ... sua função ... */ };
-  const handleSubmit = () => { /* ... sua função ... */ };
-  const handleNext = () => { /* ... sua função ... */ };
-  const isCorrect = selectedAnswer && currentEx.options.find(opt => opt.id === selectedAnswer)?.correct;
 
+  const handleStartExercise = () => {
+    setExerciseStarted(true);
+    setSelectedAnswer('');
+    setShowFeedback(false);
+  };
+
+  const handleAnswerSelect = (answerId: string) => {
+    setSelectedAnswer(answerId);
+  };
+
+  const handleSubmit = () => {
+    if (!selectedAnswer) return;
+    
+    setShowFeedback(true);
+    const isCorrect = currentEx.options.find(opt => opt.id === selectedAnswer)?.correct;
+    
+    if (isCorrect) {
+      setPoints(points + 10);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentExercise < exercises.length - 1) {
+      setCurrentExercise(currentExercise + 1);
+      setExerciseStarted(false);
+      setSelectedAnswer('');
+      setShowFeedback(false);
+    }
+  };
+  // ### FIM DO BLOCO DE LÓGICA RESTAURADO ###
+
+  const isCorrect = selectedAnswer && currentEx.options.find(opt => opt.id === selectedAnswer)?.correct;
 
   return (
     <>
-      {/* 2. CABEÇALHO PADRÃO APLICADO */}
       <GameHeader
         title="Linguagem Corporal"
         icon={<Users className="h-6 w-6" />}
-        showSaveButton={false} // Não há sessão para salvar neste exercício
+        showSaveButton={false}
       />
       <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50">
         <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
           {!gameStarted ? (
-            // 3. TELA INICIAL PADRONIZADA APLICADA
             <div className="space-y-6">
-              {/* Bloco 1: Cards Informativos */}
               <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
@@ -144,8 +167,6 @@ export default function BodyLanguagePage() {
                   </div>
                 </div>
               </div>
-
-              {/* Bloco 2: Botão Iniciar */}
               <div className="text-center pt-4">
                 <button
                   onClick={handleStartGame}
@@ -156,7 +177,6 @@ export default function BodyLanguagePage() {
               </div>
             </div>
           ) : (
-            // O layout original do seu jogo foi mantido aqui
             <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
               <div className="flex items-center justify-between mb-6 text-sm text-gray-600">
                 <span>Exercício {currentExercise + 1}/{exercises.length}</span>
@@ -208,7 +228,7 @@ export default function BodyLanguagePage() {
                           <h3 className="text-lg font-semibold mb-2">{isCorrect ? '🎉 Excelente! +10 pontos' : '💡 Vamos aprender!'}</h3>
                           <p className="text-gray-700">{currentEx.explanation}</p>
                         </div>
-                        <div className="flex justify-center">
+                        <div className="flex justify-center mt-4">
                           {currentExercise < exercises.length - 1 ? (
                             <button onClick={handleNext} className="bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors">
                               Próximo Exercício →
