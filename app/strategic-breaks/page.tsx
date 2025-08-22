@@ -16,7 +16,7 @@ const GameHeader = ({ title, icon }) => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
       <div className="flex items-center justify-between h-16">
         <Link
-          href="/dashboard"
+          href="/activities"
           className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
         >
           <ChevronLeft className="h-6 w-6" />
