@@ -42,13 +42,6 @@ export default function ChecklistCreatorPage() {
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
 
-  // Criar lista vazia quando entrar no modo create sem lista
-  useEffect(() => {
-    if (currentMode === 'create' && !currentChecklist) {
-      createEmptyChecklist();
-    }
-  }, [currentMode]);
-
   const templates = [
     {
       title: "Rotina Matinal Produtiva",
@@ -102,6 +95,13 @@ export default function ChecklistCreatorPage() {
     { id: 'work', name: 'Trabalho', color: 'bg-orange-500', icon: '💼' },
     { id: 'custom', name: 'Personalizada', color: 'bg-gray-500', icon: '📝' }
   ];
+
+  // Criar lista vazia quando entrar no modo create sem lista
+  useEffect(() => {
+    if (currentMode === 'create' && !currentChecklist) {
+      createEmptyChecklist();
+    }
+  }, [currentMode]); // eslint-disable-line
 
   // Funções implementadas
   const createFromTemplate = (templateIndex: number) => {
@@ -534,215 +534,214 @@ export default function ChecklistCreatorPage() {
                   </button>
                 </div>
 
-                    {/* Informações da lista */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Título da Lista
-                        </label>
-                        <input
-                          type="text"
-                          value={currentChecklist.title}
-                          onChange={(e) => setCurrentChecklist({
-                            ...currentChecklist,
-                            title: e.target.value
-                          })}
-                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                          placeholder="Ex: Rotina Matinal"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Categoria
-                        </label>
-                        <select
-                          value={currentChecklist.category}
-                          onChange={(e) => setCurrentChecklist({
-                            ...currentChecklist,
-                            category: e.target.value as Checklist['category']
-                          })}
-                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        >
-                          {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>
-                              {cat.icon} {cat.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
+                {/* Informações da lista */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Título da Lista
+                    </label>
+                    <input
+                      type="text"
+                      value={currentChecklist.title}
+                      onChange={(e) => setCurrentChecklist({
+                        ...currentChecklist,
+                        title: e.target.value
+                      })}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder="Ex: Rotina Matinal"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Categoria
+                    </label>
+                    <select
+                      value={currentChecklist.category}
+                      onChange={(e) => setCurrentChecklist({
+                        ...currentChecklist,
+                        category: e.target.value as Checklist['category']
+                      })}
+                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                      {categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Descrição
-                      </label>
-                      <textarea
-                        value={currentChecklist.description}
-                        onChange={(e) => setCurrentChecklist({
-                          ...currentChecklist,
-                          description: e.target.value
-                        })}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Descrição
+                  </label>
+                  <textarea
+                    value={currentChecklist.description}
+                    onChange={(e) => setCurrentChecklist({
+                      ...currentChecklist,
+                      description: e.target.value
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    rows={2}
+                    placeholder="Descreva o objetivo desta lista..."
+                  />
+                </div>
+
+                {/* Adicionar novo item */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="font-semibold mb-3">Adicionar Item</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div className="md:col-span-2">
+                      <input
+                        type="text"
+                        value={newItem.text || ''}
+                        onChange={(e) => setNewItem({ ...newItem, text: e.target.value })}
+                        onKeyPress={(e) => e.key === 'Enter' && addItem()}
                         className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        rows={2}
-                        placeholder="Descreva o objetivo desta lista..."
+                        placeholder="Descrição da tarefa..."
                       />
-                    </div>
-
-                    {/* Adicionar novo item */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h3 className="font-semibold mb-3">Adicionar Item</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                        <div className="md:col-span-2">
-                          <input
-                            type="text"
-                            value={newItem.text || ''}
-                            onChange={(e) => setNewItem({ ...newItem, text: e.target.value })}
-                            onKeyPress={(e) => e.key === 'Enter' && addItem()}
-                            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                            placeholder="Descrição da tarefa..."
-                          />
-                          {newItem.text && (
-                            <p className="text-xs mt-1 text-gray-600">
-                              {analyzeTaskBreakdown(newItem.text)}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <select
-                            value={newItem.priority}
-                            onChange={(e) => setNewItem({ 
-                              ...newItem, 
-                              priority: e.target.value as ChecklistItem['priority']
-                            })}
-                            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                          >
-                            <option value="high">🔴 Alta</option>
-                            <option value="medium">🟡 Média</option>
-                            <option value="low">🟢 Baixa</option>
-                          </select>
-                        </div>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            value={newItem.estimatedTime || 5}
-                            onChange={(e) => setNewItem({ 
-                              ...newItem, 
-                              estimatedTime: parseInt(e.target.value) || 5
-                            })}
-                            className="w-20 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                            min="1"
-                            max="120"
-                          />
-                          <button
-                            onClick={addItem}
-                            className="flex-1 bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 transition-colors flex items-center justify-center"
-                          >
-                            <Plus className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Lista de itens */}
-                    <div className="space-y-2">
-                      <h3 className="font-semibold">
-                        Itens da Lista ({currentChecklist.items.length})
-                      </h3>
-                      {currentChecklist.items.length === 0 ? (
-                        <p className="text-gray-500 text-center py-8">
-                          Nenhum item adicionado ainda. Comece adicionando tarefas acima!
+                      {newItem.text && (
+                        <p className="text-xs mt-1 text-gray-600">
+                          {analyzeTaskBreakdown(newItem.text)}
                         </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {currentChecklist.items.map((item) => (
-                            <div
-                              key={item.id}
-                              className="flex items-center gap-3 p-3 bg-white border rounded-lg hover:shadow-md transition-shadow"
-                            >
-                              <button
-                                onClick={() => toggleItem(item.id)}
-                                className="flex-shrink-0"
-                              >
-                                {item.completed ? (
-                                  <CheckCircle className="w-5 h-5 text-green-500" />
-                                ) : (
-                                  <div className="w-5 h-5 border-2 border-gray-300 rounded-full" />
-                                )}
-                              </button>
-                              
-                              {editingItem === item.id ? (
-                                <input
-                                  type="text"
-                                  value={editingText}
-                                  onChange={(e) => setEditingText(e.target.value)}
-                                  onKeyPress={(e) => {
-                                    if (e.key === 'Enter') {
-                                      const updatedItems = currentChecklist.items.map(i =>
-                                        i.id === item.id ? { ...i, text: editingText } : i
-                                      );
-                                      setCurrentChecklist({
-                                        ...currentChecklist,
-                                        items: updatedItems
-                                      });
-                                      setEditingItem(null);
-                                    }
-                                  }}
-                                  onBlur={() => setEditingItem(null)}
-                                  className="flex-1 px-2 py-1 border rounded"
-                                  autoFocus
-                                />
-                              ) : (
-                                <span
-                                  className={`flex-1 ${item.completed ? 'line-through text-gray-400' : ''}`}
-                                  onClick={() => {
-                                    setEditingItem(item.id);
-                                    setEditingText(item.text);
-                                  }}
-                                >
-                                  {item.text}
-                                </span>
-                              )}
-                              
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(item.priority)}`}>
-                                {item.priority === 'high' ? 'Alta' : 
-                                 item.priority === 'medium' ? 'Média' : 'Baixa'}
-                              </span>
-                              
-                              {item.estimatedTime && (
-                                <span className="flex items-center text-xs text-gray-500">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  {item.estimatedTime}min
-                                </span>
-                              )}
-                              
-                              <button
-                                onClick={() => removeItem(item.id)}
-                                className="text-red-500 hover:text-red-700"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
                       )}
                     </div>
-
-                    {/* Tempo total estimado */}
-                    {currentChecklist.items.length > 0 && (
-                      <div className="bg-blue-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-blue-800">
-                            Tempo Total Estimado:
-                          </span>
-                          <span className="text-lg font-bold text-blue-600">
-                            {currentChecklist.items.reduce((acc, item) => 
-                              acc + (item.estimatedTime || 0), 0
-                            )} minutos
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                    <div>
+                      <select
+                        value={newItem.priority}
+                        onChange={(e) => setNewItem({ 
+                          ...newItem, 
+                          priority: e.target.value as ChecklistItem['priority']
+                        })}
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="high">🔴 Alta</option>
+                        <option value="medium">🟡 Média</option>
+                        <option value="low">🟢 Baixa</option>
+                      </select>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={newItem.estimatedTime || 5}
+                        onChange={(e) => setNewItem({ 
+                          ...newItem, 
+                          estimatedTime: parseInt(e.target.value) || 5
+                        })}
+                        className="w-20 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        min="1"
+                        max="120"
+                      />
+                      <button
+                        onClick={addItem}
+                        className="flex-1 bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 transition-colors flex items-center justify-center"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Lista de itens */}
+                <div className="space-y-2">
+                  <h3 className="font-semibold">
+                    Itens da Lista ({currentChecklist.items.length})
+                  </h3>
+                  {currentChecklist.items.length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">
+                      Nenhum item adicionado ainda. Comece adicionando tarefas acima!
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {currentChecklist.items.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-3 p-3 bg-white border rounded-lg hover:shadow-md transition-shadow"
+                        >
+                          <button
+                            onClick={() => toggleItem(item.id)}
+                            className="flex-shrink-0"
+                          >
+                            {item.completed ? (
+                              <CheckCircle className="w-5 h-5 text-green-500" />
+                            ) : (
+                              <div className="w-5 h-5 border-2 border-gray-300 rounded-full" />
+                            )}
+                          </button>
+                          
+                          {editingItem === item.id ? (
+                            <input
+                              type="text"
+                              value={editingText}
+                              onChange={(e) => setEditingText(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  const updatedItems = currentChecklist.items.map(i =>
+                                    i.id === item.id ? { ...i, text: editingText } : i
+                                  );
+                                  setCurrentChecklist({
+                                    ...currentChecklist,
+                                    items: updatedItems
+                                  });
+                                  setEditingItem(null);
+                                }
+                              }}
+                              onBlur={() => setEditingItem(null)}
+                              className="flex-1 px-2 py-1 border rounded"
+                              autoFocus
+                            />
+                          ) : (
+                            <span
+                              className={`flex-1 ${item.completed ? 'line-through text-gray-400' : ''}`}
+                              onClick={() => {
+                                setEditingItem(item.id);
+                                setEditingText(item.text);
+                              }}
+                            >
+                              {item.text}
+                            </span>
+                          )}
+                          
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(item.priority)}`}>
+                            {item.priority === 'high' ? 'Alta' : 
+                             item.priority === 'medium' ? 'Média' : 'Baixa'}
+                          </span>
+                          
+                          {item.estimatedTime && (
+                            <span className="flex items-center text-xs text-gray-500">
+                              <Clock className="w-3 h-3 mr-1" />
+                              {item.estimatedTime}min
+                            </span>
+                          )}
+                          
+                          <button
+                            onClick={() => removeItem(item.id)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Tempo total estimado */}
+                {currentChecklist.items.length > 0 && (
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-blue-800">
+                        Tempo Total Estimado:
+                      </span>
+                      <span className="text-lg font-bold text-blue-600">
+                        {currentChecklist.items.reduce((acc, item) => 
+                          acc + (item.estimatedTime || 0), 0
+                        )} minutos
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
