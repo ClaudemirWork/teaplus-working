@@ -68,7 +68,7 @@ const CognitiveFlexibilityPage = () => {
     { id: 'pink', hex: '#EC4899', name: 'Rosa' }
   ];
 
-  const rules = ['color', 'shape', 'count', 'position'] as const;
+  const rules = ['color', 'shape', 'count', 'unique'] as const;
   
   // Timer effect
   useEffect(() => {
@@ -207,45 +207,52 @@ const CognitiveFlexibilityPage = () => {
       }
       options.sort((a, b) => parseInt(a) - parseInt(b));
       
-    } else if (newRule === 'position') {
-      // Gera formas aleatórias mas destaca uma posição
-      const targetPosition = Math.floor(Math.random() * shapeCount);
-      const specialShape = availableShapes[Math.floor(Math.random() * availableShapes.length)];
+    } else if (newRule === 'unique') {
+      // Pergunta qual forma/cor é ÚNICA (aparece apenas 1 vez)
+      const uniqueShape = availableShapes[Math.floor(Math.random() * availableShapes.length)];
+      const uniqueColor = availableColors[Math.floor(Math.random() * availableColors.length)];
       
-      for (let i = 0; i < shapeCount; i++) {
-        if (i === targetPosition) {
-          // Coloca uma forma especial/única nesta posição
-          const specialColor = availableColors[Math.floor(Math.random() * availableColors.length)];
-          stimulusShapes.push({
-            shape: specialShape,
-            color: specialColor,
-            position: i,
-            isSpecial: true
-          });
-        } else {
-          // Usa formas diferentes da especial
-          const otherShapes = availableShapes.filter(s => s.id !== specialShape.id);
-          const shape = otherShapes[Math.floor(Math.random() * otherShapes.length)];
-          const color = availableColors[Math.floor(Math.random() * availableColors.length)];
-          stimulusShapes.push({
-            shape: shape,
-            color: color,
-            position: i
-          });
+      // Adiciona a forma única
+      stimulusShapes.push({
+        shape: uniqueShape,
+        color: uniqueColor,
+        position: 0,
+        isSpecial: true
+      });
+      
+      // Escolhe 2-3 formas diferentes para repetir
+      const otherShapes = availableShapes.filter(s => s.id !== uniqueShape.id).slice(0, 2);
+      
+      // Adiciona as outras formas (repetidas)
+      for (let i = 1; i < shapeCount; i++) {
+        const shape = otherShapes[Math.floor(Math.random() * otherShapes.length)];
+        const color = availableColors[Math.floor(Math.random() * availableColors.length)];
+        stimulusShapes.push({
+          shape: shape,
+          color: color,
+          position: i
+        });
+      }
+      
+      targetAnswer = uniqueShape.name;
+      // Cria opções incluindo a forma única e algumas das repetidas
+      options = [uniqueShape.name];
+      otherShapes.forEach(s => {
+        if (options.length < 4) options.push(s.name);
+      });
+      // Adiciona formas aleatórias se necessário
+      while (options.length < 4) {
+        const randomShape = availableShapes[Math.floor(Math.random() * availableShapes.length)];
+        if (!options.includes(randomShape.name)) {
+          options.push(randomShape.name);
         }
       }
-      
-      targetAnswer = (targetPosition + 1).toString() + 'ª';
-      options = [];
-      for (let i = 0; i < shapeCount && i < 4; i++) {
-        options.push((i + 1).toString() + 'ª');
-      }
+      // Embaralha as opções
+      options.sort(() => Math.random() - 0.5);
     }
     
-    // Embaralha as formas para exibição (exceto para regra de posição)
-    if (newRule !== 'position') {
-      stimulusShapes.sort(() => Math.random() - 0.5);
-    }
+    // Embaralha as formas para exibição (sempre embaralha para todas as regras)
+    stimulusShapes.sort(() => Math.random() - 0.5);
     
     setCurrentStimulus({ 
       shapes: stimulusShapes, 
@@ -512,18 +519,13 @@ const CognitiveFlexibilityPage = () => {
                             {currentStimulus.rule === 'color' && '🎨 Qual COR aparece MAIS vezes?'}
                             {currentStimulus.rule === 'shape' && '📐 Qual FORMA aparece MAIS vezes?'}
                             {currentStimulus.rule === 'count' && '🔢 QUANTAS figuras existem no total?'}
-                            {currentStimulus.rule === 'position' && '📍 Em que POSIÇÃO está a forma diferente?'}
+                            {currentStimulus.rule === 'unique' && '✨ Qual forma aparece APENAS UMA vez?'}
                         </div>
                         
                         {/* Display das formas */}
                         <div className="min-h-[120px] flex items-center justify-center gap-3 sm:gap-6 mb-8 p-4 bg-gray-50 rounded-xl">
                            {currentStimulus.shapes.map((item, i) => (
-                             <div key={i} className="relative">
-                               {currentStimulus.rule === 'position' && (
-                                 <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">
-                                   {i + 1}ª
-                                 </div>
-                               )}
+                             <div key={i} className="flex flex-col items-center">
                                <span 
                                  style={{ 
                                    color: item.color.hex,
