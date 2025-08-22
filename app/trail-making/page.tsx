@@ -48,15 +48,15 @@ const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: any
 interface Circle {
   id: number;
   label: string;
-  x: number;
-  y: number;
+  xPercent: number;  // Mudou para percentual
+  yPercent: number;  // Mudou para percentual
   connected: boolean;
 }
 
 export default function TrailMaking() {
   const router = useRouter();
   const supabase = createClient();
-  const canvasRef = useRef<HTMLDivElement>(null);
+  const gameAreaRef = useRef<HTMLDivElement>(null);
   
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -70,9 +70,8 @@ export default function TrailMaking() {
   const [jogoIniciado, setJogoIniciado] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [pontuacao, setPontuacao] = useState(0);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [currentLine, setCurrentLine] = useState<{x1: number, y1: number, x2: number, y2: number} | null>(null);
   const [feedback, setFeedback] = useState('');
+  const [gameAreaDimensions, setGameAreaDimensions] = useState({ width: 0, height: 0 });
 
   const levels = [
     { id: 1, name: 'Nível 1', count: 5, type: 'numbers', description: 'Números 1-5' },
@@ -81,6 +80,22 @@ export default function TrailMaking() {
     { id: 4, name: 'Nível 4', count: 15, type: 'numbers', description: 'Números 1-15' },
     { id: 5, name: 'Nível 5', count: 8, type: 'mixed', description: '1-A-2-B-3-C...' }
   ];
+
+  // Atualizar dimensões da área de jogo
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (gameAreaRef.current) {
+        setGameAreaDimensions({
+          width: gameAreaRef.current.offsetWidth,
+          height: gameAreaRef.current.offsetHeight
+        });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, [isPlaying]);
 
   const generateCircles = (level: number) => {
     const config = levels[level - 1];
@@ -104,24 +119,24 @@ export default function TrailMaking() {
       }
     }
     
-    // Posicionar círculos aleatoriamente mas não muito próximos
-    const minDistance = 80;
-    const padding = 60;
+    // Posicionar círculos em PERCENTUAIS (responsivo)
+    const minDistance = 15; // Distância mínima em percentual
+    const padding = 10; // Padding em percentual
     
     for (let i = 0; i < labels.length; i++) {
-      let x, y;
+      let xPercent, yPercent;
       let attempts = 0;
       let validPosition = false;
       
       while (!validPosition && attempts < 50) {
-        x = Math.random() * (600 - padding * 2) + padding;
-        y = Math.random() * (400 - padding * 2) + padding;
+        xPercent = Math.random() * (100 - padding * 2) + padding;
+        yPercent = Math.random() * (100 - padding * 2) + padding;
         
         validPosition = true;
         for (let j = 0; j < newCircles.length; j++) {
           const distance = Math.sqrt(
-            Math.pow(x - newCircles[j].x, 2) + 
-            Math.pow(y - newCircles[j].y, 2)
+            Math.pow(xPercent - newCircles[j].xPercent, 2) + 
+            Math.pow(yPercent - newCircles[j].yPercent, 2)
           );
           if (distance < minDistance) {
             validPosition = false;
@@ -134,8 +149,8 @@ export default function TrailMaking() {
       newCircles.push({
         id: i,
         label: labels[i],
-        x: x || Math.random() * 500 + 50,
-        y: y || Math.random() * 300 + 50,
+        xPercent: xPercent || Math.random() * 80 + 10,
+        yPercent: yPercent || Math.random() * 80 + 10,
         connected: false
       });
     }
@@ -279,6 +294,18 @@ export default function TrailMaking() {
     setIsPlaying(false);
   };
 
+  // Timer para atualizar o tempo
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPlaying && startTime > 0) {
+      interval = setInterval(() => {
+        // Força re-render para atualizar o timer
+        setStartTime(startTime);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, startTime]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <GameHeader 
@@ -358,26 +385,26 @@ export default function TrailMaking() {
           <div className="space-y-4">
             {/* Status */}
             <div className="bg-white rounded-xl shadow-lg p-4">
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-800">
+                  <div className="text-lg sm:text-2xl font-bold text-blue-800">
                     {currentIndex + 1}/{circles.length}
                   </div>
                   <div className="text-xs text-blue-600">Progresso</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-800">
+                  <div className="text-lg sm:text-2xl font-bold text-green-800">
                     {circles[currentIndex]?.label}
                   </div>
                   <div className="text-xs text-green-600">Próximo</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-800">{errors}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-red-800">{errors}</div>
                   <div className="text-xs text-red-600">Erros</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-800">
-                    {Math.floor((Date.now() - startTime) / 1000)}s
+                  <div className="text-lg sm:text-2xl font-bold text-purple-800">
+                    {isPlaying ? Math.floor((Date.now() - startTime) / 1000) : 0}s
                   </div>
                   <div className="text-xs text-purple-600">Tempo</div>
                 </div>
@@ -387,30 +414,42 @@ export default function TrailMaking() {
             {/* Feedback */}
             {feedback && (
               <div className="text-center">
-                <div className="inline-block bg-yellow-400/90 text-black px-4 py-2 rounded-lg font-bold">
+                <div className="inline-block bg-yellow-400/90 text-black px-3 sm:px-4 py-2 rounded-lg font-bold text-sm sm:text-base">
                   {feedback}
                 </div>
               </div>
             )}
 
-            {/* Área do Jogo */}
-            <div className="bg-white rounded-xl shadow-lg p-4 relative" 
-                 style={{ height: '450px' }}
-                 ref={canvasRef}>
+            {/* Área do Jogo RESPONSIVA */}
+            <div 
+              className="bg-white rounded-xl shadow-lg p-2 sm:p-4 relative" 
+              style={{ 
+                height: window.innerWidth < 640 ? '400px' : '450px',
+                minHeight: '350px'
+              }}
+              ref={gameAreaRef}
+            >
               
               {/* Linhas conectando círculos */}
-              <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+              <svg className="absolute inset-0 pointer-events-none w-full h-full" style={{ zIndex: 1 }}>
                 {connections.map((circleId, index) => {
                   if (index === 0) return null;
                   const prevCircle = circles[connections[index - 1]];
                   const currCircle = circles[circleId];
+                  
+                  // Converter percentual para pixels baseado no tamanho atual
+                  const x1 = (prevCircle.xPercent / 100) * gameAreaDimensions.width;
+                  const y1 = (prevCircle.yPercent / 100) * gameAreaDimensions.height;
+                  const x2 = (currCircle.xPercent / 100) * gameAreaDimensions.width;
+                  const y2 = (currCircle.yPercent / 100) * gameAreaDimensions.height;
+                  
                   return (
                     <line
                       key={index}
-                      x1={prevCircle.x}
-                      y1={prevCircle.y}
-                      x2={currCircle.x}
-                      y2={currCircle.y}
+                      x1={x1}
+                      y1={y1}
+                      x2={x2}
+                      y2={y2}
                       stroke="#10b981"
                       strokeWidth="3"
                       strokeDasharray="5,5"
@@ -419,30 +458,35 @@ export default function TrailMaking() {
                 })}
               </svg>
 
-              {/* Círculos */}
-              {circles.map((circle) => (
-                <button
-                  key={circle.id}
-                  id={`circle-${circle.id}`}
-                  onClick={() => handleCircleClick(circle)}
-                  className={`absolute w-14 h-14 rounded-full border-3 font-bold text-lg
-                    transform -translate-x-1/2 -translate-y-1/2 transition-all
-                    ${circle.connected 
-                      ? 'bg-green-500 text-white border-green-600 scale-90' 
-                      : circle.label === circles[currentIndex]?.label
-                      ? 'bg-yellow-300 border-yellow-500 animate-pulse scale-110'
-                      : 'bg-white border-blue-500 hover:bg-blue-50 hover:scale-105'
-                    }`}
-                  style={{
-                    left: `${circle.x}px`,
-                    top: `${circle.y}px`,
-                    zIndex: 2
-                  }}
-                  disabled={circle.connected}
-                >
-                  {circle.label}
-                </button>
-              ))}
+              {/* Círculos RESPONSIVOS */}
+              {circles.map((circle) => {
+                const isMobile = window.innerWidth < 640;
+                const circleSize = isMobile ? 'w-12 h-12 text-base' : 'w-14 h-14 text-lg';
+                
+                return (
+                  <button
+                    key={circle.id}
+                    id={`circle-${circle.id}`}
+                    onClick={() => handleCircleClick(circle)}
+                    className={`absolute ${circleSize} rounded-full border-3 font-bold
+                      transform -translate-x-1/2 -translate-y-1/2 transition-all
+                      ${circle.connected 
+                        ? 'bg-green-500 text-white border-green-600 scale-90' 
+                        : circle.label === circles[currentIndex]?.label
+                        ? 'bg-yellow-300 border-yellow-500 animate-pulse scale-110'
+                        : 'bg-white border-blue-500 hover:bg-blue-50 hover:scale-105'
+                      }`}
+                    style={{
+                      left: `${circle.xPercent}%`,
+                      top: `${circle.yPercent}%`,
+                      zIndex: 2
+                    }}
+                    disabled={circle.connected}
+                  >
+                    {circle.label}
+                  </button>
+                );
+              })}
             </div>
 
             <style jsx>{`
@@ -458,13 +502,13 @@ export default function TrailMaking() {
           </div>
         ) : (
           // Tela de resultados
-          <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
             <div className="text-center mb-6">
-              <div className="text-6xl mb-4">
+              <div className="text-5xl sm:text-6xl mb-4">
                 {errors === 0 ? '🏆' : errors <= 2 ? '🎉' : '💪'}
               </div>
               
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
                 {errors === 0 ? 'Perfeito!' : errors <= 2 ? 'Muito Bem!' : 'Completou!'}
               </h3>
               
@@ -475,23 +519,23 @@ export default function TrailMaking() {
             
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-blue-800">
+                <div className="text-lg sm:text-xl font-bold text-blue-800">
                   {(completionTime / 1000).toFixed(1)}s
                 </div>
                 <div className="text-xs text-blue-600">Tempo Total</div>
               </div>
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-red-800">{errors}</div>
+                <div className="text-lg sm:text-xl font-bold text-red-800">{errors}</div>
                 <div className="text-xs text-red-600">Erros</div>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-green-800">
+                <div className="text-lg sm:text-xl font-bold text-green-800">
                   {selectedLevel === 5 ? 'Misto' : `${circles.length} números`}
                 </div>
                 <div className="text-xs text-green-600">Tipo</div>
               </div>
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-purple-800">{pontuacao}</div>
+                <div className="text-lg sm:text-xl font-bold text-purple-800">{pontuacao}</div>
                 <div className="text-xs text-purple-600">Pontuação</div>
               </div>
             </div>
