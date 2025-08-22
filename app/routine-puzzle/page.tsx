@@ -80,14 +80,15 @@ const allActivities: Activity[] = [
     { id: 'sonhar', name: 'Sonhar', icon: '💭', period: 'noite', description: 'Ter bons sonhos' },
 ];
 
-// Componente de carta arrastável
-const DraggableCard = ({ activity, isDragging, onDragStart, onDragEnd, isPlaced, isCorrect }: {
+// Componente de carta arrastável - MODIFICADO COM BOTÃO DUPLICAR
+const DraggableCard = ({ activity, isDragging, onDragStart, onDragEnd, isPlaced, isCorrect, onDuplicate }: {
     activity: Activity;
     isDragging: boolean;
     onDragStart: (e: React.DragEvent) => void;
     onDragEnd: (e: React.DragEvent) => void;
     isPlaced: boolean;
     isCorrect: boolean | null;
+    onDuplicate?: (activity: Activity) => void;
 }) => {
     const handleDragStart = (e: React.DragEvent) => {
         e.dataTransfer.effectAllowed = 'move';
@@ -119,6 +120,20 @@ const DraggableCard = ({ activity, isDragging, onDragStart, onDragEnd, isPlaced,
                         <XCircle className="w-6 h-6 text-red-600 bg-white rounded-full" />
                     )}
                 </div>
+            )}
+            
+            {/* BOTÃO DE DUPLICAR ADICIONADO */}
+            {!isPlaced && onDuplicate && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDuplicate(activity);
+                    }}
+                    className="absolute top-1 right-1 bg-blue-500 text-white rounded-full w-6 h-6 text-xs hover:bg-blue-600 flex items-center justify-center font-bold"
+                    title="Duplicar atividade"
+                >
+                    +2
+                </button>
             )}
         </div>
     );
@@ -385,6 +400,18 @@ export default function RoutinePuzzlePage() {
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
+    
+    // FUNÇÃO DE DUPLICAR ADICIONADA
+    const handleDuplicateActivity = (activity: Activity) => {
+        const duplicatedActivity: Activity = {
+            ...activity,
+            id: `${activity.id}_copy_${Date.now()}`,
+            name: `${activity.name} (2)`
+        };
+        
+        setAvailableActivities(prev => [...prev, duplicatedActivity]);
+        setCurrentActivities(prev => [...prev, duplicatedActivity]);
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
@@ -503,7 +530,7 @@ export default function RoutinePuzzlePage() {
                             />
                         </div>
 
-                        {/* Cartas Disponíveis */}
+                        {/* Cartas Disponíveis - MODIFICADO COM ONDUPLICATE */}
                         <div className="bg-white rounded-xl shadow-lg p-6">
                             <h3 className="text-lg font-bold text-gray-800 mb-4 text-center">
                                 Arraste as Atividades
@@ -518,6 +545,7 @@ export default function RoutinePuzzlePage() {
                                         onDragEnd={handleDragEnd}
                                         isPlaced={false}
                                         isCorrect={null}
+                                        onDuplicate={handleDuplicateActivity}
                                     />
                                 ))}
                             </div>
