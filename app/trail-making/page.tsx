@@ -48,8 +48,8 @@ const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: any
 interface Circle {
   id: number;
   label: string;
-  xPercent: number;  // Mudou para percentual
-  yPercent: number;  // Mudou para percentual
+  xPercent: number;
+  yPercent: number;
   connected: boolean;
 }
 
@@ -59,12 +59,15 @@ export default function TrailMaking() {
   const gameAreaRef = useRef<HTMLDivElement>(null);
   
   const [selectedLevel, setSelectedLevel] = useState(1);
+  const [currentGameLevel, setCurrentGameLevel] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [circles, setCircles] = useState<Circle[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [connections, setConnections] = useState<number[]>([]);
   const [errors, setErrors] = useState(0);
+  const [totalErrors, setTotalErrors] = useState(0);
   const [startTime, setStartTime] = useState<number>(0);
+  const [levelStartTime, setLevelStartTime] = useState<number>(0);
   const [completionTime, setCompletionTime] = useState<number>(0);
   const [showResults, setShowResults] = useState(false);
   const [jogoIniciado, setJogoIniciado] = useState(false);
@@ -72,6 +75,9 @@ export default function TrailMaking() {
   const [pontuacao, setPontuacao] = useState(0);
   const [feedback, setFeedback] = useState('');
   const [gameAreaDimensions, setGameAreaDimensions] = useState({ width: 0, height: 0 });
+  const [showLevelTransition, setShowLevelTransition] = useState(false);
+  const [levelMessage, setLevelMessage] = useState('');
+  const [levelsCompleted, setLevelsCompleted] = useState<number[]>([]);
 
   const levels = [
     { id: 1, name: 'Nível 1', count: 5, type: 'numbers', description: 'Números 1-5' },
@@ -163,13 +169,57 @@ export default function TrailMaking() {
     setCircles(newCircles);
     setIsPlaying(true);
     setCurrentIndex(0);
+    setCurrentGameLevel(selectedLevel);
     setConnections([]);
     setErrors(0);
+    setTotalErrors(0);
     setStartTime(Date.now());
+    setLevelStartTime(Date.now());
     setShowResults(false);
     setJogoIniciado(true);
     setPontuacao(0);
+    setLevelsCompleted([]);
     setFeedback('Conecte os círculos em ordem!');
+  };
+
+  const nextLevel = () => {
+    const nextLevelNum = currentGameLevel + 1;
+    
+    if (nextLevelNum > 5) {
+      // Completou todos os níveis!
+      const time = Date.now() - startTime;
+      setCompletionTime(time);
+      setIsPlaying(false);
+      setShowResults(true);
+      
+      // Calcular pontuação total
+      const baseScore = 2000;
+      const timeBonus = Math.max(0, 1000 - Math.floor(time / 100));
+      const errorPenalty = totalErrors * 50;
+      const levelBonus = levelsCompleted.length * 200;
+      setPontuacao(baseScore + timeBonus - errorPenalty + levelBonus);
+      
+      setFeedback('🏆 Todos os níveis completados!');
+    } else {
+      // Próximo nível
+      setCurrentGameLevel(nextLevelNum);
+      const newCircles = generateCircles(nextLevelNum);
+      setCircles(newCircles);
+      setCurrentIndex(0);
+      setConnections([]);
+      setErrors(0);
+      setLevelStartTime(Date.now());
+      
+      // Mostrar mensagem de transição
+      setLevelMessage(`🎉 Nível ${nextLevelNum}!`);
+      setShowLevelTransition(true);
+      setFeedback(levels[nextLevelNum - 1].description);
+      
+      setTimeout(() => {
+        setShowLevelTransition(false);
+        setFeedback('Continue conectando!');
+      }, 2500);
+    }
   };
 
   const handleCircleClick = (circle: Circle) => {
@@ -188,20 +238,22 @@ export default function TrailMaking() {
       playSound(true);
       
       if (currentIndex === circles.length - 1) {
-        // Completou!
-        const time = Date.now() - startTime;
-        setCompletionTime(time);
-        setIsPlaying(false);
-        setShowResults(true);
+        // Completou o nível atual!
+        const levelTime = Date.now() - levelStartTime;
+        setLevelsCompleted([...levelsCompleted, currentGameLevel]);
         
-        // Calcular pontuação
-        const baseScore = 1000;
-        const timeBonus = Math.max(0, 500 - Math.floor(time / 100));
-        const errorPenalty = errors * 50;
-        const levelBonus = selectedLevel * 100;
-        setPontuacao(baseScore + timeBonus - errorPenalty + levelBonus);
+        // Pontuação do nível
+        const levelScore = Math.max(100, 500 - Math.floor(levelTime / 100) - errors * 20);
+        setPontuacao(prev => prev + levelScore);
         
-        setFeedback('🎉 Parabéns! Completou!');
+        // Feedback e próximo nível
+        setFeedback(`✅ Nível ${currentGameLevel} completo!`);
+        
+        // Aguardar um pouco e ir para próximo nível automaticamente
+        setTimeout(() => {
+          nextLevel();
+        }, 1500);
+        
       } else {
         setCurrentIndex(currentIndex + 1);
         setFeedback(`✅ Correto! Próximo: ${circles[currentIndex + 1].label}`);
@@ -209,6 +261,7 @@ export default function TrailMaking() {
     } else {
       // Erro!
       setErrors(errors + 1);
+      setTotalErrors(totalErrors + 1);
       playSound(false);
       setFeedback(`❌ Errado! Procure: ${expectedLabel}`);
       
@@ -273,9 +326,9 @@ export default function TrailMaking() {
         alert(`Sessão salva com sucesso!
         
 📊 Resultado da Trilha:
-- Tempo: ${(completionTime / 1000).toFixed(1)}s
-- Erros: ${errors}
-- Nível: ${selectedLevel}
+- Tempo Total: ${(completionTime / 1000).toFixed(1)}s
+- Erros Totais: ${totalErrors}
+- Níveis Completados: ${levelsCompleted.length}
 - Pontuação: ${pontuacao} pontos`);
         
         router.push('/dashboard');
@@ -320,51 +373,51 @@ export default function TrailMaking() {
         {!jogoIniciado ? (
           // Tela inicial
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
-                  <p className="text-sm text-gray-600">
-                    Conecte os círculos em ordem sequencial o mais rápido possível.
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">🎯 Objetivo:</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    Conecte os círculos em ordem. Complete todos os 5 níveis sem parar!
                   </p>
                 </div>
                 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como Jogar:</h3>
-                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">🕹️ Como Jogar:</h3>
+                  <ul className="list-disc list-inside text-xs sm:text-sm text-gray-600 space-y-1">
                     <li>Clique nos círculos em ordem</li>
-                    <li>Números: 1→2→3...</li>
-                    <li>Misto: 1→A→2→B...</li>
+                    <li>Avança automaticamente</li>
+                    <li>Nível 5: números e letras!</li>
                   </ul>
                 </div>
                 
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1">⭐ Avaliação:</h3>
-                  <p className="text-sm text-gray-600">
-                    Medimos velocidade de processamento e flexibilidade cognitiva.
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">⭐ Avaliação:</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    Velocidade de processamento e flexibilidade cognitiva.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Seleção de Nível */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Nível</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {/* Seleção de Nível Inicial */}
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-4">Começar do Nível</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
                 {levels.map((level) => (
                   <button
                     key={level.id}
                     onClick={() => setSelectedLevel(level.id)}
-                    className={`p-4 rounded-lg font-medium transition-colors ${
+                    className={`p-3 sm:p-4 rounded-lg font-medium transition-colors ${
                       selectedLevel === level.id
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                     }`}
                   >
-                    <div className="text-2xl mb-1">
+                    <div className="text-xl sm:text-2xl mb-1">
                       {level.type === 'mixed' ? '🔤' : '🔢'}
                     </div>
-                    <div className="text-sm">{level.name}</div>
+                    <div className="text-xs sm:text-sm">{level.name}</div>
                     <div className="text-xs opacity-80">{level.description}</div>
                   </button>
                 ))}
@@ -374,7 +427,7 @@ export default function TrailMaking() {
             <div className="text-center">
               <button
                 onClick={startActivity}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors"
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 sm:py-4 sm:px-8 rounded-lg text-base sm:text-lg transition-colors"
               >
                 🚀 Iniciar Atividade
               </button>
@@ -382,31 +435,37 @@ export default function TrailMaking() {
           </div>
         ) : !showResults ? (
           // Área de jogo
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Status */}
-            <div className="bg-white rounded-xl shadow-lg p-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+            <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4">
                 <div className="text-center">
-                  <div className="text-lg sm:text-2xl font-bold text-blue-800">
+                  <div className="text-base sm:text-xl font-bold text-purple-800">
+                    Nível {currentGameLevel}/5
+                  </div>
+                  <div className="text-xs text-purple-600">Fase</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-base sm:text-xl font-bold text-blue-800">
                     {currentIndex + 1}/{circles.length}
                   </div>
                   <div className="text-xs text-blue-600">Progresso</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg sm:text-2xl font-bold text-green-800">
+                  <div className="text-base sm:text-xl font-bold text-green-800">
                     {circles[currentIndex]?.label}
                   </div>
                   <div className="text-xs text-green-600">Próximo</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg sm:text-2xl font-bold text-red-800">{errors}</div>
+                  <div className="text-base sm:text-xl font-bold text-red-800">{totalErrors}</div>
                   <div className="text-xs text-red-600">Erros</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg sm:text-2xl font-bold text-purple-800">
+                  <div className="text-base sm:text-xl font-bold text-orange-800">
                     {isPlaying ? Math.floor((Date.now() - startTime) / 1000) : 0}s
                   </div>
-                  <div className="text-xs text-purple-600">Tempo</div>
+                  <div className="text-xs text-orange-600">Tempo</div>
                 </div>
               </div>
             </div>
@@ -414,7 +473,7 @@ export default function TrailMaking() {
             {/* Feedback */}
             {feedback && (
               <div className="text-center">
-                <div className="inline-block bg-yellow-400/90 text-black px-3 sm:px-4 py-2 rounded-lg font-bold text-sm sm:text-base">
+                <div className="inline-block bg-yellow-400/90 text-black px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-base">
                   {feedback}
                 </div>
               </div>
@@ -424,11 +483,20 @@ export default function TrailMaking() {
             <div 
               className="bg-white rounded-xl shadow-lg p-2 sm:p-4 relative" 
               style={{ 
-                height: window.innerWidth < 640 ? '400px' : '450px',
-                minHeight: '350px'
+                height: window.innerWidth < 640 ? '350px' : '450px',
+                minHeight: '300px'
               }}
               ref={gameAreaRef}
             >
+              
+              {/* Mensagem de Transição de Nível */}
+              {showLevelTransition && (
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 animate-bounce">
+                  <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-xl font-bold text-xl sm:text-3xl shadow-2xl">
+                    {levelMessage}
+                  </div>
+                </div>
+              )}
               
               {/* Linhas conectando círculos */}
               <svg className="absolute inset-0 pointer-events-none w-full h-full" style={{ zIndex: 1 }}>
@@ -461,7 +529,7 @@ export default function TrailMaking() {
               {/* Círculos RESPONSIVOS */}
               {circles.map((circle) => {
                 const isMobile = window.innerWidth < 640;
-                const circleSize = isMobile ? 'w-12 h-12 text-base' : 'w-14 h-14 text-lg';
+                const circleSize = isMobile ? 'w-11 h-11 text-sm' : 'w-14 h-14 text-lg';
                 
                 return (
                   <button
@@ -489,6 +557,24 @@ export default function TrailMaking() {
               })}
             </div>
 
+            {/* Indicador de níveis completados */}
+            <div className="flex justify-center gap-2">
+              {[1, 2, 3, 4, 5].map((level) => (
+                <div
+                  key={level}
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${
+                    levelsCompleted.includes(level)
+                      ? 'bg-green-500 text-white'
+                      : level === currentGameLevel
+                      ? 'bg-yellow-400 text-black animate-pulse'
+                      : 'bg-gray-300 text-gray-600'
+                  }`}
+                >
+                  {level}
+                </div>
+              ))}
+            </div>
+
             <style jsx>{`
               @keyframes shake {
                 0%, 100% { transform: translate(-50%, -50%) translateX(0); }
@@ -502,58 +588,59 @@ export default function TrailMaking() {
           </div>
         ) : (
           // Tela de resultados
-          <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+          <div className="bg-white rounded-xl shadow-lg p-5 sm:p-8">
             <div className="text-center mb-6">
               <div className="text-5xl sm:text-6xl mb-4">
-                {errors === 0 ? '🏆' : errors <= 2 ? '🎉' : '💪'}
+                {levelsCompleted.length === 5 ? '🏆' : levelsCompleted.length >= 3 ? '🎉' : '💪'}
               </div>
               
               <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
-                {errors === 0 ? 'Perfeito!' : errors <= 2 ? 'Muito Bem!' : 'Completou!'}
+                {levelsCompleted.length === 5 ? 'Incrível! Todos os níveis!' : 
+                 levelsCompleted.length >= 3 ? 'Muito Bem!' : 'Bom começo!'}
               </h3>
               
-              <p className="text-gray-600">
-                Trilha concluída em {(completionTime / 1000).toFixed(1)} segundos
+              <p className="text-sm sm:text-base text-gray-600">
+                {levelsCompleted.length} níveis completados em {(completionTime / 1000).toFixed(1)} segundos
               </p>
             </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 text-center">
                 <div className="text-lg sm:text-xl font-bold text-blue-800">
                   {(completionTime / 1000).toFixed(1)}s
                 </div>
                 <div className="text-xs text-blue-600">Tempo Total</div>
               </div>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-                <div className="text-lg sm:text-xl font-bold text-red-800">{errors}</div>
-                <div className="text-xs text-red-600">Erros</div>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-2 sm:p-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-red-800">{totalErrors}</div>
+                <div className="text-xs text-red-600">Erros Totais</div>
               </div>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3 text-center">
                 <div className="text-lg sm:text-xl font-bold text-green-800">
-                  {selectedLevel === 5 ? 'Misto' : `${circles.length} números`}
+                  {levelsCompleted.length}/5
                 </div>
-                <div className="text-xs text-green-600">Tipo</div>
+                <div className="text-xs text-green-600">Níveis</div>
               </div>
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 sm:p-3 text-center">
                 <div className="text-lg sm:text-xl font-bold text-purple-800">{pontuacao}</div>
                 <div className="text-xs text-purple-600">Pontuação</div>
               </div>
             </div>
 
             {/* Análise de Desempenho */}
-            <div className="bg-blue-50 rounded-lg p-4 mb-6">
-              <h4 className="font-bold text-blue-800 mb-2">📊 Análise:</h4>
-              <div className="text-sm text-blue-700 space-y-1">
-                <p>• Velocidade: {completionTime < 20000 ? '✅ Excelente' : completionTime < 40000 ? '⚠️ Boa' : '🔴 Precisa melhorar'}</p>
-                <p>• Precisão: {errors === 0 ? '✅ Perfeita' : errors <= 2 ? '⚠️ Boa' : '🔴 Precisa atenção'}</p>
-                <p>• Nível: {selectedLevel === 5 ? '✅ Máximo (Misto)' : `${selectedLevel}/5`}</p>
+            <div className="bg-blue-50 rounded-lg p-3 sm:p-4 mb-6">
+              <h4 className="font-bold text-blue-800 mb-2 text-sm sm:text-base">📊 Análise:</h4>
+              <div className="text-xs sm:text-sm text-blue-700 space-y-1">
+                <p>• Velocidade: {completionTime < 60000 ? '✅ Excelente' : completionTime < 120000 ? '⚠️ Boa' : '🔴 Precisa melhorar'}</p>
+                <p>• Precisão: {totalErrors <= 3 ? '✅ Ótima' : totalErrors <= 8 ? '⚠️ Boa' : '🔴 Precisa atenção'}</p>
+                <p>• Níveis: {levelsCompleted.includes(5) ? '✅ Completou o desafio misto!' : `Chegou até o nível ${Math.max(...levelsCompleted)}`}</p>
               </div>
             </div>
             
             <div className="flex justify-center space-x-4">
               <button
                 onClick={voltarInicio}
-                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 sm:py-3 sm:px-6 rounded-lg transition-colors text-sm sm:text-base"
               >
                 🔄 Jogar Novamente
               </button>
