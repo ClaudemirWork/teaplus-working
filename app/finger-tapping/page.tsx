@@ -396,17 +396,18 @@ export default function FingerTapping() {
               </div>
             </div>
 
-            {/* Mensagem Motivacional */}
-            {motivationalMessage && (
-              <div className="text-center">
-                <div className="inline-block bg-yellow-400 text-black px-6 py-2 rounded-full font-bold animate-pulse">
-                  {motivationalMessage}
-                </div>
-              </div>
-            )}
-
             {/* Área da Torre */}
             <div className="bg-gradient-to-b from-blue-100 to-blue-50 rounded-xl shadow-lg overflow-hidden relative" style={{ height: '400px' }}>
+              
+              {/* Mensagem Motivacional DENTRO da tela do jogo */}
+              {motivationalMessage && (
+                <div className="absolute top-4 left-4 z-20 animate-pulse">
+                  <div className="bg-yellow-400/90 backdrop-blur-sm text-black px-4 py-2 rounded-lg font-bold shadow-lg">
+                    {motivationalMessage}
+                  </div>
+                </div>
+              )}
+              
               {/* Linha guia central */}
               <div className="absolute left-1/2 top-0 bottom-12 w-0.5 bg-red-300 opacity-50" />
               
