@@ -1,555 +1,203 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Play, Pause, RotateCcw, Award, Target, Clock, Brain, CheckCircle, Shuffle } from 'lucide-react'
+import { ArrowLeft, Play, Pause, RotateCcw, Award, Target, Clock, Brain, CheckCircle, Shuffle, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 
-const CognitiveFlexibilityPage = () => {
-  const [gameState, setGameState] = useState<'intro' | 'instructions' | 'playing' | 'paused' | 'finished'>('intro')
-  const [currentRound, setCurrentRound] = useState(0)
-  const [score, setScore] = useState(0)
-  const [timeLeft, setTimeLeft] = useState(120)
-  const [currentStimulus, setCurrentStimulus] = useState<{ 
-    shapes: Array<{shape: string, color: string}>, 
-    rule: 'color' | 'shape' | 'count',
-    target: string 
-  } | null>(null)
-  const [responses, setResponses] = useState<{correct: number, incorrect: number, switches: number}>({correct: 0, incorrect: 0, switches: 0})
-  const [showStimulus, setShowStimulus] = useState(false)
-  const [level, setLevel] = useState(1)
-  const [previousRule, setPreviousRule] = useState<'color' | 'shape' | 'count'>('color')
-  
-  const stimulusTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const gameTimerRef = useRef<NodeJS.Timeout | null>(null)
-
-  const shapes = ['🔴', '🔵', '🟢', '🟡', '🔺', '⬛', '⭐', '❤️']
-  const colors = ['vermelho', 'azul', 'verde', 'amarelo', 'roxo', 'preto', 'dourado', 'rosa']
-  const rules = ['color', 'shape', 'count'] as const
-
-  useEffect(() => {
-    if (gameState === 'playing' && timeLeft > 0) {
-      gameTimerRef.current = setTimeout(() => {
-        setTimeLeft(prev => prev - 1)
-      }, 1000)
-    } else if (timeLeft === 0 && gameState === 'playing') {
-      finishGame()
-    }
-
-    return () => {
-      if (gameTimerRef.current) clearTimeout(gameTimerRef.current)
-    }
-  }, [timeLeft, gameState])
-
-  const generateStimulus = () => {
-    // Switch rules frequently to test flexibility
-    const newRule = rules[Math.floor(Math.random() * rules.length)]
-    const isRuleSwitch = newRule !== previousRule
-    
-    if (isRuleSwitch) {
-      setResponses(prev => ({ ...prev, switches: prev.switches + 1 }))
-    }
-    
-    setPreviousRule(newRule)
-
-    // Generate 3-6 shapes
-    const shapeCount = 3 + Math.floor(Math.random() * 4)
-    const stimulusShapes = []
-    
-    for (let i = 0; i < shapeCount; i++) {
-      stimulusShapes.push({
-        shape: shapes[Math.floor(Math.random() * shapes.length)],
-        color: colors[Math.floor(Math.random() * colors.length)]
-      })
-    }
-
-    let target = ''
-    
-    switch (newRule) {
-      case 'color':
-        // Find most common color
-        const colorCounts = stimulusShapes.reduce((acc, item) => {
-          acc[item.color] = (acc[item.color] || 0) + 1
-          return acc
-        }, {} as Record<string, number>)
-        target = Object.entries(colorCounts).reduce((a, b) => colorCounts[a[0]] > colorCounts[b[0]] ? a : b)[0]
-        break
-        
-      case 'shape':
-        // Find most common shape
-        const shapeCounts = stimulusShapes.reduce((acc, item) => {
-          acc[item.shape] = (acc[item.shape] || 0) + 1
-          return acc
-        }, {} as Record<string, number>)
-        target = Object.entries(shapeCounts).reduce((a, b) => shapeCounts[a[0]] > shapeCounts[b[0]] ? a : b)[0]
-        break
-        
-      case 'count':
-        target = shapeCount.toString()
-        break
-    }
-
-    return {
-      shapes: stimulusShapes,
-      rule: newRule,
-      target
-    }
-  }
-
-  const startRound = () => {
-    const stimulus = generateStimulus()
-    setCurrentStimulus(stimulus)
-    setShowStimulus(true)
-    setCurrentRound(prev => prev + 1)
-
-    const delay = Math.max(2000 - (level * 150), 1000)
-    stimulusTimerRef.current = setTimeout(() => {
-      setShowStimulus(false)
-      setTimeout(() => {
-        setTimeout(() => startRound(), 500)
-      }, 1500)
-    }, delay)
-  }
-
-  const handleResponse = (answer: string) => {
-    if (!currentStimulus || !showStimulus) return
-
-    if (stimulusTimerRef.current) {
-      clearTimeout(stimulusTimerRef.current)
-    }
-
-    const isCorrect = answer === currentStimulus.target
-
-    if (isCorrect) {
-      const switchBonus = responses.switches > previousRule === currentStimulus.rule ? 0 : 20
-      setScore(prev => prev + 15 + (level * 5) + switchBonus)
-      setResponses(prev => ({ ...prev, correct: prev.correct + 1 }))
-      
-      if (responses.correct > 0 && (responses.correct + 1) % 8 === 0) {
-        setLevel(prev => prev + 1)
-      }
-    } else {
-      setResponses(prev => ({ ...prev, incorrect: prev.incorrect + 1 }))
-    }
-
-    setShowStimulus(false)
-    setTimeout(() => startRound(), 1000)
-  }
-
-  const startGame = () => {
-    setGameState('playing')
-    setTimeLeft(120)
-    setCurrentRound(0)
-    setScore(0)
-    setResponses({correct: 0, incorrect: 0, switches: 0})
-    setLevel(1)
-    setPreviousRule('color')
-    setTimeout(() => startRound(), 1500)
-  }
-
-  const pauseGame = () => {
-    setGameState('paused')
-    if (stimulusTimerRef.current) clearTimeout(stimulusTimerRef.current)
-    if (gameTimerRef.current) clearTimeout(gameTimerRef.current)
-  }
-
-  const resumeGame = () => {
-    setGameState('playing')
-  }
-
-  const finishGame = () => {
-    setGameState('finished')
-    if (stimulusTimerRef.current) clearTimeout(stimulusTimerRef.current)
-    if (gameTimerRef.current) clearTimeout(gameTimerRef.current)
-  }
-
-  const resetGame = () => {
-    setGameState('intro')
-    setCurrentRound(0)
-    setScore(0)
-    setResponses({correct: 0, incorrect: 0, switches: 0})
-    setCurrentStimulus(null)
-    setShowStimulus(false)
-    setLevel(1)
-    setPreviousRule('color')
-  }
-
-  const accuracy = responses.correct + responses.incorrect > 0 
-    ? Math.round((responses.correct / (responses.correct + responses.incorrect)) * 100)
-    : 0
-
-  const getRuleInstruction = (rule: 'color' | 'shape' | 'count') => {
-    switch (rule) {
-      case 'color': return 'Qual COR aparece mais vezes?'
-      case 'shape': return 'Qual FORMA aparece mais vezes?'
-      case 'count': return 'Quantas formas há no total?'
-    }
-  }
-
-  const getAnswerOptions = () => {
-    if (!currentStimulus) return []
-    
-    switch (currentStimulus.rule) {
-      case 'color':
-        return [...new Set(currentStimulus.shapes.map(s => s.color))]
-      case 'shape':
-        return [...new Set(currentStimulus.shapes.map(s => s.shape))]
-      case 'count':
-        return ['3', '4', '5', '6']
-    }
-  }
-
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/tdah" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <ArrowLeft className="w-6 h-6 text-gray-600" />
-              </Link>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">🧠 Flexibilidade Cognitiva</h1>
-                <p className="text-gray-600 mt-1">Adaptação mental a mudanças de regras</p>
-              </div>
-            </div>
-            
-            {gameState === 'playing' && (
-              <div className="flex items-center gap-8">
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-500">Tempo</div>
-                  <div className="text-2xl font-bold text-gray-900">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-500">Pontuação</div>
-                  <div className="text-2xl font-bold text-blue-600">{score}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-500">Nível</div>
-                  <div className="text-2xl font-bold text-purple-600">{level}</div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        {/* Intro */}
-        {gameState === 'intro' && (
-          <div className="space-y-8">
-            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-200">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center">
-                  <Shuffle className="w-8 h-8 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Sobre este exercício</h2>
-                  <p className="text-gray-600">Teste de alternância de regras cognitivas</p>
-                </div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-8 mb-8">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Target className="w-5 h-5 text-blue-500" />
-                    Objetivo
-                  </h3>
-                  <p className="text-gray-700 leading-relaxed">
-                    Desenvolver flexibilidade cognitiva respondendo a diferentes regras que mudam 
-                    aleatoriamente. Você precisa alternar entre focar em cores, formas ou quantidades.
-                  </p>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    Benefícios
-                  </h3>
-                  <ul className="text-gray-700 space-y-2">
-                    <li className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                      Melhora flexibilidade mental
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                      Treina mudança de foco
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                      Desenvolve adaptabilidade
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                      Fortalece função executiva
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
-                  <Clock className="w-8 h-8 text-blue-500 mx-auto mb-3" />
-                  <div className="font-semibold text-gray-900 mb-1">Duração</div>
-                  <div className="text-sm text-gray-600">8-12 minutos</div>
-                </div>
-                <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
-                  <Target className="w-8 h-8 text-orange-500 mx-auto mb-3" />
-                  <div className="font-semibold text-gray-900 mb-1">Dificuldade</div>
-                  <div className="text-sm text-gray-600">Avançado</div>
-                </div>
-                <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
-                  <Shuffle className="w-8 h-8 text-purple-500 mx-auto mb-3" />
-                  <div className="font-semibold text-gray-900 mb-1">Alternância</div>
-                  <div className="text-sm text-gray-600">3 regras</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center">
-              <button
-                onClick={() => setGameState('instructions')}
-                className="bg-blue-600 hover:bg-blue-700 text-white py-4 px-8 rounded-xl font-semibold text-lg transition-colors"
-              >
-                Ver instruções
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Instructions */}
-        {gameState === 'instructions' && (
-          <div className="space-y-8">
-            <div className="bg-gray-50 rounded-2xl p-8 border border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900 mb-8">📋 Como jogar</h2>
-              
-              <div className="space-y-8">
-                <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-                  <h3 className="text-lg font-semibold text-blue-900 mb-4">🔄 Regras que mudam</h3>
-                  <p className="text-blue-800 leading-relaxed">
-                    Formas coloridas aparecerão na tela. A regra para responder <strong>muda aleatoriamente</strong> 
-                    entre três tipos: cor, forma ou quantidade. Fique atento à instrução no topo!
-                  </p>
-                </div>
-
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="bg-red-50 rounded-xl p-6 border border-red-200">
-                    <h3 className="text-lg font-semibold text-red-800 mb-4">🎨 Regra: COR</h3>
-                    <div className="text-center mb-4">
-                      <div className="flex justify-center gap-2 text-2xl">
-                        🔴🔵🔴🟢🔴
-                      </div>
-                    </div>
-                    <p className="text-red-700 text-center text-sm">
-                      Resposta: <strong>vermelho</strong><br/>
-                      (cor que aparece mais)
-                    </p>
-                  </div>
-
-                  <div className="bg-green-50 rounded-xl p-6 border border-green-200">
-                    <h3 className="text-lg font-semibold text-green-800 mb-4">🔷 Regra: FORMA</h3>
-                    <div className="text-center mb-4">
-                      <div className="flex justify-center gap-2 text-2xl">
-                        🔴⭐🔴🔺🔴
-                      </div>
-                    </div>
-                    <p className="text-green-700 text-center text-sm">
-                      Resposta: <strong>🔴</strong><br/>
-                      (forma que aparece mais)
-                    </p>
-                  </div>
-
-                  <div className="bg-purple-50 rounded-xl p-6 border border-purple-200">
-                    <h3 className="text-lg font-semibold text-purple-800 mb-4">🔢 Regra: QUANTIDADE</h3>
-                    <div className="text-center mb-4">
-                      <div className="flex justify-center gap-2 text-2xl">
-                        🔴🔵🟢⭐
-                      </div>
-                    </div>
-                    <p className="text-purple-700 text-center text-sm">
-                      Resposta: <strong>4</strong><br/>
-                      (total de formas)
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-yellow-50 rounded-xl p-6 border border-yellow-200">
-                  <h3 className="text-lg font-semibold text-yellow-800 mb-4">⚡ Dica importante</h3>
-                  <p className="text-yellow-700">
-                    A regra pode mudar a qualquer momento! Sempre leia a instrução no topo da tela 
-                    antes de responder. Seja rápido, mas cuidadoso com as mudanças.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={() => setGameState('intro')}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-6 rounded-xl font-medium transition-colors"
-              >
-                Voltar
-              </button>
-              <button
-                onClick={startGame}
-                className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-8 rounded-xl font-semibold transition-colors flex items-center gap-2"
-              >
-                <Play className="w-5 h-5" />
-                Iniciar exercício
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Game */}
-        {(gameState === 'playing' || gameState === 'paused') && (
-          <div className="space-y-8">
-            <div className="text-center">
-              <div className="text-lg font-medium text-gray-600 mb-2">Rodada {currentRound}</div>
-              {currentStimulus && (
-                <div className="text-xl font-bold text-blue-600 mb-4">
-                  {getRuleInstruction(currentStimulus.rule)}
-                </div>
-              )}
-            </div>
-
-            {gameState === 'paused' && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
-                <div className="text-lg font-semibold text-yellow-800 mb-4">⏸️ Jogo pausado</div>
-                <button
-                  onClick={resumeGame}
-                  className="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-6 rounded-lg font-medium transition-colors"
-                >
-                  Continuar
-                </button>
-              </div>
-            )}
-
-            {/* Stimulus Display */}
-            <div className="bg-gray-50 rounded-2xl p-16 border border-gray-200 text-center min-h-[300px] flex items-center justify-center">
-              {showStimulus && currentStimulus && gameState === 'playing' ? (
-                <div className="space-y-8">
-                  <div className="flex justify-center gap-4 text-6xl">
-                    {currentStimulus.shapes.map((item, index) => (
-                      <span key={index}>{item.shape}</span>
-                    ))}
-                  </div>
-                </div>
-              ) : gameState === 'playing' ? (
-                <div className="text-gray-500 text-xl">Prepare-se para a próxima regra...</div>
-              ) : null}
-            </div>
-
-            {/* Answer Options */}
-            {showStimulus && currentStimulus && gameState === 'playing' && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {getAnswerOptions().map((option, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleResponse(option)}
-                    className="bg-blue-500 hover:bg-blue-600 text-white py-6 px-4 rounded-xl font-semibold transition-colors flex flex-col items-center gap-3 text-lg"
-                  >
-                    {currentStimulus.rule === 'shape' ? (
-                      <span className="text-3xl">{option}</span>
-                    ) : (
-                      <span className="text-xl">{option}</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Game Controls */}
-            <div className="flex justify-center gap-4">
-              {gameState === 'playing' && (
-                <button
-                  onClick={pauseGame}
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-6 rounded-xl font-medium transition-colors flex items-center gap-2"
-                >
-                  <Pause className="w-4 h-4" />
-                  Pausar
-                </button>
-              )}
-              <button
-                onClick={resetGame}
-                className="bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-xl font-medium transition-colors flex items-center gap-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Reiniciar
-              </button>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-green-50 rounded-xl p-6 text-center border border-green-200">
-                <div className="text-3xl font-bold text-green-600 mb-1">{responses.correct}</div>
-                <div className="text-sm font-medium text-green-700">Corretas</div>
-              </div>
-              <div className="bg-red-50 rounded-xl p-6 text-center border border-red-200">
-                <div className="text-3xl font-bold text-red-600 mb-1">{responses.incorrect}</div>
-                <div className="text-sm font-medium text-red-700">Incorretas</div>
-              </div>
-              <div className="bg-purple-50 rounded-xl p-6 text-center border border-purple-200">
-                <div className="text-3xl font-bold text-purple-600 mb-1">{responses.switches}</div>
-                <div className="text-sm font-medium text-purple-700">Mudanças</div>
-              </div>
-              <div className="bg-blue-50 rounded-xl p-6 text-center border border-blue-200">
-                <div className="text-3xl font-bold text-blue-600 mb-1">{accuracy}%</div>
-                <div className="text-sm font-medium text-blue-700">Precisão</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Finished */}
-        {gameState === 'finished' && (
-          <div className="space-y-8">
-            <div className="bg-blue-50 rounded-2xl p-8 border border-blue-200 text-center">
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Award className="w-10 h-10 text-blue-600" />
-              </div>
-              
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Exercício concluído!</h2>
-              <p className="text-gray-600 mb-8">Parabéns! Você completou o teste de flexibilidade cognitiva.</p>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-xl p-6 border border-gray-200">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">{score}</div>
-                  <div className="text-sm font-medium text-gray-600">Pontuação final</div>
-                </div>
-                <div className="bg-white rounded-xl p-6 border border-gray-200">
-                  <div className="text-3xl font-bold text-green-600 mb-2">{accuracy}%</div>
-                  <div className="text-sm font-medium text-gray-600">Precisão</div>
-                </div>
-                <div className="bg-white rounded-xl p-6 border border-gray-200">
-                  <div className="text-3xl font-bold text-purple-600 mb-2">{responses.switches}</div>
-                  <div className="text-sm font-medium text-gray-600">Mudanças</div>
-                </div>
-                <div className="bg-white rounded-xl p-6 border border-gray-200">
-                  <div className="text-3xl font-bold text-orange-600 mb-2">{level}</div>
-                  <div className="text-sm font-medium text-gray-600">Nível final</div>
-                </div>
-              </div>
-              
-              <div className="flex gap-4 justify-center">
-                <button
-                  onClick={resetGame}
-                  className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-8 rounded-xl font-semibold transition-colors"
-                >
-                  Jogar novamente
-                </button>
-                <Link href="/tdah">
-                  <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-8 rounded-xl font-semibold transition-colors">
-                    Voltar ao menu
-                  </button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
+// ============================================================================
+// 1. STANDARD "GAMEHEADER" COMPONENT
+// ============================================================================
+const GameHeader = ({ title, icon }) => (
+  <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="flex items-center justify-between h-16">
+        <Link
+          href="/dashboard"
+          className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
+        >
+          <ChevronLeft className="h-6 w-6" />
+          <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
+        </Link>
+        <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex items-center gap-2">
+          {icon}
+          <span>{title}</span>
+        </h1>
+        <div className="w-24"></div>
       </div>
     </div>
-  )
+  </header>
+);
+
+// ============================================================================
+// 2. MAIN "COGNITIVE FLEXIBILITY" ACTIVITY COMPONENT
+// ============================================================================
+const CognitiveFlexibilityPage = () => {
+  const [gameStarted, setGameStarted] = useState(false);
+  const [gameState, setGameState] = useState<'playing' | 'paused' | 'finished'>('playing');
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(90); // 90 seconds total
+  const [currentStimulus, setCurrentStimulus] = useState<any>(null);
+  const [responses, setResponses] = useState({ correct: 0, incorrect: 0 });
+  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [isRuleSwitch, setIsRuleSwitch] = useState(false);
+  
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const shapes = ['🔴', '🔵', '🟢', '🟡', '🔺', '⬛', '⭐', '❤️'];
+  const colors = ['vermelho', 'azul', 'verde', 'amarelo', 'roxo', 'preto', 'dourado', 'rosa'];
+  const rules = ['color', 'shape', 'count'] as const;
+  
+  // Game logic tied to useEffect
+  useEffect(() => {
+    if (gameStarted && gameState === 'playing' && timeLeft > 0) {
+      timerRef.current = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
+    } else if (timeLeft === 0 && gameState === 'playing') {
+      setGameState('finished');
+    }
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [timeLeft, gameState, gameStarted]);
+
+  const generateNextRound = (prevRule = 'color') => {
+    setIsRuleSwitch(false);
+    setFeedback(null);
+    
+    let newRule = rules[Math.floor(Math.random() * rules.length)];
+    if (newRule === prevRule) { // Force a switch more often
+        newRule = rules[(rules.indexOf(newRule) + 1) % rules.length];
+    }
+    if (newRule !== prevRule) {
+        setIsRuleSwitch(true);
+    }
+
+    const shapeCount = 3 + Math.floor(Math.random() * 3); // 3 to 5 shapes
+    const stimulusShapes = Array.from({ length: shapeCount }, () => ({
+      shape: shapes[Math.floor(Math.random() * shapes.length)],
+      color: colors[Math.floor(Math.random() * colors.length)]
+    }));
+
+    let target = '';
+    const counts = (arr: any[], key: string) => arr.reduce((acc, item) => { acc[item[key]] = (acc[item[key]] || 0) + 1; return acc; }, {});
+    
+    if (newRule === 'color') {
+      const colorCounts = counts(stimulusShapes, 'color');
+      target = Object.keys(colorCounts).reduce((a, b) => colorCounts[a] > colorCounts[b] ? a : b);
+    } else if (newRule === 'shape') {
+      const shapeCounts = counts(stimulusShapes, 'shape');
+      target = Object.keys(shapeCounts).reduce((a, b) => shapeCounts[a] > shapeCounts[b] ? a : b);
+    } else { // count
+      target = shapeCount.toString();
+    }
+    
+    setCurrentStimulus({ shapes: stimulusShapes, rule: newRule, target });
+  };
+  
+  const startGame = () => {
+    setGameState('playing');
+    setTimeLeft(90);
+    setScore(0);
+    setResponses({ correct: 0, incorrect: 0 });
+    setGameStarted(true);
+    generateNextRound();
+  };
+
+  const handleResponse = (answer: string) => {
+    if (feedback) return; // Prevent multiple clicks
+    
+    const correct = answer === currentStimulus.target;
+    if (correct) {
+      setScore(prev => prev + 10 + (isRuleSwitch ? 5 : 0));
+      setResponses(prev => ({ ...prev, correct: prev.correct + 1 }));
+      setFeedback('correct');
+    } else {
+      setResponses(prev => ({ ...prev, incorrect: prev.incorrect + 1 }));
+      setFeedback('incorrect');
+    }
+
+    setTimeout(() => generateNextRound(currentStimulus.rule), 700);
+  };
+
+  const accuracy = (responses.correct + responses.incorrect) > 0 ? Math.round((responses.correct / (responses.correct + responses.incorrect)) * 100) : 0;
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <GameHeader title="Flexibilidade Cognitiva" icon={<Shuffle className="w-6 h-6 text-gray-700" />} />
+      
+      {!gameStarted ? (
+         <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4"><h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3><p className="text-sm text-gray-600">Treinar a capacidade de mudar o foco e adaptar-se a novas regras rapidamente, uma habilidade essencial das funções executivas.</p></div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4"><h3 className="font-semibold text-gray-800 mb-1">🕹️ Como Jogar:</h3><ul className="list-disc list-inside text-sm text-gray-600 space-y-1"><li>Uma regra aparecerá (Cor, Forma ou Quantidade).</li><li>Observe as figuras e aplique a regra atual.</li><li>Responda o mais rápido que puder.</li><li>Atenção! A regra pode mudar a qualquer momento.</li></ul></div>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4"><h3 className="font-semibold text-gray-800 mb-1">⭐ Avaliação:</h3><p className="text-sm text-gray-600">Você ganha pontos por cada resposta correta. Acertar logo após uma mudança de regra vale pontos extras!</p></div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+                <h2 className="text-lg font-bold text-gray-800 mb-4">Pronto para um desafio de agilidade mental?</h2>
+                <button onClick={startGame} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors">🚀 Começar Exercício</button>
+              </div>
+            </div>
+          </main>
+      ) : (
+        <main className="p-4 sm:p-6 max-w-4xl mx-auto w-full">
+            <div className="grid grid-cols-3 gap-4 mb-6 text-center">
+                <div className="bg-white p-3 rounded-xl shadow-md"><p className="text-sm text-gray-500">Tempo</p><p className="font-bold text-lg">{formatTime(timeLeft)}</p></div>
+                <div className="bg-white p-3 rounded-xl shadow-md"><p className="text-sm text-gray-500">Pontos</p><p className="font-bold text-lg text-blue-600">{score}</p></div>
+                <div className="bg-white p-3 rounded-xl shadow-md"><p className="text-sm text-gray-500">Precisão</p><p className="font-bold text-lg text-green-600">{accuracy}%</p></div>
+            </div>
+            
+            <div className={`bg-white rounded-2xl shadow-lg p-6 sm:p-8 transition-all duration-300
+                ${feedback === 'correct' ? 'ring-4 ring-green-400' : ''}
+                ${feedback === 'incorrect' ? 'ring-4 ring-red-400' : ''}`}>
+                {gameState === 'finished' ? (
+                    <div className="text-center">
+                        <Award className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+                        <h2 className="text-2xl font-bold mb-2">Exercício Concluído!</h2>
+                        <div className="grid grid-cols-2 gap-4 mt-6">
+                            <div className="bg-gray-100 p-4 rounded-lg"><p className="text-gray-600">Pontuação Final</p><p className="text-2xl font-bold">{score}</p></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><p className="text-gray-600">Precisão</p><p className="text-2xl font-bold">{accuracy}%</p></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><p className="text-gray-600">Acertos</p><p className="text-2xl font-bold text-green-600">{responses.correct}</p></div>
+                            <div className="bg-gray-100 p-4 rounded-lg"><p className="text-gray-600">Erros</p><p className="text-2xl font-bold text-red-600">{responses.incorrect}</p></div>
+                        </div>
+                        <button onClick={startGame} className="mt-8 w-full sm:w-auto px-6 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors">Jogar Novamente</button>
+                    </div>
+                ) : currentStimulus ? (
+                    <div className="text-center">
+                        <div className={`p-3 rounded-lg font-bold text-lg mb-6 transition-colors duration-300 ${isRuleSwitch ? 'bg-yellow-200 text-yellow-800 animate-pulse' : 'bg-blue-100 text-blue-800'}`}>
+                            {currentStimulus.rule === 'color' && 'Qual a COR mais frequente?'}
+                            {currentStimulus.rule === 'shape' && 'Qual a FORMA mais frequente?'}
+                            {currentStimulus.rule === 'count' && 'Quantas formas existem?'}
+                        </div>
+                        
+                        <div className="min-h-[80px] flex items-center justify-center text-5xl gap-4 mb-6">
+                           {currentStimulus.shapes.map((s, i) => <span key={i}>{s.shape}</span>)}
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                           { [...new Set(
+                                currentStimulus.rule === 'color' ? currentStimulus.shapes.map(s => s.color) :
+                                currentStimulus.rule === 'shape' ? currentStimulus.shapes.map(s => s.shape) :
+                                ['3','4','5']
+                           )].map(option => (
+                               <button key={option} onClick={() => handleResponse(option)} className="p-4 bg-gray-700 text-white rounded-lg font-semibold hover:bg-gray-800 text-2xl">
+                                   {option}
+                               </button>
+                           ))}
+                        </div>
+                    </div>
+                ) : null}
+            </div>
+        </main>
+      )}
+    </div>
+  );
 }
 
-export default CognitiveFlexibilityPage
+// Helper function
+const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+export default CognitiveFlexibilityPage;
