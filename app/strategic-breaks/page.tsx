@@ -15,13 +15,13 @@ const GameHeader = ({ title, icon }) => (
   <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
       <div className="flex items-center justify-between h-16">
-        <Link
-          href="/activities"
+        <button
+          onClick={() => window.history.back()}
           className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
         >
           <ChevronLeft className="h-6 w-6" />
           <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
-        </Link>
+        </button>
         <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex items-center gap-2">
           {icon}
           <span>{title}</span>
