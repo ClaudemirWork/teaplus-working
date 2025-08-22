@@ -1,461 +1,294 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { GameHeader } from '@/components/GameHeader';
+import { Puzzle, Trophy, Gamepad2 } from 'lucide-react';
 
-export default function SocialMissionsPage() {
+// Interfaces e dados do exercício
+interface Option {
+  id: string;
+  text: string;
+  correct: boolean;
+}
+
+interface Exercise {
+  id: number;
+  title: string;
+  scenario: string;
+  question: string;
+  options: Option[];
+  explanation: string;
+}
+
+export default function TeamworkPage() {
+  // Estados padronizados
   const [gameStarted, setGameStarted] = useState(false);
-  const [currentMission, setCurrentMission] = useState(0);
-  const [completedMissions, setCompletedMissions] = useState<number[]>([]);
-  const [score, setScore] = useState(0);
-  const [showResult, setShowResult] = useState(false);
-  const [missionStatus, setMissionStatus] = useState('');
-  const router = useRouter();
+  const [gameFinished, setGameFinished] = useState(false);
 
-  const missions = [
+  // Estados internos do jogo
+  const [currentExercise, setCurrentExercise] = useState(0);
+  const [points, setPoints] = useState(0);
+  const [exerciseStarted, setExerciseStarted] = useState(false);
+  const [selectedAnswer, setSelectedAnswer] = useState<string>('');
+  const [showFeedback, setShowFeedback] = useState(false);
+
+  const exercises: Exercise[] = [
     {
       id: 1,
-      title: "Missão: Organizar a Mesa",
-      description: "Você prometeu organizar sua mesa de estudos após usar. Está na hora de cumprir!",
-      image: "📚",
-      context: "Responsabilidade pessoal - ambiente de estudos",
-      steps: [
-        "Guardar todos os livros no lugar",
-        "Organizar os lápis e canetas",
-        "Limpar a superfície da mesa",
-        "Verificar se tudo está no lugar certo"
+      title: 'Montando um Quebra-cabeças em Grupo',
+      scenario: 'Você e seus colegas estão montando um quebra-cabeças de 100 peças. Cada um tem algumas peças diferentes.',
+      question: 'Qual é a melhor estratégia para trabalhar em equipe?',
+      options: [
+        { id: 'a', text: 'Cada um monta sua parte separadamente', correct: false },
+        { id: 'b', text: 'Compartilhar peças e ajudar uns aos outros', correct: true },
+        { id: 'c', text: 'Competir para ver quem monta mais rápido', correct: false },
+        { id: 'd', text: 'Desistir se não encontrar suas peças', correct: false }
       ],
-      timeLimit: 300, // 5 minutos
-      points: 15,
-      category: "organização"
+      explanation: 'Trabalhar em equipe significa colaborar, compartilhar recursos e ajudar uns aos outros para alcançar um objetivo comum!'
     },
     {
       id: 2,
-      title: "Missão: Ajudar na Cozinha",
-      description: "Você se ofereceu para ajudar com a limpeza após o jantar. É hora de mostrar responsabilidade!",
-      image: "🍽️",
-      context: "Compromisso familiar - colaboração doméstica",
-      steps: [
-        "Retirar os pratos da mesa",
-        "Guardar os alimentos na geladeira",
-        "Lavar a louça ou colocar na lava-louças",
-        "Limpar a bancada da cozinha"
+      title: 'Preparando uma Apresentação Escolar',
+      scenario: 'Sua turma precisa fazer uma apresentação sobre animais. Cada pessoa tem uma tarefa diferente: pesquisar, desenhar, falar.',
+      question: 'Como garantir que o trabalho em equipe seja eficiente?',
+      options: [
+        { id: 'a', text: 'Fazer tudo sozinho para ter controle', correct: false },
+        { id: 'b', text: 'Combinar prazos e ajudar quem estiver com dificuldade', correct: true },
+        { id: 'c', text: 'Deixar cada um fazer sua parte sem se comunicar', correct: false },
+        { id: 'd', text: 'Criticar o trabalho dos outros', correct: false }
       ],
-      timeLimit: 600, // 10 minutos
-      points: 20,
-      category: "colaboração"
+      explanation: 'Comunicação clara, prazos definidos e apoio mútuo são fundamentais para o sucesso de qualquer equipe!'
     },
     {
       id: 3,
-      title: "Missão: Cuidar do Ambiente",
-      description: "Você notou lixo no pátio da escola. Vamos cuidar do nosso ambiente coletivo!",
-      image: "🌱",
-      context: "Responsabilidade ambiental - espaço coletivo",
-      steps: [
-        "Identificar os resíduos no ambiente",
-        "Separar lixo reciclável do comum",
-        "Colocar cada tipo na lixeira correta",
-        "Verificar se o ambiente está limpo"
+      title: 'Organizando uma Festa da Turma',
+      scenario: 'A turma decidiu fazer uma festa de final de ano. Há muitas tarefas: decoração, comida, música, jogos.',
+      question: 'Como organizar as tarefas em equipe?',
+      options: [
+        { id: 'a', text: 'Uma pessoa decide tudo pelos outros', correct: false },
+        { id: 'b', text: 'Dividir tarefas baseado nos interesses e habilidades de cada um', correct: true },
+        { id: 'c', text: 'Todos fazem tudo ao mesmo tempo', correct: false },
+        { id: 'd', text: 'Deixar para a última hora', correct: false }
       ],
-      timeLimit: 240, // 4 minutos
-      points: 25,
-      category: "ambiente"
+      explanation: 'Distribuir tarefas considerando os pontos fortes de cada pessoa maximiza a eficiência e satisfação da equipe!'
     },
     {
       id: 4,
-      title: "Missão: Devolver Material",
-      description: "Você pegou emprestado material da biblioteca há uma semana. É hora de devolver!",
-      image: "📖",
-      context: "Compromisso social - responsabilidade com bens coletivos",
-      steps: [
-        "Localizar todos os materiais emprestados",
-        "Verificar se estão em bom estado",
-        "Ir até a biblioteca",
-        "Devolver e agradecer o empréstimo"
+      title: 'Resolvendo um Conflito na Equipe',
+      scenario: 'Durante um projeto em grupo, dois colegas discordam sobre qual ideia usar. A tensão está aumentando.',
+      question: 'Qual é a melhor forma de mediar essa situação?',
+      options: [
+        { id: 'a', text: 'Ignorar o conflito e esperar passar', correct: false },
+        { id: 'b', text: 'Ouvir ambos os lados e buscar uma solução conjunta', correct: true },
+        { id: 'c', text: 'Escolher um lado e apoiar apenas ele', correct: false },
+        { id: 'd', text: 'Desistir do projeto', correct: false }
       ],
-      timeLimit: 480, // 8 minutos
-      points: 18,
-      category: "compromisso"
+      explanation: 'Conflitos são naturais em equipes. O importante é ouvir, respeitar diferentes opiniões e encontrar soluções que beneficiem todos!'
+    },
+    {
+      id: 5,
+      title: 'Celebrando o Sucesso da Equipe',
+      scenario: 'Sua equipe completou com sucesso um projeto desafiador. Todos contribuíram de formas diferentes.',
+      question: 'Como celebrar de forma que valorize todo mundo?',
+      options: [
+        { id: 'a', text: 'Só parabenizar quem teve mais destaque', correct: false },
+        { id: 'b', text: 'Reconhecer a contribuição única de cada membro', correct: true },
+        { id: 'c', text: 'Não celebrar para não criar expectativas', correct: false },
+        { id: 'd', text: 'Focar apenas no resultado final', correct: false }
+      ],
+      explanation: 'Reconhecer as contribuições individuais fortalece a equipe e motiva todos a continuarem colaborando em futuros projetos!'
     }
   ];
 
-  const startMission = (missionIndex: number) => {
-    setCurrentMission(missionIndex);
-    setShowResult(false);
-    setMissionStatus('em_andamento');
+  const currentExerciseData = exercises[currentExercise];
+
+  const handleStartGame = () => {
+    setGameStarted(true);
+    setCurrentExercise(0);
+    setPoints(0);
+    setExerciseStarted(false);
+    setSelectedAnswer('');
+    setShowFeedback(false);
+    setGameFinished(false);
   };
 
-  const completeMission = () => {
-    const mission = missions[currentMission];
-    setCompletedMissions([...completedMissions, mission.id]);
-    setScore(score + mission.points);
-    setMissionStatus('completa');
-    setShowResult(true);
-  };
-
-  const nextMission = () => {
-    if (currentMission < missions.length - 1) {
-      const nextIndex = currentMission + 1;
-      setCurrentMission(nextIndex);
-      setMissionStatus('');
-      setShowResult(false);
+  const handleStartExercise = () => { setExerciseStarted(true); setSelectedAnswer(''); setShowFeedback(false); };
+  const handleAnswerSelect = (answerId: string) => { setSelectedAnswer(answerId); };
+  const handleSubmitAnswer = () => {
+    if (!selectedAnswer) return;
+    setShowFeedback(true);
+    const isCorrect = exercises[currentExercise].options.find(opt => opt.id === selectedAnswer)?.correct;
+    if (isCorrect) {
+      setPoints(points + 10);
     }
   };
 
-  const restartActivity = () => {
-    setCurrentMission(0);
-    setCompletedMissions([]);
-    setScore(0);
-    setShowResult(false);
-    setMissionStatus('');
+  const handleNextExercise = () => {
+    if (currentExercise < exercises.length - 1) {
+      setCurrentExercise(currentExercise + 1);
+      setExerciseStarted(false);
+      setSelectedAnswer('');
+      setShowFeedback(false);
+    } else {
+      setGameFinished(true);
+    }
+  };
+  
+  const resetGame = () => {
     setGameStarted(false);
+    setGameFinished(false);
+    setCurrentExercise(0);
+    setPoints(0);
+    setExerciseStarted(false);
+    setSelectedAnswer('');
+    setShowFeedback(false);
   };
 
-  const startGame = () => {
-    setGameStarted(true);
-  };
+  const isCorrectAnswer = selectedAnswer && currentExerciseData?.options.find(opt => opt.id === selectedAnswer)?.correct;
 
-  const isMissionCompleted = (missionId: number) => completedMissions.includes(missionId);
-  const totalPossiblePoints = missions.reduce((sum, mission) => sum + mission.points, 0);
-
-  if (gameStarted) {
-    const mission = missions[currentMission];
-
+  // TELA DE RESULTADOS
+  if (gameFinished) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100">
-        {/* Header fixo */}
-        <header className="bg-white shadow-sm border-b sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              {/* Botão Voltar */}
-              <button 
-                onClick={() => setGameStarted(false)}
-                className="flex items-center space-x-2 text-orange-600 hover:text-orange-700 transition-colors group"
-              >
-                <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span className="font-medium hidden sm:inline">Voltar</span>
-                <span className="font-medium sm:hidden">Voltar</span>
-              </button>
-
-              {/* Título central */}
-              <div className="flex items-center space-x-2">
-                <span className="text-2xl">🎯</span>
-                <h1 className="text-lg sm:text-xl font-bold text-gray-800">Missões Sociais</h1>
-              </div>
-
-              {/* Pontuação */}
-              <div className="text-right">
-                <div className="text-sm text-gray-500">Pontuação</div>
-                <div className="text-lg font-bold text-orange-600">{score}/{totalPossiblePoints}</div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Conteúdo principal */}
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Painel de Missões */}
-          <div className="mb-6">
-            <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4">Painel de Missões</h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                {missions.map((m, index) => (
-                  <button
-                    key={m.id}
-                    onClick={() => !isMissionCompleted(m.id) && startMission(index)}
-                    className={`p-3 sm:p-4 rounded-lg border-2 transition-all text-left ${
-                      isMissionCompleted(m.id) 
-                        ? 'bg-green-100 border-green-300 cursor-default' 
-                        : currentMission === index 
-                          ? 'bg-orange-100 border-orange-300 hover:bg-orange-200'
-                          : 'bg-white border-gray-200 hover:border-orange-300'
-                    }`}
-                  >
-                    <div className="text-xl sm:text-2xl mb-2">{m.image}</div>
-                    <div className="font-semibold text-xs sm:text-sm mb-1">{m.title.replace('Missão: ', '')}</div>
-                    <div className="text-xs text-gray-500 mb-2">{m.category}</div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-orange-600">{m.points} pts</span>
-                      {isMissionCompleted(m.id) && <span className="text-green-600 text-sm">✓</span>}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Detalhes da Missão Atual */}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* Header da Missão */}
-            <div className="bg-orange-100 p-4 sm:p-6 border-b">
-              <div className="text-center">
-                <div className="text-4xl sm:text-6xl mb-2">{mission.image}</div>
-                <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">{mission.title}</h2>
-                <p className="text-gray-600 text-sm sm:text-base">{mission.description}</p>
-                <p className="text-xs sm:text-sm text-gray-500 mt-2">📍 {mission.context}</p>
-              </div>
-            </div>
-
-            {/* Passos da Missão */}
-            <div className="p-4 sm:p-6">
-              {missionStatus !== 'completa' ? (
-                <>
-                  <h3 className="font-semibold text-gray-700 mb-4 text-sm sm:text-base">Passos para completar a missão:</h3>
-                  <div className="space-y-3 mb-6">
-                    {mission.steps.map((step, index) => (
-                      <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-shrink-0 w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                          {index + 1}
-                        </div>
-                        <span className="text-gray-700 text-sm sm:text-base">{step}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="bg-blue-50 p-4 rounded-lg mb-6">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-blue-600">⏰</span>
-                      <span className="font-semibold text-blue-800 text-sm sm:text-base">Tempo Sugerido:</span>
-                    </div>
-                    <p className="text-blue-700 text-sm sm:text-base">{Math.floor(mission.timeLimit / 60)} minutos para completar com calma</p>
-                  </div>
-
-                  {missionStatus !== 'em_andamento' ? (
-                    <button
-                      onClick={() => startMission(currentMission)}
-                      className="w-full bg-orange-500 text-white font-semibold py-3 rounded-lg hover:bg-orange-600 transition-colors text-sm sm:text-base"
-                    >
-                      Iniciar Missão
-                    </button>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                        <p className="text-yellow-800 font-medium text-sm sm:text-base">⚡ Missão em andamento!</p>
-                        <p className="text-yellow-700 text-xs sm:text-sm mt-1">Complete todos os passos e clique em "Missão Completa" quando terminar.</p>
-                      </div>
-                      <button
-                        onClick={completeMission}
-                        className="w-full bg-green-500 text-white font-semibold py-3 rounded-lg hover:bg-green-600 transition-colors text-sm sm:text-base"
-                      >
-                        ✅ Missão Completa!
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center space-y-4">
-                  <div className="bg-green-100 text-green-800 p-4 sm:p-6 rounded-lg">
-                    <h3 className="font-bold text-base sm:text-lg mb-2">🎉 Missão Completa!</h3>
-                    <p className="mb-2 text-sm sm:text-base">Você ganhou {mission.points} pontos!</p>
-                    <p className="text-xs sm:text-sm">Parabéns por cumprir seu compromisso e mostrar responsabilidade!</p>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg text-left">
-                    <h4 className="font-semibold text-gray-700 mb-2 text-sm sm:text-base">💡 Impacto da sua ação:</h4>
-                    <p className="text-gray-600 text-xs sm:text-sm">
-                      {mission.category === 'organização' && 'Manter o ambiente organizado ajuda você a ser mais produtivo e demonstra cuidado com seus pertences.'}
-                      {mission.category === 'colaboração' && 'Ajudar em casa fortalece os vínculos familiares e mostra que você é uma pessoa confiável.'}
-                      {mission.category === 'ambiente' && 'Cuidar do ambiente beneficia toda a comunidade e demonstra consciência social.'}
-                      {mission.category === 'compromisso' && 'Cumprir promessas constrói confiança e mostra que você é uma pessoa responsável.'}
-                    </p>
-                  </div>
-
-                  {currentMission < missions.length - 1 ? (
-                    <button
-                      onClick={nextMission}
-                      className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-colors text-sm sm:text-base"
-                    >
-                      Próxima Missão →
-                    </button>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="bg-purple-100 text-purple-800 p-4 rounded-lg">
-                        <h3 className="font-bold text-base sm:text-lg">🏆 Todas as Missões Concluídas!</h3>
-                        <p className="text-sm sm:text-base">Pontuação final: {score}/{totalPossiblePoints} pontos</p>
-                        <p className="text-xs sm:text-sm mt-2">
-                          {score === totalPossiblePoints ? 'Perfeito! Você é um verdadeiro herói da responsabilidade social!' :
-                           score >= totalPossiblePoints * 0.8 ? 'Excelente! Você demonstrou grande senso de responsabilidade.' :
-                           'Muito bom! Continue praticando essas importantes habilidades sociais.'}
-                        </p>
-                      </div>
-                      <button
-                        onClick={restartActivity}
-                        className="w-full bg-orange-500 text-white font-semibold py-3 rounded-lg hover:bg-orange-600 transition-colors text-sm sm:text-base"
-                      >
-                        🔄 Novas Missões
-                      </button>
-                    </div>
-                  )}
+      <>
+        <GameHeader title="Trabalho em Equipe" icon={<Puzzle className="h-6 w-6" />} />
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50">
+          <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 flex items-center justify-center" style={{ minHeight: 'calc(100vh - 64px)' }}>
+            <div className="max-w-2xl text-center">
+              <div className="rounded-3xl bg-white p-8 sm:p-12 shadow-xl">
+                <div className="mb-8">
+                  <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-r from-green-400 to-blue-500 text-4xl">🏆</div>
+                  <h1 className="mb-4 text-4xl font-bold text-gray-900">Atividade Concluída!</h1>
+                  <p className="text-xl text-gray-600">Você praticou habilidades essenciais para a colaboração em equipe.</p>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Seção de Dicas */}
-          <div className="mt-6 bg-white rounded-2xl shadow-xl p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4 flex items-center">
-              <span className="mr-2">💡</span>
-              Dicas para Ser Socialmente Responsável
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs sm:text-sm text-gray-600">
-              <div>
-                <h4 className="font-semibold text-gray-700 mb-2">🎯 Compromissos:</h4>
-                <ul className="space-y-1">
-                  <li>• Cumpra o que promete</li>
-                  <li>• Seja pontual</li>
-                  <li>• Avise se houver imprevisto</li>
-                  <li>• Assuma suas responsabilidades</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-700 mb-2">🌍 Ambiente:</h4>
-                <ul className="space-y-1">
-                  <li>• Mantenha espaços limpos</li>
-                  <li>• Recicle quando possível</li>
-                  <li>• Cuide dos bens coletivos</li>
-                  <li>• Seja exemplo para outros</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-700 mb-2">🤝 Colaboração:</h4>
-                <ul className="space-y-1">
-                  <li>• Ofereça ajuda</li>
-                  <li>• Trabalhe em equipe</li>
-                  <li>• Seja proativo</li>
-                  <li>• Reconheça esforços alheios</li>
-                </ul>
+                <div className="mb-8 space-y-4">
+                  <div className="rounded-2xl bg-gradient-to-r from-blue-50 to-purple-50 p-6">
+                    <h3 className="mb-2 text-lg font-semibold text-gray-900">Pontuação Final</h3>
+                    <p className="text-3xl font-bold text-blue-600">{points} / {exercises.length * 10} pontos</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <button onClick={resetGame} className="w-full rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-4 text-lg font-semibold text-white transition-all hover:shadow-lg">
+                    🔄 Jogar Novamente
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </main>
-      </div>
-    );
+          </main>
+        </div>
+      </>
+    )
   }
 
+  // TELA INICIAL E JOGO
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100">
-      {/* Header fixo */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Botão Voltar */}
-            <Link 
-              href="/tea"
-              className="flex items-center space-x-2 text-orange-600 hover:text-orange-700 transition-colors group"
-            >
-              <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="font-medium hidden sm:inline">Voltar para TEA</span>
-              <span className="font-medium sm:hidden">Voltar</span>
-            </Link>
-
-            {/* Título central */}
-            <div className="flex items-center space-x-2">
-              <span className="text-2xl">🎯</span>
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800">Missões Sociais</h1>
+    <>
+      <GameHeader title="Trabalho em Equipe" icon={<Puzzle className="h-6 w-6" />} showSaveButton={false} />
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50">
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+          {!gameStarted ? (
+            // TELA INICIAL PADRÃO
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-800 mb-1 flex items-center"><Trophy className="h-5 w-5 mr-2 text-teal-600" /> Objetivo:</h3>
+                    <p className="text-sm text-gray-600">Desenvolver habilidades de colaboração, comunicação e resolução de problemas em grupo através de cenários práticos.</p>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-800 mb-1 flex items-center"><Gamepad2 className="h-5 w-5 mr-2 text-blue-600" /> Como Jogar:</h3>
+                    <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                      <li>Analise a situação de equipe apresentada.</li>
+                      <li>Escolha a ação que melhor promove a colaboração.</li>
+                      <li>Aprenda com as explicações de cada cenário.</li>
+                    </ul>
+                  </div>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-800 mb-1">⭐ Avaliação:</h3>
+                    <p className="text-sm text-gray-600">Cada escolha colaborativa vale 10 pontos. O objetivo é entender os pilares de um bom trabalho em equipe.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-center pt-4">
+                <button
+                  onClick={handleStartGame}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full text-lg transition-transform transform hover:scale-105 shadow-lg"
+                >
+                  🚀 Começar Atividade
+                </button>
+              </div>
             </div>
-
-            {/* Espaço para balanceamento */}
-            <div className="w-20"></div>
-          </div>
-        </div>
-      </header>
-
-      {/* Conteúdo principal */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Descrição da atividade */}
-        <div className="text-center mb-8">
-          <p className="text-gray-600 text-base sm:text-lg">
-            Desenvolva responsabilidade através de compromissos
-          </p>
-        </div>
-
-        {/* Cards informativos */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-8">
-          {/* Objetivo */}
-          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-red-400">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 flex items-center">
-              <span className="mr-2">🎯</span>
-              Objetivo:
-            </h2>
-            <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
-              Desenvolver responsabilidade social através do cumprimento de compromissos 
-              e cuidado com o ambiente coletivo e pessoal.
-            </p>
-          </div>
-
-          {/* Pontuação */}
-          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-yellow-400">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 flex items-center">
-              <span className="mr-2">⭐</span>
-              Pontuação:
-            </h2>
-            <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
-              Cada missão completada = pontos variáveis (15-25 pts). Complete todas as missões 
-              para se tornar um herói da responsabilidade social.
-            </p>
-          </div>
-
-          {/* Níveis */}
-          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-purple-400">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 flex items-center">
-              <span className="mr-2">📊</span>
-              Níveis:
-            </h2>
-            <div className="space-y-2 text-gray-700 text-sm sm:text-base">
-              <p><strong>Nível 1:</strong> Responsabilidade pessoal (fácil)</p>
-              <p><strong>Nível 2:</strong> Colaboração familiar (médio)</p>
-              <p><strong>Nível 3:</strong> Compromisso social (difícil)</p>
+          ) : (
+            // LAYOUT DO JOGO (lógica interna preservada)
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-6 text-sm text-gray-600">
+                <span>Exercício {currentExercise + 1}/{exercises.length}</span>
+                <span>Pontos: {points}</span>
+              </div>
+              <div className="text-center">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">{currentExerciseData.title}</h2>
+                {!exerciseStarted ? (
+                  <div className="space-y-6">
+                    <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-lg text-left">
+                      <p className="text-gray-700 text-lg">{currentExerciseData.scenario}</p>
+                    </div>
+                    <button onClick={handleStartExercise} className="bg-gradient-to-r from-emerald-500 to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-medium hover:shadow-lg">
+                      Iniciar Exercício
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-lg mb-6 text-left">
+                      <p className="text-gray-700 text-lg mb-4">{currentExerciseData.scenario}</p>
+                      <p className="text-gray-800 font-semibold text-lg">{currentExerciseData.question}</p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+                      {currentExerciseData.options.map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => handleAnswerSelect(option.id)}
+                          disabled={showFeedback}
+                          className={`p-4 rounded-xl border-2 text-left transition-all ${
+                            selectedAnswer === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <span className="font-medium">{option.id.toUpperCase()}) </span>
+                          {option.text}
+                        </button>
+                      ))}
+                    </div>
+                    {!showFeedback && selectedAnswer && (
+                      <button onClick={handleSubmitAnswer} className="bg-green-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-green-600 w-full sm:w-auto">
+                        Confirmar Resposta
+                      </button>
+                    )}
+                    {showFeedback && (
+                      <>
+                        <div className={`p-6 rounded-xl ${isCorrectAnswer ? 'bg-green-50 border-green-400' : 'bg-yellow-50 border-yellow-400'} border-l-4`}>
+                          <h3 className="text-lg font-semibold mb-2">{isCorrectAnswer ? '🎉 Muito bem! +10 pontos' : '💡 Vamos aprender!'}</h3>
+                          {/* BUG CORRIGIDO AQUI */}
+                          <p className="text-gray-700">{currentExerciseData.explanation}</p>
+                        </div>
+                        <div className="flex justify-center mt-4">
+                          {currentExercise < exercises.length - 1 ? (
+                            <button onClick={handleNextExercise} className="bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600">
+                              Próximo Exercício →
+                            </button>
+                          ) : (
+                            <button onClick={() => setGameFinished(true)} className="bg-green-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-green-600 transition-colors">
+                              Ver Resultados ✓
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-
-          {/* Final */}
-          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-green-400">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 flex items-center">
-              <span className="mr-2">🏁</span>
-              Final:
-            </h2>
-            <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
-              Complete todas as 4 missões para dominar as habilidades de responsabilidade 
-              social e compromisso com a comunidade.
-            </p>
-          </div>
-        </div>
-
-        {/* Emoji central */}
-        <div className="text-center mb-8">
-          <div className="text-6xl sm:text-8xl mb-4">🎯</div>
-        </div>
-
-        {/* Botão Iniciar */}
-        <div className="text-center mb-8">
-          <button
-            onClick={startGame}
-            className="bg-orange-500 text-white px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-orange-600 transition-colors inline-flex items-center w-full sm:w-auto justify-center"
-          >
-            <span className="mr-2">🚀</span>
-            Iniciar Jogo
-          </button>
-        </div>
-
-        {/* Base científica */}
-        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 flex items-center">
-            <span className="mr-2">🧠</span>
-            Base Científica:
-          </h3>
-          <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
-            Este exercício é baseado em <strong>Sistema de Economia de Fichas</strong> e 
-            <strong>Suporte Comportamental Positivo</strong>. As missões foram desenvolvidas seguindo 
-            princípios de responsabilidade social e desenvolvimento de compromissos validados 
-            para fortalecimento de habilidades sociais em pessoas com TEA e TDAH.
-          </p>
-        </div>
-      </main>
-    </div>
+          )}
+        </main>
+      </div>
+    </>
   );
 }
