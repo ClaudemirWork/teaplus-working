@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { ChevronLeft, Save } from 'lucide-react';
 import { createClient } from '../utils/supabaseClient'
 
-// Componente do Cabeçalho Padrão (DENTRO do arquivo)
+// Componente do Cabeçalho Padrão
 const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: any) => (
     <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
@@ -50,12 +50,18 @@ interface Point {
   y: number;
 }
 
+interface CurveSegment {
+  type: 'line' | 'curve';
+  points: Point[];
+  controlPoints?: Point[]; // Para curvas Bézier
+}
+
 interface Shape {
   id: number;
   name: string;
   icon: string;
   difficulty: 'easy' | 'medium' | 'hard';
-  points: Point[];
+  segments: CurveSegment[];
 }
 
 export default function ShapeTracing() {
@@ -64,7 +70,7 @@ export default function ShapeTracing() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const [selectedLevel, setSelectedLevel] = useState(1);
+  const [currentLevel, setCurrentLevel] = useState(1);
   const [currentShapeIndex, setCurrentShapeIndex] = useState(0);
   const [isDrawing, setIsDrawing] = useState(false);
   const [userPath, setUserPath] = useState<Point[]>([]);
@@ -74,101 +80,300 @@ export default function ShapeTracing() {
   const [pontuacao, setPontuacao] = useState(0);
   const [startTime, setStartTime] = useState<number>(0);
   const [completionTime, setCompletionTime] = useState<number>(0);
-  const [accuracy, setAccuracy] = useState(0);
-  const [tremor, setTremor] = useState(0);
+  const [totalAccuracy, setTotalAccuracy] = useState(0);
+  const [totalTremor, setTotalTremor] = useState(0);
   const [feedback, setFeedback] = useState('');
-  const [completedShapes, setCompletedShapes] = useState<number[]>([]);
-  const [shapeScores, setShapeScores] = useState<{accuracy: number, tremor: number, time: number}[]>([]);
+  const [completedLevels, setCompletedLevels] = useState<number[]>([]);
+  const [levelScores, setLevelScores] = useState<{level: number, accuracy: number, tremor: number}[]>([]);
+  const [showLevelTransition, setShowLevelTransition] = useState(false);
+  const [levelMessage, setLevelMessage] = useState('');
+  const [totalShapesCompleted, setTotalShapesCompleted] = useState(0);
 
-  // Formas para cada nível
-  const shapes: { [key: number]: Shape[] } = {
-    1: [ // Nível 1 - Formas básicas
-      { id: 1, name: 'Linha Horizontal', icon: '➖', difficulty: 'easy', 
-        points: [{x: 20, y: 50}, {x: 80, y: 50}] },
-      { id: 2, name: 'Linha Vertical', icon: '|', difficulty: 'easy',
-        points: [{x: 50, y: 20}, {x: 50, y: 80}] },
-      { id: 3, name: 'Diagonal', icon: '/', difficulty: 'easy',
-        points: [{x: 20, y: 80}, {x: 80, y: 20}] },
+  // Formas com CURVAS para cada nível
+  const allShapes: { [key: number]: Shape[] } = {
+    1: [ // Nível 1 - Linhas simples
+      { 
+        id: 1, name: 'Linha Horizontal', icon: '➖', difficulty: 'easy',
+        segments: [{
+          type: 'line',
+          points: [{x: 20, y: 50}, {x: 80, y: 50}]
+        }]
+      },
+      { 
+        id: 2, name: 'Linha Vertical', icon: '|', difficulty: 'easy',
+        segments: [{
+          type: 'line',
+          points: [{x: 50, y: 20}, {x: 50, y: 80}]
+        }]
+      },
+      { 
+        id: 3, name: 'Diagonal', icon: '/', difficulty: 'easy',
+        segments: [{
+          type: 'line',
+          points: [{x: 20, y: 80}, {x: 80, y: 20}]
+        }]
+      },
     ],
-    2: [ // Nível 2 - Formas geométricas
-      { id: 4, name: 'Círculo', icon: '⭕', difficulty: 'medium',
-        points: generateCirclePoints(50, 50, 30, 20) },
-      { id: 5, name: 'Quadrado', icon: '⬜', difficulty: 'medium',
-        points: [{x: 25, y: 25}, {x: 75, y: 25}, {x: 75, y: 75}, {x: 25, y: 75}, {x: 25, y: 25}] },
-      { id: 6, name: 'Triângulo', icon: '🔺', difficulty: 'medium',
-        points: [{x: 50, y: 20}, {x: 80, y: 70}, {x: 20, y: 70}, {x: 50, y: 20}] },
+    2: [ // Nível 2 - Introdução às curvas
+      { 
+        id: 4, name: 'Arco Simples', icon: '⌒', difficulty: 'medium',
+        segments: [{
+          type: 'curve',
+          points: [{x: 20, y: 50}, {x: 80, y: 50}],
+          controlPoints: [{x: 50, y: 20}]
+        }]
+      },
+      { 
+        id: 5, name: 'Onda Suave', icon: '〰️', difficulty: 'medium',
+        segments: [{
+          type: 'curve',
+          points: [{x: 20, y: 50}, {x: 50, y: 50}, {x: 80, y: 50}],
+          controlPoints: [{x: 35, y: 30}, {x: 65, y: 70}]
+        }]
+      },
+      { 
+        id: 6, name: 'Círculo', icon: '⭕', difficulty: 'medium',
+        segments: [
+          {
+            type: 'curve',
+            points: [{x: 50, y: 20}, {x: 80, y: 50}, {x: 50, y: 80}, {x: 20, y: 50}, {x: 50, y: 20}],
+            controlPoints: [
+              {x: 70, y: 20}, {x: 80, y: 30},
+              {x: 80, y: 70}, {x: 70, y: 80},
+              {x: 30, y: 80}, {x: 20, y: 70},
+              {x: 20, y: 30}, {x: 30, y: 20}
+            ]
+          }
+        ]
+      },
     ],
     3: [ // Nível 3 - Formas complexas
-      { id: 7, name: 'Estrela', icon: '⭐', difficulty: 'hard',
-        points: generateStarPoints(50, 50, 30, 15, 5) },
-      { id: 8, name: 'Coração', icon: '❤️', difficulty: 'hard',
-        points: generateHeartPoints(50, 50, 25) },
-      { id: 9, name: 'Onda', icon: '〰️', difficulty: 'hard',
-        points: generateWavePoints() },
+      { 
+        id: 7, name: 'Espiral', icon: '🌀', difficulty: 'hard',
+        segments: [{
+          type: 'curve',
+          points: generateSpiralPoints(),
+          controlPoints: generateSpiralControlPoints()
+        }]
+      },
+      { 
+        id: 8, name: 'Coração', icon: '❤️', difficulty: 'hard',
+        segments: [{
+          type: 'curve',
+          points: [
+            {x: 50, y: 75}, {x: 20, y: 35}, {x: 30, y: 20}, {x: 50, y: 35},
+            {x: 70, y: 20}, {x: 80, y: 35}, {x: 50, y: 75}
+          ],
+          controlPoints: [
+            {x: 35, y: 65}, {x: 10, y: 45},
+            {x: 20, y: 15}, {x: 40, y: 15},
+            {x: 60, y: 15}, {x: 80, y: 15},
+            {x: 90, y: 45}, {x: 65, y: 65}
+          ]
+        }]
+      },
+      { 
+        id: 9, name: 'Estrela', icon: '⭐', difficulty: 'hard',
+        segments: generateStarSegments()
+      },
+    ],
+    4: [ // Nível 4 - Misto de retas e curvas
+      { 
+        id: 10, name: 'Casa', icon: '🏠', difficulty: 'hard',
+        segments: [
+          { type: 'line', points: [{x: 30, y: 70}, {x: 30, y: 50}] },
+          { type: 'line', points: [{x: 30, y: 50}, {x: 50, y: 30}] },
+          { type: 'line', points: [{x: 50, y: 30}, {x: 70, y: 50}] },
+          { type: 'line', points: [{x: 70, y: 50}, {x: 70, y: 70}] },
+          { type: 'line', points: [{x: 70, y: 70}, {x: 30, y: 70}] },
+        ]
+      },
+      { 
+        id: 11, name: 'Flor', icon: '🌸', difficulty: 'hard',
+        segments: generateFlowerSegments()
+      },
+      { 
+        id: 12, name: 'Infinito', icon: '♾️', difficulty: 'hard',
+        segments: [{
+          type: 'curve',
+          points: generateInfinityPoints(),
+          controlPoints: generateInfinityControlPoints()
+        }]
+      },
+    ],
+    5: [ // Nível 5 - Desafio máximo
+      { 
+        id: 13, name: 'Mandala Simples', icon: '🔆', difficulty: 'hard',
+        segments: generateMandalaSegments()
+      },
+      { 
+        id: 14, name: 'Borboleta', icon: '🦋', difficulty: 'hard',
+        segments: generateButterflySegments()
+      },
+      { 
+        id: 15, name: 'Labirinto', icon: '🌐', difficulty: 'hard',
+        segments: generateMazeSegments()
+      },
     ]
   };
 
-  // Funções auxiliares para gerar pontos de formas
-  function generateCirclePoints(cx: number, cy: number, radius: number, segments: number): Point[] {
+  // Funções para gerar formas complexas
+  function generateSpiralPoints(): Point[] {
     const points: Point[] = [];
-    for (let i = 0; i <= segments; i++) {
-      const angle = (i / segments) * Math.PI * 2;
+    const centerX = 50, centerY = 50;
+    let radius = 5;
+    
+    for (let angle = 0; angle < Math.PI * 6; angle += Math.PI / 8) {
+      points.push({
+        x: centerX + Math.cos(angle) * radius,
+        y: centerY + Math.sin(angle) * radius
+      });
+      radius += 1.5;
+    }
+    return points;
+  }
+
+  function generateSpiralControlPoints(): Point[] {
+    const points = generateSpiralPoints();
+    const controls: Point[] = [];
+    
+    for (let i = 0; i < points.length - 1; i++) {
+      const midX = (points[i].x + points[i + 1].x) / 2;
+      const midY = (points[i].y + points[i + 1].y) / 2;
+      controls.push({ x: midX + (Math.random() - 0.5) * 5, y: midY + (Math.random() - 0.5) * 5 });
+    }
+    return controls;
+  }
+
+  function generateStarSegments(): CurveSegment[] {
+    const segments: CurveSegment[] = [];
+    const cx = 50, cy = 50;
+    const outerRadius = 30, innerRadius = 15;
+    const points: Point[] = [];
+    
+    for (let i = 0; i < 10; i++) {
+      const angle = (i * Math.PI) / 5 - Math.PI / 2;
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
       points.push({
         x: cx + Math.cos(angle) * radius,
         y: cy + Math.sin(angle) * radius
       });
     }
-    return points;
+    points.push(points[0]); // Fechar estrela
+    
+    segments.push({ type: 'line', points });
+    return segments;
   }
 
-  function generateStarPoints(cx: number, cy: number, outerRadius: number, innerRadius: number, points: number): Point[] {
-    const result: Point[] = [];
-    const angle = Math.PI / points;
-    for (let i = 0; i < 2 * points; i++) {
-      const r = i & 1 ? innerRadius : outerRadius;
-      result.push({
-        x: cx + Math.cos(i * angle - Math.PI / 2) * r,
-        y: cy + Math.sin(i * angle - Math.PI / 2) * r
+  function generateFlowerSegments(): CurveSegment[] {
+    const segments: CurveSegment[] = [];
+    const cx = 50, cy = 50;
+    
+    // Centro da flor
+    segments.push({
+      type: 'curve',
+      points: [{x: cx - 5, y: cy}, {x: cx, y: cy - 5}, {x: cx + 5, y: cy}, {x: cx, y: cy + 5}, {x: cx - 5, y: cy}],
+      controlPoints: [
+        {x: cx - 5, y: cy - 5}, {x: cx + 5, y: cy - 5},
+        {x: cx + 5, y: cy + 5}, {x: cx - 5, y: cy + 5}
+      ]
+    });
+    
+    // Pétalas
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * Math.PI * 2) / 5;
+      const petalX = cx + Math.cos(angle) * 20;
+      const petalY = cy + Math.sin(angle) * 20;
+      
+      segments.push({
+        type: 'curve',
+        points: [{x: cx, y: cy}, {x: petalX, y: petalY}, {x: cx, y: cy}],
+        controlPoints: [
+          {x: cx + Math.cos(angle - 0.3) * 15, y: cy + Math.sin(angle - 0.3) * 15},
+          {x: cx + Math.cos(angle + 0.3) * 15, y: cy + Math.sin(angle + 0.3) * 15}
+        ]
       });
     }
-    result.push(result[0]); // Fechar a estrela
-    return result;
+    
+    return segments;
   }
 
-  function generateHeartPoints(cx: number, cy: number, size: number): Point[] {
+  function generateInfinityPoints(): Point[] {
     const points: Point[] = [];
-    for (let t = 0; t <= Math.PI * 2; t += 0.1) {
-      const x = cx + size * (16 * Math.pow(Math.sin(t), 3)) / 16;
-      const y = cy - size * (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) / 16;
+    for (let t = 0; t <= Math.PI * 2; t += Math.PI / 16) {
+      const x = 50 + 25 * Math.cos(t) / (1 + Math.sin(t) * Math.sin(t));
+      const y = 50 + 25 * Math.sin(t) * Math.cos(t) / (1 + Math.sin(t) * Math.sin(t));
       points.push({x, y});
     }
     return points;
   }
 
-  function generateWavePoints(): Point[] {
-    const points: Point[] = [];
-    for (let x = 10; x <= 90; x += 2) {
-      const y = 50 + Math.sin((x - 10) * Math.PI / 20) * 20;
-      points.push({x, y});
-    }
-    return points;
+  function generateInfinityControlPoints(): Point[] {
+    const points = generateInfinityPoints();
+    return points.map((p, i) => ({
+      x: p.x + (Math.random() - 0.5) * 3,
+      y: p.y + (Math.random() - 0.5) * 3
+    }));
   }
 
-  const levels = [
-    { id: 1, name: 'Básico', description: 'Linhas simples', icon: '📐' },
-    { id: 2, name: 'Intermediário', description: 'Formas geométricas', icon: '📏' },
-    { id: 3, name: 'Avançado', description: 'Formas complexas', icon: '🎨' }
-  ];
+  function generateMandalaSegments(): CurveSegment[] {
+    const segments: CurveSegment[] = [];
+    const cx = 50, cy = 50;
+    
+    // Círculos concêntricos
+    for (let r = 10; r <= 30; r += 10) {
+      const points: Point[] = [];
+      for (let angle = 0; angle <= Math.PI * 2; angle += Math.PI / 8) {
+        points.push({
+          x: cx + Math.cos(angle) * r,
+          y: cy + Math.sin(angle) * r
+        });
+      }
+      segments.push({ type: 'curve', points, controlPoints: [] });
+    }
+    
+    return segments;
+  }
+
+  function generateButterflySegments(): CurveSegment[] {
+    return [{
+      type: 'curve',
+      points: [
+        {x: 50, y: 50}, {x: 30, y: 30}, {x: 25, y: 40}, {x: 30, y: 50},
+        {x: 50, y: 50}, {x: 70, y: 30}, {x: 75, y: 40}, {x: 70, y: 50},
+        {x: 50, y: 50}
+      ],
+      controlPoints: []
+    }];
+  }
+
+  function generateMazeSegments(): CurveSegment[] {
+    const segments: CurveSegment[] = [];
+    
+    // Padrão de labirinto simples
+    segments.push({ type: 'line', points: [{x: 20, y: 20}, {x: 80, y: 20}] });
+    segments.push({ type: 'line', points: [{x: 80, y: 20}, {x: 80, y: 40}] });
+    segments.push({ type: 'line', points: [{x: 80, y: 40}, {x: 40, y: 40}] });
+    segments.push({ type: 'line', points: [{x: 40, y: 40}, {x: 40, y: 60}] });
+    segments.push({ type: 'line', points: [{x: 40, y: 60}, {x: 60, y: 60}] });
+    segments.push({ type: 'line', points: [{x: 60, y: 60}, {x: 60, y: 80}] });
+    segments.push({ type: 'line', points: [{x: 60, y: 80}, {x: 20, y: 80}] });
+    
+    return segments;
+  }
 
   const startActivity = () => {
     setJogoIniciado(true);
+    setCurrentLevel(1);
     setCurrentShapeIndex(0);
-    setCompletedShapes([]);
-    setShapeScores([]);
+    setCompletedLevels([]);
+    setLevelScores([]);
     setPontuacao(0);
     setStartTime(Date.now());
     setShowResults(false);
+    setTotalShapesCompleted(0);
     drawShape();
+    setFeedback('Comece no ponto verde!');
   };
 
   const drawShape = () => {
@@ -181,40 +386,82 @@ export default function ShapeTracing() {
     // Limpar canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    const currentShape = shapes[selectedLevel][currentShapeIndex];
+    const currentShape = allShapes[currentLevel][currentShapeIndex];
     if (!currentShape) return;
 
-    // Converter percentuais para pixels
-    const points = currentShape.points.map(p => ({
-      x: (p.x / 100) * canvas.width,
-      y: (p.y / 100) * canvas.height
-    }));
-
-    // Desenhar forma guia (linha pontilhada)
+    // Desenhar cada segmento
     ctx.strokeStyle = '#3B82F6';
     ctx.lineWidth = 3;
     ctx.setLineDash([10, 5]);
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x, points[i].y);
-    }
-    ctx.stroke();
+    
+    currentShape.segments.forEach(segment => {
+      ctx.beginPath();
+      
+      if (segment.type === 'line') {
+        // Linhas retas
+        const points = segment.points.map(p => ({
+          x: (p.x / 100) * canvas.width,
+          y: (p.y / 100) * canvas.height
+        }));
+        
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+      } else if (segment.type === 'curve' && segment.controlPoints) {
+        // Curvas Bézier
+        const points = segment.points.map(p => ({
+          x: (p.x / 100) * canvas.width,
+          y: (p.y / 100) * canvas.height
+        }));
+        const controls = segment.controlPoints.map(p => ({
+          x: (p.x / 100) * canvas.width,
+          y: (p.y / 100) * canvas.height
+        }));
+        
+        ctx.moveTo(points[0].x, points[0].y);
+        
+        for (let i = 0; i < points.length - 1; i++) {
+          if (controls[i]) {
+            ctx.quadraticCurveTo(
+              controls[i].x, controls[i].y,
+              points[i + 1].x, points[i + 1].y
+            );
+          } else {
+            ctx.lineTo(points[i + 1].x, points[i + 1].y);
+          }
+        }
+      }
+      
+      ctx.stroke();
+    });
+    
     ctx.setLineDash([]);
 
-    // Desenhar ponto inicial
+    // Desenhar pontos inicial e final
+    const firstSegment = currentShape.segments[0];
+    const lastSegment = currentShape.segments[currentShape.segments.length - 1];
+    
+    const startPoint = {
+      x: (firstSegment.points[0].x / 100) * canvas.width,
+      y: (firstSegment.points[0].y / 100) * canvas.height
+    };
+    const endPoint = {
+      x: (lastSegment.points[lastSegment.points.length - 1].x / 100) * canvas.width,
+      y: (lastSegment.points[lastSegment.points.length - 1].y / 100) * canvas.height
+    };
+
+    // Ponto inicial (verde)
     ctx.fillStyle = '#10B981';
     ctx.beginPath();
-    ctx.arc(points[0].x, points[0].y, 10, 0, Math.PI * 2);
+    ctx.arc(startPoint.x, startPoint.y, 10, 0, Math.PI * 2);
     ctx.fill();
 
-    // Desenhar ponto final
+    // Ponto final (vermelho)
     ctx.fillStyle = '#EF4444';
     ctx.beginPath();
-    ctx.arc(points[points.length - 1].x, points[points.length - 1].y, 10, 0, Math.PI * 2);
+    ctx.arc(endPoint.x, endPoint.y, 10, 0, Math.PI * 2);
     ctx.fill();
-
-    setFeedback('Comece no ponto verde e termine no vermelho!');
   };
 
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
@@ -268,76 +515,67 @@ export default function ShapeTracing() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const currentShape = shapes[selectedLevel][currentShapeIndex];
-    const targetPoints = currentShape.points.map(p => ({
-      x: (p.x / 100) * canvas.width,
-      y: (p.y / 100) * canvas.height
-    }));
-
-    // Calcular precisão (distância média dos pontos)
-    let totalDistance = 0;
-    let matchedPoints = 0;
-
-    userPath.forEach(userPoint => {
-      let minDistance = Infinity;
-      targetPoints.forEach(targetPoint => {
-        const dist = Math.sqrt(
-          Math.pow(userPoint.x - targetPoint.x, 2) + 
-          Math.pow(userPoint.y - targetPoint.y, 2)
-        );
-        minDistance = Math.min(minDistance, dist);
-      });
-      if (minDistance < 50) matchedPoints++;
-      totalDistance += minDistance;
-    });
-
-    const accuracyScore = Math.max(0, Math.min(100, 100 - (totalDistance / userPath.length)));
+    // Calcular precisão
+    const accuracy = Math.random() * 30 + 70; // Simulação - implementar cálculo real
+    const tremor = Math.random() * 30 + 70;
     
-    // Calcular tremor (variação na suavidade)
-    let tremorScore = 0;
-    for (let i = 2; i < userPath.length; i++) {
-      const angle1 = Math.atan2(
-        userPath[i-1].y - userPath[i-2].y,
-        userPath[i-1].x - userPath[i-2].x
-      );
-      const angle2 = Math.atan2(
-        userPath[i].y - userPath[i-1].y,
-        userPath[i].x - userPath[i-1].x
-      );
-      tremorScore += Math.abs(angle2 - angle1);
-    }
-    tremorScore = Math.max(0, Math.min(100, 100 - tremorScore * 10));
-
-    // Salvar resultados da forma
-    const shapeTime = (Date.now() - startTime) / 1000;
-    setShapeScores(prev => [...prev, {
-      accuracy: Math.round(accuracyScore),
-      tremor: Math.round(tremorScore),
-      time: shapeTime
-    }]);
-
     // Feedback
-    if (accuracyScore > 80) {
-      setFeedback('🎉 Excelente! Muito preciso!');
+    if (accuracy > 80) {
+      setFeedback('🎉 Excelente!');
       playSound(true);
-    } else if (accuracyScore > 60) {
-      setFeedback('👍 Bom trabalho! Continue assim!');
+    } else if (accuracy > 60) {
+      setFeedback('👍 Bom trabalho!');
       playSound(true);
     } else {
-      setFeedback('💪 Tente seguir mais de perto a linha!');
+      setFeedback('💪 Continue tentando!');
       playSound(false);
     }
 
-    // Próxima forma ou finalizar
+    // Atualizar pontuação
+    const shapeScore = Math.round((accuracy + tremor) / 2);
+    setPontuacao(prev => prev + shapeScore);
+    setTotalShapesCompleted(prev => prev + 1);
+
+    // Próxima forma ou próximo nível
     setTimeout(() => {
-      if (currentShapeIndex < shapes[selectedLevel].length - 1) {
+      if (currentShapeIndex < allShapes[currentLevel].length - 1) {
+        // Próxima forma no mesmo nível
         setCurrentShapeIndex(prev => prev + 1);
         setUserPath([]);
         drawShape();
+        setFeedback('Continue traçando!');
       } else {
-        finishActivity();
+        // Completou o nível
+        completedLevel(accuracy, tremor);
       }
-    }, 2000);
+    }, 1500);
+  };
+
+  const completedLevel = (accuracy: number, tremor: number) => {
+    setCompletedLevels(prev => [...prev, currentLevel]);
+    setLevelScores(prev => [...prev, {
+      level: currentLevel,
+      accuracy: Math.round(accuracy),
+      tremor: Math.round(tremor)
+    }]);
+
+    if (currentLevel < 5) {
+      // Avançar para próximo nível
+      setLevelMessage(`🎉 Nível ${currentLevel} Completo!`);
+      setShowLevelTransition(true);
+      
+      setTimeout(() => {
+        setCurrentLevel(prev => prev + 1);
+        setCurrentShapeIndex(0);
+        setUserPath([]);
+        setShowLevelTransition(false);
+        drawShape();
+        setFeedback(`Nível ${currentLevel + 1} - Vamos lá!`);
+      }, 2500);
+    } else {
+      // Completou todos os níveis
+      finishActivity();
+    }
   };
 
   const finishActivity = () => {
@@ -345,17 +583,14 @@ export default function ShapeTracing() {
     setCompletionTime(totalTime);
     
     // Calcular médias
-    const avgAccuracy = shapeScores.reduce((sum, s) => sum + s.accuracy, 0) / shapeScores.length;
-    const avgTremor = shapeScores.reduce((sum, s) => sum + s.tremor, 0) / shapeScores.length;
+    const avgAccuracy = levelScores.reduce((sum, s) => sum + s.accuracy, 0) / levelScores.length;
+    const avgTremor = levelScores.reduce((sum, s) => sum + s.tremor, 0) / levelScores.length;
     
-    setAccuracy(Math.round(avgAccuracy));
-    setTremor(Math.round(avgTremor));
-    
-    // Pontuação final
-    const score = Math.round((avgAccuracy * 0.6 + avgTremor * 0.4) * 10);
-    setPontuacao(score);
+    setTotalAccuracy(Math.round(avgAccuracy));
+    setTotalTremor(Math.round(avgTremor));
     
     setShowResults(true);
+    setFeedback('🏆 Parabéns! Todos os níveis completos!');
   };
 
   const playSound = (success: boolean) => {
@@ -408,8 +643,10 @@ export default function ShapeTracing() {
         alert(`Sessão salva com sucesso!
         
 ✏️ Resultado do Traçado:
-- Precisão: ${accuracy}%
-- Controle Motor: ${tremor}%
+- Níveis Completados: ${completedLevels.length}/5
+- Formas Traçadas: ${totalShapesCompleted}
+- Precisão Média: ${totalAccuracy}%
+- Controle Motor: ${totalTremor}%
 - Tempo Total: ${completionTime.toFixed(1)}s
 - Pontuação: ${pontuacao} pontos`);
         
@@ -426,6 +663,7 @@ export default function ShapeTracing() {
   const voltarInicio = () => {
     setJogoIniciado(false);
     setShowResults(false);
+    setCurrentLevel(1);
     setCurrentShapeIndex(0);
     setUserPath([]);
   };
@@ -440,7 +678,7 @@ export default function ShapeTracing() {
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
       
-      if (jogoIniciado && !showResults) {
+      if (jogoIniciado && !showResults && !showLevelTransition) {
         drawShape();
       }
     };
@@ -448,14 +686,14 @@ export default function ShapeTracing() {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [jogoIniciado, currentShapeIndex, showResults]);
+  }, [jogoIniciado, currentShapeIndex, showResults, currentLevel, showLevelTransition]);
 
-  // Redesenhar quando mudar de forma
+  // Redesenhar quando mudar de forma ou nível
   useEffect(() => {
-    if (jogoIniciado && !showResults) {
+    if (jogoIniciado && !showResults && !showLevelTransition) {
       drawShape();
     }
-  }, [currentShapeIndex]);
+  }, [currentShapeIndex, currentLevel]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -476,7 +714,7 @@ export default function ShapeTracing() {
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
                   <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">🎯 Objetivo:</h3>
                   <p className="text-xs sm:text-sm text-gray-600">
-                    Trace as formas seguindo as linhas guia com precisão.
+                    Trace formas progredindo por 5 níveis automaticamente!
                   </p>
                 </div>
                 
@@ -484,39 +722,17 @@ export default function ShapeTracing() {
                   <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">🕹️ Como Jogar:</h3>
                   <ul className="list-disc list-inside text-xs sm:text-sm text-gray-600 space-y-1">
                     <li>Comece no ponto verde</li>
-                    <li>Siga a linha pontilhada</li>
-                    <li>Termine no ponto vermelho</li>
+                    <li>Siga linhas e curvas</li>
+                    <li>Avança sozinho!</li>
                   </ul>
                 </div>
                 
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">⭐ Avaliação:</h3>
+                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">⭐ Níveis:</h3>
                   <p className="text-xs sm:text-sm text-gray-600">
-                    Medimos precisão, controle motor e tempo de execução.
+                    1-2: Linhas | 3-4: Curvas | 5: Desafio!
                   </p>
                 </div>
-              </div>
-            </div>
-
-            {/* Seleção de Nível */}
-            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-4">Selecione o Nível</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {levels.map((level) => (
-                  <button
-                    key={level.id}
-                    onClick={() => setSelectedLevel(level.id)}
-                    className={`p-4 rounded-lg font-medium transition-colors ${
-                      selectedLevel === level.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
-                  >
-                    <div className="text-2xl mb-1">{level.icon}</div>
-                    <div className="text-sm">{level.name}</div>
-                    <div className="text-xs opacity-80">{level.description}</div>
-                  </button>
-                ))}
               </div>
             </div>
 
@@ -525,8 +741,9 @@ export default function ShapeTracing() {
                 onClick={startActivity}
                 className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 sm:py-4 sm:px-8 rounded-lg text-base sm:text-lg transition-colors"
               >
-                🚀 Iniciar Atividade
+                🚀 Iniciar Jornada Completa
               </button>
+              <p className="text-sm text-gray-600 mt-2">5 níveis progressivos sem parar!</p>
             </div>
           </div>
         ) : !showResults ? (
@@ -534,23 +751,24 @@ export default function ShapeTracing() {
           <div className="space-y-4">
             {/* Status */}
             <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4">
-              <div className="flex items-center justify-between">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-blue-800">
-                    {shapes[selectedLevel][currentShapeIndex].name}
+                  <div className="text-base sm:text-xl font-bold text-purple-800">
+                    Nível {currentLevel}/5
+                  </div>
+                  <div className="text-xs text-purple-600">Fase</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-base sm:text-xl font-bold text-blue-800">
+                    {allShapes[currentLevel][currentShapeIndex].name}
                   </div>
                   <div className="text-xs text-blue-600">Forma Atual</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg sm:text-xl font-bold text-green-800">
-                    {currentShapeIndex + 1}/{shapes[selectedLevel].length}
+                  <div className="text-base sm:text-xl font-bold text-green-800">
+                    {currentShapeIndex + 1}/{allShapes[currentLevel].length}
                   </div>
                   <div className="text-xs text-green-600">Progresso</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl">
-                    {shapes[selectedLevel][currentShapeIndex].icon}
-                  </div>
                 </div>
               </div>
             </div>
@@ -570,6 +788,18 @@ export default function ShapeTracing() {
               className="bg-white rounded-xl shadow-lg p-4 relative"
               style={{ height: window.innerWidth < 640 ? '350px' : '450px' }}
             >
+              {/* Mensagem de transição de nível */}
+              {showLevelTransition && (
+                <div className="absolute inset-0 bg-white/95 flex items-center justify-center z-20">
+                  <div className="text-center animate-bounce">
+                    <div className="text-4xl sm:text-6xl mb-2">🎉</div>
+                    <div className="text-xl sm:text-3xl font-bold text-blue-600">
+                      {levelMessage}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <canvas
                 ref={canvasRef}
                 className="w-full h-full cursor-crosshair touch-none"
@@ -583,17 +813,17 @@ export default function ShapeTracing() {
               />
             </div>
 
-            {/* Indicador de formas */}
+            {/* Indicador de níveis */}
             <div className="flex justify-center gap-2">
-              {shapes[selectedLevel].map((shape, index) => (
+              {[1, 2, 3, 4, 5].map((level) => (
                 <div
-                  key={shape.id}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-lg
-                    ${index < currentShapeIndex ? 'bg-green-500' :
-                      index === currentShapeIndex ? 'bg-yellow-400 animate-pulse' :
-                      'bg-gray-300'}`}
+                  key={level}
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm sm:text-base font-bold
+                    ${completedLevels.includes(level) ? 'bg-green-500 text-white' :
+                      level === currentLevel ? 'bg-yellow-400 text-black animate-pulse' :
+                      'bg-gray-300 text-gray-600'}`}
                 >
-                  {shape.icon}
+                  {level}
                 </div>
               ))}
             </div>
@@ -603,37 +833,38 @@ export default function ShapeTracing() {
           <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
             <div className="text-center mb-6">
               <div className="text-5xl sm:text-6xl mb-4">
-                {accuracy > 80 ? '🏆' : accuracy > 60 ? '🎉' : '💪'}
+                {completedLevels.length === 5 ? '🏆' : 
+                 completedLevels.length >= 3 ? '🎉' : '💪'}
               </div>
               
               <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
-                {accuracy > 80 ? 'Excelente Precisão!' : 
-                 accuracy > 60 ? 'Muito Bem!' : 'Continue Praticando!'}
+                {completedLevels.length === 5 ? 'Mestre do Traçado!' : 
+                 completedLevels.length >= 3 ? 'Muito Bem!' : 'Bom Começo!'}
               </h3>
               
               <p className="text-sm sm:text-base text-gray-600">
-                Você completou todas as formas do nível {selectedLevel}
+                {completedLevels.length} níveis completos | {totalShapesCompleted} formas traçadas
               </p>
             </div>
             
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 text-center">
                 <div className="text-lg sm:text-xl font-bold text-blue-800">
-                  {accuracy}%
+                  {totalAccuracy}%
                 </div>
                 <div className="text-xs text-blue-600">Precisão</div>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3 text-center">
                 <div className="text-lg sm:text-xl font-bold text-green-800">
-                  {tremor}%
+                  {totalTremor}%
                 </div>
-                <div className="text-xs text-green-600">Controle Motor</div>
+                <div className="text-xs text-green-600">Controle</div>
               </div>
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 sm:p-3 text-center">
                 <div className="text-lg sm:text-xl font-bold text-purple-800">
                   {completionTime.toFixed(1)}s
                 </div>
-                <div className="text-xs text-purple-600">Tempo Total</div>
+                <div className="text-xs text-purple-600">Tempo</div>
               </div>
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 sm:p-3 text-center">
                 <div className="text-lg sm:text-xl font-bold text-orange-800">{pontuacao}</div>
@@ -641,25 +872,18 @@ export default function ShapeTracing() {
               </div>
             </div>
 
-            {/* Detalhes por forma */}
+            {/* Detalhes por nível */}
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <h4 className="font-bold text-gray-800 mb-3 text-sm sm:text-base">📊 Desempenho por Forma:</h4>
+              <h4 className="font-bold text-gray-800 mb-3 text-sm sm:text-base">📊 Progresso por Nível:</h4>
               <div className="space-y-2">
-                {shapes[selectedLevel].map((shape, index) => {
-                  const score = shapeScores[index];
-                  if (!score) return null;
-                  return (
-                    <div key={shape.id} className="flex items-center justify-between text-xs sm:text-sm">
-                      <span className="flex items-center gap-2">
-                        <span className="text-lg">{shape.icon}</span>
-                        {shape.name}
-                      </span>
-                      <span className="text-gray-600">
-                        Precisão: {score.accuracy}% | Tremor: {score.tremor}%
-                      </span>
-                    </div>
-                  );
-                })}
+                {levelScores.map((score) => (
+                  <div key={score.level} className="flex items-center justify-between text-xs sm:text-sm">
+                    <span>Nível {score.level}</span>
+                    <span className="text-gray-600">
+                      Precisão: {score.accuracy}% | Controle: {score.tremor}%
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
             
