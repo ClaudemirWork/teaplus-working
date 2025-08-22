@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Play, Award, Target, Clock, Brain, CheckCircle, TrendingUp, Users, ChevronLeft } from 'lucide-react'
+import { Award, Brain, CheckCircle, ChevronLeft, Clock, Play, Target } from 'lucide-react'
 import Link from 'next/link'
 
 // ============================================================================
@@ -43,6 +43,7 @@ const DecisionMakingPage = () => {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // LISTA DE CENÁRIOS EXPANDIDA
   const scenarios = [
     { id: 1, category: "Organização", situation: "Você tem 3 tarefas importantes para hoje, mas só há tempo para fazer 2 bem-feitas. O que você faz?", options: [
         {text: "Foco nas 2 mais importantes e deixo a terceira para amanhã.", points: 10, explanation: "Excelente! Priorizar a qualidade e evitar a sobrecarga é uma estratégia chave."},
@@ -59,6 +60,26 @@ const DecisionMakingPage = () => {
         {text: "Continuo forçando a leitura do mesmo material até entender.", points: 2, explanation: "Insistir em um método que não está funcionando pode levar à exaustão mental e frustração."},
         {text: "Desisto por hoje e vou fazer algo mais divertido.", points: 1, explanation: "Evitar o desafio impede o crescimento. Uma pausa é diferente de uma desistência completa."},
     ], timeLimit: 18 },
+    { id: 4, category: "Procrastinação", situation: "Você precisa começar um projeto grande e intimidador, mas não sabe por onde. Qual seu primeiro passo?", options: [
+        {text: "Quebro o projeto no menor passo possível (ex: 'abrir o documento') e o faço agora.", points: 10, explanation: "Perfeito! Vencer a inércia com uma ação mínima é a melhor forma de combater a procrastinação."},
+        {text: "Faço outras tarefas menores e mais fáceis para 'aquecer'.", points: 4, explanation: "Isso é uma forma comum de 'procrastinação produtiva'. É melhor atacar a tarefa mais importante primeiro."},
+        {text: "Espero a inspiração ou a 'vontade' de começar aparecer.", points: 1, explanation: "A inspiração geralmente vem depois da ação, não antes. Esperar é a essência da procrastinação."},
+    ], timeLimit: 20 },
+    { id: 5, category: "Foco e Distração", situation: "Você está trabalhando em algo importante e recebe uma notificação interessante no celular. O que você faz?", options: [
+        {text: "Anoto para ver depois, desligo a notificação e volto imediatamente ao trabalho.", points: 10, explanation: "Excelente! Você protegeu seu foco e usou um sistema para não esquecer, sem se desviar da tarefa."},
+        {text: "Dou uma 'olhadinha rápida' de um minuto.", points: 3, explanation: "Cuidado, a 'olhadinha rápida' quebra sua concentração e quase nunca dura apenas um minuto."},
+        {text: "Pego o celular, pois mereço uma pausa.", points: 2, explanation: "Pausas são importantes, mas devem ser intencionais, e não reativas a distrações. Isso treina o cérebro a se distrair."},
+    ], timeLimit: 15 },
+    { id: 6, category: "Gerenciamento Financeiro", situation: "Você vê um anúncio de algo que deseja muito, mas que não cabe no seu orçamento este mês. Qual sua atitude?", options: [
+        {text: "Adiciono a uma 'lista de desejos' para planejar a compra no futuro.", points: 10, explanation: "Atitude perfeita! Você controla o impulso e transforma o desejo em um objetivo planejado."},
+        {text: "Compro no cartão de crédito e decido que 'depois eu vejo como pagar'.", points: 1, explanation: "Essa é a fórmula para a desorganização financeira. A compra por impulso gera estresse futuro."},
+        {text: "Passo horas pesquisando e vendo reviews, mesmo sem poder comprar.", points: 4, explanation: "Isso alimenta a vontade e consome um tempo precioso que poderia ser usado em suas metas atuais."},
+    ], timeLimit: 22 },
+    { id: 7, category: "Saúde e Rotina", situation: "É tarde, você deveria dormir, mas está hiperfocado em um hobby. O que você faz?", options: [
+        {text: "Defino um alarme para mais 15 minutos para chegar a um bom ponto de parada e então encerro.", points: 10, explanation: "Ótimo equilíbrio! Você respeita seu estado de fluxo, mas impõe um limite saudável para proteger seu sono."},
+        {text: "Aproveito o hiperfoco e continuo até a exaustão, não importa a hora.", points: 2, explanation: "Isso desregula seu ciclo de sono, o que prejudicará seu foco e energia nos dias seguintes."},
+        {text: "Paro imediatamente, mesmo que seja difícil, pois sei que o sono é mais importante.", points: 8, explanation: "Uma decisão muito disciplinada e correta, embora definir um pequeno alarme para um final suave seja ainda melhor."},
+    ], timeLimit: 20 },
   ];
 
   const currentScenario = scenarios[currentScenarioIndex];
@@ -73,6 +94,9 @@ const DecisionMakingPage = () => {
   }, [timeLeft, gameState, gameStarted]);
 
   const startGame = () => {
+    // Embaralha os cenários para cada nova partida
+    const shuffledScenarios = [...scenarios].sort(() => Math.random() - 0.5);
+    // Para este exemplo, não vamos alterar o estado `scenarios` para manter a ordem, mas em uma app real, você poderia.
     setCurrentScenarioIndex(0);
     setScore(0);
     setResponses([]);
