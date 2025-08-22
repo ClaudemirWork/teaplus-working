@@ -52,7 +52,7 @@ interface Block {
   isSpecial: boolean;
 }
 
-export default function FingerTapping() {
+export default function TowerTapping() {
   const router = useRouter();
   const supabase = createClient();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -72,6 +72,17 @@ export default function FingerTapping() {
   const [motivationalMessage, setMotivationalMessage] = useState('');
   const [targetInterval, setTargetInterval] = useState<number | null>(null);
   const [lastTapTime, setLastTapTime] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detectar se é mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const levels = [
     { id: 1, name: 'Nível 1', duration: 30, description: 'Iniciante (30s)' },
@@ -132,21 +143,22 @@ export default function FingerTapping() {
       showMotivation('Ritmo estabelecido! Mantenha!');
     }
     
-    // Calcular qualidade do bloco
+    // Calcular qualidade do bloco - AJUSTADO PARA MOBILE
     let offset = 0;
     let quality: 'perfect' | 'good' | 'poor' = 'perfect';
+    const maxOffset = isMobile ? 30 : 60; // Menor offset no mobile
     
     if (targetInterval && currentInterval > 0) {
       const deviation = Math.abs(currentInterval - targetInterval) / targetInterval;
       
       if (deviation < 0.15) {
         quality = 'perfect';
-        offset = (Math.random() - 0.5) * 5; // Muito pequeno
+        offset = (Math.random() - 0.5) * (maxOffset * 0.1);
         setPontuacao(prev => prev + 30);
         if (newTaps.length % 5 === 0) showMotivation('🔥 Ritmo Perfeito!');
       } else if (deviation < 0.3) {
         quality = 'good';
-        offset = (Math.random() - 0.5) * 30;
+        offset = (Math.random() - 0.5) * (maxOffset * 0.5);
         setPontuacao(prev => prev + 20);
         if (currentInterval < targetInterval) {
           showMotivation('⚡ Muito rápido!');
@@ -155,7 +167,7 @@ export default function FingerTapping() {
         }
       } else {
         quality = 'poor';
-        offset = (Math.random() - 0.5) * 60;
+        offset = (Math.random() - 0.5) * maxOffset;
         setPontuacao(prev => prev + 10);
         showMotivation('⚠️ Ajuste o ritmo!');
       }
@@ -300,6 +312,13 @@ export default function FingerTapping() {
     setIsPlaying(false);
   };
 
+  // Calcular dimensões responsivas
+  const blockWidth = isMobile ? 'w-16' : 'w-24'; // 64px mobile, 96px desktop
+  const blockHeight = isMobile ? 'h-8' : 'h-11'; // 32px mobile, 44px desktop
+  const blockSpacing = isMobile ? 10 : 13; // Menor espaçamento no mobile
+  const maxVisibleBlocks = isMobile ? 20 : 25; // Menos blocos visíveis no mobile
+  const gameAreaHeight = isMobile ? '350px' : '400px';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <GameHeader 
@@ -314,48 +333,48 @@ export default function FingerTapping() {
         {!jogoIniciado ? (
           // Tela inicial
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
-                  <p className="text-sm text-gray-600">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">🎯 Objetivo:</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">
                     Construa uma torre mantendo ritmo constante. Torre reta = ritmo bom!
                   </p>
                 </div>
                 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1">🕹️ Como Jogar:</h3>
-                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">🕹️ Como Jogar:</h3>
+                  <ul className="list-disc list-inside text-xs sm:text-sm text-gray-600 space-y-1">
                     <li>Toque no botão com ritmo constante</li>
                     <li>Blocos alinhados = ritmo bom</li>
                     <li>Blocos tortos = ajuste o ritmo</li>
                   </ul>
                 </div>
                 
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1">⭐ Avaliação:</h3>
-                  <p className="text-sm text-gray-600">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">⭐ Avaliação:</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">
                     A cada 15 blocos você sobe de nível. Mantenha o ritmo para pontos extras!
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Tempo de Construção</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-4">Selecione o Tempo de Construção</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
                 {levels.map((level) => (
                   <button
                     key={level.id}
                     onClick={() => setSelectedLevel(level.id)}
-                    className={`p-4 rounded-lg font-medium transition-colors ${
+                    className={`p-3 sm:p-4 rounded-lg font-medium transition-colors ${
                       selectedLevel === level.id
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                     }`}
                   >
-                    <div className="text-2xl mb-1">🏗️</div>
-                    <div className="text-sm">{level.name}</div>
+                    <div className="text-xl sm:text-2xl mb-1">🏗️</div>
+                    <div className="text-xs sm:text-sm">{level.name}</div>
                     <div className="text-xs opacity-80">{level.description}</div>
                   </button>
                 ))}
@@ -365,44 +384,45 @@ export default function FingerTapping() {
             <div className="text-center">
               <button
                 onClick={startActivity}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors"
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 sm:py-4 sm:px-8 rounded-lg text-base sm:text-lg transition-colors"
               >
                 🚀 Iniciar Construção
               </button>
             </div>
           </div>
         ) : !showResults ? (
-          // Área de jogo - Torre CORRIGIDA
-          <div className="space-y-4">
+          // Área de jogo - Torre RESPONSIVA
+          <div className="space-y-3 sm:space-y-4">
             {/* Status */}
-            <div className="bg-white rounded-xl shadow-lg p-4">
-              <div className="grid grid-cols-4 gap-4">
+            <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4">
+              <div className="grid grid-cols-4 gap-2 sm:gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-800">{blocks.length}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-orange-800">{blocks.length}</div>
                   <div className="text-xs text-orange-600">Blocos</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-800">{timeLeft}s</div>
+                  <div className="text-lg sm:text-2xl font-bold text-blue-800">{timeLeft}s</div>
                   <div className="text-xs text-blue-600">Tempo</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-800">{currentTowerLevel}</div>
-                  <div className="text-xs text-green-600">Nível Torre</div>
+                  <div className="text-lg sm:text-2xl font-bold text-green-800">{currentTowerLevel}</div>
+                  <div className="text-xs text-green-600">Nível</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-800">{pontuacao}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-purple-800">{pontuacao}</div>
                   <div className="text-xs text-purple-600">Pontos</div>
                 </div>
               </div>
             </div>
 
-            {/* Área da Torre */}
-            <div className="bg-gradient-to-b from-blue-100 to-blue-50 rounded-xl shadow-lg overflow-hidden relative" style={{ height: '400px' }}>
+            {/* Área da Torre RESPONSIVA */}
+            <div className="bg-gradient-to-b from-blue-100 to-blue-50 rounded-xl shadow-lg overflow-hidden relative" 
+                 style={{ height: gameAreaHeight }}>
               
               {/* Mensagem Motivacional DENTRO da tela do jogo */}
               {motivationalMessage && (
-                <div className="absolute top-4 left-4 z-20 animate-pulse">
-                  <div className="bg-yellow-400/90 backdrop-blur-sm text-black px-4 py-2 rounded-lg font-bold shadow-lg">
+                <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-20 animate-pulse">
+                  <div className="bg-yellow-400/90 backdrop-blur-sm text-black px-3 py-1 sm:px-4 sm:py-2 rounded-lg font-bold shadow-lg text-xs sm:text-base">
                     {motivationalMessage}
                   </div>
                 </div>
@@ -412,24 +432,24 @@ export default function FingerTapping() {
               <div className="absolute left-1/2 top-0 bottom-12 w-0.5 bg-red-300 opacity-50" />
               
               {/* Container da Torre */}
-              <div className="absolute bottom-12 left-0 right-0" style={{ height: '340px' }}>
+              <div className="absolute bottom-12 left-0 right-0" style={{ height: `calc(${gameAreaHeight} - 48px)` }}>
                 <div className="relative h-full flex flex-col-reverse items-center overflow-hidden">
-                  {/* Blocos da Torre */}
-                  {blocks.slice(-25).map((block, index) => (
+                  {/* Blocos da Torre RESPONSIVOS */}
+                  {blocks.slice(-maxVisibleBlocks).map((block, index) => (
                     <div
                       key={block.id}
                       className={`absolute transition-all duration-300 ${
                         block.isSpecial ? 'animate-pulse' : ''
                       }`}
                       style={{
-                        bottom: `${index * 13}px`,
+                        bottom: `${index * blockSpacing}px`,
                         left: `calc(50% + ${block.offset}px)`,
                         transform: 'translateX(-50%)',
                         zIndex: blocks.length - index
                       }}
                     >
                       <div
-                        className={`w-24 h-11 rounded-sm border-2 flex items-center justify-center ${
+                        className={`${blockWidth} ${blockHeight} rounded-sm border-2 flex items-center justify-center ${
                           block.quality === 'perfect' 
                             ? 'bg-gradient-to-r from-green-400 to-green-500 border-green-600' 
                             : block.quality === 'good'
@@ -441,7 +461,7 @@ export default function FingerTapping() {
                         }}
                       >
                         {block.isSpecial && (
-                          <div className="text-white text-sm font-bold">
+                          <div className="text-white text-xs sm:text-sm font-bold">
                             ⭐
                           </div>
                         )}
@@ -453,15 +473,15 @@ export default function FingerTapping() {
 
               {/* Plataforma Base */}
               <div className="absolute bottom-0 w-full h-12 bg-gradient-to-t from-gray-800 to-gray-600 border-t-4 border-gray-900">
-                <div className="text-white text-center font-bold pt-2">
+                <div className="text-white text-center font-bold pt-2 text-sm sm:text-base">
                   FUNDAÇÃO
                 </div>
               </div>
 
               {/* Medidor de Estabilidade */}
-              <div className="absolute top-4 right-4 bg-black/70 text-white p-2 rounded-lg">
+              <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-black/70 text-white p-1.5 sm:p-2 rounded-lg">
                 <div className="text-xs mb-1">Estabilidade</div>
-                <div className="w-32 h-2 bg-gray-600 rounded-full overflow-hidden">
+                <div className="w-20 sm:w-32 h-1.5 sm:h-2 bg-gray-600 rounded-full overflow-hidden">
                   <div 
                     className={`h-full transition-all duration-500 ${
                       metrics.stability > 70 ? 'bg-green-500' : 
@@ -473,54 +493,54 @@ export default function FingerTapping() {
               </div>
             </div>
 
-            {/* Botão de Construir MOVIDO PARA BAIXO */}
+            {/* Botão de Construir RESPONSIVO */}
             <div className="text-center">
               <button
                 onClick={handleTap}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-95 text-white px-12 py-4 rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-xl"
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-95 text-white px-8 py-3 sm:px-12 sm:py-4 rounded-xl font-bold text-base sm:text-lg transition-all shadow-lg hover:shadow-xl"
               >
                 🔨 ADICIONAR BLOCO
               </button>
               {targetInterval && (
-                <div className="text-sm text-gray-600 mt-2">
+                <div className="text-xs sm:text-sm text-gray-600 mt-2">
                   Ritmo ideal: {(targetInterval / 1000).toFixed(1)}s entre toques
                 </div>
               )}
             </div>
           </div>
         ) : (
-          // Tela de resultados
-          <div className="bg-white rounded-xl shadow-lg p-8">
+          // Tela de resultados RESPONSIVA
+          <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
             <div className="text-center mb-6">
-              <div className="text-6xl mb-4">
+              <div className="text-5xl sm:text-6xl mb-4">
                 {blocks.length > 40 ? '🏆' : blocks.length > 25 ? '🎉' : '💪'}
               </div>
               
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
                 Torre de {blocks.length} blocos!
               </h3>
               
-              <p className="text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600">
                 {metrics.stability > 70 ? 'Construção muito estável!' : 
                  metrics.stability > 40 ? 'Boa estabilidade!' : 'Torre precisa de mais firmeza!'}
               </p>
             </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-purple-800">{blocks.length}</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 sm:p-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-purple-800">{blocks.length}</div>
                 <div className="text-xs text-purple-600">Altura Total</div>
               </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-blue-800">{metrics.stability}%</div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-blue-800">{metrics.stability}%</div>
                 <div className="text-xs text-blue-600">Estabilidade</div>
               </div>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-green-800">{metrics.consistency}%</div>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-green-800">{metrics.consistency}%</div>
                 <div className="text-xs text-green-600">Consistência</div>
               </div>
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
-                <div className="text-xl font-bold text-orange-800">{pontuacao}</div>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 sm:p-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-orange-800">{pontuacao}</div>
                 <div className="text-xs text-orange-600">Pontos</div>
               </div>
             </div>
@@ -528,7 +548,7 @@ export default function FingerTapping() {
             <div className="flex justify-center space-x-4">
               <button
                 onClick={voltarInicio}
-                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 sm:py-3 sm:px-6 rounded-lg transition-colors text-sm sm:text-base"
               >
                 🔄 Construir Novamente
               </button>
