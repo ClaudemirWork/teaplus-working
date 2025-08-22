@@ -84,20 +84,24 @@ const allActivities: Activity[] = [
 const DraggableCard = ({ activity, isDragging, onDragStart, onDragEnd, isPlaced, isCorrect }: {
     activity: Activity;
     isDragging: boolean;
-    onDragStart: () => void;
-    onDragEnd: () => void;
+    onDragStart: (e: React.DragEvent) => void;
+    onDragEnd: (e: React.DragEvent) => void;
     isPlaced: boolean;
     isCorrect: boolean | null;
 }) => {
+    const handleDragStart = (e: React.DragEvent) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('activityId', activity.id);
+        onDragStart(e);
+    };
+
     return (
         <div
             draggable={!isPlaced}
-            onDragStart={onDragStart}
+            onDragStart={handleDragStart}
             onDragEnd={onDragEnd}
-            onTouchStart={onDragStart}
-            onTouchEnd={onDragEnd}
             className={`
-                relative p-4 rounded-xl cursor-move transition-all transform
+                relative p-4 rounded-xl cursor-move transition-all transform select-none
                 ${isDragging ? 'opacity-50 scale-95' : ''}
                 ${isPlaced ? 'cursor-not-allowed opacity-60' : 'hover:scale-105 hover:shadow-lg'}
                 ${isCorrect === true ? 'bg-green-100 border-2 border-green-500' : ''}
@@ -124,19 +128,19 @@ const DraggableCard = ({ activity, isDragging, onDragStart, onDragEnd, isPlaced,
 const DropZone = ({ period, activities, onDrop, isHighlighted }: {
     period: 'dia' | 'noite';
     activities: Activity[];
-    onDrop: (activity: Activity) => void;
+    onDrop: (activityId: string) => void;
     isHighlighted: boolean;
 }) => {
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
     };
 
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         const activityId = e.dataTransfer.getData('activityId');
-        const activity = allActivities.find(a => a.id === activityId);
-        if (activity) {
-            onDrop(activity);
+        if (activityId) {
+            onDrop(activityId);
         }
     };
 
@@ -257,7 +261,7 @@ export default function RoutinePuzzlePage() {
         setGameState('playing');
     };
 
-    const handleDragStart = (activity: Activity) => {
+    const handleDragStart = (e: React.DragEvent, activity: Activity) => {
         setDraggedActivity(activity);
         
         // Destacar a área correta
@@ -274,7 +278,10 @@ export default function RoutinePuzzlePage() {
         setIsHighlightedNight(false);
     };
 
-    const handleDrop = (period: 'dia' | 'noite', activity: Activity) => {
+    const handleDrop = (period: 'dia' | 'noite', activityId: string) => {
+        const activity = availableActivities.find(a => a.id === activityId);
+        if (!activity) return;
+
         // Remover da lista de disponíveis
         setAvailableActivities(prev => prev.filter(a => a.id !== activity.id));
         
@@ -291,6 +298,10 @@ export default function RoutinePuzzlePage() {
         } else {
             setErrors(prev => prev + 1);
         }
+
+        // Limpar estados de destaque
+        setIsHighlightedDay(false);
+        setIsHighlightedNight(false);
 
         // Verificar se o jogo acabou
         if (availableActivities.length === 1) {
@@ -481,13 +492,13 @@ export default function RoutinePuzzlePage() {
                             <DropZone
                                 period="dia"
                                 activities={dayActivities}
-                                onDrop={(activity) => handleDrop('dia', activity)}
+                                onDrop={(activityId) => handleDrop('dia', activityId)}
                                 isHighlighted={isHighlightedDay}
                             />
                             <DropZone
                                 period="noite"
                                 activities={nightActivities}
-                                onDrop={(activity) => handleDrop('noite', activity)}
+                                onDrop={(activityId) => handleDrop('noite', activityId)}
                                 isHighlighted={isHighlightedNight}
                             />
                         </div>
@@ -503,7 +514,7 @@ export default function RoutinePuzzlePage() {
                                         key={activity.id}
                                         activity={activity}
                                         isDragging={draggedActivity?.id === activity.id}
-                                        onDragStart={() => handleDragStart(activity)}
+                                        onDragStart={(e) => handleDragStart(e, activity)}
                                         onDragEnd={handleDragEnd}
                                         isPlaced={false}
                                         isCorrect={null}
