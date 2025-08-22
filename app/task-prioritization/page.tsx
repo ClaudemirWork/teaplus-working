@@ -274,7 +274,6 @@ export default function PriorizacaoTarefasPage() {
                             </div>
                             <p className="mb-4 font-medium">Em qual quadrante esta tarefa se encaixa?</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
-                                {/* BOTÕES CORRIGIDOS ABAIXO */}
                                 {[1, 2, 3, 4].map(q => (
                                 <button key={q} onClick={() => handleEisenhowerChoice(q)} className={`p-4 rounded-xl border-2 transition-all ${q === 1 ? 'bg-red-50 border-red-200 hover:bg-red-100' : q === 2 ? 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100' : q === 3 ? 'bg-orange-50 border-orange-200 hover:bg-orange-100' : 'bg-gray-100 border-gray-200 hover:bg-gray-200'}`}>
                                     <div className="font-semibold">Quadrante {q}</div>
@@ -303,9 +302,15 @@ export default function PriorizacaoTarefasPage() {
                             </div>
                             <p className="mb-4 font-medium">Qual a prioridade desta tarefa?</p>
                             <div className="flex justify-center gap-4">
+                                {/* BOTÕES CORRIGIDOS ABAIXO */}
                                 {(['A', 'B', 'C'] as const).map(c => (
-                                <button key={c} onClick={() => handleABCChoice(c)} className={`px-8 py-4 rounded-xl border-2 transition-all text-2xl font-bold ${c === 'A' ? 'bg-red-100 border-red-300 hover:bg-red-200' : c === 'B' ? 'bg-yellow-100 border-yellow-300 hover:bg-yellow-200' : 'bg-green-100 border-green-300 hover:bg-green-200'}`}>
-                                    {c}
+                                <button key={c} onClick={() => handleABCChoice(c)} className={`px-8 py-4 rounded-xl border-2 transition-all ${c === 'A' ? 'bg-red-100 border-red-300 hover:bg-red-200' : c === 'B' ? 'bg-yellow-100 border-yellow-300 hover:bg-yellow-200' : 'bg-green-100 border-green-300 hover:bg-green-200'}`}>
+                                    <div className="text-2xl font-bold">{c}</div>
+                                    <div className="text-sm mt-1">
+                                        {c === 'A' && 'Crítico'}
+                                        {c === 'B' && 'Importante'}
+                                        {c === 'C' && 'Desejável'}
+                                    </div>
                                 </button>
                                 ))}
                             </div>
