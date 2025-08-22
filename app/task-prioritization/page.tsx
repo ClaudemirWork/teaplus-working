@@ -274,9 +274,16 @@ export default function PriorizacaoTarefasPage() {
                             </div>
                             <p className="mb-4 font-medium">Em qual quadrante esta tarefa se encaixa?</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
+                                {/* BOTÕES CORRIGIDOS ABAIXO */}
                                 {[1, 2, 3, 4].map(q => (
-                                <button key={q} onClick={() => handleEisenhowerChoice(q)} className={`p-4 rounded-xl border-2 font-semibold transition-all ${q === 1 ? 'bg-red-50 border-red-200 hover:bg-red-100' : q === 2 ? 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100' : q === 3 ? 'bg-orange-50 border-orange-200 hover:bg-orange-100' : 'bg-gray-100 border-gray-200 hover:bg-gray-200'}`}>
-                                    Quadrante {q}
+                                <button key={q} onClick={() => handleEisenhowerChoice(q)} className={`p-4 rounded-xl border-2 transition-all ${q === 1 ? 'bg-red-50 border-red-200 hover:bg-red-100' : q === 2 ? 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100' : q === 3 ? 'bg-orange-50 border-orange-200 hover:bg-orange-100' : 'bg-gray-100 border-gray-200 hover:bg-gray-200'}`}>
+                                    <div className="font-semibold">Quadrante {q}</div>
+                                    <div className="text-xs mt-1 text-gray-600">
+                                        {q === 1 && 'Urgente e Importante'}
+                                        {q === 2 && 'Importante, Não Urgente'}
+                                        {q === 3 && 'Urgente, Não Importante'}
+                                        {q === 4 && 'Não Urgente, Não Importante'}
+                                    </div>
                                 </button>
                                 ))}
                             </div>
