@@ -72,6 +72,7 @@ export default function GestaoTempoPage() {
   const [userDuration, setUserDuration] = useState(0)
   const [isCountingTime, setIsCountingTime] = useState(false)
   const [perceptionResults, setPerceptionResults] = useState<Array<{target: number, actual: number, accuracy: number}>>([])
+  const [confusingTime, setConfusingTime] = useState('00'); // NOVO ESTADO PARA O CRONÔMETRO CONFUSO
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -88,7 +89,6 @@ export default function GestaoTempoPage() {
         return;
     }
 
-    // Timer do Nível 1: Foco
     if (nivelSelecionado === 1 && isRunning && !isPaused) {
       intervalRef.current = setInterval(() => {
         setFocusTime(prev => {
@@ -107,13 +107,16 @@ export default function GestaoTempoPage() {
         });
       }, 1000);
     } 
-    // Timer do Nível 2: Estimativa
     else if (nivelSelecionado === 2 && isTimingTask) {
         intervalRef.current = setInterval(() => setActualTime(t => t + 1), 1000);
     }
-    // Timer do Nível 3: Percepção
+    // LÓGICA ATUALIZADA PARA O NÍVEL 3
     else if (nivelSelecionado === 3 && isCountingTime) {
-        intervalRef.current = setInterval(() => setUserDuration(d => d + 1), 1000);
+        intervalRef.current = setInterval(() => {
+            setUserDuration(d => d + 1);
+            // Atualiza o cronômetro confuso a cada 100ms para um efeito mais dinâmico
+            setConfusingTime(Math.floor(Math.random() * 90 + 10).toString());
+        }, 100);
     }
     else {
         if(intervalRef.current) clearInterval(intervalRef.current);
@@ -128,21 +131,13 @@ export default function GestaoTempoPage() {
   const handleStartActivity = () => {
     if (nivelSelecionado !== null) {
       setGameStarted(true);
-      // Resetar estados específicos do nível ao iniciar
       setScore(0);
       if (nivelSelecionado === 1) {
-          setFocusTime(25 * 60);
-          setCurrentSession('work');
-          setCompletedSessions(0);
-          setIsRunning(false);
-          setIsPaused(false);
+          setFocusTime(25 * 60); setCurrentSession('work'); setCompletedSessions(0); setIsRunning(false); setIsPaused(false);
       } else if (nivelSelecionado === 2) {
-          setCurrentTaskIndex(0);
-          setTimeEstimates([]);
-          setEstimatedTime(1);
+          setCurrentTaskIndex(0); setTimeEstimates([]); setEstimatedTime(1);
       } else if (nivelSelecionado === 3) {
-          setPerceptionResults([]);
-          setTargetDuration(30);
+          setPerceptionResults([]); setTargetDuration(20 + Math.floor(Math.random() * 25)); // Alvo entre 20 e 45s
       }
     }
   };
@@ -157,9 +152,7 @@ export default function GestaoTempoPage() {
   const startFocusSession = () => setIsRunning(true);
   const pauseFocusSession = () => setIsPaused(!isPaused);
   const resetFocusSession = () => {
-    setIsRunning(false);
-    setIsPaused(false);
-    setFocusTime(currentSession === 'work' ? 25 * 60 : 5 * 60);
+    setIsRunning(false); setIsPaused(false); setFocusTime(currentSession === 'work' ? 25 * 60 : 5 * 60);
   };
 
   // Funções do Nível 2: Estimativa
@@ -172,23 +165,23 @@ export default function GestaoTempoPage() {
     setScore(prev => prev + Math.round(accuracy / 4));
     
     if (currentTaskIndex < tasks.length - 1) {
-      setCurrentTaskIndex(prev => prev + 1);
-      setEstimatedTime(1);
-      setActualTime(0);
+      setCurrentTaskIndex(prev => prev + 1); setEstimatedTime(1); setActualTime(0);
     } else {
-        // Fim do jogo
         setCurrentTaskIndex(tasks.length);
     }
   };
 
   // Funções do Nível 3: Percepção
-  const startTimePerception = () => setIsCountingTime(true);
+  const startTimePerception = () => { setUserDuration(0); setIsCountingTime(true); };
   const stopTimePerception = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current); // Garante que o timer rápido pare
     setIsCountingTime(false);
-    const accuracy = Math.max(0, 100 - (Math.abs(targetDuration - userDuration) / targetDuration) * 100);
-    setPerceptionResults(prev => [...prev, { target: targetDuration, actual: userDuration, accuracy }]);
+    // O tempo real é userDuration / 10 por causa do intervalo de 100ms
+    const realUserDuration = userDuration / 10;
+    const accuracy = Math.max(0, 100 - (Math.abs(targetDuration - realUserDuration) / targetDuration) * 100);
+    setPerceptionResults(prev => [...prev, { target: targetDuration, actual: realUserDuration, accuracy }]);
     setScore(prev => prev + Math.round(accuracy / 5));
-    setTargetDuration(15 + Math.floor(Math.random() * 45)); // Novo alvo entre 15 e 60s
+    setTargetDuration(20 + Math.floor(Math.random() * 25)); // Novo alvo
   };
 
   // ============================================================================
@@ -210,7 +203,6 @@ export default function GestaoTempoPage() {
             </div>
             
             <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-lg">
-            {/* Nível 1: Técnica de Foco */}
             {nivelSelecionado === 1 && (
                 <div className="text-center">
                     <h2 className="text-2xl font-bold mb-6 text-red-600">{currentSession === 'work' ? '🎯 Sessão de Foco' : '☕ Pausa Rápida'}</h2>
@@ -221,7 +213,6 @@ export default function GestaoTempoPage() {
                     </div>
                 </div>
             )}
-            {/* Nível 2: Estimativa de Tempo */}
             {nivelSelecionado === 2 && (
                 <div className="text-center">
                     <h2 className="text-2xl font-bold mb-6 text-orange-600">📊 Estimativa de Tempo</h2>
@@ -252,7 +243,6 @@ export default function GestaoTempoPage() {
                     )}
                 </div>
             )}
-            {/* Nível 3: Percepção Temporal */}
             {nivelSelecionado === 3 && (
                 <div className="text-center">
                     <h2 className="text-2xl font-bold mb-6 text-purple-600">🧠 Percepção Temporal</h2>
@@ -264,12 +254,14 @@ export default function GestaoTempoPage() {
                         <button onClick={startTimePerception} className="px-6 py-3 bg-purple-500 text-white rounded-xl font-semibold hover:bg-purple-600 transition-colors">Iniciar Contagem</button>
                     ) : (
                         <div>
-                            <p className="text-4xl font-mono font-bold text-gray-800 mb-6">⏱️ {userDuration}s</p>
+                            <p className="text-4xl font-mono font-bold text-gray-800 mb-6 animate-pulse">
+                                ⏱️ {confusingTime}s
+                            </p>
                             <button onClick={stopTimePerception} className="px-6 py-3 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition-colors">Parar Agora!</button>
                         </div>
                     )}
                     {perceptionResults.length > 0 && (
-                        <div className="mt-8"><h4 className="font-semibold mb-4 text-left">Últimos Resultados:</h4><div className="space-y-2">{perceptionResults.slice(-5).reverse().map((r, i)=><div key={i} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"><span className="text-sm">Meta: {r.target}s | Você: {r.actual}s</span><span className={`text-sm font-bold ${r.accuracy>70 ? 'text-green-600':'text-red-600'}`}>Precisão: {r.accuracy.toFixed(0)}%</span></div>)}</div></div>
+                        <div className="mt-8"><h4 className="font-semibold mb-4 text-left">Últimos Resultados:</h4><div className="space-y-2">{perceptionResults.slice(-5).reverse().map((r, i)=><div key={i} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"><span className="text-sm">Meta: {r.target}s | Você: {r.actual.toFixed(1)}s</span><span className={`text-sm font-bold ${r.accuracy>70 ? 'text-green-600':'text-red-600'}`}>Precisão: {r.accuracy.toFixed(0)}%</span></div>)}</div></div>
                     )}
                 </div>
             )}
@@ -278,7 +270,6 @@ export default function GestaoTempoPage() {
       ) : (
         <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
           <div className="space-y-6">
-            {/* Bloco 1: Cards Informativos */}
             <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4"><h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3><p className="text-sm text-gray-600">Melhorar a capacidade de planejar, focar e controlar o tempo através de exercícios práticos de foco, estimativa e percepção temporal.</p></div>
@@ -287,7 +278,6 @@ export default function GestaoTempoPage() {
               </div>
             </div>
 
-            {/* Bloco 2: Seleção de Nível */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-lg font-bold text-gray-800 mb-4">Selecione o Nível</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -297,7 +287,6 @@ export default function GestaoTempoPage() {
               </div>
             </div>
 
-            {/* Bloco 3: Botão Iniciar */}
             <div className="text-center pt-4">
               <button onClick={handleStartActivity} disabled={nivelSelecionado === null} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-lg text-lg transition-all duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed">🚀 Iniciar Atividade</button>
             </div>
