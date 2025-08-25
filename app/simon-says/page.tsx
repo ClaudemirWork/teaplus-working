@@ -1,4 +1,29 @@
-'use client';
+<div className="fixed bottom-1 left-1 md:bottom-2 md:left-2 z-50">
+        <div className="relative">
+          <div className="absolute -inset-4 w-72 h-72 md:w-96 md:h-96 bg-gradient-to-br from-yellow-200 to-orange-200 rounded-full blur-3xl opacity-50" />
+          
+          <div className="relative w-60 h-60 md:w-80 md:h-80">
+            <img 
+              src="/images/mascotes/leo/Leo_apoio.webp"
+              alt="Leo Mascote"
+              className="w-full h-full object-contain drop-shadow-2xl"
+              onError={(e) => {
+                const img = e.currentTarget;
+                if (img.src.includes('Leo_apoio')) {
+                  img.src = '/images/mascotes/leo/leo_apoio.webp';
+                }
+              }}
+            />
+          </div>
+          
+          <div className="absolute bottom-full mb-6 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-white to-yellow-50 p-5 rounded-3xl shadow-2xl min-w-[340px] max-w-[500px] border-4 border-yellow-400">
+            <div className="absolute bottom-[-12px] left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[14px] border-t-yellow-50" />
+            <p className="text-gray-800 text-xl md:text-2xl font-bold text-center leading-relaxed">
+              {leoMessage}
+            </p>
+          </div>
+        </div>
+      </div>'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ArrowLeft, Sparkles } from 'lucide-react';
@@ -376,9 +401,9 @@ export default function SimonGemsGame() {
 
       <div className="fixed bottom-2 left-2 md:bottom-4 md:left-4 z-50">
         <div className="relative">
-          <div className="absolute inset-0 w-40 h-40 md:w-56 md:h-56 bg-gradient-to-br from-yellow-200 to-orange-200 rounded-full blur-2xl opacity-60 animate-pulse" />
+          <div className="absolute inset-0 w-60 h-60 md:w-80 md:h-80 bg-gradient-to-br from-yellow-200 to-orange-200 rounded-full blur-2xl opacity-60 animate-pulse" />
           
-          <div className="relative w-40 h-40 md:w-56 md:h-56 animate-bounce">
+          <div className="relative w-60 h-60 md:w-80 md:h-80">
             <img 
               src="/images/mascotes/leo/Leo_apoio.webp"
               alt="Leo Mascote"
@@ -392,9 +417,9 @@ export default function SimonGemsGame() {
             />
           </div>
           
-          <div className="absolute bottom-full mb-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-white to-yellow-50 p-4 rounded-3xl shadow-2xl min-w-[280px] max-w-[450px] border-4 border-yellow-400">
+          <div className="absolute bottom-full mb-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-white to-yellow-50 p-5 rounded-3xl shadow-2xl min-w-[320px] max-w-[500px] border-4 border-yellow-400">
             <div className="absolute bottom-[-12px] left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[12px] border-t-yellow-50" />
-            <p className="text-gray-800 text-lg md:text-xl font-bold text-center leading-relaxed">
+            <p className="text-gray-800 text-xl md:text-2xl font-bold text-center leading-relaxed">
               {leoMessage}
             </p>
           </div>
