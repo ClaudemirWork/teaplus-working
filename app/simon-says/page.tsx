@@ -1,594 +1,500 @@
+// app/simon-says/page.tsx
 'use client';
+
+// IMPORTANTE: Este componente usa a imagem do Leo mascote
+// Tente os seguintes caminhos se a imagem não aparecer:
+// - /images/mascotes/leo.webp
+// - /imagens/mascotes/leo.webp  
+// - /images/mascotes/leo_apoio.webp
+// A imagem deve estar na pasta public/
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ArrowLeft, Sparkles, Star } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-/**
- * Jogo Simon Mágico — versão completa em uma única página
- * - Mascote Leo com balão de fala (imagem: /mascoteleo.webp)
- * - Sons via Web Audio API (sem arquivos .mp3)
- * - Sistema de voz (speechSynthesis) em pt-BR
- * - Sequência crescente de cristais e várias cores
- * - Orientação educativa a cada clique
- * - Layout moderno com Tailwind
- * - Power-ups: repetir sequência e reduzir velocidade
- * - Métricas: sequência máxima, acertos/erros, tempo médio, duração da sessão
- * - Modal de resultados com estrelas
- */
-
-/* Tipos */
-interface Crystal {
-  id: number;
+interface Phase {
+  gems: number;
+  sequences: number;
   name: string;
-  emoji: string;
-  note: string;
-  gradient: string; // Tailwind gradient classes: from-... to-...
 }
 
-interface PowerUps {
-  replay: number;
-  slow: number;
-}
+export default function SimonGemsGame() {
+  const router = useRouter();
+  const audioContextRef = useRef<AudioContext | null>(null);
+  
+  // Configuração do jogo com emojis de gemas reais
+  const gameConfig = {
+    phases: [
+      { gems: 2, sequences: 6, name: "Iniciante" },
+      { gems: 4, sequences: 6, name: "Aprendiz" },
+      { gems: 6, sequences: 6, name: "Mestre" },
+      { gems: 8, sequences: 6, name: "Lendário" }
+    ],
+    gems: [
+      { emoji: '💎', color: 'blue', gradient: 'from-blue-400 to-cyan-400', shadow: 'shadow-blue-500/50', frequency: 261.63 },
+      { emoji: '❤️', color: 'red', gradient: 'from-red-400 to-pink-400', shadow: 'shadow-red-500/50', frequency: 293.66 },
+      { emoji: '💚', color: 'green', gradient: 'from-green-400 to-emerald-400', shadow: 'shadow-green-500/50', frequency: 329.63 },
+      { emoji: '💛', color: 'yellow', gradient: 'from-yellow-300 to-amber-400', shadow: 'shadow-yellow-500/50', frequency: 349.23 },
+      { emoji: '💜', color: 'purple', gradient: 'from-purple-400 to-violet-400', shadow: 'shadow-purple-500/50', frequency: 392.00 },
+      { emoji: '🧡', color: 'orange', gradient: 'from-orange-400 to-amber-500', shadow: 'shadow-orange-500/50', frequency: 440.00 },
+      { emoji: '💙', color: 'lightblue', gradient: 'from-sky-300 to-blue-400', shadow: 'shadow-sky-500/50', frequency: 493.88 },
+      { emoji: '💖', color: 'pink', gradient: 'from-pink-300 to-rose-400', shadow: 'shadow-pink-500/50', frequency: 523.25 }
+    ],
+    goldenGem: { emoji: '⭐', frequency: 659.25 }
+  };
 
-interface GameMetrics {
-  maxSequence: number;
-  totalScore: number;
-  correctAttempts: number;
-  wrongAttempts: number;
-  averageResponseTime: number; // ms
-  sessionDuration: number;     // ms
-  powerUpsUsed: number;
-}
-
-/* Constantes */
-const CRYSTALS: Crystal[] = [
-  { id: 0, name: 'azul',    emoji: '🔵', note: 'C4', gradient: 'from-blue-400 to-blue-600' },
-  { id: 1, name: 'vermelho',emoji: '🔴', note: 'D4', gradient: 'from-red-400 to-red-600' },
-  { id: 2, name: 'verde',   emoji: '🟢', note: 'E4', gradient: 'from-green-400 to-green-600' },
-  { id: 3, name: 'amarelo', emoji: '🟡', note: 'F4', gradient: 'from-yellow-300 to-yellow-500' },
-  { id: 4, name: 'roxo',    emoji: '🟣', note: 'G4', gradient: 'from-purple-400 to-purple-600' },
-  { id: 5, name: 'laranja', emoji: '🟠', note: 'A4', gradient: 'from-orange-400 to-orange-600' },
-  { id: 6, name: 'rosa',    emoji: '🌸', note: 'B4', gradient: 'from-pink-400 to-pink-600' },
-  { id: 7, name: 'diamante',emoji: '💎', note: 'C5', gradient: 'from-cyan-300 to-indigo-500' },
-];
-
-const NOTE_FREQ: Record<string, number> = {
-  C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23,
-  G4: 392.00, A4: 440.00, B4: 493.88, C5: 523.25,
-};
-
-const INITIAL_SPEED_MS = 600;
-const SLOW_SPEED_MS = 1000;
-const MIN_SPEED_MS = 250;
-
-/* Componente principal */
-export default function SimonSaysGame() {
-  /* Áudio e tempo */
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const sessionStartRef = useRef<number | null>(null);
-  const responseStartRef = useRef<number | null>(null);
-  const responseTimesRef = useRef<number[]>([]);
-
-  /* Estado do jogo */
+  // Estado do jogo
+  const [currentPhase, setCurrentPhase] = useState(0);
+  const [score, setScore] = useState(0);
   const [sequence, setSequence] = useState<number[]>([]);
   const [playerSequence, setPlayerSequence] = useState<number[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isShowingSequence, setIsShowingSequence] = useState(false);
-  const [activeCrystal, setActiveCrystal] = useState<number | null>(null);
+  const [sequencesCompleted, setSequencesCompleted] = useState(0);
+  const [activeGem, setActiveGem] = useState<number | null>(null);
+  const [leoMessage, setLeoMessage] = useState("Olá! Eu sou o Leo! Vamos brincar com as gemas mágicas?");
+  const [showVictoryModal, setShowVictoryModal] = useState(false);
+  const [showGoldenGem, setShowGoldenGem] = useState(false);
+  const [particles, setParticles] = useState<Array<{id: number, x: number, y: number}>>([]);
 
-  /* Progresso e feedback */
-  const [score, setScore] = useState(0);
-  const [level, setLevel] = useState(1);
-  const [speed, setSpeed] = useState(INITIAL_SPEED_MS);
-  const [message, setMessage] = useState('Olá! Eu sou o Leo, seu mascote mágico. Vamos treinar sua memória?');
+  // Frases do Leo
+  const leoMessages = {
+    start: "Vamos começar nossa aventura mágica!",
+    watching: "Preste atenção nas gemas brilhantes!",
+    yourTurn: "Agora é sua vez! Toque nas gemas!",
+    correct: ["Muito bem! 🎉", "Você está arrasando! ⭐", "Excelente! 🌟", "Continue assim! 💪", "Fantástico! 🎊"],
+    almostDone: "Uau! Estamos quase terminando esta fase! 🏁",
+    phaseComplete: "Iupiiii! Você ganhou uma estrela dourada! ⭐",
+    error: "Ops! Não foi dessa vez! Vamos tentar de novo? 😊",
+    gameOver: "Você foi incrível! Que tal mais uma aventura? 🎮"
+  };
 
-  /* Power-ups e métricas */
-  const [powerUps, setPowerUps] = useState<PowerUps>({ replay: 1, slow: 1 });
-  const [metrics, setMetrics] = useState<GameMetrics>({
-    maxSequence: 0,
-    totalScore: 0,
-    correctAttempts: 0,
-    wrongAttempts: 0,
-    averageResponseTime: 0,
-    sessionDuration: 0,
-    powerUpsUsed: 0,
-  });
-
-  /* Modal de resultados */
-  const [showResults, setShowResults] = useState(false);
-
-  /* Inicialização do AudioContext no primeiro gesto do usuário */
+  // Inicializar áudio
   useEffect(() => {
     const initAudio = () => {
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
     };
-    const onFirstInteract = () => {
+
+    const handleFirstInteraction = () => {
       initAudio();
-      document.removeEventListener('pointerdown', onFirstInteract);
-      document.removeEventListener('keydown', onFirstInteract);
+      document.removeEventListener('click', handleFirstInteraction);
     };
-    document.addEventListener('pointerdown', onFirstInteract);
-    document.addEventListener('keydown', onFirstInteract);
+
+    document.addEventListener('click', handleFirstInteraction);
+
     return () => {
-      document.removeEventListener('pointerdown', onFirstInteract);
-      document.removeEventListener('keydown', onFirstInteract);
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close();
+      document.removeEventListener('click', handleFirstInteraction);
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
       }
     };
   }, []);
 
-  /* Fala (voz) */
-  const speak = useCallback((text: string) => {
+  // Sistema de fala do Leo
+  const leoSpeak = useCallback((message: string) => {
+    setLeoMessage(message);
+    
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'pt-BR';
-      u.rate = 0.95;
-      u.pitch = 1.05;
-      window.speechSynthesis.speak(u);
+      const utterance = new SpeechSynthesisUtterance(message.replace(/[🎉⭐🌟💪🎊🏁😊🎮]/g, ''));
+      utterance.lang = 'pt-BR';
+      utterance.rate = 0.9;
+      utterance.pitch = 1.2;
+      window.speechSynthesis.speak(utterance);
     }
   }, []);
 
-  /* Tocar nota (Web Audio) */
-  const playNote = useCallback((note: string, duration = 0.4) => {
-    if (!audioCtxRef.current) return;
-    const ctx = audioCtxRef.current;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = NOTE_FREQ[note] || 440;
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + duration);
+  // Tocar nota musical
+  const playNote = useCallback((frequency: number, duration: number = 500) => {
+    if (!audioContextRef.current) return;
+
+    const oscillator = audioContextRef.current.createOscillator();
+    const gainNode = audioContextRef.current.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.value = frequency;
+    
+    gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.4, audioContextRef.current.currentTime + 0.1);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration/1000);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContextRef.current.destination);
+
+    oscillator.start(audioContextRef.current.currentTime);
+    oscillator.stop(audioContextRef.current.currentTime + duration/1000);
   }, []);
 
-  /* Efeitos de sucesso e erro */
-  const playSuccess = useCallback(() => {
-    if (!audioCtxRef.current) return;
-    ['E4', 'G4', 'C5'].forEach((n, i) => setTimeout(() => playNote(n, 0.18), i * 120));
+  // Som de sucesso
+  const playSuccessSound = useCallback(() => {
+    if (!audioContextRef.current) return;
+    [261.63, 329.63, 392.00, 523.25].forEach((freq, i) => {
+      setTimeout(() => playNote(freq, 200), i * 100);
+    });
   }, [playNote]);
 
-  const playError = useCallback(() => {
-    if (!audioCtxRef.current) return;
-    playNote('D4', 0.3);
-    setTimeout(() => playNote('C4', 0.3), 140);
-  }, [playNote]);
+  // Criar partículas
+  const createParticles = useCallback((x: number, y: number) => {
+    const newParticles = Array.from({length: 10}, (_, i) => ({
+      id: Date.now() + i,
+      x: x + (Math.random() - 0.5) * 100,
+      y: y + (Math.random() - 0.5) * 100
+    }));
+    setParticles(prev => [...prev, ...newParticles]);
+    setTimeout(() => {
+      setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id)));
+    }, 1000);
+  }, []);
 
-  /* Iniciar jogo */
+  // Iniciar jogo
   const startGame = useCallback(() => {
-    setIsPlaying(true);
-    setShowResults(false);
+    setCurrentPhase(0);
+    setScore(0);
     setSequence([]);
     setPlayerSequence([]);
-    setScore(0);
-    setLevel(1);
-    setSpeed(INITIAL_SPEED_MS);
-    setPowerUps({ replay: 1, slow: 1 });
-    setMetrics({
-      maxSequence: 0,
-      totalScore: 0,
-      correctAttempts: 0,
-      wrongAttempts: 0,
-      averageResponseTime: 0,
-      sessionDuration: 0,
-      powerUpsUsed: 0,
-    });
-    responseTimesRef.current = [];
-    sessionStartRef.current = Date.now();
-    const intro = 'Observe com atenção. Eu vou mostrar a sequência dos cristais!';
-    setMessage(intro);
-    speak(intro);
-    setTimeout(() => nextRound([]), 1200);
-  }, [speak]);
+    setSequencesCompleted(0);
+    setIsPlaying(true);
+    setShowGoldenGem(false);
+    leoSpeak(leoMessages.start);
+    setTimeout(() => nextRound(), 2000);
+  }, [leoSpeak]);
 
-  /* Próxima rodada: adiciona 1 cristal aleatório e mostra sequência */
-  const nextRound = useCallback((currentSeq?: number[]) => {
-    const base = currentSeq ?? sequence;
-    const next = [...base, Math.floor(Math.random() * CRYSTALS.length)];
-    setSequence(next);
+  // Próxima rodada
+  const nextRound = useCallback(() => {
+    const phase = gameConfig.phases[currentPhase];
+    const maxGem = phase.gems;
+    const newSequence = [...sequence, Math.floor(Math.random() * maxGem)];
+    setSequence(newSequence);
     setPlayerSequence([]);
-    setMetrics(prev => ({ ...prev, maxSequence: Math.max(prev.maxSequence, next.length) }));
-    showSequence(next);
-  }, [sequence, showSequence]);
+    showSequence(newSequence);
+  }, [currentPhase, sequence]);
 
-  /* Mostrar sequência (com bloqueio de input) */
+  // Mostrar sequência
   const showSequence = useCallback(async (seq: number[]) => {
     setIsShowingSequence(true);
-    const msg = `Memorize a sequência de ${seq.length} cristal${seq.length > 1 ? 'is' : ''}.`;
-    setMessage(msg);
-    speak(msg);
-    await pause(700);
-
+    leoSpeak(leoMessages.watching);
+    
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     for (let i = 0; i < seq.length; i++) {
-      const id = seq[i];
-      setActiveCrystal(id);
-      playNote(CRYSTALS[id].note, 0.35);
-      await pause(320);
-      setActiveCrystal(null);
-      await pause(speed);
+      setActiveGem(seq[i]);
+      playNote(gameConfig.gems[seq[i]].frequency);
+      
+      await new Promise(resolve => setTimeout(resolve, 400));
+      setActiveGem(null);
+      await new Promise(resolve => setTimeout(resolve, 600));
     }
-
+    
     setIsShowingSequence(false);
-    const yourTurn = 'Sua vez! Toque nos cristais na mesma ordem.';
-    setMessage(yourTurn);
-    speak(yourTurn);
-    responseStartRef.current = Date.now();
-  }, [playNote, speak, speed]);
+    leoSpeak(leoMessages.yourTurn);
+  }, [leoSpeak, playNote]);
 
-  /* Utilitário de pausa */
-  function pause(ms: number) {
-    return new Promise<void>(res => setTimeout(res, ms));
-  }
-
-  /* Clique no cristal */
-  const handleCrystalClick = useCallback((id: number) => {
-    if (!isPlaying || isShowingSequence) return;
-
-    // Registrar tempo de resposta entre cliques
-    if (responseStartRef.current) {
-      const delta = Date.now() - responseStartRef.current;
-      responseTimesRef.current.push(delta);
-      responseStartRef.current = Date.now();
-    }
-
-    // Feedback imediato
-    setActiveCrystal(id);
-    playNote(CRYSTALS[id].note, 0.35);
-    setTimeout(() => setActiveCrystal(null), 220);
-
-    // Atualiza sequência do jogador
-    const newPlayerSeq = [...playerSequence, id];
-    setPlayerSequence(newPlayerSeq);
-
-    // Verificação
-    const idx = newPlayerSeq.length - 1;
-    const isCorrect = newPlayerSeq[idx] === sequence[idx];
-
-    if (!isCorrect) {
+  // Lidar com clique na gema
+  const handleGemClick = useCallback((index: number, event: React.MouseEvent) => {
+    if (isShowingSequence || !isPlaying) return;
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    createParticles(rect.left + rect.width/2, rect.top + rect.height/2);
+    
+    setActiveGem(index);
+    playNote(gameConfig.gems[index].frequency);
+    
+    setTimeout(() => setActiveGem(null), 300);
+    
+    const newPlayerSequence = [...playerSequence, index];
+    setPlayerSequence(newPlayerSequence);
+    
+    // Verificar sequência
+    const currentIndex = newPlayerSequence.length - 1;
+    
+    if (newPlayerSequence[currentIndex] !== sequence[currentIndex]) {
+      // Erro
       handleError();
-      return;
-    }
-
-    // Acerto parcial
-    setMetrics(prev => ({ ...prev, correctAttempts: prev.correctAttempts + 1 }));
-
-    // Mensagem educativa contextual
-    const tip = `Muito bem! Você tocou o cristal ${CRYSTALS[id].emoji} ${CRYSTALS[id].name}.`;
-    setMessage(tip);
-    speak(tip);
-
-    // Sequência completa
-    if (newPlayerSeq.length === sequence.length) {
+    } else if (newPlayerSequence.length === sequence.length) {
+      // Sequência completa
       handleSuccess();
     }
-  }, [isPlaying, isShowingSequence, playerSequence, sequence, playNote, speak]);
+  }, [isShowingSequence, isPlaying, playerSequence, sequence, playNote, createParticles]);
 
-  /* Sucesso da rodada */
+  // Lidar com sucesso
   const handleSuccess = useCallback(() => {
-    playSuccess();
-
-    // Pontuação: base por comprimento + bônus se média < 1s
-    let roundPoints = sequence.length * 10;
-    if (responseTimesRef.current.length > 0) {
-      const avg = responseTimesRef.current.reduce((a, b) => a + b, 0) / responseTimesRef.current.length;
-      if (avg < 1000) roundPoints += 10; // bônus
+    setScore(prev => prev + sequence.length * 10);
+    setSequencesCompleted(prev => prev + 1);
+    
+    const phase = gameConfig.phases[currentPhase];
+    const newSequencesCompleted = sequencesCompleted + 1;
+    
+    if (newSequencesCompleted >= phase.sequences) {
+      // Fase completa
+      handlePhaseComplete();
+    } else {
+      if (newSequencesCompleted === phase.sequences - 1) {
+        leoSpeak(leoMessages.almostDone);
+      } else {
+        const randomMessage = leoMessages.correct[Math.floor(Math.random() * leoMessages.correct.length)];
+        leoSpeak(randomMessage);
+      }
+      setTimeout(() => nextRound(), 1500);
     }
-    setScore(prev => prev + roundPoints);
+  }, [sequence, currentPhase, sequencesCompleted, leoSpeak, nextRound]);
 
-    // Aumenta nível a cada 3 cristais para mostrar progressão
-    const newLevel = Math.floor(sequence.length / 3) + 1;
-    setLevel(newLevel);
-
-    // Acelera um pouco a cada 5 cristais, com mínimo
-    if (sequence.length % 5 === 0) {
-      setSpeed(prev => Math.max(MIN_SPEED_MS, prev - 50));
-    }
-
-    // Mensagem positiva aleatória
-    const msgs = [
-      'Excelente! Sua memória está brilhando!',
-      'Fantástico! Continue assim!',
-      'Uau! O Leo está orgulhoso!',
-      'Perfeito! Próxima rodada!',
-    ];
-    const text = msgs[Math.floor(Math.random() * msgs.length)];
-    setMessage(text);
-    speak(text);
-
-    // Próxima rodada
-    setTimeout(() => nextRound(), 1200);
-  }, [sequence.length, playSuccess, nextRound, speak]);
-
-  /* Erro finaliza a sessão */
+  // Lidar com erro
   const handleError = useCallback(() => {
-    playError();
-    setIsPlaying(false);
-
-    const sessionDuration = sessionStartRef.current ? Date.now() - sessionStartRef.current : 0;
-    const avgResp =
-      responseTimesRef.current.length > 0
-        ? responseTimesRef.current.reduce((a, b) => a + b, 0) / responseTimesRef.current.length
-        : 0;
-
-    setMetrics(prev => ({
-      ...prev,
-      wrongAttempts: prev.wrongAttempts + 1,
-      totalScore: score,
-      sessionDuration,
-      averageResponseTime: avgResp,
-    }));
-
-    const endMsg = `Ops! Quase! Você acertou ${sequence.length - 1} cristais.`;
-    setMessage(endMsg);
-    speak(endMsg);
-
-    setTimeout(() => setShowResults(true), 800);
-  }, [playError, score, speak, sequence.length]);
-
-  /* Encerrar e reiniciar */
-  const resetGame = useCallback(() => {
-    setIsPlaying(false);
+    leoSpeak(leoMessages.error);
     setSequence([]);
     setPlayerSequence([]);
-    setLevel(1);
-    setScore(0);
-    setSpeed(INITIAL_SPEED_MS);
-    setPowerUps({ replay: 1, slow: 1 });
-    setShowResults(false);
-    setMetrics({
-      maxSequence: 0,
-      totalScore: 0,
-      correctAttempts: 0,
-      wrongAttempts: 0,
-      averageResponseTime: 0,
-      sessionDuration: 0,
-      powerUpsUsed: 0,
-    });
-    responseTimesRef.current = [];
-    sessionStartRef.current = null;
-    responseStartRef.current = null;
+    setSequencesCompleted(0);
+    setIsPlaying(false);
+  }, [leoSpeak]);
 
-    const txt = 'Jogo reiniciado! Clique em começar para uma nova aventura.';
-    setMessage(txt);
-    speak(txt);
-  }, [speak]);
+  // Lidar com fase completa
+  const handlePhaseComplete = useCallback(() => {
+    setShowGoldenGem(true);
+    setScore(prev => prev + 100);
+    leoSpeak(leoMessages.phaseComplete);
+    playNote(gameConfig.goldenGem.frequency, 1000);
+    playSuccessSound();
+    
+    setTimeout(() => {
+      setShowVictoryModal(true);
+    }, 2000);
+  }, [leoSpeak, playNote, playSuccessSound]);
 
-  /* Power-ups */
-  const usePowerUp = useCallback((type: keyof PowerUps) => {
-    if (!isPlaying || isShowingSequence) return;
-    if (powerUps[type] <= 0) return;
-
-    setPowerUps(prev => ({ ...prev, [type]: prev[type] - 1 }));
-    setMetrics(prev => ({ ...prev, powerUpsUsed: prev.powerUpsUsed + 1 }));
-
-    if (type === 'replay') {
-      const txt = 'Repetindo a sequência. Preste atenção nos detalhes!';
-      setMessage(txt);
-      speak(txt);
-      showSequence(sequence);
-    } else if (type === 'slow') {
-      const txt = 'Velocidade reduzida ativada. Respire e observe com calma.';
-      setSpeed(SLOW_SPEED_MS);
-      setMessage(txt);
-      speak(txt);
+  // Próxima fase
+  const nextPhase = useCallback(() => {
+    const newPhase = currentPhase + 1;
+    
+    if (newPhase >= gameConfig.phases.length) {
+      leoSpeak(leoMessages.gameOver);
+      setCurrentPhase(0);
+      setIsPlaying(false);
+      setSequence([]);
+      setSequencesCompleted(0);
+    } else {
+      setCurrentPhase(newPhase);
+      setSequence([]);
+      setPlayerSequence([]);
+      setSequencesCompleted(0);
+      setShowGoldenGem(false);
+      setTimeout(() => nextRound(), 2000);
     }
-  }, [isPlaying, isShowingSequence, powerUps, sequence, showSequence, speak]);
+    
+    setShowVictoryModal(false);
+  }, [currentPhase, leoSpeak, nextRound]);
 
-  /* Estrelas do resultado */
-  const calculateStars = useCallback(() => {
-    const len = metrics.maxSequence;
-    if (len >= 15) return 5;
-    if (len >= 10) return 4;
-    if (len >= 7) return 3;
-    if (len >= 4) return 2;
-    return 1;
-  }, [metrics.maxSequence]);
+  const phase = gameConfig.phases[currentPhase];
+  const progress = (sequencesCompleted / phase.sequences) * 100;
 
-  /* UI */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800">
-      {/* Header */}
-      <div className="bg-white/95 backdrop-blur-sm shadow-lg">
-        <div className="mx-auto max-w-5xl px-4 py-4">
-          <div className="flex items-center justify-between gap-4">
+    <div className="min-h-screen bg-gradient-to-b from-sky-300 via-blue-200 to-cyan-100 relative overflow-hidden">
+      {/* Nuvens animadas no fundo */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-10 left-10 w-32 h-20 bg-white rounded-full opacity-70 animate-pulse" />
+        <div className="absolute top-20 right-20 w-40 h-24 bg-white rounded-full opacity-60 animate-pulse" style={{animationDelay: '1s'}} />
+        <div className="absolute bottom-20 left-1/3 w-36 h-22 bg-white rounded-full opacity-65 animate-pulse" style={{animationDelay: '2s'}} />
+      </div>
+
+      {/* Partículas animadas */}
+      {particles.map(particle => (
+        <div
+          key={particle.id}
+          className="absolute pointer-events-none animate-ping"
+          style={{
+            left: particle.x,
+            top: particle.y,
+            transform: 'translate(-50%, -50%)'
+          }}
+        >
+          <Sparkles className="w-6 h-6 text-yellow-400" />
+        </div>
+      ))}
+
+      <div className="relative z-10 max-w-7xl mx-auto p-4">
+        {/* Header */}
+        <div className="bg-white rounded-3xl p-4 mb-6 shadow-xl border-4 border-yellow-300">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center text-white text-xl">
-                🧙
-              </div>
-              <h1 className="text-2xl font-bold text-gray-800">Simon Mágico</h1>
-            </div>
-            <div className="flex gap-4">
-              <div className="bg-gray-100 px-4 py-2 rounded-lg">
-                <span className="text-sm text-gray-600">Nível</span>
-                <p className="text-xl font-bold text-gray-800">{level}</p>
-              </div>
-              <div className="bg-gray-100 px-4 py-2 rounded-lg">
-                <span className="text-sm text-gray-600">Pontos</span>
-                <p className="text-xl font-bold text-gray-800">{score}</p>
-              </div>
-              <div className="bg-gray-100 px-4 py-2 rounded-lg">
-                <span className="text-sm text-gray-600">Sequência</span>
-                <p className="text-xl font-bold text-gray-800">{sequence.length}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Container principal */}
-      <div className="mx-auto max-w-5xl px-4 py-8">
-        {/* Mensagem + mascote */}
-        <div className="grid md:grid-cols-[1fr,240px] gap-6 items-start">
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl">
-            <div className="flex items-start justify-between gap-4">
-              <p className="text-lg text-gray-800 flex-1">
-                {message}
-              </p>
               <button
-                onClick={() => speak(message)}
-                className="shrink-0 p-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full transition-colors"
-                aria-label="Ouvir mensagem"
-                title="Ouvir mensagem"
+                onClick={() => router.push('/')}
+                className="p-2 hover:bg-yellow-100 rounded-xl transition-colors"
+                aria-label="Voltar"
               >
-                🔊
+                <ArrowLeft className="w-6 h-6 text-gray-700" />
               </button>
+              <h1 className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-400 to-blue-400">
+                ✨ Aventura das Gemas Mágicas ✨
+              </h1>
             </div>
-          </div>
-
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-xl flex flex-col items-center">
-            <div className="w-28 h-28 rounded-xl overflow-hidden bg-gradient-to-br from-amber-200 to-pink-200 flex items-center justify-center">
-              <img
-                src="/mascoteleo.webp"
-                alt="Mascote Leo"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="mt-3 text-center text-sm text-gray-700">
-              🦁 Leo: “Estou com você! Foque na sequência e confie na sua memória.”
+            
+            <div className="flex gap-3">
+              <div className="bg-gradient-to-br from-yellow-400 to-orange-400 text-white px-4 py-2 rounded-2xl shadow-lg transform hover:scale-105 transition-transform">
+                <div className="text-xs">Fase</div>
+                <div className="text-xl font-bold">{currentPhase + 1}</div>
+              </div>
+              <div className="bg-gradient-to-br from-green-400 to-emerald-400 text-white px-4 py-2 rounded-2xl shadow-lg transform hover:scale-105 transition-transform">
+                <div className="text-xs">Pontos</div>
+                <div className="text-xl font-bold">{score}</div>
+              </div>
+              <div className="bg-gradient-to-br from-blue-400 to-cyan-400 text-white px-4 py-2 rounded-2xl shadow-lg transform hover:scale-105 transition-transform">
+                <div className="text-xs">Sequência</div>
+                <div className="text-xl font-bold">{sequence.length}</div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Grade de cristais */}
-        <div className="grid sm:grid-cols-3 grid-cols-2 gap-6 my-8">
-          {CRYSTALS.map((c) => (
+        {/* Área do jogo */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 md:p-8 shadow-2xl border-4 border-blue-200">
+          {/* Indicador de fase */}
+          <div className="text-center mb-6">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-3">
+              🌟 {phase.name}: {phase.gems} Gemas Mágicas 🌟
+            </h2>
+            <div className="w-full bg-gray-200 rounded-full h-8 overflow-hidden border-2 border-gray-300">
+              <div 
+                className="h-full bg-gradient-to-r from-yellow-400 via-green-400 to-blue-400 flex items-center justify-center text-white font-bold transition-all duration-500 shadow-inner"
+                style={{ width: `${progress}%` }}
+              >
+                {sequencesCompleted}/{phase.sequences}
+              </div>
+            </div>
+          </div>
+
+          {/* Container das gemas */}
+          <div className="flex flex-wrap justify-center gap-4 md:gap-6 mb-8 p-4">
+            {[...Array(phase.gems)].map((_, i) => (
+              <button
+                key={i}
+                onClick={(e) => handleGemClick(i, e)}
+                disabled={!isPlaying || isShowingSequence}
+                className={`
+                  relative group transform transition-all duration-300
+                  ${activeGem === i ? 'scale-125 rotate-12' : 'hover:scale-110'}
+                  ${!isPlaying || isShowingSequence ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                `}
+              >
+                {/* Brilho de fundo */}
+                <div className={`
+                  absolute inset-0 rounded-full blur-xl opacity-50 bg-gradient-to-br ${gameConfig.gems[i].gradient}
+                  ${activeGem === i ? 'animate-pulse' : 'group-hover:animate-pulse'}
+                `} />
+                
+                {/* Emoji da gema */}
+                <div className={`
+                  relative text-6xl md:text-7xl filter drop-shadow-lg
+                  ${activeGem === i ? 'animate-bounce' : ''}
+                `}
+                style={{
+                  animation: activeGem !== i ? `float ${3 + i * 0.5}s ease-in-out infinite` : undefined,
+                  animationDelay: `${i * 0.2}s`
+                }}>
+                  {gameConfig.gems[i].emoji}
+                </div>
+                
+                {/* Efeito de brilho 3D */}
+                <div className={`
+                  absolute inset-0 rounded-full pointer-events-none
+                  ${activeGem === i ? 'bg-white/40' : 'bg-white/20'}
+                `} />
+              </button>
+            ))}
+            
+            {/* Gema dourada */}
+            {showGoldenGem && (
+              <div className="relative animate-bounce">
+                <div className="absolute inset-0 rounded-full blur-xl opacity-70 bg-yellow-400 animate-pulse" />
+                <div className="relative text-7xl md:text-8xl filter drop-shadow-2xl animate-spin">
+                  {gameConfig.goldenGem.emoji}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Controles */}
+          <div className="flex justify-center gap-4">
             <button
-              key={c.id}
-              onClick={() => handleCrystalClick(c.id)}
-              disabled={!isPlaying || isShowingSequence}
-              className={[
-                'aspect-square rounded-2xl flex items-center justify-center text-5xl',
-                'bg-gradient-to-br', c.gradient,
-                'transform transition-all duration-200 shadow-lg select-none',
-                activeCrystal === c.id ? 'scale-110 ring-4 ring-white/60' : '',
-                !isPlaying || isShowingSequence ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'
-              ].join(' ')}
-              aria-label={`Cristal ${c.name}`}
-              title={`Cristal ${c.name}`}
+              onClick={startGame}
+              disabled={isPlaying}
+              className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold text-lg md:text-xl rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed border-2 border-white"
             >
-              {c.emoji}
+              {isPlaying ? '🎮 Jogando...' : '🚀 Começar Aventura'}
             </button>
-          ))}
-        </div>
-
-        {/* Controles */}
-        <div className="flex flex-wrap gap-4">
-          <button
-            onClick={startGame}
-            disabled={isPlaying || isShowingSequence}
-            className="flex-1 min-w-[200px] py-4 px-6 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-full transition-colors text-lg"
-          >
-            COMEÇAR
-          </button>
-          <button
-            onClick={resetGame}
-            className="flex-1 min-w-[200px] py-4 px-6 bg-white hover:bg-gray-100 text-purple-700 font-bold rounded-full transition-colors text-lg border-2 border-purple-600"
-          >
-            REINICIAR
-          </button>
-        </div>
-
-        {/* Power-ups */}
-        <div className="fixed bottom-4 right-4 flex flex-col gap-3 z-40">
-          <button
-            onClick={() => usePowerUp('replay')}
-            disabled={powerUps.replay === 0 || !isPlaying || isShowingSequence}
-            className={[
-              'relative p-3 bg-white/95 rounded-xl shadow-lg transition-all',
-              powerUps.replay > 0 && isPlaying && !isShowingSequence ? 'hover:scale-110 ring-2 ring-yellow-400' : 'opacity-50 cursor-not-allowed'
-            ].join(' ')}
-            aria-label="Repetir sequência"
-            title="Repetir sequência"
-          >
-            🔁
-            {powerUps.replay > 0 && (
-              <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                {powerUps.replay}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => usePowerUp('slow')}
-            disabled={powerUps.slow === 0 || !isPlaying || isShowingSequence}
-            className={[
-              'relative p-3 bg-white/95 rounded-xl shadow-lg transition-all',
-              powerUps.slow > 0 && isPlaying && !isShowingSequence ? 'hover:scale-110 ring-2 ring-yellow-400' : 'opacity-50 cursor-not-allowed'
-            ].join(' ')}
-            aria-label="Velocidade lenta"
-            title="Velocidade lenta"
-          >
-            🐢
-            {powerUps.slow > 0 && (
-              <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                {powerUps.slow}
-              </span>
-            )}
-          </button>
+          </div>
         </div>
       </div>
 
-      {/* Modal de resultados */}
-      {showResults && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
-            <h2 className="text-3xl font-bold text-purple-700 text-center mb-4">
-              🎉 Parabéns!
+      {/* Leo Mascote */}
+      <div className="fixed bottom-4 left-4 z-50">
+        <div className="relative">
+          {/* Círculo de fundo para o Leo */}
+          <div className="absolute inset-0 w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-yellow-200 to-orange-200 rounded-full blur-xl opacity-70 animate-pulse" />
+          
+          {/* Mascote Leo - Imagem real */}
+          <div className="relative w-24 h-24 md:w-32 md:h-32 animate-bounce">
+            <img 
+              src="/images/mascotes/leo/Leo_apoio.webp"
+              alt="Leo Mascote"
+              className="w-full h-full object-contain drop-shadow-2xl"
+              onError={(e) => {
+                const img = e.currentTarget;
+                // Tenta com letra minúscula se falhar
+                if (img.src.includes('Leo_apoio')) {
+                  img.src = '/images/mascotes/leo/leo_apoio.webp';
+                } else {
+                  // Se nenhum funcionar, usa um placeholder
+                  img.style.display = 'none';
+                  img.parentElement!.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-orange-400 to-amber-500 rounded-full flex items-center justify-center text-5xl">🦁</div>';
+                }
+              }}
+            />
+          </div>
+          
+          {/* Balão de fala */}
+          <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-white p-3 rounded-2xl shadow-xl min-w-[200px] max-w-[300px] border-2 border-yellow-300 animate-pulse">
+            <div className="absolute bottom-[-8px] left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-white" />
+            <p className="text-gray-800 text-sm md:text-base font-medium text-center">
+              {leoMessage}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal de Vitória */}
+      {showVictoryModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full transform animate-bounce border-4 border-yellow-400">
+            <h2 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400 text-center mb-4">
+              🎉 Parabéns! 🎉
             </h2>
-
-            <div className="text-5xl text-center mb-6">
-              {'⭐'.repeat(calculateStars())}
+            <div className="text-5xl md:text-6xl text-center mb-6 animate-pulse">
+              ⭐⭐⭐⭐⭐
             </div>
-
-            <div className="bg-gray-100 rounded-lg p-4 space-y-2 mb-6 text-gray-800">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Sequência máxima:</span>
-                <strong>{metrics.maxSequence}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Pontuação total:</span>
-                <strong>{metrics.totalScore || score}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Acertos:</span>
-                <strong>{metrics.correctAttempts}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Erros:</span>
-                <strong>{metrics.wrongAttempts}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Tempo médio de resposta:</span>
-                <strong>
-                  {metrics.averageResponseTime ? `${(metrics.averageResponseTime / 1000).toFixed(1)}s` : 'N/A'}
-                </strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Duração da sessão:</span>
-                <strong>
-                  {metrics.sessionDuration ? `${(metrics.sessionDuration / 1000).toFixed(1)}s` : 'N/A'}
-                </strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Power-ups usados:</span>
-                <strong>{metrics.powerUpsUsed}</strong>
-              </div>
+            <p className="text-lg md:text-xl text-gray-700 text-center mb-6">
+              Você completou a fase {currentPhase + 1}!
+            </p>
+            <div className="text-center mb-6">
+              <p className="text-2xl md:text-3xl font-bold text-yellow-500">
+                +100 pontos bônus!
+              </p>
             </div>
-
             <button
-              onClick={resetGame}
-              className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full transition-colors"
+              onClick={nextPhase}
+              className="w-full px-6 py-3 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold text-lg rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all border-2 border-white"
             >
-              JOGAR NOVAMENTE
+              {currentPhase + 1 >= gameConfig.phases.length ? '🎮 Jogar Novamente' : '🚀 Próxima Fase'}
             </button>
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-15px) rotate(5deg); }
+        }
+      `}</style>
     </div>
   );
 }
