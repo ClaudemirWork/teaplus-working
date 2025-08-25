@@ -463,7 +463,6 @@ export default function SimonGemsGame() {
               </button>
             ))}
           </div>
-          
           {/* Gema dourada ESPECIAL - MAIS DESTACADA */}
           {showGoldenGem && (
             <div className="fixed inset-0 flex items-center justify-center z-[90] pointer-events-none">
