@@ -1,4 +1,5 @@
-<div className="fixed bottom-1 left-1 md:bottom-2 md:left-2 z-50">
+{/* Leo Mascote - DESKTOP: fixo no canto / MOBILE: abaixo do jogo */}
+      <div className="hidden md:block fixed bottom-1 left-1 md:bottom-2 md:left-2 z-50">
         <div className="relative">
           <div className="absolute -inset-4 w-72 h-72 md:w-96 md:h-96 bg-gradient-to-br from-yellow-200 to-orange-200 rounded-full blur-3xl opacity-50" />
           
@@ -19,6 +20,35 @@
           <div className="absolute bottom-full mb-6 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-white to-yellow-50 p-5 rounded-3xl shadow-2xl min-w-[340px] max-w-[500px] border-4 border-yellow-400">
             <div className="absolute bottom-[-12px] left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[14px] border-t-yellow-50" />
             <p className="text-gray-800 text-xl md:text-2xl font-bold text-center leading-relaxed">
+              {leoMessage}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Leo Mascote MOBILE - Abaixo do jogo */}
+      <div className="md:hidden mt-4 px-3 pb-6">
+        <div className="flex flex-col items-center">
+          <div className="relative">
+            <div className="absolute -inset-3 w-44 h-44 bg-gradient-to-br from-yellow-200 to-orange-200 rounded-full blur-2xl opacity-40" />
+            
+            <div className="relative w-36 h-36">
+              <img 
+                src="/images/mascotes/leo/Leo_apoio.webp"
+                alt="Leo Mascote"
+                className="w-full h-full object-contain drop-shadow-xl"
+                onError={(e) => {
+                  const img = e.currentTarget;
+                  if (img.src.includes('Leo_apoio')) {
+                    img.src = '/images/mascotes/leo/leo_apoio.webp';
+                  }
+                }}
+              />
+            </div>
+          </div>
+          
+          <div className="mt-3 bg-gradient-to-r from-white to-yellow-50 p-3 rounded-2xl shadow-lg w-full max-w-xs border-2 border-yellow-400">
+            <p className="text-gray-800 text-sm font-bold text-center">
               {leoMessage}
             </p>
           </div>
@@ -280,58 +310,66 @@ export default function SimonGemsGame() {
     setShowVictoryModal(false);
   }, [currentPhase, leoSpeak, nextRound]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      leoSpeak("Olá! Eu sou o Leo! Vamos brincar com as gemas mágicas?");
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [leoSpeak]);
+
   const phase = gameConfig.phases[currentPhase];
   const progress = (sequencesCompleted / phase.sequences) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-300 via-blue-200 to-cyan-100 relative overflow-hidden">
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="hidden md:block absolute inset-0 overflow-hidden">
         <div className="absolute top-10 left-10 w-32 h-20 bg-white rounded-full opacity-70 animate-pulse" />
         <div className="absolute top-20 right-20 w-40 h-24 bg-white rounded-full opacity-60 animate-pulse" style={{animationDelay: '1s'}} />
         <div className="absolute bottom-20 left-1/3 w-36 h-22 bg-white rounded-full opacity-65 animate-pulse" style={{animationDelay: '2s'}} />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto p-4">
-        <div className="bg-white rounded-3xl p-4 mb-6 shadow-xl border-4 border-yellow-300">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
+      <div className="relative z-10 max-w-7xl mx-auto p-2 md:p-4">
+        <div className="bg-white rounded-2xl md:rounded-3xl p-3 md:p-4 mb-4 md:mb-6 shadow-xl border-2 md:border-4 border-yellow-300">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
+            <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto">
               <button
                 onClick={() => router.push('/')}
-                className="p-2 hover:bg-yellow-100 rounded-xl transition-colors"
+                className="p-1.5 md:p-2 hover:bg-yellow-100 rounded-lg md:rounded-xl transition-colors"
                 aria-label="Voltar"
               >
-                <ArrowLeft className="w-6 h-6 text-gray-700" />
+                <ArrowLeft className="w-5 h-5 md:w-6 md:h-6 text-gray-700" />
               </button>
-              <h1 className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-400 to-blue-400">
-                ✨ Aventura das Gemas Mágicas ✨
+              <h1 className="text-lg md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-400 to-blue-400">
+                ✨ Gemas Mágicas ✨
               </h1>
             </div>
             
-            <div className="flex gap-3">
-              <div className="bg-gradient-to-br from-yellow-400 to-orange-400 text-white px-4 py-2 rounded-2xl shadow-lg">
-                <div className="text-xs">Fase</div>
-                <div className="text-xl font-bold">{currentPhase + 1}</div>
+            <div className="flex gap-2 md:gap-3">
+              <div className="bg-gradient-to-br from-yellow-400 to-orange-400 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-xl md:rounded-2xl shadow-lg">
+                <div className="text-[10px] md:text-xs">Fase</div>
+                <div className="text-base md:text-xl font-bold">{currentPhase + 1}</div>
               </div>
-              <div className="bg-gradient-to-br from-green-400 to-emerald-400 text-white px-4 py-2 rounded-2xl shadow-lg">
-                <div className="text-xs">Pontos</div>
-                <div className="text-xl font-bold">{score}</div>
+              <div className="bg-gradient-to-br from-green-400 to-emerald-400 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-xl md:rounded-2xl shadow-lg">
+                <div className="text-[10px] md:text-xs">Pontos</div>
+                <div className="text-base md:text-xl font-bold">{score}</div>
               </div>
-              <div className="bg-gradient-to-br from-blue-400 to-cyan-400 text-white px-4 py-2 rounded-2xl shadow-lg">
-                <div className="text-xs">Sequência</div>
-                <div className="text-xl font-bold">{sequence.length}</div>
+              <div className="bg-gradient-to-br from-blue-400 to-cyan-400 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-xl md:rounded-2xl shadow-lg">
+                <div className="text-[10px] md:text-xs">Sequência</div>
+                <div className="text-base md:text-xl font-bold">{sequence.length}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 md:p-8 shadow-2xl border-4 border-blue-200">
-          <div className="text-center mb-6">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-3">
-              🌟 {phase.name}: {phase.gems} Gemas Mágicas 🌟
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl md:rounded-3xl p-4 md:p-8 shadow-xl md:shadow-2xl border-2 md:border-4 border-blue-200">
+          <div className="text-center mb-4 md:mb-6">
+            <h2 className="text-base md:text-2xl font-bold text-gray-800 mb-2 md:mb-3">
+              🌟 {phase.name}: {phase.gems} Gemas 🌟
             </h2>
-            <div className="w-full bg-gray-200 rounded-full h-8 overflow-hidden border-2 border-gray-300">
+            <div className="w-full bg-gray-200 rounded-full h-6 md:h-8 overflow-hidden border md:border-2 border-gray-300">
               <div 
-                className="h-full bg-gradient-to-r from-yellow-400 via-green-400 to-blue-400 flex items-center justify-center text-white font-bold transition-all duration-500"
+                className="h-full bg-gradient-to-r from-yellow-400 via-green-400 to-blue-400 flex items-center justify-center text-white text-sm md:text-base font-bold transition-all duration-500"
                 style={{ width: `${progress}%` }}
               >
                 {sequencesCompleted}/{phase.sequences}
@@ -339,7 +377,7 @@ export default function SimonGemsGame() {
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-4 md:gap-6 mb-8 p-4 min-h-[200px]">
+          <div className={`flex flex-wrap justify-center ${phase.gems > 4 ? 'gap-2' : 'gap-3'} md:gap-6 mb-6 md:mb-8 p-2 md:p-4 min-h-[150px] md:min-h-[200px]`}>
             {!showGoldenGem && [...Array(phase.gems)].map((_, i) => (
               <button
                 key={i}
@@ -352,12 +390,12 @@ export default function SimonGemsGame() {
                 `}
               >
                 <div className={`
-                  absolute inset-0 rounded-full blur-xl opacity-50 bg-gradient-to-br ${gameConfig.gems[i].gradient}
+                  absolute inset-0 rounded-full blur-lg md:blur-xl opacity-50 bg-gradient-to-br ${gameConfig.gems[i].gradient}
                   ${activeGem === i ? 'animate-pulse' : 'group-hover:animate-pulse'}
                 `} />
                 
                 <div className={`
-                  relative text-6xl md:text-7xl filter drop-shadow-lg
+                  relative ${phase.gems > 6 ? 'text-4xl' : 'text-5xl'} md:text-7xl filter drop-shadow-lg
                   ${activeGem === i ? 'animate-bounce' : ''}
                 `}>
                   {gameConfig.gems[i].emoji}
@@ -369,18 +407,18 @@ export default function SimonGemsGame() {
           {showGoldenGem && (
             <div className="fixed inset-0 flex items-center justify-center z-[90] pointer-events-none">
               <div className="relative animate-bounce">
-                <div className="absolute inset-0 w-40 h-40 md:w-56 md:h-56">
+                <div className="absolute inset-0 w-32 md:w-56 h-32 md:h-56">
                   <div className="absolute inset-0 bg-yellow-300 opacity-30 rounded-full animate-ping" />
                   <div className="absolute inset-0 bg-yellow-400 opacity-20 rounded-full animate-ping" style={{animationDelay: '0.5s'}} />
                 </div>
                 
-                <div className="absolute inset-0 w-32 h-32 md:w-48 md:h-48 rounded-full blur-3xl opacity-90 bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-300 animate-pulse" />
+                <div className="absolute inset-0 w-24 md:w-48 h-24 md:h-48 rounded-full blur-2xl md:blur-3xl opacity-90 bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-300 animate-pulse" />
                 
-                <div className="relative text-[8rem] md:text-[12rem] filter drop-shadow-2xl animate-spin" style={{animationDuration: '3s'}}>
+                <div className="relative text-[6rem] md:text-[12rem] filter drop-shadow-2xl animate-spin" style={{animationDuration: '3s'}}>
                   ⭐
                 </div>
                 
-                <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-6 py-2 rounded-full font-bold text-xl shadow-2xl animate-pulse">
+                <div className="absolute -bottom-10 md:-bottom-12 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-amber-500 text-white px-4 md:px-6 py-1.5 md:py-2 rounded-full font-bold text-base md:text-xl shadow-2xl animate-pulse">
                   +100 BÔNUS!
                 </div>
               </div>
@@ -391,9 +429,9 @@ export default function SimonGemsGame() {
             <button
               onClick={startGame}
               disabled={isPlaying}
-              className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold text-lg md:text-xl rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed border-2 border-white"
+              className="px-4 md:px-8 py-2.5 md:py-4 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold text-base md:text-xl rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed border-2 border-white"
             >
-              {isPlaying ? '🎮 Jogando...' : '🚀 Começar Aventura'}
+              {isPlaying ? '🎮 Jogando...' : '🚀 Começar'}
             </button>
           </div>
         </div>
@@ -428,24 +466,24 @@ export default function SimonGemsGame() {
 
       {showVictoryModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full transform animate-bounce border-4 border-yellow-400">
-            <h2 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400 text-center mb-4">
+          <div className="bg-white rounded-2xl md:rounded-3xl p-5 md:p-8 max-w-md w-full transform animate-bounce border-3 md:border-4 border-yellow-400">
+            <h2 className="text-2xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400 text-center mb-3 md:mb-4">
               🎉 Parabéns! 🎉
             </h2>
-            <div className="text-5xl md:text-6xl text-center mb-6 animate-pulse">
+            <div className="text-4xl md:text-6xl text-center mb-4 md:mb-6 animate-pulse">
               ⭐⭐⭐⭐⭐
             </div>
-            <p className="text-lg md:text-xl text-gray-700 text-center mb-6">
+            <p className="text-base md:text-xl text-gray-700 text-center mb-4 md:mb-6">
               Você completou a fase {currentPhase + 1}!
             </p>
-            <div className="text-center mb-6">
-              <p className="text-2xl md:text-3xl font-bold text-yellow-500">
+            <div className="text-center mb-4 md:mb-6">
+              <p className="text-xl md:text-3xl font-bold text-yellow-500">
                 +100 pontos bônus!
               </p>
             </div>
             <button
               onClick={nextPhase}
-              className="w-full px-6 py-3 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold text-lg rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all border-2 border-white"
+              className="w-full px-4 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold text-base md:text-lg rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all border-2 border-white"
             >
               {currentPhase + 1 >= gameConfig.phases.length ? '🎮 Jogar Novamente' : '🚀 Próxima Fase'}
             </button>
