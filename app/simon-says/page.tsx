@@ -1,13 +1,13 @@
 // app/simon-says/page.tsx
 'use client';
 
-// IMPORTANTE: A imagem do Leo mascote está em:
-// public/images/mascotes/leo/Leo_apoio.webp
-// (Note que "Leo_apoio" tem L maiúsculo)
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ArrowLeft, Sparkles, Star } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+// IMPORTANTE: A imagem do Leo mascote está em:
+// public/images/mascotes/leo/Leo_apoio.webp
+// (Note que "Leo_apoio" tem L maiúsculo)
 
 interface Phase {
   gems: number;
@@ -505,6 +505,39 @@ export default function SimonGemsGame() {
 
       {/* Leo Mascote - TAMANHO DOBRADO E MELHOR POSICIONADO */}
       <div className="fixed bottom-2 left-2 md:bottom-4 md:left-4 z-50">
+        <div className="relative">
+          {/* Círculo de fundo para o Leo */}
+          <div className="absolute inset-0 w-40 h-40 md:w-56 md:h-56 bg-gradient-to-br from-yellow-200 to-orange-200 rounded-full blur-2xl opacity-60 animate-pulse" />
+          
+          {/* Mascote Leo - Imagem real MAIOR */}
+          <div className="relative w-40 h-40 md:w-56 md:h-56 animate-bounce">
+            <img 
+              src="/images/mascotes/leo/Leo_apoio.webp"
+              alt="Leo Mascote"
+              className="w-full h-full object-contain drop-shadow-2xl"
+              onError={(e) => {
+                const img = e.currentTarget;
+                // Tenta com letra minúscula se falhar
+                if (img.src.includes('Leo_apoio')) {
+                  img.src = '/images/mascotes/leo/leo_apoio.webp';
+                } else {
+                  // Se nenhum funcionar, usa um placeholder
+                  img.style.display = 'none';
+                  img.parentElement!.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-orange-400 to-amber-500 rounded-full flex items-center justify-center text-8xl">🦁</div>';
+                }
+              }}
+            />
+          </div>
+          
+          {/* Balão de fala MAIOR e MAIS DESTACADO */}
+          <div className="absolute bottom-full mb-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-white to-yellow-50 p-4 rounded-3xl shadow-2xl min-w-[280px] max-w-[450px] border-4 border-yellow-400">
+            <div className="absolute bottom-[-12px] left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[12px] border-t-yellow-50" />
+            <p className="text-gray-800 text-lg md:text-xl font-bold text-center leading-relaxed">
+              {leoMessage}
+            </p>
+          </div>
+        </div>
+      </div>
         <div className="relative">
           {/* Círculo de fundo para o Leo */}
           <div className="absolute inset-0 w-40 h-40 md:w-56 md:h-56 bg-gradient-to-br from-yellow-200 to-orange-200 rounded-full blur-2xl opacity-60 animate-pulse" />
