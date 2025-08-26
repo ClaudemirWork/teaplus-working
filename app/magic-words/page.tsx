@@ -29,7 +29,6 @@ export default function PalavrasMagicas() {
   const [correctCardId, setCorrectCardId] = useState(null);
   const [rewardModal, setRewardModal] = useState(null);
   const [storyText, setStoryText] = useState('Era uma vez...');
-  const [selectedCards, setSelectedCards] = useState([]);
 
   // Card Database
   const cardDatabase = {
@@ -52,49 +51,60 @@ export default function PalavrasMagicas() {
       {id: 'confuso', icon: '😕', label: 'Confuso', gesture: '😕', gestureDesc: 'coçando a cabeça'},
       {id: 'amigo', icon: '🤝', label: 'Amigo', gesture: '🤝', gestureDesc: 'estendendo a mão'},
       {id: 'amor', icon: '❤️', label: 'Amor', gesture: '❤️', gestureDesc: 'mãos no coração'}
-    ],
-    alimentos: [
-      {id: 'agua', icon: '💧', label: 'Água', gesture: '💧', gestureDesc: 'bebendo'},
-      {id: 'leite', icon: '🥛', label: 'Leite', gesture: '🥛', gestureDesc: 'segurando copo'},
-      {id: 'pao', icon: '🍞', label: 'Pão', gesture: '🍞', gestureDesc: 'mastigando'},
-      {id: 'fruta', icon: '🍎', label: 'Fruta', gesture: '🍎', gestureDesc: 'mordendo'},
-      {id: 'suco', icon: '🧃', label: 'Suco', gesture: '🧃', gestureDesc: 'sugando canudo'},
-      {id: 'biscoito', icon: '🍪', label: 'Biscoito', gesture: '🍪', gestureDesc: 'pegando'},
-      {id: 'sorvete', icon: '🍦', label: 'Sorvete', gesture: '🍦', gestureDesc: 'lambendo'},
-      {id: 'pizza', icon: '🍕', label: 'Pizza', gesture: '🍕', gestureDesc: 'abrindo a boca'}
-    ],
-    animais: [
-      {id: 'cachorro', icon: '🐕', label: 'Cachorro', gesture: '🐕', gestureDesc: 'latindo'},
-      {id: 'gato', icon: '🐈', label: 'Gato', gesture: '🐈', gestureDesc: 'miando'},
-      {id: 'passaro', icon: '🦜', label: 'Pássaro', gesture: '🦜', gestureDesc: 'batendo asas'},
-      {id: 'peixe', icon: '🐠', label: 'Peixe', gesture: '🐠', gestureDesc: 'nadando'},
-      {id: 'coelho', icon: '🐰', label: 'Coelho', gesture: '🐰', gestureDesc: 'pulando'},
-      {id: 'cavalo', icon: '🐴', label: 'Cavalo', gesture: '🐴', gestureDesc: 'galopando'},
-      {id: 'vaca', icon: '🐄', label: 'Vaca', gesture: '🐄', gestureDesc: 'mugindo'},
-      {id: 'galinha', icon: '🐓', label: 'Galinha', gesture: '🐓', gestureDesc: 'bicando'}
     ]
   };
 
-  const npcNames = ['João', 'Maria', 'Pedro', 'Ana', 'Lucas', 'Sofia', 'Gabriel', 'Julia'];
+  const npcNames = ['João', 'Maria', 'Pedro', 'Ana', 'Lucas', 'Sofia'];
 
   const tutorialSteps = [
-    { text: "Olá! Eu sou a Mila, a feiticeira das palavras! 🌟", speak: true },
-    { text: "O Reino perdeu a voz mágica! Todos fazem gestos agora! 😱", speak: true },
-    { text: "Você será o tradutor mágico que entende os gestos! 🎭", speak: true },
-    { text: "Veja! João está apontando para a garganta... 👉💧", speak: true, showExample: true },
-    { text: "Clique no card SEDE para ajudá-lo! 💧", speak: true, highlight: 'sede' },
-    { text: "Muito bem! Agora você já sabe jogar! Vamos começar! 🎮", speak: true, endTutorial: true }
+    { 
+      text: "Olá! Eu sou a Mila, a feiticeira das palavras!", 
+      cleanText: "Olá! Eu sou a Mila, a feiticeira das palavras!",
+      showMila: true 
+    },
+    { 
+      text: "O Reino perdeu a voz mágica! Todos fazem gestos agora!", 
+      cleanText: "O Reino perdeu a voz mágica! Todos fazem gestos agora!",
+      showMila: true 
+    },
+    { 
+      text: "Você será o tradutor mágico que entende os gestos!", 
+      cleanText: "Você será o tradutor mágico que entende os gestos!",
+      showMila: true 
+    },
+    { 
+      text: "Veja! João está apontando para a garganta...", 
+      cleanText: "Veja! João está apontando para a garganta",
+      showMila: true,
+      showExample: true 
+    },
+    { 
+      text: "Clique no card SEDE para ajudá-lo!", 
+      cleanText: "Clique no card SEDE para ajudá-lo!",
+      showMila: true,
+      showExample: true,
+      highlight: 'sede' 
+    },
+    { 
+      text: "Muito bem! Agora você já sabe jogar! Vamos começar!", 
+      cleanText: "Muito bem! Agora você já sabe jogar! Vamos começar!",
+      showMila: true,
+      endTutorial: true 
+    }
   ];
 
-  // Speech synthesis
+  // Speech synthesis - only clean text without emojis
   const speak = (text) => {
     if (!gameState.soundEnabled) return;
     
     if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
+      // Remove emojis and special characters for speech
+      const cleanText = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
+      const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.lang = 'pt-BR';
-      utterance.rate = 0.9;
-      utterance.pitch = 1.1;
+      utterance.rate = 0.85;
+      utterance.pitch = 1.2;
+      utterance.volume = 0.9;
       speechSynthesis.speak(utterance);
     }
   };
@@ -113,8 +123,9 @@ export default function PalavrasMagicas() {
   useEffect(() => {
     const savedState = localStorage.getItem('palavrasMagicasState');
     if (savedState) {
-      setGameState(JSON.parse(savedState));
-    } else if (gameState.tutorialStep === 0) {
+      const parsed = JSON.parse(savedState);
+      setGameState({...parsed, cardsDiscovered: new Set(parsed.cardsDiscovered)});
+    } else {
       // Start tutorial for new players
       setTimeout(() => {
         setTutorialActive(true);
@@ -122,13 +133,6 @@ export default function PalavrasMagicas() {
       }, 500);
     }
   }, []);
-
-  // Save game state
-  useEffect(() => {
-    if (currentScreen === 'game') {
-      localStorage.setItem('palavrasMagicasState', JSON.stringify(gameState));
-    }
-  }, [gameState, currentScreen]);
 
   // Start game
   const startGame = () => {
@@ -138,17 +142,14 @@ export default function PalavrasMagicas() {
 
   // Load level
   const loadLevel = (level) => {
-    const categories = ['necessidades', 'emocoes', 'alimentos', 'animais'];
-    
     if (level >= 5 && level <= 8) {
       setGameState(prev => ({ ...prev, isStoryMode: true }));
       setCurrentScreen('story');
       return;
     }
     
-    const categoryIndex = level <= 4 ? level - 1 : Math.floor(Math.random() * 4);
-    const category = categories[categoryIndex];
-    const numCards = level <= 4 ? [4, 6, 8, 12][level - 1] : 16;
+    const category = level <= 2 ? 'necessidades' : 'emocoes';
+    const numCards = level <= 2 ? 4 : 6;
     
     startRound(category, numCards);
   };
@@ -179,62 +180,56 @@ export default function PalavrasMagicas() {
   };
 
   // Handle card click
-  const handleCardClick = (card, cardElement) => {
+  const handleCardClick = (card) => {
     const isCorrect = card.id === correctCardId;
     
     if (isCorrect) {
-      cardElement.classList.add('animate-correct');
-      speak("Muito bem! Acertou!");
+      speak("Muito bem! Você acertou!");
+      
+      const newDiscovered = new Set(gameState.cardsDiscovered);
+      newDiscovered.add(card.id);
       
       setGameState(prev => ({
         ...prev,
         score: prev.score + 100,
         correctStreak: prev.correctStreak + 1,
-        cardsDiscovered: new Set([...prev.cardsDiscovered, card.id])
+        cardsDiscovered: newDiscovered
       }));
       
       // Check for special rewards
       if (gameState.correctStreak === 2) {
         showReward('Card Dourado', '⭐', 'Vale 500 pontos extras!');
         setGameState(prev => ({ ...prev, score: prev.score + 500 }));
-      } else if (gameState.correctStreak === 4) {
-        showReward('Card Arco-íris', '🌈', 'Vale 1000 pontos extras!');
-        setGameState(prev => ({ ...prev, score: prev.score + 1000 }));
       }
       
       // Next round or complete level
       setTimeout(() => {
-        if (gameState.currentRound < 10) {
-          const level = gameState.currentLevel;
-          const categories = ['necessidades', 'emocoes', 'alimentos', 'animais'];
-          const categoryIndex = level <= 4 ? level - 1 : Math.floor(Math.random() * 4);
-          const category = categories[categoryIndex];
-          const numCards = level <= 4 ? [4, 6, 8, 12][level - 1] : 16;
+        if (gameState.currentRound < 5) {
+          const category = gameState.currentLevel <= 2 ? 'necessidades' : 'emocoes';
+          const numCards = gameState.currentLevel <= 2 ? 4 : 6;
           startRound(category, numCards);
         } else {
           completeLevel();
         }
-      }, 1500);
+      }, 2000);
     } else {
-      cardElement.classList.add('animate-wrong');
       speak("Ops! Tente novamente!");
       
       setGameState(prev => ({
         ...prev,
-        lives: prev.lives - 1,
+        lives: Math.max(0, prev.lives - 1),
         correctStreak: 0
       }));
       
       if (gameState.lives <= 1) {
         setTimeout(() => {
-          showReward('Fim de Jogo', '😢', `Pontuação final: ${gameState.score} pontos`);
-          setTimeout(() => setCurrentScreen('menu'), 3000);
+          showReward('Fim de Jogo', '😢', `Pontuação: ${gameState.score} pontos`);
+          setTimeout(() => {
+            setCurrentScreen('menu');
+            setGameState(prev => ({...prev, currentRound: 0, lives: 3}));
+          }, 3000);
         }, 1000);
       }
-      
-      setTimeout(() => {
-        cardElement.classList.remove('animate-wrong');
-      }, 500);
     }
   };
 
@@ -245,7 +240,7 @@ export default function PalavrasMagicas() {
     showReward(
       `Fase ${gameState.currentLevel} Completa!`,
       '🏆',
-      `Bônus de vida: ${bonus} pontos!`
+      `Bônus: ${bonus} pontos!`
     );
     
     setGameState(prev => ({
@@ -255,10 +250,6 @@ export default function PalavrasMagicas() {
       currentRound: 0,
       lives: 3
     }));
-    
-    if (gameState.score >= 1000 && gameState.currentLevel === 4) {
-      showReward('Modo História Desbloqueado!', '📖', 'Agora você pode criar suas próprias histórias!');
-    }
     
     setTimeout(() => {
       loadLevel(gameState.currentLevel + 1);
@@ -279,11 +270,12 @@ export default function PalavrasMagicas() {
     
     switch(type) {
       case 'hint':
+        // Remove 2 wrong cards
         const wrongCards = displayedCards.filter(c => c.id !== correctCardId);
         const toHide = shuffleArray(wrongCards).slice(0, 2);
         setDisplayedCards(prev => prev.map(card => ({
           ...card,
-          hidden: toHide.includes(card)
+          hidden: toHide.some(h => h.id === card.id)
         })));
         speak("Dica da Mila ativada!");
         break;
@@ -311,8 +303,8 @@ export default function PalavrasMagicas() {
     const currentStep = tutorialSteps[step];
     
     useEffect(() => {
-      if (currentStep.speak) {
-        speak(currentStep.text);
+      if (currentStep.cleanText) {
+        speak(currentStep.cleanText);
       }
       
       if (currentStep.endTutorial) {
@@ -322,29 +314,77 @@ export default function PalavrasMagicas() {
           setGameState(prev => ({ ...prev, tutorialStep: tutorialSteps.length }));
         }, 3000);
       }
-    }, [step, currentStep]);
+    }, [step]);
     
     return (
-      <div className="tutorial-overlay">
-        <div className="mila-container">
-          <div className="mila">
-            <div className="mila-hat">⭐</div>
-            <div className="mila-face">
-              <div className="eyes">
-                <div className="eye"></div>
-                <div className="eye"></div>
+      <div className="tutorial-screen">
+        {currentStep.showMila && (
+          <div className="mila-container">
+            <div className="mila-character">
+              <div className="mila-hat">
+                <div className="star">⭐</div>
               </div>
-              <div className="mouth"></div>
+              <div className="mila-body">
+                <div className="mila-face">
+                  <div className="mila-eyes">
+                    <div className="eye left"></div>
+                    <div className="eye right"></div>
+                  </div>
+                  <div className="mila-mouth"></div>
+                </div>
+                <div className="mila-arms">
+                  <div className="arm left"></div>
+                  <div className="arm right"></div>
+                </div>
+              </div>
+              <div className="magic-sparkles">
+                <span className="sparkle s1">✨</span>
+                <span className="sparkle s2">✨</span>
+                <span className="sparkle s3">✨</span>
+              </div>
             </div>
-            <div className="sparkles">✨</div>
+            
+            <div className="speech-bubble">
+              <p className="bubble-text">{currentStep.text}</p>
+            </div>
           </div>
-        </div>
+        )}
         
-        <div className="speech-bubble">
-          <p>{currentStep.text}</p>
-        </div>
+        {currentStep.showExample && (
+          <div className="example-container">
+            <div className="npc-demo">
+              <div className="npc-avatar">
+                <div className="npc-head"></div>
+                <div className="npc-body"></div>
+              </div>
+              <div className="npc-name">João</div>
+              <div className="npc-gesture-demo">👉💧</div>
+            </div>
+            
+            {currentStep.highlight === 'sede' && (
+              <div className="cards-demo">
+                <div className={`card-demo ${currentStep.highlight === 'sede' ? 'highlight' : ''}`}>
+                  <span className="card-icon">💧</span>
+                  <span className="card-label">Sede</span>
+                </div>
+                <div className="card-demo disabled">
+                  <span className="card-icon">🍽️</span>
+                  <span className="card-label">Fome</span>
+                </div>
+                <div className="card-demo disabled">
+                  <span className="card-icon">😴</span>
+                  <span className="card-label">Sono</span>
+                </div>
+                <div className="card-demo disabled">
+                  <span className="card-icon">🆘</span>
+                  <span className="card-label">Ajuda</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         
-        {step < tutorialSteps.length - 1 && (
+        {step < tutorialSteps.length - 1 && !currentStep.endTutorial && (
           <button 
             className="continue-btn"
             onClick={() => setStep(step + 1)}
@@ -352,6 +392,352 @@ export default function PalavrasMagicas() {
             Continuar ➡️
           </button>
         )}
+
+        <style jsx>{`
+          .tutorial-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #87CEEB 0%, #98E4D6 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 1000;
+          }
+
+          .mila-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            animation: fadeIn 0.5s ease;
+          }
+
+          @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+          }
+
+          .mila-character {
+            position: relative;
+            width: 200px;
+            height: 250px;
+          }
+
+          .mila-hat {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 40px solid transparent;
+            border-right: 40px solid transparent;
+            border-bottom: 60px solid #4B0082;
+            z-index: 10;
+          }
+
+          .star {
+            position: absolute;
+            top: 15px;
+            left: -10px;
+            font-size: 30px;
+            animation: twinkle 2s infinite;
+          }
+
+          @keyframes twinkle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.9); }
+          }
+
+          .mila-body {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 150px;
+            background: linear-gradient(135deg, #FF69B4, #FFB6C1);
+            border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(255, 105, 180, 0.3);
+          }
+
+          .mila-face {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+          }
+
+          .mila-eyes {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+          }
+
+          .eye {
+            width: 20px;
+            height: 25px;
+            background: white;
+            border-radius: 50%;
+            position: relative;
+            animation: blink 4s infinite;
+          }
+
+          .eye::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #333;
+            border-radius: 50%;
+            top: 10px;
+            left: 5px;
+          }
+
+          @keyframes blink {
+            0%, 90%, 100% { transform: scaleY(1); }
+            95% { transform: scaleY(0.1); }
+          }
+
+          .mila-mouth {
+            width: 30px;
+            height: 15px;
+            border-bottom: 3px solid #333;
+            border-radius: 0 0 30px 30px;
+            margin: 0 auto;
+            animation: talk 0.8s infinite alternate;
+          }
+
+          @keyframes talk {
+            from { width: 30px; }
+            to { width: 20px; }
+          }
+
+          .mila-arms {
+            position: absolute;
+            top: 80px;
+            width: 150px;
+          }
+
+          .arm {
+            position: absolute;
+            width: 30px;
+            height: 60px;
+            background: linear-gradient(135deg, #FF69B4, #FFB6C1);
+            border-radius: 15px;
+          }
+
+          .arm.left {
+            left: -10px;
+            transform: rotate(-20deg);
+            animation: wave 2s infinite;
+          }
+
+          .arm.right {
+            right: -10px;
+            transform: rotate(20deg);
+          }
+
+          @keyframes wave {
+            0%, 100% { transform: rotate(-20deg); }
+            50% { transform: rotate(-40deg); }
+          }
+
+          .magic-sparkles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+          }
+
+          .sparkle {
+            position: absolute;
+            font-size: 25px;
+            animation: float-sparkle 3s infinite;
+          }
+
+          .sparkle.s1 {
+            top: -20px;
+            right: -30px;
+            animation-delay: 0s;
+          }
+
+          .sparkle.s2 {
+            bottom: 20px;
+            left: -30px;
+            animation-delay: 1s;
+          }
+
+          .sparkle.s3 {
+            top: 60px;
+            right: -40px;
+            animation-delay: 2s;
+          }
+
+          @keyframes float-sparkle {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+          }
+
+          .speech-bubble {
+            background: white;
+            border-radius: 20px;
+            padding: 20px 30px;
+            position: relative;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            max-width: 350px;
+            animation: slideUp 0.5s ease;
+          }
+
+          .speech-bubble::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 15px solid white;
+          }
+
+          @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+
+          .bubble-text {
+            font-size: 20px;
+            color: #333;
+            text-align: center;
+            line-height: 1.4;
+            font-weight: 500;
+          }
+
+          .example-container {
+            margin-top: 30px;
+            animation: fadeIn 0.5s ease;
+          }
+
+          .npc-demo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+          }
+
+          .npc-avatar {
+            width: 100px;
+            height: 100px;
+            position: relative;
+          }
+
+          .npc-head {
+            width: 60px;
+            height: 60px;
+            background: #FFE4B5;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 20px;
+          }
+
+          .npc-body {
+            width: 80px;
+            height: 50px;
+            background: #4169E1;
+            border-radius: 20px 20px 10px 10px;
+            position: absolute;
+            bottom: 0;
+            left: 10px;
+          }
+
+          .npc-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 10px;
+          }
+
+          .npc-gesture-demo {
+            font-size: 50px;
+            margin-top: 10px;
+            animation: gesture-demo 1.5s infinite;
+          }
+
+          @keyframes gesture-demo {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.2) rotate(10deg); }
+          }
+
+          .cards-demo {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+            padding: 0 20px;
+          }
+
+          .card-demo {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+          }
+
+          .card-demo.highlight {
+            background: linear-gradient(135deg, #90EE90, #98FB98);
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(144, 238, 144, 0.5);
+            animation: pulse-highlight 1s infinite;
+          }
+
+          @keyframes pulse-highlight {
+            0%, 100% { transform: scale(1.1); }
+            50% { transform: scale(1.15); }
+          }
+
+          .card-demo.disabled {
+            opacity: 0.3;
+          }
+
+          .card-icon {
+            font-size: 35px;
+            margin-bottom: 5px;
+          }
+
+          .card-label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+          }
+
+          .continue-btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s ease;
+          }
+
+          .continue-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+          }
+        `}</style>
       </div>
     );
   };
@@ -359,8 +745,10 @@ export default function PalavrasMagicas() {
   // Menu screen
   const MenuScreen = () => (
     <div className="menu-screen">
-      <h1 className="game-logo">🎪 Palavras Mágicas</h1>
-      <p className="game-subtitle">Uma aventura CAA gamificada</p>
+      <div className="logo-container">
+        <h1 className="game-logo">🎪 Palavras Mágicas</h1>
+        <p className="game-subtitle">Uma aventura CAA gamificada</p>
+      </div>
       
       <div className="menu-buttons">
         <button className="menu-btn primary" onClick={startGame}>
@@ -371,20 +759,83 @@ export default function PalavrasMagicas() {
           const total = Object.values(cardDatabase).flat().length;
           showReward('Minha Coleção', '📚', `${discovered}/${total} cards descobertos!`);
         }}>
-          📚 Minha Coleção
+          📚 Coleção
         </button>
         <button className="menu-btn" onClick={() => {
           setGameState(prev => ({ ...prev, soundEnabled: !prev.soundEnabled }));
-          showReward('Configurações', '⚙️', `Som: ${gameState.soundEnabled ? 'Ligado' : 'Desligado'}`);
+          showReward('Configurações', '⚙️', `Som: ${gameState.soundEnabled ? 'Desligado' : 'Ligado'}`);
         }}>
-          ⚙️ Configurações
+          ⚙️ Som: {gameState.soundEnabled ? 'ON' : 'OFF'}
         </button>
         <button className="menu-btn" onClick={() => {
-          showReward('Sobre', 'ℹ️', 'Palavras Mágicas v1.0 - Um jogo CAA gamificado');
+          showReward('Sobre', 'ℹ️', 'Desenvolvido com amor para crianças especiais');
         }}>
           ℹ️ Sobre
         </button>
       </div>
+
+      <style jsx>{`
+        .menu-screen {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #87CEEB 0%, #98E4D6 100%);
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          padding: 20px;
+        }
+
+        .logo-container {
+          text-align: center;
+          margin-bottom: 40px;
+        }
+
+        .game-logo {
+          font-size: 42px;
+          font-weight: bold;
+          color: white;
+          text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+          margin-bottom: 10px;
+        }
+
+        .game-subtitle {
+          font-size: 18px;
+          color: white;
+          opacity: 0.95;
+        }
+
+        .menu-buttons {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+          width: 100%;
+          max-width: 300px;
+        }
+
+        .menu-btn {
+          padding: 18px 30px;
+          background: white;
+          color: #2196F3;
+          border: none;
+          border-radius: 30px;
+          font-size: 18px;
+          font-weight: bold;
+          cursor: pointer;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+          transition: all 0.3s ease;
+        }
+
+        .menu-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .menu-btn.primary {
+          background: linear-gradient(135deg, #4CAF50, #45a049);
+          color: white;
+          font-size: 22px;
+        }
+      `}</style>
     </div>
   );
 
@@ -409,18 +860,29 @@ export default function PalavrasMagicas() {
         <div className="progress-bar">
           <div 
             className="progress-fill" 
-            style={{ width: `${(gameState.currentRound / 10) * 100}%` }}
+            style={{ width: `${(gameState.currentRound / 5) * 100}%` }}
           >
-            {gameState.currentRound}/10
+            {gameState.currentRound}/5
           </div>
         </div>
       </div>
       
       {currentNPC && (
         <div className="npc-area">
-          <div className="npc-character"></div>
-          <div className="npc-name">{currentNPC.name}</div>
-          <div className="npc-gesture">{currentNPC.gesture}</div>
+          <div className="npc-container">
+            <div className="npc-character">
+              <div className="npc-head"></div>
+              <div className="npc-body"></div>
+              <div className="npc-arms">
+                <div className="npc-arm left"></div>
+                <div className="npc-arm right"></div>
+              </div>
+            </div>
+            <div className="npc-info">
+              <div className="npc-name">{currentNPC.name}</div>
+              <div className="npc-gesture">{currentNPC.gesture}</div>
+            </div>
+          </div>
         </div>
       )}
       
@@ -428,11 +890,13 @@ export default function PalavrasMagicas() {
         {displayedCards.map((card) => (
           <div
             key={card.id}
-            className={`card ${card.hidden ? 'hidden' : ''}`}
-            onClick={(e) => !card.hidden && handleCardClick(card, e.currentTarget)}
+            className={`game-card ${card.hidden ? 'hidden' : ''} ${card.id === correctCardId ? 'correct-card' : ''}`}
+            onClick={() => !card.hidden && handleCardClick(card)}
           >
-            <div className="card-icon">{card.icon}</div>
-            <div className="card-label">{card.label}</div>
+            <div className="card-content">
+              <span className="card-icon">{card.icon}</span>
+              <span className="card-label">{card.label}</span>
+            </div>
           </div>
         ))}
       </div>
@@ -443,351 +907,56 @@ export default function PalavrasMagicas() {
           onClick={() => usePowerup('hint')}
           disabled={gameState.powerups.hint === 0}
         >
-          💡 ({gameState.powerups.hint})
+          <span className="powerup-icon">💡</span>
+          <span className="powerup-count">{gameState.powerups.hint}</span>
         </button>
         <button 
           className={`powerup ${gameState.powerups.time === 0 ? 'disabled' : ''}`}
           onClick={() => usePowerup('time')}
           disabled={gameState.powerups.time === 0}
         >
-          ⏱️ ({gameState.powerups.time})
+          <span className="powerup-icon">⏱️</span>
+          <span className="powerup-count">{gameState.powerups.time}</span>
         </button>
         <button 
           className={`powerup ${gameState.powerups.life === 0 ? 'disabled' : ''}`}
           onClick={() => usePowerup('life')}
           disabled={gameState.powerups.life === 0}
         >
-          💚 ({gameState.powerups.life})
+          <span className="powerup-icon">💚</span>
+          <span className="powerup-count">{gameState.powerups.life}</span>
         </button>
       </div>
-      
-      <button className="album-btn" onClick={() => {
-        const discovered = gameState.cardsDiscovered.size;
-        const total = Object.values(cardDatabase).flat().length;
-        showReward('Minha Coleção', '📚', `${discovered}/${total} cards descobertos!`);
-      }}>
-        📚
-      </button>
-    </div>
-  );
 
-  // Story mode screen
-  const StoryScreen = () => {
-    const [storyStep, setStoryStep] = useState(0);
-    const storyTemplates = [
-      "Era uma vez um/uma ",
-      " que morava em ",
-      ". Um dia estava ",
-      " porque ",
-      ". Então ",
-      " e ficou ",
-      "!"
-    ];
-    
-    const storyOptions = [
-      ['menino', 'menina', 'animal'],
-      ['casa', 'escola', 'parque'],
-      ['feliz', 'triste', 'assustado'],
-      ['choveu', 'encontrou amigo', 'perdeu brinquedo'],
-      ['brincou', 'correu', 'abraçou'],
-      ['alegre', 'cansado', 'satisfeito']
-    ];
-    
-    const handleStoryChoice = (choice) => {
-      setStoryText(prev => prev + choice + (storyTemplates[storyStep + 1] || ''));
-      setStoryStep(prev => prev + 1);
-      speak(choice);
-      
-      if (storyStep >= storyOptions.length - 1) {
-        setTimeout(() => {
-          showReward('História Criada!', '📚', 'Sua história foi salva!');
-          const stories = JSON.parse(localStorage.getItem('savedStories') || '[]');
-          stories.push({
-            text: storyText + choice + '!',
-            date: new Date().toLocaleDateString('pt-BR'),
-            level: gameState.currentLevel
-          });
-          localStorage.setItem('savedStories', JSON.stringify(stories));
-        }, 1000);
-      }
-    };
-    
-    return (
-      <div className="story-screen">
-        <header className="game-header">
-          <div className="level-info">
-            <span className="level-badge">Modo História</span>
-          </div>
-          <button 
-            className="back-btn"
-            onClick={() => setCurrentScreen('menu')}
-          >
-            Voltar
-          </button>
-        </header>
-        
-        <div className="story-mode">
-          <div className="story-canvas">
-            <p className="story-text">{storyText}</p>
-          </div>
-          
-          <div className="story-cards">
-            {storyStep < storyOptions.length && storyOptions[storyStep].map((option) => (
-              <button
-                key={option}
-                className="story-card"
-                onClick={() => handleStoryChoice(option)}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="game-container">
       <style jsx>{`
-        .game-container {
-          width: 100%;
-          max-width: 480px;
-          height: 100vh;
-          margin: 0 auto;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          position: relative;
-          overflow: hidden;
-          font-family: 'Segoe UI', system-ui, sans-serif;
-        }
-
-        /* Tutorial Overlay */
-        .tutorial-overlay {
-          position: fixed;
-          inset: 0;
-          background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.95) 70%);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          z-index: 1000;
-          animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        /* Mila Character */
-        .mila-container {
-          position: relative;
-          margin-bottom: 30px;
-        }
-
-        .mila {
-          width: 180px;
-          height: 180px;
-          background: linear-gradient(135deg, #f093fb, #f5576c);
-          border-radius: 50%;
-          position: relative;
-          animation: float 3s ease-in-out infinite;
-          box-shadow: 0 20px 40px rgba(240, 147, 251, 0.4);
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(5deg); }
-        }
-
-        .mila-hat {
-          position: absolute;
-          top: -30px;
-          left: 50%;
-          transform: translateX(-50%);
-          font-size: 40px;
-        }
-
-        .mila-face {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-        }
-
-        .eyes {
-          display: flex;
-          gap: 30px;
-          margin-bottom: 20px;
-        }
-
-        .eye {
-          width: 15px;
-          height: 20px;
-          background: white;
-          border-radius: 50%;
-          animation: blink 4s infinite;
-        }
-
-        @keyframes blink {
-          0%, 90%, 100% { transform: scaleY(1); }
-          95% { transform: scaleY(0.1); }
-        }
-
-        .mouth {
-          width: 30px;
-          height: 15px;
-          border-bottom: 3px solid white;
-          border-radius: 0 0 30px 30px;
-          margin: 0 auto;
-          animation: talk 0.5s ease-in-out infinite alternate;
-        }
-
-        @keyframes talk {
-          from { width: 30px; }
-          to { width: 25px; }
-        }
-
-        .sparkles {
-          position: absolute;
-          top: -20px;
-          right: -20px;
-          font-size: 30px;
-          animation: sparkle 2s ease-in-out infinite;
-        }
-
-        @keyframes sparkle {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.2); }
-        }
-
-        /* Speech Bubble */
-        .speech-bubble {
-          background: white;
-          border-radius: 20px;
-          padding: 20px 30px;
-          margin: 0 20px 30px;
-          position: relative;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-          animation: slideUp 0.5s ease;
-          max-width: 300px;
-          text-align: center;
-        }
-
-        .speech-bubble::before {
-          content: '';
-          position: absolute;
-          top: -20px;
-          left: 50%;
-          transform: translateX(-50%);
-          border-left: 20px solid transparent;
-          border-right: 20px solid transparent;
-          border-bottom: 20px solid white;
-        }
-
-        @keyframes slideUp {
-          from { transform: translateY(50px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-
-        /* Buttons */
-        .continue-btn, .menu-btn {
-          padding: 12px 30px;
-          background: linear-gradient(135deg, #667eea, #764ba2);
-          color: white;
-          border: none;
-          border-radius: 25px;
-          font-size: 16px;
-          cursor: pointer;
-          animation: pulse 2s infinite;
-          box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-          transition: all 0.3s ease;
-        }
-
-        .continue-btn:hover, .menu-btn:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
-        }
-
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-
-        /* Menu Screen */
-        .menu-screen {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          min-height: 100vh;
-          padding: 20px;
-        }
-
-        .game-logo {
-          font-size: 48px;
-          font-weight: bold;
-          color: white;
-          margin-bottom: 10px;
-          text-align: center;
-          text-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
-        .game-subtitle {
-          font-size: 20px;
-          color: rgba(255,255,255,0.9);
-          margin-bottom: 40px;
-        }
-
-        .menu-buttons {
-          display: flex;
-          flex-direction: column;
-          gap: 15px;
-          width: 100%;
-          max-width: 300px;
-        }
-
-        .menu-btn {
-          padding: 18px 30px;
-          background: white;
-          color: #667eea;
-          font-weight: bold;
-        }
-
-        .menu-btn.primary {
-          background: linear-gradient(135deg, #f093fb, #f5576c);
-          color: white;
-          font-size: 22px;
-        }
-
-        /* Game Screen */
         .game-screen {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #F0F8FF 0%, #E6F3FF 100%);
           display: flex;
           flex-direction: column;
-          height: 100vh;
-          background: #1a1a2e;
         }
 
         .game-header {
-          background: linear-gradient(135deg, #667eea, #764ba2);
-          padding: 15px;
+          background: linear-gradient(135deg, #4CAF50, #45a049);
+          padding: 15px 20px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+          box-shadow: 0 3px 10px rgba(0,0,0,0.2);
         }
 
         .level-badge {
-          background: rgba(255,255,255,0.2);
-          padding: 5px 15px;
+          background: rgba(255,255,255,0.3);
+          padding: 8px 16px;
           border-radius: 20px;
           color: white;
           font-weight: bold;
+          font-size: 16px;
         }
 
         .score {
-          background: rgba(255,255,255,0.2);
-          padding: 8px 15px;
+          background: rgba(255,255,255,0.3);
+          padding: 8px 20px;
           border-radius: 20px;
           color: white;
           font-size: 18px;
@@ -806,24 +975,25 @@ export default function PalavrasMagicas() {
 
         .heart.lost {
           opacity: 0.3;
+          filter: grayscale(1);
         }
 
-        /* Progress Bar */
         .progress-section {
           padding: 15px 20px;
-          background: rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.8);
         }
 
         .progress-bar {
-          background: rgba(255,255,255,0.2);
+          background: #E0E0E0;
           height: 30px;
           border-radius: 15px;
           overflow: hidden;
+          box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .progress-fill {
           height: 100%;
-          background: linear-gradient(90deg, #f093fb, #f5576c);
+          background: linear-gradient(90deg, #4CAF50, #8BC34A);
           border-radius: 15px;
           transition: width 0.5s ease;
           display: flex;
@@ -831,145 +1001,204 @@ export default function PalavrasMagicas() {
           justify-content: center;
           color: white;
           font-weight: bold;
+          font-size: 14px;
         }
 
-        /* NPC Area */
         .npc-area {
-          background: linear-gradient(135deg, #a8edea, #fed6e3);
-          margin: 20px;
-          padding: 30px;
+          padding: 20px;
+          display: flex;
+          justify-content: center;
+        }
+
+        .npc-container {
+          background: white;
           border-radius: 20px;
-          min-height: 200px;
+          padding: 20px 40px;
+          box-shadow: 0 5px 15px rgba(0,0,0,0.1);
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: center;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+          gap: 15px;
         }
 
         .npc-character {
-          width: 120px;
+          width: 100px;
           height: 120px;
-          background: linear-gradient(135deg, #ffecd2, #fcb69f);
-          border-radius: 50%;
-          animation: bounce 2s ease-in-out infinite;
+          position: relative;
         }
 
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
+        .npc-head {
+          width: 60px;
+          height: 60px;
+          background: #FFE4B5;
+          border-radius: 50%;
+          position: absolute;
+          top: 0;
+          left: 20px;
+          box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+
+        .npc-head::before {
+          content: '';
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          background: #333;
+          border-radius: 50%;
+          top: 20px;
+          left: 15px;
+        }
+
+        .npc-head::after {
+          content: '';
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          background: #333;
+          border-radius: 50%;
+          top: 20px;
+          right: 15px;
+        }
+
+        .npc-body {
+          width: 80px;
+          height: 60px;
+          background: #4169E1;
+          border-radius: 20px 20px 10px 10px;
+          position: absolute;
+          bottom: 0;
+          left: 10px;
+          box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+
+        .npc-arms {
+          position: absolute;
+          top: 60px;
+          width: 100px;
+        }
+
+        .npc-arm {
+          position: absolute;
+          width: 20px;
+          height: 40px;
+          background: #4169E1;
+          border-radius: 10px;
+        }
+
+        .npc-arm.left {
+          left: 5px;
+          transform: rotate(-15deg);
+          animation: wave-arm 2s infinite;
+        }
+
+        .npc-arm.right {
+          right: 5px;
+          transform: rotate(15deg);
+        }
+
+        @keyframes wave-arm {
+          0%, 100% { transform: rotate(-15deg); }
+          50% { transform: rotate(-30deg); }
+        }
+
+        .npc-info {
+          text-align: center;
         }
 
         .npc-name {
-          margin-top: 15px;
           font-size: 20px;
           font-weight: bold;
           color: #333;
+          margin-bottom: 10px;
         }
 
         .npc-gesture {
-          margin-top: 10px;
-          font-size: 60px;
-          animation: gesture 1s ease-in-out infinite alternate;
+          font-size: 50px;
+          animation: gesture-anim 1.5s infinite;
         }
 
-        @keyframes gesture {
-          from { transform: rotate(-10deg) scale(1); }
-          to { transform: rotate(10deg) scale(1.1); }
+        @keyframes gesture-anim {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50% { transform: scale(1.2) rotate(5deg); }
         }
 
-        /* Cards Grid */
         .cards-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-          gap: 15px;
-          padding: 20px;
-          overflow-y: auto;
           flex: 1;
+          padding: 20px;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          gap: 15px;
+          max-width: 600px;
+          margin: 0 auto;
         }
 
-        .card {
+        .game-card {
           background: white;
           border-radius: 15px;
-          padding: 15px;
+          padding: 20px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+          min-height: 120px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .game-card:hover:not(.hidden) {
+          transform: translateY(-5px);
+          box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .game-card.hidden {
+          opacity: 0.3;
+          pointer-events: none;
+          background: #f0f0f0;
+        }
+
+        .card-content {
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-          min-height: 120px;
-        }
-
-        .card:hover {
-          transform: translateY(-5px) scale(1.05);
-          box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-
-        .card.hidden {
-          opacity: 0.3;
-          pointer-events: none;
-        }
-
-        .card.animate-correct {
-          background: linear-gradient(135deg, #84fab0, #8fd3f4);
-          animation: correctPulse 0.6s ease;
-        }
-
-        @keyframes correctPulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.2); }
-          100% { transform: scale(1); }
-        }
-
-        .card.animate-wrong {
-          background: linear-gradient(135deg, #ff6b6b, #feca57);
-          animation: shake 0.5s ease;
-        }
-
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-10px); }
-          75% { transform: translateX(10px); }
+          gap: 8px;
         }
 
         .card-icon {
           font-size: 40px;
-          margin-bottom: 8px;
         }
 
         .card-label {
-          font-size: 14px;
+          font-size: 16px;
           font-weight: bold;
           color: #333;
-          text-align: center;
         }
 
-        /* Power-ups */
         .powerups {
           position: fixed;
           bottom: 20px;
-          left: 20px;
+          left: 50%;
+          transform: translateX(-50%);
           display: flex;
-          gap: 10px;
-          z-index: 100;
+          gap: 15px;
+          background: white;
+          padding: 10px;
+          border-radius: 30px;
+          box-shadow: 0 5px 20px rgba(0,0,0,0.2);
         }
 
         .powerup {
           width: 60px;
           height: 60px;
-          background: linear-gradient(135deg, #84fab0, #8fd3f4);
-          border-radius: 50%;
+          background: linear-gradient(135deg, #81C784, #66BB6A);
           border: none;
+          border-radius: 50%;
+          cursor: pointer;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          font-size: 24px;
-          cursor: pointer;
-          box-shadow: 0 5px 15px rgba(0,0,0,0.2);
           transition: all 0.3s ease;
+          position: relative;
         }
 
         .powerup:hover:not(.disabled) {
@@ -979,110 +1208,131 @@ export default function PalavrasMagicas() {
         .powerup.disabled {
           opacity: 0.5;
           cursor: not-allowed;
+          background: #ccc;
         }
 
-        /* Album Button */
-        .album-btn {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          width: 60px;
-          height: 60px;
-          background: linear-gradient(135deg, #f093fb, #f5576c);
-          border-radius: 50%;
-          border: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .powerup-icon {
           font-size: 24px;
-          cursor: pointer;
-          box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-          z-index: 100;
         }
 
-        /* Story Mode */
+        .powerup-count {
+          position: absolute;
+          bottom: 5px;
+          right: 5px;
+          background: white;
+          color: #333;
+          font-size: 12px;
+          font-weight: bold;
+          padding: 2px 6px;
+          border-radius: 10px;
+        }
+      `}</style>
+    </div>
+  );
+
+  // Story mode screen
+  const StoryScreen = () => (
+    <div className="story-screen">
+      <header className="game-header">
+        <div className="level-info">
+          <span className="level-badge">Modo História</span>
+        </div>
+        <button className="back-btn" onClick={() => setCurrentScreen('menu')}>
+          Voltar
+        </button>
+      </header>
+      
+      <div className="story-content">
+        <div className="story-canvas">
+          <p className="story-text">{storyText}</p>
+        </div>
+        
+        <div className="story-options">
+          <button className="story-option" onClick={() => {
+            setStoryText(prev => prev + " menino");
+            speak("menino");
+          }}>menino</button>
+          <button className="story-option" onClick={() => {
+            setStoryText(prev => prev + " menina");
+            speak("menina");
+          }}>menina</button>
+          <button className="story-option" onClick={() => {
+            setStoryText(prev => prev + " animal");
+            speak("animal");
+          }}>animal</button>
+        </div>
+      </div>
+
+      <style jsx>{`
         .story-screen {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #FFE4E1 0%, #FFDAB9 100%);
           display: flex;
           flex-direction: column;
-          height: 100vh;
-          background: #1a1a2e;
         }
 
         .back-btn {
-          background: rgba(255,255,255,0.2);
+          background: rgba(255,255,255,0.3);
           border: none;
-          padding: 8px 15px;
+          padding: 8px 20px;
           border-radius: 20px;
           color: white;
+          font-weight: bold;
           cursor: pointer;
         }
 
-        .story-mode {
+        .story-content {
           flex: 1;
           padding: 20px;
-          background: linear-gradient(135deg, #ffecd2, #fcb69f);
-          border-radius: 20px 20px 0 0;
-          margin-top: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
         }
 
         .story-canvas {
           background: white;
-          border-radius: 15px;
-          padding: 20px;
+          border-radius: 20px;
+          padding: 30px;
+          box-shadow: 0 5px 15px rgba(0,0,0,0.1);
           min-height: 200px;
-          margin-bottom: 20px;
-          box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
         }
 
         .story-text {
-          font-size: 18px;
-          line-height: 1.8;
+          font-size: 20px;
+          line-height: 1.6;
           color: #333;
         }
 
-        .story-cards {
+        .story-options {
           display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
+          gap: 15px;
           justify-content: center;
+          flex-wrap: wrap;
         }
 
-        .story-card {
+        .story-option {
           background: white;
-          border: 2px solid #667eea;
-          border-radius: 10px;
-          padding: 12px 20px;
+          border: 3px solid #4CAF50;
+          border-radius: 15px;
+          padding: 12px 25px;
+          font-size: 18px;
+          font-weight: bold;
+          color: #333;
           cursor: pointer;
-          font-size: 16px;
           transition: all 0.3s ease;
         }
 
-        .story-card:hover {
-          transform: scale(1.05);
-          box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        /* Responsive */
-        @media (max-width: 480px) {
-          .cards-grid {
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-          }
-          
-          .card {
-            min-height: 100px;
-            padding: 10px;
-          }
-          
-          .card-icon {
-            font-size: 30px;
-          }
-          
-          .card-label {
-            font-size: 12px;
-          }
+        .story-option:hover {
+          background: #4CAF50;
+          color: white;
+          transform: translateY(-2px);
         }
       `}</style>
+    </div>
+  );
 
+  return (
+    <div className="game-container">
       {currentScreen === 'tutorial' && <TutorialScreen />}
       {currentScreen === 'menu' && <MenuScreen />}
       {currentScreen === 'game' && <GameScreen />}
@@ -1094,58 +1344,87 @@ export default function PalavrasMagicas() {
             <div className="reward-icon">{rewardModal.icon}</div>
             <h2 className="reward-title">{rewardModal.title}</h2>
             <p className="reward-description">{rewardModal.description}</p>
-            <button className="continue-btn" onClick={() => setRewardModal(null)}>
-              Continuar
+            <button className="close-btn" onClick={() => setRewardModal(null)}>
+              Fechar
             </button>
           </div>
+
+          <style jsx>{`
+            .reward-modal {
+              position: fixed;
+              inset: 0;
+              background: rgba(0,0,0,0.7);
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              z-index: 2000;
+              padding: 20px;
+            }
+
+            .reward-content {
+              background: white;
+              padding: 30px;
+              border-radius: 20px;
+              text-align: center;
+              max-width: 90%;
+              animation: zoomIn 0.3s ease;
+            }
+
+            @keyframes zoomIn {
+              from { transform: scale(0.8); opacity: 0; }
+              to { transform: scale(1); opacity: 1; }
+            }
+
+            .reward-icon {
+              font-size: 60px;
+              margin-bottom: 15px;
+            }
+
+            .reward-title {
+              font-size: 24px;
+              color: #333;
+              margin-bottom: 10px;
+            }
+
+            .reward-description {
+              font-size: 16px;
+              color: #666;
+              margin-bottom: 20px;
+            }
+
+            .close-btn {
+              padding: 10px 30px;
+              background: linear-gradient(135deg, #4CAF50, #45a049);
+              color: white;
+              border: none;
+              border-radius: 20px;
+              font-size: 16px;
+              font-weight: bold;
+              cursor: pointer;
+            }
+          `}</style>
         </div>
       )}
 
-      <style jsx>{`
-        .reward-modal {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.8);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 2000;
+      <style jsx global>{`
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          -webkit-tap-highlight-color: transparent;
+          user-select: none;
         }
 
-        .reward-content {
-          background: linear-gradient(135deg, #667eea, #764ba2);
-          padding: 40px;
-          border-radius: 30px;
-          text-align: center;
-          color: white;
-          animation: zoomIn 0.5s ease;
-          max-width: 90%;
+        body {
+          font-family: 'Segoe UI', system-ui, sans-serif;
+          overflow: hidden;
         }
 
-        @keyframes zoomIn {
-          from { transform: scale(0); }
-          to { transform: scale(1); }
-        }
-
-        .reward-icon {
-          font-size: 80px;
-          margin-bottom: 20px;
-          animation: rotate 2s linear infinite;
-        }
-
-        @keyframes rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        .reward-title {
-          font-size: 28px;
-          margin-bottom: 10px;
-        }
-
-        .reward-description {
-          font-size: 18px;
-          opacity: 0.9;
+        .game-container {
+          width: 100%;
+          max-width: 768px;
+          margin: 0 auto;
+          position: relative;
         }
       `}</style>
     </div>
