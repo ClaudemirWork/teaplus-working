@@ -1,933 +1,383 @@
-'use client'
+'use client';
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ArrowLeft, Volume2, VolumeX } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
+// --- Interfaces (Tipos de Dados) ---
 interface Card {
-  id: string
-  label: string
-  image: string
-  gesture: string
-  gestureDesc: string
+  id: string;
+  label: string;
+  image: string;
+  gesture: string;
+  gestureDesc: string;
 }
 
-interface GameState {
-  currentLevel: number
-  score: number
-  lives: number
-  tutorialStep: number
-  currentRound: number
-  soundEnabled: boolean
-  correctCardId: string | null
+interface Phase {
+  cards: number;
+  rounds: number;
+  name: string;
 }
 
-export default function MagicWordsPage() {
-  const [gameState, setGameState] = useState<GameState>({
-    currentLevel: 1,
-    score: 0,
-    lives: 3,
-    tutorialStep: 0,
-    currentRound: 1,
-    soundEnabled: true,
-    correctCardId: null
-  })
+// --- Configuração Central do Jogo ---
+const gameConfig = {
+  phases: [
+    { cards: 4, rounds: 5, name: "Tradutor Iniciante" },
+    { cards: 6, rounds: 7, name: "Intérprete Aprendiz" },
+    { cards: 8, rounds: 8, name: "Mestre dos Gestos" },
+    { cards: 12, rounds: 10, name: "Feiticeiro das Palavras" }
+  ] as Phase[],
+  cards: [
+    { id: 'sede', label: 'Sede', image: '/images/cards/sede.webp', gesture: '👉💧', gestureDesc: 'apontando para a garganta' },
+    { id: 'fome', label: 'Fome', image: '/images/cards/fome.webp', gesture: '🤲🍽️', gestureDesc: 'com as mãos na barriga' },
+    { id: 'banheiro', label: 'Banheiro', image: '/images/cards/banheiro.webp', gesture: '🚽', gestureDesc: 'se contorcendo um pouquinho' },
+    { id: 'sono', label: 'Sono', image: '/images/cards/sono.webp', gesture: '😴', gestureDesc: 'bocejando e com soninho' },
+    { id: 'doente', label: 'Dodói', image: '/images/cards/doente.webp', gesture: '🤒', gestureDesc: 'com a mão na testa, parecendo febril' },
+    { id: 'frio', label: 'Frio', image: '/images/cards/frio.webp', gesture: '🥶', gestureDesc: 'tremendo de frio' },
+    { id: 'calor', label: 'Calor', image: '/images/cards/calor.webp', gesture: '🥵', gestureDesc: 'se abanando com a mão' },
+    { id: 'ajuda', label: 'Ajuda', image: '/images/cards/ajuda.webp', gesture: '🙏', gestureDesc: 'com as mãos juntas, pedindo ajuda' },
+    { id: 'triste', label: 'Triste', image: '/images/cards/triste.webp', gesture: '😢', gestureDesc: 'enxugando uma lágrima do rosto' },
+    { id: 'feliz', label: 'Feliz', image: '/images/cards/feliz.webp', gesture: '😄', gestureDesc: 'com um sorriso bem grande' },
+    { id: 'brincar', label: 'Brincar', image: '/images/cards/brincar.webp', gesture: '🎉', gestureDesc: 'pulando de alegria' },
+    { id: 'dor', label: 'Dor', image: '/images/cards/dor.webp', gesture: '🤕', gestureDesc: 'apontando para onde dói' },
+  ] as Card[],
+  npcNames: ['Maria', 'João', 'Ana', 'Lucas', 'Sofia', 'Pedro']
+};
 
-  const [showTutorial, setShowTutorial] = useState(false)
-  const [showMenu, setShowMenu] = useState(false)
-  const [showGame, setShowGame] = useState(false)
-  const [showModal, setShowModal] = useState(false)
-  const [modalContent, setModalContent] = useState({ icon: '🏆', title: 'Parabéns!', description: 'Você completou a fase!' })
-  const [currentCards, setCurrentCards] = useState<Card[]>([])
-  const [npcInfo, setNpcInfo] = useState({ name: 'Maria', gesture: '👉💧' })
-  const [cardStates, setCardStates] = useState<{ [key: string]: string }>({})
+export default function MagicWordsGame() {
+  const router = useRouter();
+  const audioContextRef = useRef<AudioContext | null>(null);
 
-  const cards = {
-    necessidades: [
-      {
-        id: 'sede',
-        label: 'Sede',
-        image: 'https://api.arasaac.org/v1/pictograms/2439?color=true&download=false',
-        gesture: '👉💧',
-        gestureDesc: 'apontando para a garganta'
-      },
-      {
-        id: 'fome',
-        label: 'Fome',
-        image: 'https://api.arasaac.org/v1/pictograms/11738?color=true&download=false',
-        gesture: '🤲🍽️',
-        gestureDesc: 'mãos na barriga'
-      },
-      {
-        id: 'banheiro',
-        label: 'Banheiro',
-        image: 'https://api.arasaac.org/v1/pictograms/8975?color=true&download=false',
-        gesture: '🚽',
-        gestureDesc: 'se contorcendo'
-      },
-      {
-        id: 'sono',
-        label: 'Sono',
-        image: 'https://api.arasaac.org/v1/pictograms/6246?color=true&download=false',
-        gesture: '😴',
-        gestureDesc: 'bocejando'
-      },
-      {
-        id: 'doente',
-        label: 'Doente',
-        image: 'https://api.arasaac.org/v1/pictograms/11439?color=true&download=false',
-        gesture: '🤒',
-        gestureDesc: 'mão na testa'
-      },
-      {
-        id: 'frio',
-        label: 'Frio',
-        image: 'https://api.arasaac.org/v1/pictograms/6369?color=true&download=false',
-        gesture: '🥶',
-        gestureDesc: 'tremendo'
-      },
-      {
-        id: 'calor',
-        label: 'Calor',
-        image: 'https://api.arasaac.org/v1/pictograms/5467?color=true&download=false',
-        gesture: '🥵',
-        gestureDesc: 'se abanando'
-      },
-      {
-        id: 'ajuda',
-        label: 'Ajuda',
-        image: 'https://api.arasaac.org/v1/pictograms/7421?color=true&download=false',
-        gesture: '🙏',
-        gestureDesc: 'mãos juntas pedindo'
-      }
-    ]
-  }
+  // --- Estados do Jogo ---
+  const [currentPhase, setCurrentPhase] = useState(0);
+  const [score, setScore] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isUiBlocked, setIsUiBlocked] = useState(false);
+  const [roundsCompleted, setRoundsCompleted] = useState(0);
+  
+  const [currentCards, setCurrentCards] = useState<Card[]>([]);
+  const [correctCard, setCorrectCard] = useState<Card | null>(null);
+  const [npcName, setNpcName] = useState('Maria');
+  const [cardFeedback, setCardFeedback] = useState<{ [key: string]: 'correct' | 'wrong' }>({});
 
-  const npcNames = ['João', 'Maria', 'Pedro', 'Ana', 'Lucas', 'Sofia']
+  const [milaMessage, setMilaMessage] = useState("Olá! Sou a Mila! Vamos traduzir os gestos mágicos?");
+  const [showVictoryModal, setShowVictoryModal] = useState(false);
+  const [showGameOverModal, setShowGameOverModal] = useState(false);
+  const [isSoundOn, setIsSoundOn] = useState(true);
 
-  const tutorialSteps = [
-    { text: "Olá! Eu sou a Mila, a feiticeira das palavras!", showMila: true },
-    { text: "O Reino perdeu a voz mágica! Todos fazem gestos agora!", showMila: true },
-    { text: "Você será o tradutor mágico que entende os gestos!", showMila: true },
-    { text: "Veja! João está apontando para a garganta...", showMila: true, showExample: true },
-    { text: "Clique no card SEDE para ajudá-lo!", showMila: true, showExample: true, showCards: true, highlight: 'sede' }
-  ]
+  // --- Mensagens da Mila ---
+  const milaMessages = {
+    start: "Vamos começar! Preste atenção no gesto.",
+    nextRound: ["Observe com atenção!", "O que será que ele(a) quer dizer?", "Você consegue traduzir este gesto!"],
+    correct: ["Isso mesmo! 🎉", "Você é um ótimo tradutor! ⭐", "Excelente! 🌟", "Continue assim! 💪"],
+    error: "Ops, não foi esse. Mas não desista! ❤️",
+    phaseComplete: "Uau! Você completou a fase e ganhou mais pontos! ✨",
+    gameOver: "Não foi dessa vez, mas você foi incrível! Vamos tentar de novo? 😊"
+  };
 
-  const speak = (text: string) => {
-    if (!gameState.soundEnabled) return
-    
-    const cleanText = text.replace(/[^\w\sÀ-ÿ.,!?]/g, '')
-    
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(cleanText)
-      utterance.lang = 'pt-BR'
-      utterance.rate = 0.9
-      utterance.pitch = 1.1
-      window.speechSynthesis.speak(utterance)
-    }
-  }
-
-  const startTutorial = () => {
-    setGameState(prev => ({ ...prev, tutorialStep: 0 }))
-    setShowTutorial(true)
-    speak(tutorialSteps[0].text)
-  }
-
-  const nextTutorialStep = () => {
-    const nextStep = gameState.tutorialStep + 1
-    
-    if (nextStep < tutorialSteps.length) {
-      setGameState(prev => ({ ...prev, tutorialStep: nextStep }))
-      speak(tutorialSteps[nextStep].text)
-    } else {
-      setShowTutorial(false)
-      setShowMenu(true)
-      speak("Agora você já sabe jogar! Vamos começar!")
-    }
-  }
-
-  const startGame = () => {
-    setShowMenu(false)
-    setShowGame(true)
-    setGameState(prev => ({ ...prev, currentRound: 1, lives: 3 }))
-    loadRound()
-  }
-
-  const loadRound = () => {
-    const availableCards = [...cards.necessidades]
-    const roundCards = availableCards.slice(0, 4)
-    const correctCard = roundCards[Math.floor(Math.random() * roundCards.length)]
-    
-    setGameState(prev => ({ ...prev, correctCardId: correctCard.id }))
-    setCurrentCards(roundCards)
-    setCardStates({})
-    
-    const npcName = npcNames[Math.floor(Math.random() * npcNames.length)]
-    setNpcInfo({ name: npcName, gesture: correctCard.gesture })
-    
-    speak(`${npcName} está ${correctCard.gestureDesc}. O que será?`)
-  }
-
-  const checkCard = (cardId: string) => {
-    if (cardId === gameState.correctCardId) {
-      setCardStates(prev => ({ ...prev, [cardId]: 'correct' }))
-      speak("Muito bem! Você acertou!")
-      
-      const newScore = gameState.score + 100
-      setGameState(prev => ({ ...prev, score: newScore }))
-      
-      setTimeout(() => {
-        if (gameState.currentRound < 5) {
-          setGameState(prev => ({ ...prev, currentRound: prev.currentRound + 1 }))
-          loadRound()
-        } else {
-          completeLevel()
-        }
-      }, 1500)
-    } else {
-      setCardStates(prev => ({ ...prev, [cardId]: 'wrong' }))
-      speak("Ops! Tente novamente!")
-      
-      const newLives = gameState.lives - 1
-      setGameState(prev => ({ ...prev, lives: newLives }))
-      
-      setTimeout(() => {
-        setCardStates(prev => ({ ...prev, [cardId]: '' }))
-      }, 500)
-      
-      if (newLives <= 0) {
-        gameOver()
-      }
-    }
-  }
-
-  const completeLevel = () => {
-    setModalContent({
-      icon: '🏆',
-      title: 'Fase Completa!',
-      description: `Você ganhou ${gameState.score} pontos!`
-    })
-    setShowModal(true)
-    speak('Fase Completa!')
-    setGameState(prev => ({ ...prev, currentLevel: prev.currentLevel + 1 }))
-  }
-
-  const gameOver = () => {
-    setModalContent({
-      icon: '😢',
-      title: 'Fim de Jogo',
-      description: `Pontuação final: ${gameState.score}`
-    })
-    setShowModal(true)
-    speak('Fim de Jogo')
-  }
-
-  const closeModal = () => {
-    setShowModal(false)
-    setShowGame(false)
-    setShowMenu(true)
-  }
-
-  const toggleSound = () => {
-    setGameState(prev => ({ ...prev, soundEnabled: !prev.soundEnabled }))
-  }
-
-  const showCollection = () => {
-    setModalContent({
-      icon: '📚',
-      title: 'Minha Coleção',
-      description: 'Em breve: Veja todos os cards descobertos!'
-    })
-    setShowModal(true)
-  }
-
-  const showAbout = () => {
-    setModalContent({
-      icon: 'ℹ️',
-      title: 'Sobre',
-      description: 'Palavras Mágicas - Um jogo CAA gamificado para crianças especiais'
-    })
-    setShowModal(true)
-  }
-
+  // --- Inicialização do Áudio ---
   useEffect(() => {
-    const timer = setTimeout(() => startTutorial(), 500)
-    return () => clearTimeout(timer)
-  }, [])
+    const initAudio = () => {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+    };
+    document.addEventListener('click', initAudio, { once: true });
+    return () => {
+      document.removeEventListener('click', initAudio);
+      audioContextRef.current?.close();
+    };
+  }, []);
+  
+  // --- Funções de Som e Narração ---
+  const milaSpeak = useCallback((message: string) => {
+    setMilaMessage(message);
+    if (isSoundOn && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(message.replace(/[🎉⭐🌟💪✨❤️😊]/g, ''));
+      utterance.lang = 'pt-BR';
+      utterance.rate = 0.9;
+      utterance.pitch = 1.1;
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [isSoundOn]);
 
-  const currentTutorialStep = tutorialSteps[gameState.tutorialStep] || tutorialSteps[0]
+  const playSound = useCallback((type: 'correct' | 'wrong' | 'start' | 'win') => {
+    if (!isSoundOn || !audioContextRef.current) return;
+    const ctx = audioContextRef.current;
+    
+    const playNote = (freq: number, startTime: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+    };
+
+    const now = ctx.currentTime;
+    if (type === 'correct') {
+      playNote(523.25, now, 0.15);
+      playNote(659.25, now + 0.15, 0.2);
+    } else if (type === 'wrong') {
+      playNote(164.81, now, 0.2);
+      playNote(155.56, now + 0.2, 0.2);
+    } else if (type === 'win') {
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            playNote(freq, now + i * 0.1, 0.15);
+        });
+    }
+  }, [isSoundOn]);
+  
+  // --- Lógica Principal do Jogo ---
+  const startGame = useCallback(() => {
+    setCurrentPhase(0);
+    setScore(0);
+    setRoundsCompleted(0);
+    setLives(3);
+    setIsPlaying(true);
+    setShowGameOverModal(false);
+    setShowVictoryModal(false);
+    milaSpeak(milaMessages.start);
+    setTimeout(() => nextRound(0), 2000);
+  }, [milaSpeak]);
+
+  const nextRound = useCallback((phaseIndex: number) => {
+    setIsUiBlocked(true);
+    const phase = gameConfig.phases[phaseIndex];
+    
+    // 1. Pega todos os cards disponíveis e embaralha
+    const shuffledDeck = [...gameConfig.cards].sort(() => 0.5 - Math.random());
+    
+    // 2. Seleciona o card correto e os distratores
+    const correct = shuffledDeck[0];
+    const distractors = shuffledDeck.slice(1, phase.cards);
+    
+    // 3. Monta os cards da rodada e embaralha novamente
+    const roundCards = [correct, ...distractors].sort(() => 0.5 - Math.random());
+    
+    setCorrectCard(correct);
+    setCurrentCards(roundCards);
+    setCardFeedback({});
+    
+    const randomNpcName = gameConfig.npcNames[Math.floor(Math.random() * gameConfig.npcNames.length)];
+    setNpcName(randomNpcName);
+
+    const randomMessage = milaMessages.nextRound[Math.floor(Math.random() * milaMessages.nextRound.length)];
+    setTimeout(() => {
+        milaSpeak(`${randomNpcName} está ${correct.gestureDesc}. ${randomMessage}`);
+        setIsUiBlocked(false);
+    }, 1200);
+
+  }, [milaSpeak]);
+
+  const handleCardClick = (card: Card) => {
+    if (isUiBlocked || !isPlaying) return;
+    setIsUiBlocked(true);
+
+    if (card.id === correctCard?.id) {
+      // --- ACERTOU ---
+      setScore(prev => prev + 100);
+      setCardFeedback({ [card.id]: 'correct' });
+      playSound('correct');
+      const randomMessage = milaMessages.correct[Math.floor(Math.random() * milaMessages.correct.length)];
+      milaSpeak(randomMessage);
+      
+      const newRoundsCompleted = roundsCompleted + 1;
+      setRoundsCompleted(newRoundsCompleted);
+
+      setTimeout(() => {
+        const phase = gameConfig.phases[currentPhase];
+        if (newRoundsCompleted >= phase.rounds) {
+          handlePhaseComplete();
+        } else {
+          nextRound(currentPhase);
+        }
+      }, 2000);
+
+    } else {
+      // --- ERROU ---
+      setLives(prev => prev - 1);
+      setCardFeedback({ [card.id]: 'wrong', [correctCard!.id]: 'correct' });
+      playSound('wrong');
+      milaSpeak(milaMessages.error);
+      
+      const newLives = lives - 1;
+      if (newLives <= 0) {
+        setTimeout(() => {
+          setIsPlaying(false);
+          setShowGameOverModal(true);
+          milaSpeak(milaMessages.gameOver);
+        }, 2000);
+      } else {
+        setTimeout(() => {
+          nextRound(currentPhase);
+        }, 2500);
+      }
+    }
+  };
+
+  const handlePhaseComplete = () => {
+    playSound('win');
+    setScore(prev => prev + 250); // Bônus
+    milaSpeak(milaMessages.phaseComplete);
+    setShowVictoryModal(true);
+  };
+  
+  const nextPhase = useCallback(() => {
+    const newPhase = currentPhase + 1;
+    setShowVictoryModal(false);
+    
+    if (newPhase >= gameConfig.phases.length) {
+      // Venceu o jogo!
+      startGame(); // Por enquanto, recomeça
+    } else {
+      setCurrentPhase(newPhase);
+      setRoundsCompleted(0);
+      setLives(3);
+      setTimeout(() => nextRound(newPhase), 1000);
+    }
+  }, [currentPhase, nextRound, startGame]);
+
+
+  const phase = gameConfig.phases[currentPhase];
+  const progress = phase ? (roundsCompleted / phase.rounds) * 100 : 0;
 
   return (
-    <div className="game-container">
-      <style jsx global>{`
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-          -webkit-tap-highlight-color: transparent;
-          user-select: none;
-        }
-
-        body {
-          font-family: 'Segoe UI', system-ui, sans-serif;
-          overflow: hidden;
-          background: #000;
-        }
-
-        .game-container {
-          width: 100%;
-          max-width: 480px;
-          height: 100vh;
-          margin: 0 auto;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .tutorial-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: radial-gradient(circle at center, rgba(135, 206, 235, 0.3) 0%, rgba(0, 0, 0, 0.95) 60%);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          z-index: 3000;
-          animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        .mila-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 30px;
-          animation: slideDown 0.8s ease;
-        }
-
-        @keyframes slideDown {
-          from { transform: translateY(-100px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-
-        .mila {
-          width: 180px;
-          height: 180px;
-          background: linear-gradient(135deg, #FF69B4, #FFB6C1);
-          border-radius: 50%;
-          position: relative;
-          animation: float 3s ease-in-out infinite;
-          box-shadow: 0 20px 40px rgba(255, 105, 180, 0.4);
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(5deg); }
-        }
-
-        .mila-hat {
-          position: absolute;
-          top: -40px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 40px solid transparent;
-          border-right: 40px solid transparent;
-          border-bottom: 60px solid #4B0082;
-          z-index: 10;
-        }
-
-        .mila-hat::after {
-          content: '⭐';
-          position: absolute;
-          top: 15px;
-          left: -10px;
-          font-size: 30px;
-          animation: twinkle 2s infinite;
-        }
-
-        @keyframes twinkle {
-          0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
-          50% { opacity: 0.6; transform: scale(0.9) rotate(180deg); }
-        }
-
-        .mila-face {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 100px;
-        }
-
-        .mila-eyes {
-          display: flex;
-          justify-content: space-around;
-          margin-bottom: 20px;
-        }
-
-        .eye {
-          width: 20px;
-          height: 25px;
-          background: white;
-          border-radius: 50%;
-          position: relative;
-          animation: blink 4s infinite;
-        }
-
-        @keyframes blink {
-          0%, 90%, 100% { transform: scaleY(1); }
-          95% { transform: scaleY(0.1); }
-        }
-
-        .eye::after {
-          content: '';
-          position: absolute;
-          width: 10px;
-          height: 10px;
-          background: #333;
-          border-radius: 50%;
-          top: 10px;
-          left: 5px;
-        }
-
-        .mila-mouth {
-          width: 30px;
-          height: 15px;
-          border-bottom: 3px solid #333;
-          border-radius: 0 0 30px 30px;
-          margin: 0 auto;
-          animation: talk 0.8s infinite alternate;
-        }
-
-        @keyframes talk {
-          from { width: 30px; }
-          to { width: 20px; }
-        }
-
-        .speech-bubble {
-          background: white;
-          border-radius: 20px;
-          padding: 25px 35px;
-          position: relative;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-          max-width: 350px;
-          animation: bubbleUp 0.5s ease 0.3s both;
-        }
-
-        @keyframes bubbleUp {
-          from { transform: translateY(50px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-
-        .speech-bubble::before {
-          content: '';
-          position: absolute;
-          top: -20px;
-          left: 50%;
-          transform: translateX(-50%);
-          border-left: 20px solid transparent;
-          border-right: 20px solid transparent;
-          border-bottom: 20px solid white;
-        }
-
-        .speech-text {
-          font-size: 22px;
-          line-height: 1.5;
-          color: #333;
-          text-align: center;
-          font-weight: 500;
-        }
-
-        .continue-btn {
-          margin-top: 30px;
-          padding: 15px 40px;
-          background: linear-gradient(135deg, #4CAF50, #45a049);
-          color: white;
-          border: none;
-          border-radius: 30px;
-          font-size: 18px;
-          font-weight: bold;
-          cursor: pointer;
-          animation: pulse 2s infinite;
-          box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
-        }
-
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-
-        .menu-screen {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #87CEEB 0%, #98E4D6 100%);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          padding: 20px;
-        }
-
-        .game-logo {
-          font-size: 48px;
-          font-weight: bold;
-          color: white;
-          margin-bottom: 10px;
-          text-align: center;
-          text-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
-        .game-subtitle {
-          font-size: 20px;
-          color: rgba(255,255,255,0.9);
-          margin-bottom: 40px;
-        }
-
-        .menu-buttons {
-          display: flex;
-          flex-direction: column;
-          gap: 15px;
-          width: 100%;
-          max-width: 300px;
-        }
-
-        .menu-btn {
-          padding: 18px 30px;
-          background: white;
-          color: #2196F3;
-          border: none;
-          border-radius: 30px;
-          font-size: 18px;
-          font-weight: bold;
-          cursor: pointer;
-          box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-          transition: all 0.3s ease;
-        }
-
-        .menu-btn:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-        }
-
-        .menu-btn.primary {
-          background: linear-gradient(135deg, #4CAF50, #45a049);
-          color: white;
-          font-size: 22px;
-        }
-
-        .game-screen {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #F0F8FF 0%, #E6F3FF 100%);
-        }
-
-        .game-header {
-          background: linear-gradient(135deg, #4CAF50, #45a049);
-          padding: 15px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-        }
-
-        .level-badge {
-          background: rgba(255,255,255,0.3);
-          padding: 8px 16px;
-          border-radius: 20px;
-          color: white;
-          font-weight: bold;
-        }
-
-        .score {
-          background: rgba(255,255,255,0.3);
-          padding: 8px 20px;
-          border-radius: 20px;
-          color: white;
-          font-size: 18px;
-          font-weight: bold;
-        }
-
-        .lives {
-          display: flex;
-          gap: 5px;
-        }
-
-        .heart {
-          font-size: 24px;
-          animation: heartbeat 1.5s ease-in-out infinite;
-        }
-
-        @keyframes heartbeat {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.1); }
-        }
-
-        .progress-section {
-          padding: 15px 20px;
-          background: rgba(255,255,255,0.8);
-        }
-
-        .progress-bar {
-          background: #E0E0E0;
-          height: 30px;
-          border-radius: 15px;
-          overflow: hidden;
-          box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .progress-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #4CAF50, #8BC34A);
-          border-radius: 15px;
-          transition: width 0.5s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: bold;
-          min-width: 50px;
-        }
-
-        .npc-area {
-          padding: 20px;
-          display: flex;
-          justify-content: center;
-        }
-
-        .npc-container {
-          background: white;
-          border-radius: 20px;
-          padding: 20px 40px;
-          box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-          text-align: center;
-        }
-
-        .npc-character {
-          width: 120px;
-          height: 120px;
-          background: linear-gradient(135deg, #FFE4C4, #FFDAB9);
-          border-radius: 50%;
-          margin: 0 auto 15px;
-          position: relative;
-          animation: bounce 2s ease-in-out infinite;
-        }
-
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-
-        .npc-name {
-          font-size: 20px;
-          font-weight: bold;
-          color: #333;
-          margin-bottom: 10px;
-        }
-
-        .npc-gesture {
-          font-size: 60px;
-          animation: gestureAnim 1.5s infinite;
-        }
-
-        @keyframes gestureAnim {
-          0%, 100% { transform: scale(1) rotate(0deg); }
-          50% { transform: scale(1.2) rotate(5deg); }
-        }
-
-        .cards-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-          gap: 15px;
-          padding: 20px;
-          max-width: 600px;
-          margin: 0 auto;
-        }
-
-        .card {
-          background: white;
-          border-radius: 15px;
-          padding: 10px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-          min-height: 140px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-        }
-
-        .card.correct {
-          background: linear-gradient(135deg, #84fab0, #8fd3f4);
-          animation: correctPulse 0.6s ease;
-        }
-
-        @keyframes correctPulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.2); }
-          100% { transform: scale(1); }
-        }
-
-        .card.wrong {
-          background: linear-gradient(135deg, #ff6b6b, #feca57);
-          animation: shake 0.5s ease;
-        }
-
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-10px); }
-          75% { transform: translateX(10px); }
-        }
-
-        .card-image {
-          width: 80px;
-          height: 80px;
-          object-fit: contain;
-          margin-bottom: 8px;
-        }
-
-        .card-label {
-          font-size: 14px;
-          font-weight: bold;
-          color: #333;
-          text-align: center;
-        }
-
-        .modal {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0,0,0,0.8);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 2000;
-        }
-
-        .modal-content {
-          background: white;
-          padding: 40px;
-          border-radius: 30px;
-          text-align: center;
-          max-width: 90%;
-          animation: zoomIn 0.5s ease;
-        }
-
-        @keyframes zoomIn {
-          from { transform: scale(0); }
-          to { transform: scale(1); }
-        }
-
-        .modal-icon {
-          font-size: 80px;
-          margin-bottom: 20px;
-        }
-
-        .modal-title {
-          font-size: 28px;
-          margin-bottom: 10px;
-          color: #333;
-        }
-
-        .modal-description {
-          font-size: 18px;
-          color: #666;
-          margin-bottom: 20px;
-        }
-
-        .example-container {
-          margin-top: 30px;
-          animation: fadeIn 0.5s ease;
-        }
-
-        .npc-demo {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          margin-bottom: 20px;
-        }
-
-        .cards-demo {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 15px;
-          margin-top: 20px;
-          padding: 0 20px;
-        }
-
-        .card-demo {
-          background: white;
-          border-radius: 15px;
-          padding: 15px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-          opacity: 0.3;
-          transition: all 0.3s ease;
-        }
-
-        .card-demo.highlight {
-          background: linear-gradient(135deg, #90EE90, #98FB98);
-          transform: scale(1.1);
-          box-shadow: 0 5px 20px rgba(144, 238, 144, 0.5);
-          animation: pulseHighlight 1s infinite;
-          opacity: 1;
-        }
-
-        @keyframes pulseHighlight {
-          0%, 100% { transform: scale(1.1); }
-          50% { transform: scale(1.15); }
-        }
-      `}</style>
-
-      {/* Tutorial Overlay */}
-      {showTutorial && (
-        <div className="tutorial-overlay">
-          <div className="mila-container">
-            <div className="mila">
-              <div className="mila-hat"></div>
-              <div className="mila-face">
-                <div className="mila-eyes">
-                  <div className="eye"></div>
-                  <div className="eye"></div>
-                </div>
-                <div className="mila-mouth"></div>
+    <div className="min-h-screen bg-gradient-to-b from-sky-200 via-violet-200 to-pink-200 relative overflow-hidden text-gray-800">
+      <div className="relative z-10 max-w-4xl mx-auto p-2 md:p-4">
+        {/* --- CABEÇALHO --- */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 mb-4 shadow-lg border-2 border-white">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <button onClick={() => router.push('/')} className="p-2 hover:bg-sky-100 rounded-xl transition-colors">
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+              <h1 className="text-xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500">
+                ✨ Palavras Mágicas ✨
+              </h1>
+            </div>
+            <div className="flex gap-2 md:gap-3 items-center">
+              <div className="bg-gradient-to-br from-red-400 to-pink-400 text-white px-3 py-1.5 rounded-xl shadow-md text-center">
+                <div className="text-xs">Vidas</div>
+                <div className="text-xl font-bold">{'❤️'.repeat(lives)}</div>
               </div>
-            </div>
-            
-            <div className="speech-bubble">
-              <p className="speech-text">{currentTutorialStep.text}</p>
-            </div>
-          </div>
-          
-          {currentTutorialStep.showExample && (
-            <div className="example-container">
-              <div className="npc-demo">
-                <div className="npc-container">
-                  <div className="npc-character"></div>
-                  <div className="npc-name">João</div>
-                  <div className="npc-gesture">👉💧</div>
-                </div>
+              <div className="bg-gradient-to-br from-yellow-400 to-orange-400 text-white px-4 py-1.5 rounded-xl shadow-md text-center">
+                <div className="text-xs">Pontos</div>
+                <div className="text-xl font-bold">{score}</div>
               </div>
-              
-              {currentTutorialStep.showCards && (
-                <div className="cards-demo">
-                  {['sede', 'fome', 'sono', 'banheiro'].map((id) => {
-                    const card = cards.necessidades.find(c => c.id === id)
-                    return card ? (
-                      <div key={id} className={`card-demo ${currentTutorialStep.highlight === id ? 'highlight' : ''}`}>
-                        <img src={card.image} width={50} alt={card.label} />
-                        <span>{card.label}</span>
-                      </div>
-                    ) : null
-                  })}
-                </div>
-              )}
+               <button onClick={() => setIsSoundOn(!isSoundOn)} className="p-2 hover:bg-sky-100 rounded-xl transition-colors">
+                {isSoundOn ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
+              </button>
             </div>
-          )}
-          
-          <button className="continue-btn" onClick={nextTutorialStep}>
-            Continuar ➡️
-          </button>
-        </div>
-      )}
-
-      {/* Menu Screen */}
-      {showMenu && (
-        <div className="menu-screen">
-          <h1 className="game-logo">🎪 Palavras Mágicas</h1>
-          <p className="game-subtitle">Uma aventura CAA gamificada</p>
-          
-          <div className="menu-buttons">
-            <button className="menu-btn primary" onClick={startGame}>
-              🎮 Jogar
-            </button>
-            <button className="menu-btn" onClick={showCollection}>
-              📚 Minha Coleção
-            </button>
-            <button className="menu-btn" onClick={toggleSound}>
-              🔊 Som: {gameState.soundEnabled ? 'ON' : 'OFF'}
-            </button>
-            <button className="menu-btn" onClick={showAbout}>
-              ℹ️ Sobre
-            </button>
           </div>
         </div>
-      )}
 
-      {/* Game Screen */}
-      {showGame && (
-        <div className="game-screen">
-          <div className="game-header">
-            <div className="level-badge">Fase {gameState.currentLevel}</div>
-            <div className="score">⭐ {gameState.score}</div>
-            <div className="lives">
-              {[...Array(3)].map((_, i) => (
-                <span key={i} className="heart" style={i >= gameState.lives ? {opacity: 0.3} : {}}>
-                  {i < gameState.lives ? '❤️' : '💔'}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="progress-section">
-            <div className="progress-bar">
+        {/* --- ÁREA PRINCIPAL DO JOGO --- */}
+        {isPlaying ? (
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-4 md:p-6 shadow-xl border-2 border-violet-200">
+          <div className="text-center mb-4">
+            <h2 className="text-lg md:text-2xl font-bold mb-2">
+             🌟 Fase {currentPhase + 1}: {phase.name} 🌟
+            </h2>
+            <div className="w-full bg-gray-200 rounded-full h-6 border border-gray-300">
               <div 
-                className="progress-fill" 
-                style={{width: `${(gameState.currentRound / 5) * 100}%`}}
+                className="h-full bg-gradient-to-r from-green-400 to-sky-400 flex items-center justify-center text-white text-sm font-bold transition-all duration-500 rounded-full"
+                style={{ width: `${progress}%` }}
               >
-                <span>{gameState.currentRound}/5</span>
+                {roundsCompleted}/{phase.rounds}
               </div>
             </div>
           </div>
-
-          <div className="npc-area">
-            <div className="npc-container">
-              <div className="npc-character"></div>
-              <div className="npc-name">{npcInfo.name}</div>
-              <div className="npc-gesture">{npcInfo.gesture}</div>
-            </div>
+          
+          {/* --- NPC e Gesto --- */}
+          <div className="flex justify-center my-4 md:my-6">
+              <div className="bg-white p-4 rounded-2xl shadow-md text-center border-2 border-pink-200 animate-fade-in">
+                  <div className="text-6xl md:text-8xl animate-bounce">{correctCard?.gesture}</div>
+                  <p className="font-bold mt-2 text-lg">{npcName}</p>
+              </div>
           </div>
 
-          <div className="cards-grid">
-            {currentCards.map(card => (
-              <div 
+          {/* --- GRID DE CARDS --- */}
+          <div className={`grid gap-3 md:gap-4 transition-opacity duration-500 ${isUiBlocked ? 'opacity-50' : 'opacity-100'}`}
+               style={{ gridTemplateColumns: `repeat(${phase.cards <= 6 ? phase.cards / 2 : Math.ceil(phase.cards / 2)}, 1fr)`}}>
+            {currentCards.map((card) => (
+              <button
                 key={card.id}
-                className={`card ${cardStates[card.id] || ''}`}
-                onClick={() => checkCard(card.id)}
+                onClick={() => handleCardClick(card)}
+                disabled={isUiBlocked}
+                className={`
+                  p-2 bg-white rounded-2xl shadow-lg border-4 transition-all duration-300 transform 
+                  ${isUiBlocked ? 'cursor-wait' : 'hover:scale-105 hover:shadow-xl'}
+                  ${cardFeedback[card.id] === 'correct' ? 'border-green-400 scale-110 animate-pulse' : ''}
+                  ${cardFeedback[card.id] === 'wrong' ? 'border-red-400 animate-shake' : ''}
+                  ${!cardFeedback[card.id] ? 'border-white' : ''}
+                `}
               >
-                <img src={card.image} alt={card.label} className="card-image" />
-                <div className="card-label">{card.label}</div>
-              </div>
+                <img src={card.image} alt={card.label} className="w-full h-auto object-contain aspect-square" />
+                <p className="mt-2 text-center font-bold text-sm md:text-base">{card.label}</p>
+              </button>
             ))}
           </div>
         </div>
-      )}
-
-      {/* Modal */}
-      {showModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <div className="modal-icon">{modalContent.icon}</div>
-            <h2 className="modal-title">{modalContent.title}</h2>
-            <p className="modal-description">{modalContent.description}</p>
-            <button className="continue-btn" onClick={closeModal}>
-              Continuar
+        ) : (
+        // --- TELA DE INÍCIO ---
+        <div className="text-center p-8 bg-white/90 rounded-3xl mt-16 animate-fade-in">
+             <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500 mb-4">
+               Bem-vindo!
+             </h2>
+             <p className="text-lg mb-8">Ajude a Mila a entender o que as pessoas querem dizer com seus gestos.</p>
+             <button
+              onClick={startGame}
+              className="px-12 py-4 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-2xl rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
+            >
+              🚀 Começar a Jogar
             </button>
-          </div>
         </div>
+        )}
+      </div>
+
+      {/* --- MASCOTE MILA --- */}
+      <div className="fixed bottom-0 -left-4 md:left-2 z-20 w-48 md:w-80 pointer-events-none">
+           <img src="/images/mascotes/mila/Mila_apoio.webp" alt="Mila Mascote" className="w-full h-full object-contain drop-shadow-2xl" />
+      </div>
+      <div className="fixed bottom-10 md:bottom-24 left-36 md:left-72 z-30 max-w-md">
+        <div className="bg-white p-4 rounded-2xl rounded-bl-none shadow-2xl border-2 border-violet-400 relative">
+            <p className="text-center font-semibold text-base md:text-lg">{milaMessage}</p>
+            <div className="absolute -bottom-3 left-0 w-0 h-0 border-l-[12px] border-l-transparent border-t-[12px] border-t-white transform -translate-x-full"></div>
+        </div>
+      </div>
+      
+      {/* --- MODAIS --- */}
+      {showVictoryModal && (
+         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
+           <div className="bg-white rounded-3xl p-8 max-w-md w-full transform animate-bounce border-4 border-yellow-400 text-center">
+             <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400 mb-4">🎉 Fase Completa! 🎉</h2>
+             <p className="text-xl text-gray-700 mb-4">Você é incrível! Ganhou +250 pontos bônus!</p>
+             <button onClick={nextPhase} className="w-full py-3 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold text-lg rounded-full shadow-xl hover:scale-105 transition-transform">
+                {currentPhase + 1 >= gameConfig.phases.length ? '🏆 Jogar Novamente' : '🚀 Próxima Fase'}
+             </button>
+           </div>
+         </div>
+      )}
+      {showGameOverModal && (
+         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
+           <div className="bg-white rounded-3xl p-8 max-w-md w-full transform animate-bounce border-4 border-red-400 text-center">
+             <h2 className="text-4xl font-bold text-red-500 mb-4">😢 Fim de Jogo 😢</h2>
+             <p className="text-xl text-gray-700 mb-2">Sua pontuação final foi: <span className="font-bold text-violet-600">{score}</span></p>
+             <p className="text-gray-600 mb-6">Não desanime! A prática leva à perfeição.</p>
+             <button onClick={startGame} className="w-full py-3 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold text-lg rounded-full shadow-xl hover:scale-105 transition-transform">
+                 Tentar Novamente
+             </button>
+           </div>
+         </div>
       )}
     </div>
-  )
+  );
 }
