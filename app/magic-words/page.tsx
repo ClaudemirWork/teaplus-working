@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, useState, useEffect, useCallback, useRef } from 'react';
 import { ArrowLeft, Volume2, VolumeX } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -19,10 +19,11 @@ interface Phase {
 }
 
 // --- BANCO DE DADOS COMPLETO DE CARDS ---
+// Mapeado a partir da sua estrutura de arquivos no GitHub
 const allCardsData: Card[] = [
   // Acoes
   { id: 'pensar', label: 'Pensar', image: '/images/cards/acoes/Pensar.webp', category: 'acoes' },
-  { id: 'abracar', label: 'Abraçar', image: '/images/cards/acoes/abraçar.webp', category: 'acoes' },
+  { id: 'abracar', label: 'Abraçar', image: '/images/cards/acoes/abracar.webp', category: 'acoes' },
   { id: 'abrir_a_macaneta', label: 'Abrir a Maçaneta', image: '/images/cards/acoes/abrir a maçaneta.webp', category: 'acoes' },
   { id: 'abrir_a_porta', label: 'Abrir a Porta', image: '/images/cards/acoes/abrir a porta.webp', category: 'acoes' },
   { id: 'abrir_fechadura', label: 'Abrir Fechadura', image: '/images/cards/acoes/abrir_fechadura.webp', category: 'acoes' },
@@ -502,14 +503,14 @@ export default function MagicWordsGame() {
   const [npcName, setNpcName] = useState('Maria');
   const [cardFeedback, setCardFeedback] = useState<{ [key: string]: 'correct' | 'wrong' }>({});
 
-  const [milaMessage, setMilaMessage] = useState(""); // Começa vazio para a introdução mágica
+  const [milaMessage, setMilaMessage] = useState("");
   const [showVictoryModal, setShowVictoryModal] = useState(false);
   const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [isSoundOn, setIsSoundOn] = useState(true);
 
   // --- Mensagens da Mila ---
   const milaMessages = {
-    intro: "Olá, pequeno mago(a) das palavras! Sou Mila, a Feiticeira. Este é o nosso Reino Mágico dos Gestos. Ajude-me a descobrir o que os nossos amigos querem, transformando seus pedidos em palavras mágicas. Vamos lá?",
+    intro: "Olá! Sou a Mila, a Feiticeira. Vamos descobrir o que as pessoas querem?",
     start: "Vamos começar! Preste atenção no que eu vou pedir.",
     nextRound: ["Observe com atenção!", "Qual card o(a) nosso(a) amigo(a) quer?", "Você consegue encontrar!"],
     correct: ["Isso mesmo! 🎉", "Você encontrou! ⭐", "Excelente! 🌟", "Continue assim! 💪"],
@@ -518,9 +519,8 @@ export default function MagicWordsGame() {
     gameOver: "Não foi dessa vez, mas você foi incrível! Vamos tentar de novo? 😊"
   };
 
-  // --- Efeito para iniciar com a mensagem de introdução ---
   useEffect(() => {
-    if (!isPlaying && milaMessage === "") { // Garante que só roda uma vez na tela inicial
+    if (!isPlaying && milaMessage === "") {
       milaSpeak(milaMessages.intro);
     }
   }, [isPlaying, milaMessage, milaSpeak, milaMessages.intro]);
@@ -601,12 +601,12 @@ export default function MagicWordsGame() {
     setIsUiBlocked(true);
     const phase = gameConfig.phases[phaseIndex];
     
-    // Garantir que temos cards suficientes para a fase
+    if (!phase) return; // Trava de segurança
+
     if (gameConfig.cards.length < phase.cards) {
         console.error("Não há cards suficientes para esta fase.");
-        // Fallback ou game over
         setIsPlaying(false);
-        setMilaMessage("Parece que faltam cards! Informe o criador do jogo.");
+        milaSpeak("Parece que faltam cards! Informe o criador do jogo.");
         return;
     }
 
@@ -625,7 +625,9 @@ export default function MagicWordsGame() {
     setNpcName(randomNpcName);
 
     setTimeout(() => {
-        milaSpeak(`${randomNpcName} quer o card que mostra... '${correct.label}'. Você consegue encontrar?`);
+        if(correct) {
+            milaSpeak(`${randomNpcName} quer o card que mostra... '${correct.label}'. Você consegue encontrar?`);
+        }
         setIsUiBlocked(false);
     }, 1200);
 
@@ -647,7 +649,7 @@ export default function MagicWordsGame() {
 
       setTimeout(() => {
         const phase = gameConfig.phases[currentPhase];
-        if (newRoundsCompleted >= phase.rounds) {
+        if (phase && newRoundsCompleted >= phase.rounds) {
           handlePhaseComplete();
         } else {
           nextRound(currentPhase);
@@ -679,7 +681,9 @@ export default function MagicWordsGame() {
     playSound('win');
     setScore(prev => prev + 250); // Bônus da Gema Mágica
     const phase = gameConfig.phases[currentPhase];
-    milaSpeak(milaMessages.phaseComplete(phase.name));
+    if (phase) {
+      milaSpeak(milaMessages.phaseComplete(phase.name));
+    }
     setShowVictoryModal(true);
   };
   
@@ -688,19 +692,26 @@ export default function MagicWordsGame() {
     setShowVictoryModal(false);
     
     if (newPhase >= gameConfig.phases.length) {
-      // Se todas as fases foram concluídas, reinicia ou vai para uma tela final
       milaSpeak("Parabéns, Mago(a) das Palavras! Você desvendou todos os segredos! 🎉");
-      setTimeout(startGame, 3000); // Reinicia o jogo após mensagem final
+      setIsPlaying(false); // Volta para a tela inicial
+      setMilaMessage("Parabéns, Mago(a) das Palavras! Você desvendou todos os segredos! 🎉");
     } else {
       setCurrentPhase(newPhase);
       setRoundsCompleted(0);
       setLives(3);
       setTimeout(() => nextRound(newPhase), 1000);
     }
-  }, [currentPhase, nextRound, startGame, milaSpeak]);
+  }, [currentPhase, nextRound, milaSpeak]);
 
 
+  // --- LÓGICA DE RENDERIZAÇÃO ---
   const phase = gameConfig.phases[currentPhase];
+  
+  // ***** CORREÇÃO PRINCIPAL: Impede o crash *****
+  if (!phase && isPlaying) {
+    return <div className="min-h-screen flex items-center justify-center">Carregando fase...</div>;
+  }
+
   const progress = phase ? (roundsCompleted / phase.rounds) * 100 : 0;
 
   return (
@@ -732,7 +743,7 @@ export default function MagicWordsGame() {
           </div>
         </div>
 
-        {isPlaying ? (
+        {isPlaying && phase ? (
         <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-4 md:p-6 shadow-xl border-2 border-violet-200">
           <div className="text-center mb-4">
             <h2 className="text-lg md:text-2xl font-bold mb-2">
@@ -756,7 +767,7 @@ export default function MagicWordsGame() {
           </div>
 
           <div className={`grid gap-3 md:gap-4 transition-opacity duration-500 ${isUiBlocked ? 'opacity-50' : 'opacity-100'}`}
-               style={{ gridTemplateColumns: `repeat(${phase.cards <= 6 ? 2 : 3}, 1fr)`}}> {/* Ajuste para telas pequenas */}
+               style={{ gridTemplateColumns: `repeat(${phase.cards <= 6 ? 2 : 3}, 1fr)`}}>
             {currentCards.map((card) => (
               <button
                 key={card.id}
@@ -781,19 +792,19 @@ export default function MagicWordsGame() {
              <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500 mb-4">
                Bem-vindo!
              </h2>
-             <p className="text-lg mb-8">Participe do nosso Reino Mágico dos Gestos.</p>
+             <p className="text-lg mb-8">Ajude a Mila a entender o que as pessoas querem dizer.</p>
              <button
               onClick={startGame}
               className="px-12 py-4 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-2xl rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
             >
-              🚀 Começar Aventura
+              🚀 Começar a Jogar
             </button>
         </div>
         )}
       </div>
 
-      {/* --- MASCOTE MILA --- */}
       <div className="fixed bottom-0 -left-4 md:left-2 z-20 w-48 md:w-80 pointer-events-none">
+           {/* AJUSTE AQUI SE O NOME DO ARQUIVO FOR DIFERENTE */}
            <img src="/images/mascotes/mila/mila_feiticeira_resultado.webp" alt="Mila Feiticeira" className="w-full h-full object-contain drop-shadow-2xl" />
       </div>
       {milaMessage && (
@@ -805,7 +816,6 @@ export default function MagicWordsGame() {
         </div>
       )}
       
-      {/* --- MODAIS --- */}
       {showVictoryModal && (
          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
            <div className="bg-white rounded-3xl p-8 max-w-md w-full transform animate-bounce border-4 border-yellow-400 text-center">
