@@ -9,8 +9,7 @@ interface Card {
   id: string;
   label: string;
   image: string;
-  gesture: string;
-  gestureDesc: string;
+  category: string;
 }
 
 interface Phase {
@@ -18,6 +17,106 @@ interface Phase {
   rounds: number;
   name: string;
 }
+
+// --- BANCO DE DADOS COMPLETO DE CARDS ---
+// Mapeado a partir da sua estrutura de arquivos no GitHub
+const allCardsData: Card[] = [
+  // Acoes
+  { id: 'pensar', label: 'Pensar', image: '/images/cards/acoes/Pensar.webp', category: 'acoes' },
+  { id: 'abracar', label: 'Abraçar', image: '/images/cards/acoes/abracar.webp', category: 'acoes' },
+  { id: 'abrir_a_macaneta', label: 'Abrir a Maçaneta', image: '/images/cards/acoes/abrir a maçaneta.webp', category: 'acoes' },
+  { id: 'abrir_a_porta', label: 'Abrir a Porta', image: '/images/cards/acoes/abrir a porta.webp', category: 'acoes' },
+  { id: 'abrir_fechadura', label: 'Abrir Fechadura', image: '/images/cards/acoes/abrir_fechadura.webp', category: 'acoes' },
+  { id: 'caminhar', label: 'Caminhar', image: '/images/cards/acoes/caminhar.webp', category: 'acoes' },
+  { id: 'beber', label: 'Beber', image: '/images/cards/acoes/beber.webp', category: 'acoes' },
+  { id: 'dancar_sozinho', label: 'Dançar', image: '/images/cards/acoes/dançar sozinho.webp', category: 'acoes' },
+  { id: 'escrever', label: 'Escrever', image: '/images/cards/acoes/escrever.webp', category: 'acoes' },
+  { id: 'falar', label: 'Falar', image: '/images/cards/acoes/falar.webp', category: 'acoes' },
+  { id: 'ler_livro', label: 'Ler Livro', image: '/images/cards/acoes/ler_livro.webp', category: 'acoes' },
+  { id: 'olhando', label: 'Olhar', image: '/images/cards/acoes/olhando.webp', category: 'acoes' },
+  { id: 'sentar', label: 'Sentar', image: '/images/cards/acoes/sentar.webp', category: 'acoes' },
+  { id: 'tocar', label: 'Tocar', image: '/images/cards/acoes/tocar.webp', category: 'acoes' },
+
+  // Alimentos
+  { id: 'abacate', label: 'Abacate', image: '/images/cards/alimentos/abacate.webp', category: 'alimentos' },
+  { id: 'abacaxi', label: 'Abacaxi', image: '/images/cards/alimentos/abacaxi.webp', category: 'alimentos' },
+  { id: 'banana', label: 'Banana', image: '/images/cards/alimentos/banana.webp', category: 'alimentos' },
+  { id: 'batata', label: 'Batata', image: '/images/cards/alimentos/batata.webp', category: 'alimentos' },
+  { id: 'cachorro_quente', label: 'Cachorro Quente', image: '/images/cards/alimentos/cachorro_quente.webp', category: 'alimentos' },
+  { id: 'fruta_laranja', label: 'Laranja', image: '/images/cards/alimentos/fruta_laranja.webp', category: 'alimentos' },
+  { id: 'maca', label: 'Maçã', image: '/images/cards/alimentos/maca.webp', category: 'alimentos' },
+  { id: 'macarrao_bologhesa', label: 'Macarrão', image: '/images/cards/alimentos/macarrao_bologhesa.webp', category: 'alimentos' },
+  { id: 'melancia', label: 'Melancia', image: '/images/cards/alimentos/melancia.webp', category: 'alimentos' },
+  { id: 'morango', label: 'Morango', image: '/images/cards/alimentos/morango.webp', category: 'alimentos' },
+  { id: 'ovo_frito', label: 'Ovo Frito', image: '/images/cards/alimentos/ovo_frito.webp', category: 'alimentos' },
+  { id: 'pizza', label: 'Pizza', image: '/images/cards/alimentos/pizza.webp', category: 'alimentos' },
+  { id: 'sanduiche', label: 'Sanduíche', image: '/images/cards/alimentos/sanduiche.webp', category: 'alimentos' },
+  { id: 'suco_laranja', label: 'Suco de Laranja', image: '/images/cards/alimentos/suco_laranja.webp', category: 'alimentos' },
+  { id: 'tomate', label: 'Tomate', image: '/images/cards/alimentos/tomate.webp', category: 'alimentos' },
+  { id: 'uvas_verdes', label: 'Uva', image: '/images/cards/alimentos/uvas_verdes.webp', category: 'alimentos' },
+
+  // Animais
+  { id: 'vaca', label: 'Vaca', image: '/images/cards/animais/Vaca.webp', category: 'animais' },
+  { id: 'abelha', label: 'Abelha', image: '/images/cards/animais/abelha.webp', category: 'animais' },
+  { id: 'cachorro', label: 'Cachorro', image: '/images/cards/animais/cachorro.webp', category: 'animais' },
+  { id: 'cavalo', label: 'Cavalo', image: '/images/cards/animais/cavalo.webp', category: 'animais' },
+  { id: 'coelho', label: 'Coelho', image: '/images/cards/animais/coelho.webp', category: 'animais' },
+  { id: 'coruja', label: 'Coruja', image: '/images/cards/animais/coruja.webp', category: 'animais' },
+  { id: 'elefante', label: 'Elefante', image: '/images/cards/animais/elefante.webp', category: 'animais' },
+  { id: 'gato', label: 'Gato', image: '/images/cards/animais/gato.webp', category: 'animais' },
+  { id: 'girafa', label: 'Girafa', image: '/images/cards/animais/girafa.webp', category: 'animais' },
+  { id: 'leao', label: 'Leão', image: '/images/cards/animais/leão.webp', category: 'animais' },
+  { id: 'ovelha', label: 'Ovelha', image: '/images/cards/animais/ovelha.webp', category: 'animais' },
+  { id: 'pato', label: 'Pato', image: '/images/cards/animais/pato.webp', category: 'animais' },
+  { id: 'peixe', label: 'Peixe', image: '/images/cards/animais/peixe.webp', category: 'animais' },
+  { id: 'pinguim', label: 'Pinguim', image: '/images/cards/animais/pinguim.webp', category: 'animais' },
+  { id: 'sapo', label: 'Sapo', image: '/images/cards/animais/sapo.webp', category: 'animais' },
+  { id: 'tartaruga', label: 'Tartaruga', image: '/images/cards/animais/tartaruga.webp', category: 'animais' },
+  { id: 'tigre', label: 'Tigre', image: '/images/cards/animais/tigre.webp', category: 'animais' },
+  { id: 'urso', label: 'Urso', image: '/images/cards/animais/urso.webp', category: 'animais' },
+  { id: 'zebra', label: 'Zebra', image: '/images/cards/animais/zebra.webp', category: 'animais' },
+  
+  // Casa
+  { id: 'abajur', label: 'Abajur', image: '/images/cards/casa/abajur.webp', category: 'casa' },
+  { id: 'mesa', label: 'Mesa', image: '/images/cards/casa/mesa.webp', category: 'casa' },
+  { id: 'panela', label: 'Panela', image: '/images/cards/casa/panela.webp', category: 'casa' },
+  { id: 'sofa_dois_lugares', label: 'Sofá', image: '/images/cards/casa/sofa_dois_lugares.webp', category: 'casa' },
+  { id: 'tesoura', label: 'Tesoura', image: '/images/cards/casa/tesoura.webp', category: 'casa' },
+  { id: 'vaso_planta', label: 'Vaso de Planta', image: '/images/cards/casa/vaso_planta.webp', category: 'casa' },
+  { id: 'vassoura', label: 'Vassoura', image: '/images/cards/casa/vassoura.webp', category: 'casa' },
+  
+  // Necessidades
+  { id: 'banheiro', label: 'Banheiro', image: '/images/cards/necessidades/banheiro.webp', category: 'necessidades' },
+  { id: 'comer', label: 'Comer', image: '/images/cards/necessidades/comer.webp', category: 'necessidades' },
+  { id: 'descansar', label: 'Descansar', image: '/images/cards/necessidades/descansar.webp', category: 'necessidades' },
+  { id: 'dor_cabeca', label: 'Dor de Cabeça', image: '/images/cards/necessidades/dor_cabeca.webp', category: 'necessidades' },
+  { id: 'estou_com_sede', label: 'Estou com Sede', image: '/images/cards/necessidades/estou_com_sede.webp', category: 'necessidades' },
+  { id: 'homem_dormindo', label: 'Dormir', image: '/images/cards/necessidades/homem_dormindo.webp', category: 'necessidades' },
+  { id: 'tomar_banho', label: 'Tomar Banho', image: '/images/cards/necessidades/tomar banho.webp', category: 'necessidades' },
+  
+  // Emoções
+  { id: 'homem_feliz', label: 'Feliz', image: '/images/cards/emocoes/homem_feliz.webp', category: 'emocoes' },
+  { id: 'homem_triste', label: 'Triste', image: '/images/cards/emocoes/homem_triste.webp', category: 'emocoes' },
+  { id: 'homem_furioso', label: 'Bravo', image: '/images/cards/emocoes/homem_furioso.webp', category: 'emocoes' },
+  { id: 'homem_surpreso', label: 'Surpreso', image: '/images/cards/emocoes/homem_surpreso.webp', category: 'emocoes' },
+  { id: 'assustado', label: 'Assustado', image: '/images/cards/emocoes/assustado.webp', category: 'emocoes' },
+
+  // Roupas
+  { id: 'calcas', label: 'Calças', image: '/images/cards/roupas/calcas.webp', category: 'roupas' },
+  { id: 'camisa', label: 'Camisa', image: '/images/cards/roupas/camisa.webp', category: 'roupas' },
+  { id: 'camiseta', label: 'Camiseta', image: '/images/cards/roupas/camiseta.webp', category: 'roupas' },
+  { id: 'casaco', label: 'Casaco', image: '/images/cards/roupas/casaco.webp', category: 'roupas' },
+  { id: 'meias', label: 'Meias', image: '/images/cards/roupas/meias.webp', category: 'roupas' },
+  { id: 'vestido', label: 'Vestido', image: '/images/cards/roupas/vestido.webp', category: 'roupas' },
+  
+  // Transportes
+  { id: 'aviao_comercial', label: 'Avião', image: '/images/cards/transportes/aviao_comercial.webp', category: 'transportes' },
+  { id: 'carro_azul', label: 'Carro', image: '/images/cards/transportes/carro_azul.webp', category: 'transportes' },
+  { id: 'metro', label: 'Metrô', image: '/images/cards/transportes/metro.webp', category: 'transportes' },
+  { id: 'micro_onibus', label: 'Ônibus', image: '/images/cards/transportes/micro_onibus.webp', category: 'transportes' },
+  { id: 'trem', label: 'Trem', image: '/images/cards/transportes/trem.webp', category: 'transportes' },
+];
+
 
 // --- Configuração Central do Jogo ---
 const gameConfig = {
@@ -27,20 +126,7 @@ const gameConfig = {
     { cards: 8, rounds: 8, name: "Mestre dos Gestos" },
     { cards: 12, rounds: 10, name: "Feiticeiro das Palavras" }
   ] as Phase[],
-  cards: [
-    { id: 'sede', label: 'Sede', image: '/images/cards/sede.webp', gesture: '👉💧', gestureDesc: 'apontando para a garganta' },
-    { id: 'fome', label: 'Fome', image: '/images/cards/fome.webp', gesture: '🤲🍽️', gestureDesc: 'com as mãos na barriga' },
-    { id: 'banheiro', label: 'Banheiro', image: '/images/cards/banheiro.webp', gesture: '🚽', gestureDesc: 'se contorcendo um pouquinho' },
-    { id: 'sono', label: 'Sono', image: '/images/cards/sono.webp', gesture: '😴', gestureDesc: 'bocejando e com soninho' },
-    { id: 'doente', label: 'Dodói', image: '/images/cards/doente.webp', gesture: '🤒', gestureDesc: 'com a mão na testa, parecendo febril' },
-    { id: 'frio', label: 'Frio', image: '/images/cards/frio.webp', gesture: '🥶', gestureDesc: 'tremendo de frio' },
-    { id: 'calor', label: 'Calor', image: '/images/cards/calor.webp', gesture: '🥵', gestureDesc: 'se abanando com a mão' },
-    { id: 'ajuda', label: 'Ajuda', image: '/images/cards/ajuda.webp', gesture: '🙏', gestureDesc: 'com as mãos juntas, pedindo ajuda' },
-    { id: 'triste', label: 'Triste', image: '/images/cards/triste.webp', gesture: '😢', gestureDesc: 'enxugando uma lágrima do rosto' },
-    { id: 'feliz', label: 'Feliz', image: '/images/cards/feliz.webp', gesture: '😄', gestureDesc: 'com um sorriso bem grande' },
-    { id: 'brincar', label: 'Brincar', image: '/images/cards/brincar.webp', gesture: '🎉', gestureDesc: 'pulando de alegria' },
-    { id: 'dor', label: 'Dor', image: '/images/cards/dor.webp', gesture: '🤕', gestureDesc: 'apontando para onde dói' },
-  ] as Card[],
+  cards: allCardsData,
   npcNames: ['Maria', 'João', 'Ana', 'Lucas', 'Sofia', 'Pedro']
 };
 
@@ -61,16 +147,16 @@ export default function MagicWordsGame() {
   const [npcName, setNpcName] = useState('Maria');
   const [cardFeedback, setCardFeedback] = useState<{ [key: string]: 'correct' | 'wrong' }>({});
 
-  const [milaMessage, setMilaMessage] = useState("Olá! Sou a Mila! Vamos traduzir os gestos mágicos?");
+  const [milaMessage, setMilaMessage] = useState("Olá! Sou a Mila! Vamos descobrir o que as pessoas querem?");
   const [showVictoryModal, setShowVictoryModal] = useState(false);
   const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [isSoundOn, setIsSoundOn] = useState(true);
 
   // --- Mensagens da Mila ---
   const milaMessages = {
-    start: "Vamos começar! Preste atenção no gesto.",
-    nextRound: ["Observe com atenção!", "O que será que ele(a) quer dizer?", "Você consegue traduzir este gesto!"],
-    correct: ["Isso mesmo! 🎉", "Você é um ótimo tradutor! ⭐", "Excelente! 🌟", "Continue assim! 💪"],
+    start: "Vamos começar! Preste atenção no que eu vou pedir.",
+    nextRound: ["Observe com atenção!", "Qual card o(a) nosso(a) amigo(a) quer?", "Você consegue encontrar!"],
+    correct: ["Isso mesmo! 🎉", "Você encontrou! ⭐", "Excelente! 🌟", "Continue assim! 💪"],
     error: "Ops, não foi esse. Mas não desista! ❤️",
     phaseComplete: "Uau! Você completou a fase e ganhou mais pontos! ✨",
     gameOver: "Não foi dessa vez, mas você foi incrível! Vamos tentar de novo? 😊"
@@ -95,7 +181,7 @@ export default function MagicWordsGame() {
     setMilaMessage(message);
     if (isSoundOn && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(message.replace(/[🎉⭐🌟💪✨❤️😊]/g, ''));
+      const utterance = new SpeechSynthesisUtterance(message.replace(/[🎉⭐🌟💪✨❤️😊🤔]/g, ''));
       utterance.lang = 'pt-BR';
       utterance.rate = 0.9;
       utterance.pitch = 1.1;
@@ -152,14 +238,11 @@ export default function MagicWordsGame() {
     setIsUiBlocked(true);
     const phase = gameConfig.phases[phaseIndex];
     
-    // 1. Pega todos os cards disponíveis e embaralha
     const shuffledDeck = [...gameConfig.cards].sort(() => 0.5 - Math.random());
     
-    // 2. Seleciona o card correto e os distratores
     const correct = shuffledDeck[0];
     const distractors = shuffledDeck.slice(1, phase.cards);
     
-    // 3. Monta os cards da rodada e embaralha novamente
     const roundCards = [correct, ...distractors].sort(() => 0.5 - Math.random());
     
     setCorrectCard(correct);
@@ -169,9 +252,8 @@ export default function MagicWordsGame() {
     const randomNpcName = gameConfig.npcNames[Math.floor(Math.random() * gameConfig.npcNames.length)];
     setNpcName(randomNpcName);
 
-    const randomMessage = milaMessages.nextRound[Math.floor(Math.random() * milaMessages.nextRound.length)];
     setTimeout(() => {
-        milaSpeak(`${randomNpcName} está ${correct.gestureDesc}. ${randomMessage}`);
+        milaSpeak(`${randomNpcName} quer o card que mostra... '${correct.label}'. Você consegue encontrar?`);
         setIsUiBlocked(false);
     }, 1200);
 
@@ -182,7 +264,6 @@ export default function MagicWordsGame() {
     setIsUiBlocked(true);
 
     if (card.id === correctCard?.id) {
-      // --- ACERTOU ---
       setScore(prev => prev + 100);
       setCardFeedback({ [card.id]: 'correct' });
       playSound('correct');
@@ -202,7 +283,6 @@ export default function MagicWordsGame() {
       }, 2000);
 
     } else {
-      // --- ERROU ---
       setLives(prev => prev - 1);
       setCardFeedback({ [card.id]: 'wrong', [correctCard!.id]: 'correct' });
       playSound('wrong');
@@ -235,8 +315,7 @@ export default function MagicWordsGame() {
     setShowVictoryModal(false);
     
     if (newPhase >= gameConfig.phases.length) {
-      // Venceu o jogo!
-      startGame(); // Por enquanto, recomeça
+      startGame();
     } else {
       setCurrentPhase(newPhase);
       setRoundsCompleted(0);
@@ -252,7 +331,6 @@ export default function MagicWordsGame() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-200 via-violet-200 to-pink-200 relative overflow-hidden text-gray-800">
       <div className="relative z-10 max-w-4xl mx-auto p-2 md:p-4">
-        {/* --- CABEÇALHO --- */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 mb-4 shadow-lg border-2 border-white">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -279,7 +357,6 @@ export default function MagicWordsGame() {
           </div>
         </div>
 
-        {/* --- ÁREA PRINCIPAL DO JOGO --- */}
         {isPlaying ? (
         <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-4 md:p-6 shadow-xl border-2 border-violet-200">
           <div className="text-center mb-4">
@@ -296,17 +373,15 @@ export default function MagicWordsGame() {
             </div>
           </div>
           
-          {/* --- NPC e Gesto --- */}
           <div className="flex justify-center my-4 md:my-6">
               <div className="bg-white p-4 rounded-2xl shadow-md text-center border-2 border-pink-200 animate-fade-in">
-                  <div className="text-6xl md:text-8xl animate-bounce">{correctCard?.gesture}</div>
+                  <div className="text-6xl md:text-8xl animate-bounce">🤔</div>
                   <p className="font-bold mt-2 text-lg">{npcName}</p>
               </div>
           </div>
 
-          {/* --- GRID DE CARDS --- */}
           <div className={`grid gap-3 md:gap-4 transition-opacity duration-500 ${isUiBlocked ? 'opacity-50' : 'opacity-100'}`}
-               style={{ gridTemplateColumns: `repeat(${phase.cards <= 6 ? phase.cards / 2 : Math.ceil(phase.cards / 2)}, 1fr)`}}>
+               style={{ gridTemplateColumns: `repeat(${phase.cards <= 6 ? 3 : 4}, 1fr)`}}>
             {currentCards.map((card) => (
               <button
                 key={card.id}
@@ -327,12 +402,11 @@ export default function MagicWordsGame() {
           </div>
         </div>
         ) : (
-        // --- TELA DE INÍCIO ---
         <div className="text-center p-8 bg-white/90 rounded-3xl mt-16 animate-fade-in">
              <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500 mb-4">
                Bem-vindo!
              </h2>
-             <p className="text-lg mb-8">Ajude a Mila a entender o que as pessoas querem dizer com seus gestos.</p>
+             <p className="text-lg mb-8">Ajude a Mila a entender o que as pessoas querem dizer.</p>
              <button
               onClick={startGame}
               className="px-12 py-4 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-2xl rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
@@ -343,9 +417,8 @@ export default function MagicWordsGame() {
         )}
       </div>
 
-      {/* --- MASCOTE MILA --- */}
       <div className="fixed bottom-0 -left-4 md:left-2 z-20 w-48 md:w-80 pointer-events-none">
-           <img src="/images/mascotes/mila/Mila_apoio.webp" alt="Mila Mascote" className="w-full h-full object-contain drop-shadow-2xl" />
+           <img src="/images/mascotes/mila/mila_apoio_resultado.webp" alt="Mila Mascote" className="w-full h-full object-contain drop-shadow-2xl" />
       </div>
       <div className="fixed bottom-10 md:bottom-24 left-36 md:left-72 z-30 max-w-md">
         <div className="bg-white p-4 rounded-2xl rounded-bl-none shadow-2xl border-2 border-violet-400 relative">
@@ -354,7 +427,6 @@ export default function MagicWordsGame() {
         </div>
       </div>
       
-      {/* --- MODAIS --- */}
       {showVictoryModal && (
          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
            <div className="bg-white rounded-3xl p-8 max-w-md w-full transform animate-bounce border-4 border-yellow-400 text-center">
