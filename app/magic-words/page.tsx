@@ -19,7 +19,6 @@ interface Phase {
 }
 
 // --- BANCO DE DADOS COMPLETO DE CARDS ---
-// Mapeado a partir da sua estrutura de arquivos no GitHub
 const allCardsData: Card[] = [
   // Acoes
   { id: 'pensar', label: 'Pensar', image: '/images/cards/acoes/Pensar.webp', category: 'acoes' },
@@ -491,7 +490,8 @@ export default function MagicWordsGame() {
   const audioContextRef = useRef<AudioContext | null>(null);
 
   // --- Estados do Jogo ---
-  const [currentPhase, setCurrentPhase] = useState(0);
+  const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
+  const [phase, setPhase] = useState<Phase>(gameConfig.phases[0]);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -523,7 +523,7 @@ export default function MagicWordsGame() {
     if (!isPlaying && milaMessage === "") {
       milaSpeak(milaMessages.intro);
     }
-  }, [isPlaying, milaMessage, milaSpeak, milaMessages.intro]);
+  }, [isPlaying, milaMessage]);
 
   // --- Inicialização do Áudio ---
   useEffect(() => {
@@ -586,7 +586,8 @@ export default function MagicWordsGame() {
   
   // --- Lógica Principal do Jogo ---
   const startGame = useCallback(() => {
-    setCurrentPhase(0);
+    setCurrentPhaseIndex(0);
+    setPhase(gameConfig.phases[0]);
     setScore(0);
     setRoundsCompleted(0);
     setLives(3);
@@ -595,15 +596,15 @@ export default function MagicWordsGame() {
     setShowVictoryModal(false);
     milaSpeak(milaMessages.start);
     setTimeout(() => nextRound(0), 2000);
-  }, [milaSpeak, milaMessages.start]);
+  }, [milaSpeak]);
 
-  const nextRound = useCallback((phaseIndex: number) => {
+  const nextRound = useCallback((phaseIdx: number) => {
     setIsUiBlocked(true);
-    const phase = gameConfig.phases[phaseIndex];
+    const currentPhaseConfig = gameConfig.phases[phaseIdx];
     
-    if (!phase) return; // Trava de segurança
+    if (!currentPhaseConfig) return;
 
-    if (gameConfig.cards.length < phase.cards) {
+    if (gameConfig.cards.length < currentPhaseConfig.cards) {
         console.error("Não há cards suficientes para esta fase.");
         setIsPlaying(false);
         milaSpeak("Parece que faltam cards! Informe o criador do jogo.");
@@ -613,7 +614,7 @@ export default function MagicWordsGame() {
     const shuffledDeck = [...gameConfig.cards].sort(() => 0.5 - Math.random());
     
     const correct = shuffledDeck[0];
-    const distractors = shuffledDeck.slice(1, phase.cards);
+    const distractors = shuffledDeck.slice(1, currentPhaseConfig.cards);
     
     const roundCards = [correct, ...distractors].sort(() => 0.5 - Math.random());
     
@@ -648,11 +649,10 @@ export default function MagicWordsGame() {
       setRoundsCompleted(newRoundsCompleted);
 
       setTimeout(() => {
-        const phase = gameConfig.phases[currentPhase];
-        if (phase && newRoundsCompleted >= phase.rounds) {
+        if (newRoundsCompleted >= phase.rounds) {
           handlePhaseComplete();
         } else {
-          nextRound(currentPhase);
+          nextRound(currentPhaseIndex);
         }
       }, 2000);
 
@@ -671,7 +671,7 @@ export default function MagicWordsGame() {
         }, 2000);
       } else {
         setTimeout(() => {
-          nextRound(currentPhase);
+          nextRound(currentPhaseIndex);
         }, 2500);
       }
     }
@@ -680,37 +680,26 @@ export default function MagicWordsGame() {
   const handlePhaseComplete = () => {
     playSound('win');
     setScore(prev => prev + 250); // Bônus da Gema Mágica
-    const phase = gameConfig.phases[currentPhase];
-    if (phase) {
-      milaSpeak(milaMessages.phaseComplete(phase.name));
-    }
+    milaSpeak(milaMessages.phaseComplete(phase.name));
     setShowVictoryModal(true);
   };
   
   const nextPhase = useCallback(() => {
-    const newPhase = currentPhase + 1;
+    const newPhaseIndex = currentPhaseIndex + 1;
     setShowVictoryModal(false);
     
-    if (newPhase >= gameConfig.phases.length) {
+    if (newPhaseIndex >= gameConfig.phases.length) {
       milaSpeak("Parabéns, Mago(a) das Palavras! Você desvendou todos os segredos! 🎉");
-      setIsPlaying(false); // Volta para a tela inicial
+      setIsPlaying(false);
       setMilaMessage("Parabéns, Mago(a) das Palavras! Você desvendou todos os segredos! 🎉");
     } else {
-      setCurrentPhase(newPhase);
+      setCurrentPhaseIndex(newPhaseIndex);
+      setPhase(gameConfig.phases[newPhaseIndex]);
       setRoundsCompleted(0);
       setLives(3);
-      setTimeout(() => nextRound(newPhase), 1000);
+      setTimeout(() => nextRound(newPhaseIndex), 1000);
     }
-  }, [currentPhase, nextRound, milaSpeak]);
-
-
-  // --- LÓGICA DE RENDERIZAÇÃO ---
-  const phase = gameConfig.phases[currentPhase];
-  
-  // ***** CORREÇÃO PRINCIPAL: Impede o crash *****
-  if (!phase && isPlaying) {
-    return <div className="min-h-screen flex items-center justify-center">Carregando fase...</div>;
-  }
+  }, [currentPhaseIndex, nextRound, milaSpeak]);
 
   const progress = phase ? (roundsCompleted / phase.rounds) * 100 : 0;
 
@@ -743,11 +732,11 @@ export default function MagicWordsGame() {
           </div>
         </div>
 
-        {isPlaying && phase ? (
+        {isPlaying ? (
         <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-4 md:p-6 shadow-xl border-2 border-violet-200">
           <div className="text-center mb-4">
             <h2 className="text-lg md:text-2xl font-bold mb-2">
-             🌟 Fase {currentPhase + 1}: {phase.name} 🌟
+             🌟 Fase {currentPhaseIndex + 1}: {phase.name} 🌟
             </h2>
             <div className="w-full bg-gray-200 rounded-full h-6 border border-gray-300">
               <div 
@@ -804,7 +793,6 @@ export default function MagicWordsGame() {
       </div>
 
       <div className="fixed bottom-0 -left-4 md:left-2 z-20 w-48 md:w-80 pointer-events-none">
-           {/* AJUSTE AQUI SE O NOME DO ARQUIVO FOR DIFERENTE */}
            <img src="/images/mascotes/mila/mila_feiticeira_resultado.webp" alt="Mila Feiticeira" className="w-full h-full object-contain drop-shadow-2xl" />
       </div>
       {milaMessage && (
@@ -822,7 +810,7 @@ export default function MagicWordsGame() {
              <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400 mb-4">🎉 Fase Completa! 🎉</h2>
              <p className="text-xl text-gray-700 mb-4">Você é incrível! Ganhou uma Gema Mágica e +250 pontos bônus!</p>
              <button onClick={nextPhase} className="w-full py-3 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold text-lg rounded-full shadow-xl hover:scale-105 transition-transform">
-                {currentPhase + 1 >= gameConfig.phases.length ? '🏆 Aventura Concluída!' : '🚀 Próxima Fase Mágica'}
+                {currentPhaseIndex + 1 >= gameConfig.phases.length ? '🏆 Aventura Concluída!' : '🚀 Próxima Fase Mágica'}
              </button>
            </div>
          </div>
