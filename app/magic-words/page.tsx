@@ -1332,7 +1332,19 @@ export default function PalavrasMagicas() {
   );
 
   return (
-    <div className="game-container">
+    <div 
+      className="game-container"
+      style={{
+        width: '100%',
+        maxWidth: '768px',
+        margin: '0 auto',
+        position: 'relative',
+        fontFamily: "'Segoe UI', system-ui, sans-serif",
+        WebkitTapHighlightColor: 'transparent',
+        userSelect: 'none',
+        overflow: 'hidden'
+      }}
+    >
       {currentScreen === 'tutorial' && <TutorialScreen />}
       {currentScreen === 'menu' && <MenuScreen />}
       {currentScreen === 'game' && <GameScreen />}
@@ -1406,27 +1418,6 @@ export default function PalavrasMagicas() {
         </div>
       )}
 
-      <style jsx global>{`
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-          -webkit-tap-highlight-color: transparent;
-          user-select: none;
-        }
-
-        body {
-          font-family: 'Segoe UI', system-ui, sans-serif;
-          overflow: hidden;
-        }
-
-        .game-container {
-          width: 100%;
-          max-width: 768px;
-          margin: 0 auto;
-          position: relative;
-        }
-      `}</style>
     </div>
   );
 }
