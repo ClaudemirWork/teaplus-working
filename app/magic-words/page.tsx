@@ -736,9 +736,9 @@ export default function MagicWordsGame() {
         </div>
       </header>
       
-      <main className="flex-grow w-full max-w-4xl mx-auto p-2 md:p-4">
+      <main className="flex-grow w-full max-w-4xl mx-auto p-2 md:p-4 pb-44"> {/* Padding inferior para não sobrepor o footer */}
         {isPlaying && phase ? (
-        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-4 md:p-6 shadow-xl border-2 border-violet-200">
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-2 sm:p-4 md:p-6 shadow-xl border-2 border-violet-200">
           <div className="text-center mb-4">
             <h2 className="text-lg md:text-2xl font-bold mb-2">
              🌟 Fase {currentPhaseIndex + 1}: {phase.name} 🌟
@@ -760,7 +760,7 @@ export default function MagicWordsGame() {
               </div>
           </div>
 
-          <div className={`grid gap-2 md:gap-4 transition-opacity duration-500 ${isUiBlocked ? 'opacity-50' : 'opacity-100'} grid-cols-2 sm:grid-cols-3 md:grid-cols-4`}>
+          <div className={`grid gap-2 sm:gap-3 md:gap-4 transition-opacity duration-500 ${isUiBlocked ? 'opacity-50' : 'opacity-100'} grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6`}>
             {currentCards.map((card) => (
               <button
                 key={card.id}
@@ -796,18 +796,20 @@ export default function MagicWordsGame() {
         )}
       </main>
 
-      <footer className="relative w-full h-40 md:h-48 mt-4">
-        <div className="absolute bottom-0 left-0 w-48 md:w-64 z-10">
-           <img src="/images/mascotes/mila/mila_feiticeira_resultado.webp" alt="Mila Feiticeira" className="w-full h-full object-contain drop-shadow-2xl" />
-        </div>
-        {milaMessage && (
-          <div className="absolute bottom-6 left-36 md:left-56 z-20 max-w-md w-[calc(100%-10rem)] md:w-auto">
-            <div className="bg-white p-4 rounded-2xl rounded-bl-none shadow-2xl border-2 border-violet-400 relative">
-                <p className="text-center font-semibold text-sm md:text-lg">{milaMessage}</p>
-                <div className="absolute -bottom-3 left-0 w-0 h-0 border-l-[12px] border-l-transparent border-t-[12px] border-t-white transform -translate-x-full"></div>
-            </div>
+      <footer className="fixed bottom-0 left-0 w-full h-40 md:h-48 pointer-events-none z-10">
+        <div className="relative w-full h-full max-w-4xl mx-auto">
+          <div className="absolute bottom-0 -left-4 w-40 md:w-64">
+             <img src="/images/mascotes/mila/mila_feiticeira_resultado.webp" alt="Mila Feiticeira" className="w-full h-auto object-contain drop-shadow-2xl" />
           </div>
-        )}
+          {milaMessage && (
+            <div className="absolute bottom-6 left-32 md:left-56 w-[calc(100%-9rem)] md:w-auto max-w-md pointer-events-auto">
+              <div className="bg-white p-3 md:p-4 rounded-2xl rounded-bl-none shadow-2xl border-2 border-violet-400 relative">
+                  <p className="text-center font-semibold text-sm md:text-lg">{milaMessage}</p>
+                  <div className="absolute -bottom-3 left-0 w-0 h-0 border-l-[12px] border-l-transparent border-t-[12px] border-t-white transform -translate-x-full"></div>
+              </div>
+            </div>
+          )}
+        </div>
       </footer>
       
       {showVictoryModal && (
