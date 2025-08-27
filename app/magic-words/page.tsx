@@ -23,7 +23,7 @@ interface Npc {
   image: string;
 }
 
-// Componente para renderização apenas no lado do cliente
+// --- Componente de renderização apenas no lado do cliente ---
 const ClientOnly = ({ children }: { children: ReactNode }) => {
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
@@ -416,7 +416,8 @@ const gameConfig = {
   ]
 };
 
-export default function MagicWordsGame() {
+// Componente do Jogo propriamente dito
+const GameContent = () => {
   const router = useRouter();
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -435,7 +436,6 @@ export default function MagicWordsGame() {
   const [isSoundOn, setIsSoundOn] = useState(true);
   const [milaMessage, setMilaMessage] = useState("");
   const [introStep, setIntroStep] = useState(0);
-  const [isClient, setIsClient] = useState(false);
 
   const introMessages = [
     "Olá, me chamo Mila, e sou a feiticeira da floresta deste mundo encantando. Sou uma feiticeira do bem, e quero lhe convidar a ajudar a pessoas a encontrar objetos que estão escondidos na floresta, e que eles não acham.",
@@ -453,36 +453,26 @@ export default function MagicWordsGame() {
   };
 
   useEffect(() => {
-    setIsClient(true);
+    setCurrentNpc(gameConfig.npcs[0]); 
+    milaSpeak(introMessages[0]);
   }, []);
 
   useEffect(() => {
-    if (isClient) {
-      setCurrentNpc(gameConfig.npcs[0]); 
-      milaSpeak(introMessages[0]);
-    }
-  }, [isClient]);
-
-  useEffect(() => {
     const initAudio = () => {
-      if (isClient && typeof window !== 'undefined' && !audioContextRef.current) {
+      if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
     };
-    if (isClient && typeof window !== 'undefined') {
-      document.addEventListener('click', initAudio, { once: true });
-    }
+    document.addEventListener('click', initAudio, { once: true });
     return () => {
-      if (isClient && typeof window !== 'undefined') {
-        document.removeEventListener('click', initAudio);
-        audioContextRef.current?.close();
-      }
+      document.removeEventListener('click', initAudio);
+      audioContextRef.current?.close();
     };
-  }, [isClient]);
+  }, []);
 
   const milaSpeak = useCallback((message: string) => {
     setMilaMessage(message);
-    if (isClient && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(message.replace(/[🎉⭐🌟❤️✨😊]/g, ''));
       utterance.lang = 'pt-BR';
@@ -490,7 +480,7 @@ export default function MagicWordsGame() {
       utterance.pitch = 1.1;
       window.speechSynthesis.speak(utterance);
     }
-  }, [isSoundOn, isClient]);
+  }, [isSoundOn]);
 
   const playSound = useCallback((type: 'correct' | 'wrong' | 'win') => {
     if (!isSoundOn || !audioContextRef.current) return;
@@ -529,12 +519,12 @@ export default function MagicWordsGame() {
     setScore(0);
     setRoundsCompleted(0);
     setLives(3);
-    if (isClient && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
         window.speechSynthesis.cancel();
     }
     setMilaMessage(gameMessages.start);
     setTimeout(() => nextRound(0), 2000);
-  }, [gameMessages, nextRound, isClient]);
+  }, [gameMessages, nextRound]);
 
   const handleIntroStep = () => {
     if (introStep < introMessages.length - 1) {
@@ -644,85 +634,115 @@ export default function MagicWordsGame() {
     const progress = phase ? (roundsCompleted / phase.rounds) * 100 : 0;
   
     return (
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 md:p-5 shadow-xl">
-        <div className="text-center mb-3">
-          <h2 className="text-sm md:text-lg font-bold text-gray-800 mb-2">
-            🌟 Fase {currentPhaseIndex + 1}: {phase.name} 🌟
-          </h2>
-          <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-green-400 to-sky-400 flex items-center justify-center text-white text-xs font-bold transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            >
-              {roundsCompleted}/{phase.rounds}
+      <>
+        <div className="bg-white/90 rounded-2xl p-2 md:p-3 mb-3 md:mb-4 shadow-xl">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <button onClick={() => router.push('/')} className="p-1 md:p-1.5 hover:bg-pink-100 rounded-lg">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h1 className="text-sm md:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500">
+                ✨ Palavras Mágicas ✨
+              </h1>
             </div>
-          </div>
-        </div>
-  
-        <div className="flex flex-col md:flex-row items-center justify-center my-3 gap-3 md:gap-5">
-          <div className="bg-white p-2 md:p-3 rounded-xl shadow-md text-center border-2 border-pink-200 flex items-center gap-2 md:gap-3">
-            {currentNpc && (
-              <img 
-                src={currentNpc.image} 
-                alt={currentNpc.name}
-                className="w-16 h-16 md:w-20 md:h-20 object-contain animate-bounce" 
-                onError={(e) => e.currentTarget.src = '/images/mascotes/placeholder.webp'}
-              />
-            )}
-            <div className="flex flex-col items-start">
-              <p className="font-bold text-sm md:text-base text-gray-800">{currentNpc?.name}</p>
-              {correctCard && (
-                <p className="text-lg md:text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500">
-                  {correctCard.label}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-  
-        <div className={`
-          grid gap-2 md:gap-3 transition-opacity duration-500 max-w-5xl mx-auto
-          ${isUiBlocked ? 'opacity-50' : 'opacity-100'}
-          ${phase.cards <= 4 ? 'grid-cols-2 md:grid-cols-4' : ''}
-          ${phase.cards === 6 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-3' : ''}
-          ${phase.cards === 9 ? 'grid-cols-3 md:grid-cols-3' : ''}
-          ${phase.cards >= 12 ? 'grid-cols-3 md:grid-cols-4' : ''}
-        `}>
-          {currentCards.map((card) => (
-            <button
-              key={card.id}
-              onClick={() => handleCardClick(card)}
-              disabled={isUiBlocked}
-              className={`
-                p-2 bg-white rounded-xl shadow-lg border-3 transition-all duration-300 transform 
-                ${isUiBlocked ? 'cursor-wait' : 'hover:scale-105 hover:shadow-xl active:scale-95'}
-                ${cardFeedback[card.id] === 'correct' ? 'border-green-400 scale-110 animate-pulse' : ''}
-                ${cardFeedback[card.id] === 'wrong' ? 'border-red-400 animate-shake' : ''}
-                ${!cardFeedback[card.id] ? 'border-violet-200' : ''}
-              `}
-            >
-              <div className="aspect-square relative">
-                <img 
-                  src={card.image} 
-                  alt={card.label}
-                  className="w-full h-full object-contain rounded"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    const parent = e.currentTarget.parentElement;
-                    if (parent && !parent.querySelector('.fallback-text')) {
-                      const fallbackText = document.createElement('div');
-                      fallbackText.className = 'fallback-text absolute inset-0 bg-gradient-to-br from-violet-100 to-pink-100 rounded flex items-center justify-center text-gray-700 font-semibold text-center text-xs md:text-sm p-1';
-                      fallbackText.textContent = card.label;
-                      parent.appendChild(fallbackText);
-                    }
-                  }}
-                />
+            
+            <div className="flex gap-1 md:gap-2">
+              <div className="bg-gradient-to-br from-red-400 to-pink-400 text-white px-2 md:px-3 py-1 rounded-lg">
+                <div className="text-[9px] md:text-[10px]">Vidas</div>
+                <div className="text-sm md:text-base font-bold">{'❤️'.repeat(lives)}</div>
               </div>
-              <p className="mt-1 text-center font-bold text-[10px] md:text-xs">{card.label}</p>
-            </button>
-          ))}
+              <div className="bg-gradient-to-br from-yellow-400 to-orange-400 text-white px-2 md:px-3 py-1 rounded-lg">
+                <div className="text-[9px] md:text-[10px]">Pontos</div>
+                <div className="text-sm md:text-base font-bold">{score}</div>
+              </div>
+              <button onClick={() => setIsSoundOn(!isSoundOn)} className="p-1 hover:bg-pink-100 rounded-lg">
+                {isSoundOn ? <Volume2 className="w-4 h-4 md:w-5 md:h-5" /> : <VolumeX className="w-4 h-4 md:w-5 md:h-5" />}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 md:p-5 shadow-xl">
+          <div className="text-center mb-3">
+            <h2 className="text-sm md:text-lg font-bold text-gray-800 mb-2">
+              🌟 Fase {currentPhaseIndex + 1}: {phase.name} 🌟
+            </h2>
+            <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-green-400 to-sky-400 flex items-center justify-center text-white text-xs font-bold transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              >
+                {roundsCompleted}/{phase.rounds}
+              </div>
+            </div>
+          </div>
+    
+          <div className="flex flex-col md:flex-row items-center justify-center my-3 gap-3 md:gap-5">
+            <div className="bg-white p-2 md:p-3 rounded-xl shadow-md text-center border-2 border-pink-200 flex items-center gap-2 md:gap-3">
+              {currentNpc && (
+                <img 
+                  src={currentNpc.image} 
+                  alt={currentNpc.name}
+                  className="w-16 h-16 md:w-20 md:h-20 object-contain animate-bounce" 
+                  onError={(e) => e.currentTarget.src = '/images/mascotes/placeholder.webp'}
+                />
+              )}
+              <div className="flex flex-col items-start">
+                <p className="font-bold text-sm md:text-base text-gray-800">{currentNpc?.name}</p>
+                {correctCard && (
+                  <p className="text-lg md:text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500">
+                    {correctCard.label}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+    
+          <div className={`
+            grid gap-2 md:gap-3 transition-opacity duration-500 max-w-5xl mx-auto
+            ${isUiBlocked ? 'opacity-50' : 'opacity-100'}
+            ${phase.cards <= 4 ? 'grid-cols-2 md:grid-cols-4' : ''}
+            ${phase.cards === 6 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-3' : ''}
+            ${phase.cards === 9 ? 'grid-cols-3 md:grid-cols-3' : ''}
+            ${phase.cards >= 12 ? 'grid-cols-3 md:grid-cols-4' : ''}
+          `}>
+            {currentCards.map((card) => (
+              <button
+                key={card.id}
+                onClick={() => handleCardClick(card)}
+                disabled={isUiBlocked}
+                className={`
+                  p-2 bg-white rounded-xl shadow-lg border-3 transition-all duration-300 transform 
+                  ${isUiBlocked ? 'cursor-wait' : 'hover:scale-105 hover:shadow-xl active:scale-95'}
+                  ${cardFeedback[card.id] === 'correct' ? 'border-green-400 scale-110 animate-pulse' : ''}
+                  ${cardFeedback[card.id] === 'wrong' ? 'border-red-400 animate-shake' : ''}
+                  ${!cardFeedback[card.id] ? 'border-violet-200' : ''}
+                `}
+              >
+                <div className="aspect-square relative">
+                  <img 
+                    src={card.image} 
+                    alt={card.label}
+                    className="w-full h-full object-contain rounded"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const parent = e.currentTarget.parentElement;
+                      if (parent && !parent.querySelector('.fallback-text')) {
+                        const fallbackText = document.createElement('div');
+                        fallbackText.className = 'fallback-text absolute inset-0 bg-gradient-to-br from-violet-100 to-pink-100 rounded flex items-center justify-center text-gray-700 font-semibold text-center text-xs md:text-sm p-1';
+                        fallbackText.textContent = card.label;
+                        parent.appendChild(fallbackText);
+                      }
+                    }}
+                  />
+                </div>
+                <p className="mt-1 text-center font-bold text-[10px] md:text-xs">{card.label}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+        {renderModals()}
+      </>
     );
   };
 
@@ -783,7 +803,7 @@ export default function MagicWordsGame() {
       </div>
     );
   };
-
+  
   const renderModals = () => (
     <>
       {gameStatus === 'victory' && (
@@ -825,76 +845,16 @@ export default function MagicWordsGame() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-200 via-violet-200 to-pink-200 relative overflow-hidden">
       <div className="relative z-10 max-w-6xl mx-auto p-2 md:p-4">
-        <div className="bg-white/90 rounded-2xl p-2 md:p-3 mb-3 md:mb-4 shadow-xl">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <button onClick={() => router.push('/')} className="p-1 md:p-1.5 hover:bg-pink-100 rounded-lg">
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <h1 className="text-sm md:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500">
-                ✨ Palavras Mágicas ✨
-              </h1>
-            </div>
-            
-            <div className="flex gap-1 md:gap-2">
-              <div className="bg-gradient-to-br from-red-400 to-pink-400 text-white px-2 md:px-3 py-1 rounded-lg">
-                <div className="text-[9px] md:text-[10px]">Vidas</div>
-                <div className="text-sm md:text-base font-bold">{'❤️'.repeat(lives)}</div>
-              </div>
-              <div className="bg-gradient-to-br from-yellow-400 to-orange-400 text-white px-2 md:px-3 py-1 rounded-lg">
-                <div className="text-[9px] md:text-[10px]">Pontos</div>
-                <div className="text-sm md:text-base font-bold">{score}</div>
-              </div>
-              <button onClick={() => setIsSoundOn(!isSoundOn)} className="p-1 hover:bg-pink-100 rounded-lg">
-                {isSoundOn ? <Volume2 className="w-4 h-4 md:w-5 md:h-5" /> : <VolumeX className="w-4 h-4 md:w-5 md:h-5" />}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <ClientOnly>
-          {gameStatus === 'intro' ? renderIntroScreen() : renderGameContent()}
-        </ClientOnly>
+        {gameStatus === 'intro' ? renderIntroScreen() : renderGameContent()}
       </div>
-
-      {renderModals()}
-      
-      <style jsx>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
-        }
-        .animate-shake {
-          animation: shake 0.5s ease-in-out;
-        }
-        @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in-up {
-          animation: fade-in-up 1s ease-out;
-        }
-        @keyframes scale-in {
-          from {
-            opacity: 0;
-            transform: scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        .animate-scale-in {
-          animation: scale-in 0.7s ease-out;
-        }
-      `}</style>
     </div>
+  );
+};
+
+export default function MagicWordsGameWrapper() {
+  return (
+    <ClientOnly>
+      <GameContent />
+    </ClientOnly>
   );
 }
