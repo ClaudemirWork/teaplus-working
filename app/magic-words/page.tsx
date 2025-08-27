@@ -442,9 +442,8 @@ export default function MagicWordsGame() {
   };
 
   useEffect(() => {
-    // Configura o primeiro NPC no início (Mila por padrão)
+    // Chamada inicial da voz e configuração do NPC somente no cliente
     setCurrentNpc(gameConfig.npcs[0]); 
-    // Chama o primeiro balão de introdução quando a tela de intro é carregada
     milaSpeak(introMessages[0]);
   }, []);
 
@@ -463,7 +462,7 @@ export default function MagicWordsGame() {
 
   const milaSpeak = useCallback((message: string) => {
     setMilaMessage(message);
-    if (isSoundOn && 'speechSynthesis' in window) {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(message.replace(/[🎉⭐🌟❤️✨😊]/g, ''));
       utterance.lang = 'pt-BR';
@@ -519,7 +518,6 @@ export default function MagicWordsGame() {
       setIntroStep(prev => prev + 1);
       milaSpeak(introMessages[introStep + 1]);
     } else {
-      // Já é o último passo, agora o botão deve chamar startGame
       startGame();
     }
   };
@@ -539,13 +537,11 @@ export default function MagicWordsGame() {
     setCurrentCards(roundCards);
     setCardFeedback({});
     
-    // Seleciona um dos mascotes (Mila ou Léo)
     const randomNpc = gameConfig.npcs[Math.floor(Math.random() * gameConfig.npcs.length)];
     setCurrentNpc(randomNpc);
 
     setTimeout(() => {
         if(correct) {
-          // A fala da Mila agora foca em pedir o CARD.label
           milaSpeak(`${randomNpc.name} quer o card '${correct.label}'. Encontre!`);
         }
         setIsUiBlocked(false);
@@ -647,7 +643,7 @@ export default function MagicWordsGame() {
                 src={currentNpc.image} 
                 alt={currentNpc.name}
                 className="w-16 h-16 md:w-20 md:h-20 object-contain animate-bounce" 
-                onError={(e) => e.currentTarget.src = '/images/mascotes/placeholder.webp'} // Fallback para NPC genérico
+                onError={(e) => e.currentTarget.src = '/images/mascotes/placeholder.webp'}
               />
             )}
             <div className="flex flex-col items-start">
@@ -688,15 +684,12 @@ export default function MagicWordsGame() {
                   alt={card.label}
                   className="w-full h-full object-contain rounded"
                   onError={(e) => {
-                    // Fallback para imagem de card: Tentar uma imagem genérica ou apenas o nome do card.
-                    // Adicione aqui um caminho para uma imagem de card genérica se você tiver uma.
-                    // Por exemplo: e.currentTarget.src = '/images/cards/fallback_card.webp';
-                    e.currentTarget.style.display = 'none'; // Esconde a imagem quebrada
+                    e.currentTarget.style.display = 'none';
                     const parent = e.currentTarget.parentElement;
                     if (parent && !parent.querySelector('.fallback-text')) {
                       const fallbackText = document.createElement('div');
                       fallbackText.className = 'fallback-text absolute inset-0 bg-gradient-to-br from-violet-100 to-pink-100 rounded flex items-center justify-center text-gray-700 font-semibold text-center text-xs md:text-sm p-1';
-                      fallbackText.textContent = card.label; // Exibe o nome do card no lugar da imagem
+                      fallbackText.textContent = card.label;
                       parent.appendChild(fallbackText);
                     }
                   }}
