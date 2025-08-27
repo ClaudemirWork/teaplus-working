@@ -153,7 +153,7 @@ const allCardsData: Card[] = [
   { id: 'jantar_quente', label: 'Jantar Quente', image: '/images/cards/alimentos/jantar_quente.webp', category: 'alimentos' },
   { id: 'lunch_box', label: 'Marmita', image: '/images/cards/alimentos/lunch_box.webp', category: 'alimentos' },
   { id: 'maca', label: 'Maçã', image: '/images/cards/alimentos/maca.webp', category: 'alimentos' },
-  { id: 'macarrao_bologhesa', label: 'Macarrão Bolonhesa', image: '/images/cards/alimentos/macarrão_bologhesa.webp', category: 'alimentos' },
+  { id: 'macarrao_bologhesa', label: 'Macarrão Bolonhesa', image: '/images/cards/alimentos/macarrao_bologhesa.webp', category: 'alimentos' },
   { id: 'manga', label: 'Manga', image: '/images/cards/alimentos/manga.webp', category: 'alimentos' },
   { id: 'melancia', label: 'Melancia', image: '/images/cards/alimentos/melancia.webp', category: 'alimentos' },
   { id: 'melao', label: 'Melão', image: '/images/cards/alimentos/melao.webp', category: 'alimentos' },
@@ -422,6 +422,7 @@ export default function MagicWordsGame() {
   const [isSoundOn, setIsSoundOn] = useState(true);
   const [milaMessage, setMilaMessage] = useState("");
   const [introStep, setIntroStep] = useState(0);
+  // O estado `isClient` é a chave para a correção.
   const [isClient, setIsClient] = useState(false);
 
   const introMessages = [
@@ -440,11 +441,13 @@ export default function MagicWordsGame() {
   };
 
   useEffect(() => {
+    // Definimos `isClient` como `true` somente após a montagem do componente.
     setIsClient(true);
   }, []);
 
   useEffect(() => {
     if (isClient) {
+      // Essas inicializações agora só ocorrem no cliente.
       setCurrentNpc(gameConfig.npcs[0]); 
       milaSpeak(introMessages[0]);
     }
@@ -839,7 +842,8 @@ export default function MagicWordsGame() {
           </div>
         </div>
 
-        {gameStatus === 'intro' ? renderIntroScreen() : renderGameContent()}
+        {/* Renderiza o conteúdo somente se estiver no cliente */}
+        {isClient && (gameStatus === 'intro' ? renderIntroScreen() : renderGameContent())}
       </div>
 
       {renderModals()}
