@@ -18,6 +18,11 @@ interface Phase {
   name: string;
 }
 
+interface Npc {
+  name: string;
+  image: string;
+}
+
 // --- BANCO COMPLETO DE CARDS (690+ cards) ---
 const allCardsData: Card[] = [
   // AÇÕES (86 cards)
@@ -396,6 +401,7 @@ const gameConfig = {
   npcs: [
     { name: 'Mila', image: '/images/mascotes/mila/mila_rosto_resultado.webp' },
     { name: 'Léo', image: '/images/mascotes/leo/leo_rosto_resultado.webp' },
+    // Adicione os caminhos para as imagens dos NPCs genéricos se você as tiver
     { name: 'Maria', image: '/images/mascotes/genericos/maria.webp' },
     { name: 'João', image: '/images/mascotes/genericos/joao.webp' },
     { name: 'Ana', image: '/images/mascotes/genericos/ana.webp' },
@@ -415,7 +421,7 @@ export default function MagicWordsGame() {
   
   const [currentCards, setCurrentCards] = useState<Card[]>([]);
   const [correctCard, setCorrectCard] = useState<Card | null>(null);
-  const [currentNpc, setCurrentNpc] = useState(gameConfig.npcs[0]);
+  const [currentNpc, setCurrentNpc] = useState<Npc | null>(null);
   const [cardFeedback, setCardFeedback] = useState<{ [key: string]: 'correct' | 'wrong' }>({});
 
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
@@ -428,7 +434,7 @@ export default function MagicWordsGame() {
     "Olá, me chamo Mila, e sou a feiticeira da floresta deste mundo encantando. Sou uma feiticeira do bem, e quero lhe convidar a ajudar a pessoas a encontrar objetos que estão escondidos na floresta, e que eles não acham.",
     "Não se preocupe, eu vou ajudá-lo nesta tarefa, e você ao acertar as cartas com o que cada cidadão está procurando, ganha pontos, e bônus extras, podendo libertar poderes especiais no jogo.",
     "Basta seguir minha voz, e procurar o card que está sendo solicitado, e clicar nele. Se acertar, ganha pontos, mas se errar, não tem problema, não perde nada e pode começar de novo.",
-    "Vamos comigo nesta aventura? Clique em começar."
+    "Vamos comigo nesta aventura?"
   ];
 
   const gameMessages = {
@@ -439,14 +445,12 @@ export default function MagicWordsGame() {
     gameOver: "Não foi dessa vez, mas você foi incrível! 😊"
   };
 
-  // Mapeia o passo da introdução para a mensagem da Mila
-  const handleIntroStep = () => {
-    if (introStep < introMessages.length) {
-      const message = introMessages[introStep];
-      milaSpeak(message);
-      setIntroStep(prev => prev + 1);
-    }
-  };
+  useEffect(() => {
+    // Configura o primeiro NPC no início
+    setCurrentNpc(gameConfig.npcs[0]);
+    // Chama o primeiro balão de introdução quando a tela de intro é carregada
+    milaSpeak(introMessages[0]);
+  }, []);
 
   useEffect(() => {
     const initAudio = () => {
@@ -514,6 +518,16 @@ export default function MagicWordsGame() {
     setTimeout(() => nextRound(0), 2000);
   }, [gameMessages]);
 
+  const handleIntroStep = () => {
+    if (introStep < introMessages.length - 1) {
+      setIntroStep(prev => prev + 1);
+      milaSpeak(introMessages[introStep + 1]);
+    } else {
+      // Já é o último passo, agora o botão deve chamar startGame
+      startGame();
+    }
+  };
+
   const nextRound = useCallback((phaseIdx: number) => {
     setIsUiBlocked(true);
     const currentPhaseConfig = gameConfig.phases[phaseIdx];
@@ -529,7 +543,6 @@ export default function MagicWordsGame() {
     setCurrentCards(roundCards);
     setCardFeedback({});
     
-    // Alteração aqui: Sorteia um NPC do novo array
     const randomNpc = gameConfig.npcs[Math.floor(Math.random() * gameConfig.npcs.length)];
     setCurrentNpc(randomNpc);
 
@@ -630,14 +643,16 @@ export default function MagicWordsGame() {
         </div>
   
         <div className="flex justify-center my-3">
-          {/* Alteração aqui: Usa a imagem e o nome do NPC */}
           <div className="bg-white p-2 md:p-3 rounded-xl shadow-md text-center border-2 border-pink-200">
-            <img 
-              src={currentNpc.image} 
-              alt={currentNpc.name}
-              className="w-20 h-20 object-contain mx-auto animate-bounce" 
-            />
-            <p className="font-bold mt-1 text-xs md:text-sm">{currentNpc.name}</p>
+            {currentNpc && (
+              <img 
+                src={currentNpc.image} 
+                alt={currentNpc.name}
+                className="w-20 h-20 object-contain mx-auto animate-bounce" 
+                onError={(e) => e.currentTarget.src = '/images/mascotes/genericos/placeholder.webp'}
+              />
+            )}
+            <p className="font-bold mt-1 text-xs md:text-sm">{currentNpc?.name}</p>
           </div>
         </div>
   
@@ -696,6 +711,8 @@ export default function MagicWordsGame() {
   };
 
   const renderIntroScreen = () => {
+    const isLastStep = introStep === introMessages.length - 1;
+
     return (
       <div className="flex flex-col items-center justify-end md:justify-center p-4 min-h-screen">
         <div className="w-full md:max-w-4xl flex flex-col md:flex-row items-center justify-center gap-4">
@@ -728,18 +745,24 @@ export default function MagicWordsGame() {
               </p>
               
               <div className="flex justify-center">
-                {introStep < introMessages.length ? (
+                {isLastStep ? (
+                  <button
+                    onClick={startGame}
+                    className="px-6 py-2 md:px-8 md:py-3 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-base md:text-lg rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                  >
+                    🚀 Começar
+                  </button>
+                ) : (
                   <button
                     onClick={handleIntroStep}
                     className="px-6 py-2 md:px-8 md:py-3 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-base md:text-lg rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
                   >
-                    {introStep < introMessages.length - 1 ? 'Continuar' : '🚀 Começar'}
+                    Continuar
                   </button>
-                ) : null}
+                )}
               </div>
             </div>
           </div>
-  
         </div>
       </div>
     );
