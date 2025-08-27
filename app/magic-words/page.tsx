@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { ArrowLeft, Volume2, VolumeX } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 
 // --- Interfaces ---
 interface Card {
@@ -22,18 +23,6 @@ interface Npc {
   name: string;
   image: string;
 }
-
-// Componente para renderização apenas no lado do cliente
-const ClientOnly = ({ children }: { children: ReactNode }) => {
-  const [hasMounted, setHasMounted] = useState(false);
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-  if (!hasMounted) {
-    return null;
-  }
-  return <>{children}</>;
-};
 
 // --- BANCO COMPLETO DE CARDS (690+ cards) ---
 const allCardsData: Card[] = [
@@ -367,7 +356,7 @@ const allCardsData: Card[] = [
   { id: 'aula_musica', label: 'Aula de Música', image: '/images/cards/rotina/aula_musica_resultado.webp', category: 'rotina' },
   { id: 'aula_natacao', label: 'Aula de Natação', image: '/images/cards/rotina/aula_natacao_resultado.webp', category: 'rotina' },
   { id: 'brincar', label: 'Brincar', image: '/images/cards/rotina/brincar.webp', category: 'rotina' },
-  { id: 'cafe_manha', label: 'Café da Manhã', image: '/images/cards/rotina/cafe_manha.webp', category: 'rotina' },
+  { id: 'cafe_manha', label: 'Café da Manã', image: '/images/cards/rotina/cafe_manha.webp', category: 'rotina' },
   { id: 'cafe_tarde', label: 'Café da Tarde', image: '/images/cards/rotina/cafe_tarde.webp', category: 'rotina' },
   { id: 'chuva', label: 'Chuva', image: '/images/cards/rotina/chuva.webp', category: 'rotina' },
   { id: 'domingo', label: 'Domingo', image: '/images/cards/rotina/domingo.webp', category: 'rotina' },
@@ -411,15 +400,16 @@ const gameConfig = {
   cards: allCardsData,
   npcs: [
     { name: 'Mila', image: '/images/mascotes/mila/mila_rosto_resultado.webp' },
-    { name: 'Léo', image: '/images/mascotes/leo/leo_rosto_resultado.webp' },
+    { name: 'Léo', image: '/images/cards/animais/leao.webp' },
   ]
 };
 
-export default function MagicWordsGame() {
+const Game = () => {
   const router = useRouter();
   const audioContextRef = useRef<AudioContext | null>(null);
-
-  // Inicialização atrasada dos estados para evitar erros no SSR
+  
+  // Agora todos os estados que não precisam de um valor inicial
+  // ou dependem de APIs do navegador são inicializados de forma atrasada
   const [gameStatus, setGameStatus] = useState<'intro' | 'playing' | 'victory' | 'gameOver'>('intro');
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -435,6 +425,7 @@ export default function MagicWordsGame() {
   const [isSoundOn, setIsSoundOn] = useState(true);
   const [milaMessage, setMilaMessage] = useState("");
   const [introStep, setIntroStep] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const introMessages = [
     "Olá, me chamo Mila, e sou a feiticeira da floresta deste mundo encantando. Sou uma feiticeira do bem, e quero lhe convidar a ajudar a pessoas a encontrar objetos que estão escondidos na floresta, e que eles não acham.",
@@ -452,10 +443,13 @@ export default function MagicWordsGame() {
   };
 
   useEffect(() => {
-    // Inicialização segura no cliente
-    setCurrentNpc(gameConfig.npcs[0]); 
-    milaSpeak(introMessages[0]);
-  }, []);
+    // Inicialização segura no cliente, só ocorre uma vez
+    if (!isInitialized) {
+        setCurrentNpc(gameConfig.npcs[0]); 
+        milaSpeak(introMessages[0]);
+        setIsInitialized(true);
+    }
+  }, [isInitialized]);
 
   useEffect(() => {
     const initAudio = () => {
