@@ -420,7 +420,7 @@ const Game = () => {
   const router = useRouter();
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  // Inicialização do estado do jogo
+  // Inicialização atrasada dos estados para evitar erros no SSR
   const [gameStatus, setGameStatus] = useState<'intro' | 'playing' | 'victory' | 'gameOver'>('intro');
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -452,8 +452,9 @@ const Game = () => {
     gameOver: "Não foi dessa vez, mas você foi incrível! 😊"
   };
 
+  // A inicialização dos estados agora é feita de forma assíncrona,
+  // dentro do useEffect. Isso garante que só ocorra no cliente.
   useEffect(() => {
-    // Inicialização segura no cliente
     setCurrentNpc(gameConfig.npcs[0]); 
     milaSpeak(introMessages[0]);
   }, []);
