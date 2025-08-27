@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { ArrowLeft, Volume2, VolumeX } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -22,6 +22,19 @@ interface Npc {
   name: string;
   image: string;
 }
+
+// Componente para renderização apenas no lado do cliente
+const ClientOnly = ({ children }: { children: ReactNode }) => {
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+  if (!hasMounted) {
+    return null;
+  }
+  return <>{children}</>;
+};
+
 
 // --- BANCO COMPLETO DE CARDS (690+ cards) ---
 const allCardsData: Card[] = [
@@ -422,7 +435,6 @@ export default function MagicWordsGame() {
   const [isSoundOn, setIsSoundOn] = useState(true);
   const [milaMessage, setMilaMessage] = useState("");
   const [introStep, setIntroStep] = useState(0);
-  // O estado `isClient` é a chave para a correção.
   const [isClient, setIsClient] = useState(false);
 
   const introMessages = [
@@ -441,13 +453,11 @@ export default function MagicWordsGame() {
   };
 
   useEffect(() => {
-    // Definimos `isClient` como `true` somente após a montagem do componente.
     setIsClient(true);
   }, []);
 
   useEffect(() => {
     if (isClient) {
-      // Essas inicializações agora só ocorrem no cliente.
       setCurrentNpc(gameConfig.npcs[0]); 
       milaSpeak(introMessages[0]);
     }
@@ -455,15 +465,15 @@ export default function MagicWordsGame() {
 
   useEffect(() => {
     const initAudio = () => {
-      if (isClient && !audioContextRef.current) {
+      if (isClient && typeof window !== 'undefined' && !audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
     };
-    if (isClient) {
+    if (isClient && typeof window !== 'undefined') {
       document.addEventListener('click', initAudio, { once: true });
     }
     return () => {
-      if (isClient) {
+      if (isClient && typeof window !== 'undefined') {
         document.removeEventListener('click', initAudio);
         audioContextRef.current?.close();
       }
@@ -472,7 +482,7 @@ export default function MagicWordsGame() {
 
   const milaSpeak = useCallback((message: string) => {
     setMilaMessage(message);
-    if (isClient && 'speechSynthesis' in window) {
+    if (isClient && typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(message.replace(/[🎉⭐🌟❤️✨😊]/g, ''));
       utterance.lang = 'pt-BR';
@@ -842,8 +852,9 @@ export default function MagicWordsGame() {
           </div>
         </div>
 
-        {/* Renderiza o conteúdo somente se estiver no cliente */}
-        {isClient && (gameStatus === 'intro' ? renderIntroScreen() : renderGameContent())}
+        <ClientOnly>
+          {gameStatus === 'intro' ? renderIntroScreen() : renderGameContent()}
+        </ClientOnly>
       </div>
 
       {renderModals()}
