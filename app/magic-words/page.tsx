@@ -422,6 +422,7 @@ export default function MagicWordsGame() {
   const [isSoundOn, setIsSoundOn] = useState(true);
   const [milaMessage, setMilaMessage] = useState("");
   const [introStep, setIntroStep] = useState(0);
+  const [isClient, setIsClient] = useState(false);
 
   const introMessages = [
     "Olá, me chamo Mila, e sou a feiticeira da floresta deste mundo encantando. Sou uma feiticeira do bem, e quero lhe convidar a ajudar a pessoas a encontrar objetos que estão escondidos na floresta, e que eles não acham.",
@@ -438,32 +439,37 @@ export default function MagicWordsGame() {
     gameOver: "Não foi dessa vez, mas você foi incrível! 😊"
   };
 
-  // Correção: Inicialização do primeiro NPC e mensagem no cliente
   useEffect(() => {
-    setCurrentNpc(gameConfig.npcs[0]);
-    milaSpeak(introMessages[0]);
+    setIsClient(true);
   }, []);
 
   useEffect(() => {
+    if (isClient) {
+      setCurrentNpc(gameConfig.npcs[0]); 
+      milaSpeak(introMessages[0]);
+    }
+  }, [isClient]);
+
+  useEffect(() => {
     const initAudio = () => {
-      if (typeof window !== 'undefined' && !audioContextRef.current) {
+      if (isClient && !audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
     };
-    if (typeof window !== 'undefined') {
+    if (isClient) {
       document.addEventListener('click', initAudio, { once: true });
     }
     return () => {
-      if (typeof window !== 'undefined') {
+      if (isClient) {
         document.removeEventListener('click', initAudio);
         audioContextRef.current?.close();
       }
     };
-  }, []);
+  }, [isClient]);
 
   const milaSpeak = useCallback((message: string) => {
     setMilaMessage(message);
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    if (isClient && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(message.replace(/[🎉⭐🌟❤️✨😊]/g, ''));
       utterance.lang = 'pt-BR';
@@ -471,7 +477,7 @@ export default function MagicWordsGame() {
       utterance.pitch = 1.1;
       window.speechSynthesis.speak(utterance);
     }
-  }, [isSoundOn]);
+  }, [isSoundOn, isClient]);
 
   const playSound = useCallback((type: 'correct' | 'wrong' | 'win') => {
     if (!isSoundOn || !audioContextRef.current) return;
@@ -510,12 +516,12 @@ export default function MagicWordsGame() {
     setScore(0);
     setRoundsCompleted(0);
     setLives(3);
-    if (typeof window !== 'undefined') {
-        window.speechSynthesis.cancel(); // Limpa a fala da introdução
+    if (isClient && typeof window !== 'undefined') {
+        window.speechSynthesis.cancel();
     }
     setMilaMessage(gameMessages.start);
     setTimeout(() => nextRound(0), 2000);
-  }, [gameMessages, nextRound]);
+  }, [gameMessages, nextRound, isClient]);
 
   const handleIntroStep = () => {
     if (introStep < introMessages.length - 1) {
