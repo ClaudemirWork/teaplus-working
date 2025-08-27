@@ -19,10 +19,11 @@ interface Phase {
 }
 
 // --- BANCO DE DADOS COMPLETO DE CARDS ---
+// Corrigido para corresponder exatamente aos nomes dos arquivos no repositório
 const allCardsData: Card[] = [
   // Acoes
   { id: 'pensar', label: 'Pensar', image: '/images/cards/acoes/Pensar.webp', category: 'acoes' },
-  { id: 'abracar', label: 'Abraçar', image: '/images/cards/acoes/abracar.webp', category: 'acoes' },
+  { id: 'abracar', label: 'Abraçar', image: '/images/cards/acoes/abraçar.webp', category: 'acoes' },
   { id: 'abrir_a_macaneta', label: 'Abrir a Maçaneta', image: '/images/cards/acoes/abrir a maçaneta.webp', category: 'acoes' },
   { id: 'abrir_a_porta', label: 'Abrir a Porta', image: '/images/cards/acoes/abrir a porta.webp', category: 'acoes' },
   { id: 'abrir_fechadura', label: 'Abrir Fechadura', image: '/images/cards/acoes/abrir_fechadura.webp', category: 'acoes' },
@@ -491,7 +492,6 @@ export default function MagicWordsGame() {
 
   // --- Estados do Jogo ---
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
-  const [phase, setPhase] = useState<Phase>(gameConfig.phases[0]);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -587,7 +587,6 @@ export default function MagicWordsGame() {
   // --- Lógica Principal do Jogo ---
   const startGame = useCallback(() => {
     setCurrentPhaseIndex(0);
-    setPhase(gameConfig.phases[0]);
     setScore(0);
     setRoundsCompleted(0);
     setLives(3);
@@ -649,7 +648,8 @@ export default function MagicWordsGame() {
       setRoundsCompleted(newRoundsCompleted);
 
       setTimeout(() => {
-        if (newRoundsCompleted >= phase.rounds) {
+        const phase = gameConfig.phases[currentPhaseIndex];
+        if (phase && newRoundsCompleted >= phase.rounds) {
           handlePhaseComplete();
         } else {
           nextRound(currentPhaseIndex);
@@ -678,9 +678,12 @@ export default function MagicWordsGame() {
   };
 
   const handlePhaseComplete = () => {
+    const phase = gameConfig.phases[currentPhaseIndex];
     playSound('win');
     setScore(prev => prev + 250); // Bônus da Gema Mágica
-    milaSpeak(milaMessages.phaseComplete(phase.name));
+    if(phase) {
+        milaSpeak(milaMessages.phaseComplete(phase.name));
+    }
     setShowVictoryModal(true);
   };
   
@@ -694,25 +697,25 @@ export default function MagicWordsGame() {
       setMilaMessage("Parabéns, Mago(a) das Palavras! Você desvendou todos os segredos! 🎉");
     } else {
       setCurrentPhaseIndex(newPhaseIndex);
-      setPhase(gameConfig.phases[newPhaseIndex]);
       setRoundsCompleted(0);
       setLives(3);
       setTimeout(() => nextRound(newPhaseIndex), 1000);
     }
   }, [currentPhaseIndex, nextRound, milaSpeak]);
 
+  const phase = gameConfig.phases[currentPhaseIndex];
   const progress = phase ? (roundsCompleted / phase.rounds) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-200 via-violet-200 to-pink-200 relative overflow-hidden text-gray-800">
-      <div className="relative z-10 max-w-4xl mx-auto p-2 md:p-4">
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 mb-4 shadow-lg border-2 border-white">
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-sky-200 via-violet-200 to-pink-200 text-gray-800">
+      <header className="w-full max-w-4xl mx-auto p-2 md:p-4 z-20">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 shadow-lg border-2 border-white">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <button onClick={() => router.push('/')} className="p-2 hover:bg-sky-100 rounded-xl transition-colors">
                 <ArrowLeft className="w-6 h-6" />
               </button>
-              <h1 className="text-xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500">
+              <h1 className="text-lg md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500">
                 ✨ Palavras Mágicas ✨
               </h1>
             </div>
@@ -731,8 +734,10 @@ export default function MagicWordsGame() {
             </div>
           </div>
         </div>
-
-        {isPlaying ? (
+      </header>
+      
+      <main className="flex-grow w-full max-w-4xl mx-auto p-2 md:p-4">
+        {isPlaying && phase ? (
         <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-4 md:p-6 shadow-xl border-2 border-violet-200">
           <div className="text-center mb-4">
             <h2 className="text-lg md:text-2xl font-bold mb-2">
@@ -755,8 +760,7 @@ export default function MagicWordsGame() {
               </div>
           </div>
 
-          <div className={`grid gap-3 md:gap-4 transition-opacity duration-500 ${isUiBlocked ? 'opacity-50' : 'opacity-100'}`}
-               style={{ gridTemplateColumns: `repeat(${phase.cards <= 6 ? 2 : 3}, 1fr)`}}>
+          <div className={`grid gap-2 md:gap-4 transition-opacity duration-500 ${isUiBlocked ? 'opacity-50' : 'opacity-100'} grid-cols-2 sm:grid-cols-3 md:grid-cols-4`}>
             {currentCards.map((card) => (
               <button
                 key={card.id}
@@ -777,7 +781,7 @@ export default function MagicWordsGame() {
           </div>
         </div>
         ) : (
-        <div className="text-center p-8 bg-white/90 rounded-3xl mt-16 animate-fade-in">
+        <div className="text-center p-8 bg-white/90 rounded-3xl mt-8 animate-fade-in">
              <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500 mb-4">
                Bem-vindo!
              </h2>
@@ -790,19 +794,21 @@ export default function MagicWordsGame() {
             </button>
         </div>
         )}
-      </div>
+      </main>
 
-      <div className="fixed bottom-0 -left-4 md:left-2 z-20 w-48 md:w-80 pointer-events-none">
+      <footer className="relative w-full h-40 md:h-48 mt-4">
+        <div className="absolute bottom-0 left-0 w-48 md:w-64 z-10">
            <img src="/images/mascotes/mila/mila_feiticeira_resultado.webp" alt="Mila Feiticeira" className="w-full h-full object-contain drop-shadow-2xl" />
-      </div>
-      {milaMessage && (
-        <div className="fixed bottom-40 md:bottom-auto md:top-1/2 md:-translate-y-1/2 left-36 md:left-72 z-30 max-w-md w-full">
-          <div className="bg-white p-4 rounded-2xl rounded-bl-none shadow-2xl border-2 border-violet-400 relative">
-              <p className="text-center font-semibold text-base md:text-lg">{milaMessage}</p>
-              <div className="absolute -bottom-3 left-0 w-0 h-0 border-l-[12px] border-l-transparent border-t-[12px] border-t-white transform -translate-x-full"></div>
-          </div>
         </div>
-      )}
+        {milaMessage && (
+          <div className="absolute bottom-6 left-36 md:left-56 z-20 max-w-md w-[calc(100%-10rem)] md:w-auto">
+            <div className="bg-white p-4 rounded-2xl rounded-bl-none shadow-2xl border-2 border-violet-400 relative">
+                <p className="text-center font-semibold text-sm md:text-lg">{milaMessage}</p>
+                <div className="absolute -bottom-3 left-0 w-0 h-0 border-l-[12px] border-l-transparent border-t-[12px] border-t-white transform -translate-x-full"></div>
+            </div>
+          </div>
+        )}
+      </footer>
       
       {showVictoryModal && (
          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
