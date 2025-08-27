@@ -415,8 +415,7 @@ const gameConfig = {
   ]
 };
 
-// Componente do Jogo propriamente dito
-const Game = () => {
+export default function MagicWordsGame() {
   const router = useRouter();
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -452,9 +451,8 @@ const Game = () => {
     gameOver: "Não foi dessa vez, mas você foi incrível! 😊"
   };
 
-  // A inicialização dos estados agora é feita de forma assíncrona,
-  // dentro do useEffect. Isso garante que só ocorra no cliente.
   useEffect(() => {
+    // Inicialização segura no cliente
     setCurrentNpc(gameConfig.npcs[0]); 
     milaSpeak(introMessages[0]);
   }, []);
@@ -829,17 +827,49 @@ const Game = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-200 via-violet-200 to-pink-200 relative overflow-hidden">
-      <div className="relative z-10 max-w-6xl mx-auto p-2 md:p-4">
-        {gameStatus === 'intro' ? renderIntroScreen() : renderGameContent()}
-      </div>
+      <ClientOnly>
+        <div className="relative z-10 max-w-6xl mx-auto p-2 md:p-4">
+          {gameStatus === 'intro' ? renderIntroScreen() : renderGameContent()}
+        </div>
+        {renderModals()}
+      </ClientOnly>
+      
+      <style jsx>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+        .animate-shake {
+          animation: shake 0.5s ease-in-out;
+        }
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-up {
+          animation: fade-in-up 1s ease-out;
+        }
+        @keyframes scale-in {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-scale-in {
+          animation: scale-in 0.7s ease-out;
+        }
+      `}</style>
     </div>
-  );
-};
-
-export default function MagicWordsGameWrapper() {
-  return (
-    <ClientOnly>
-      <Game />
-    </ClientOnly>
   );
 }
