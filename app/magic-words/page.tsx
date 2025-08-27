@@ -397,14 +397,10 @@ const gameConfig = {
     { cards: 12, rounds: 12, name: "Feiticeiro das Palavras" }
   ] as Phase[],
   cards: allCardsData,
-  // Alteração aqui: Agora é um array de objetos com nome e imagem
+  // APENAS MILA E LÉO COMO MASCOTES
   npcs: [
     { name: 'Mila', image: '/images/mascotes/mila/mila_rosto_resultado.webp' },
     { name: 'Léo', image: '/images/mascotes/leo/leo_rosto_resultado.webp' },
-    // Adicione os caminhos para as imagens dos NPCs genéricos se você as tiver
-    { name: 'Maria', image: '/images/mascotes/genericos/maria.webp' },
-    { name: 'João', image: '/images/mascotes/genericos/joao.webp' },
-    { name: 'Ana', image: '/images/mascotes/genericos/ana.webp' },
   ]
 };
 
@@ -446,8 +442,8 @@ export default function MagicWordsGame() {
   };
 
   useEffect(() => {
-    // Configura o primeiro NPC no início
-    setCurrentNpc(gameConfig.npcs[0]);
+    // Configura o primeiro NPC no início (Mila por padrão)
+    setCurrentNpc(gameConfig.npcs[0]); 
     // Chama o primeiro balão de introdução quando a tela de intro é carregada
     milaSpeak(introMessages[0]);
   }, []);
@@ -516,7 +512,7 @@ export default function MagicWordsGame() {
     setLives(3);
     setMilaMessage(gameMessages.start);
     setTimeout(() => nextRound(0), 2000);
-  }, [gameMessages]);
+  }, [gameMessages, nextRound]);
 
   const handleIntroStep = () => {
     if (introStep < introMessages.length - 1) {
@@ -543,12 +539,14 @@ export default function MagicWordsGame() {
     setCurrentCards(roundCards);
     setCardFeedback({});
     
+    // Seleciona um dos mascotes (Mila ou Léo)
     const randomNpc = gameConfig.npcs[Math.floor(Math.random() * gameConfig.npcs.length)];
     setCurrentNpc(randomNpc);
 
     setTimeout(() => {
         if(correct) {
-          milaSpeak(`${randomNpc.name} quer o card '${correct.label}'. Você consegue encontrar?`);
+          // A fala da Mila agora foca em pedir o CARD.label
+          milaSpeak(`${randomNpc.name} quer o card '${correct.label}'. Encontre!`);
         }
         setIsUiBlocked(false);
     }, 1200);
@@ -642,17 +640,24 @@ export default function MagicWordsGame() {
           </div>
         </div>
   
-        <div className="flex justify-center my-3">
-          <div className="bg-white p-2 md:p-3 rounded-xl shadow-md text-center border-2 border-pink-200">
+        <div className="flex flex-col md:flex-row items-center justify-center my-3 gap-3 md:gap-5">
+          <div className="bg-white p-2 md:p-3 rounded-xl shadow-md text-center border-2 border-pink-200 flex items-center gap-2 md:gap-3">
             {currentNpc && (
               <img 
                 src={currentNpc.image} 
                 alt={currentNpc.name}
-                className="w-20 h-20 object-contain mx-auto animate-bounce" 
-                onError={(e) => e.currentTarget.src = '/images/mascotes/genericos/placeholder.webp'}
+                className="w-16 h-16 md:w-20 md:h-20 object-contain animate-bounce" 
+                onError={(e) => e.currentTarget.src = '/images/mascotes/placeholder.webp'} // Fallback para NPC genérico
               />
             )}
-            <p className="font-bold mt-1 text-xs md:text-sm">{currentNpc?.name}</p>
+            <div className="flex flex-col items-start">
+              <p className="font-bold text-sm md:text-base text-gray-800">{currentNpc?.name}</p>
+              {correctCard && (
+                <p className="text-lg md:text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500">
+                  {correctCard.label}
+                </p>
+              )}
+            </div>
           </div>
         </div>
   
@@ -683,21 +688,16 @@ export default function MagicWordsGame() {
                   alt={card.label}
                   className="w-full h-full object-contain rounded"
                   onError={(e) => {
-                    const img = e.currentTarget;
-                    img.style.display = 'none';
-                    const parent = img.parentElement;
-                    if (parent && !parent.querySelector('.fallback')) {
-                      const fallback = document.createElement('div');
-                      fallback.className = 'fallback absolute inset-0 bg-gradient-to-br from-violet-100 to-pink-100 rounded flex items-center justify-center';
-                      const emoji = card.category === 'animais' ? '🐾' : 
-                                     card.category === 'acoes' ? '👋' : 
-                                     card.category === 'alimentos' ? '🍎' : 
-                                     card.category === 'rotina' ? '⏰' : 
-                                     card.category === 'core' ? '💬' : 
-                                     card.category === 'casa' ? '🏠' :
-                                     card.category === 'escola' ? '📚' : '';
-                      fallback.innerHTML = `<span class="text-2xl md:text-3xl">${emoji}</span>`;
-                      parent.appendChild(fallback);
+                    // Fallback para imagem de card: Tentar uma imagem genérica ou apenas o nome do card.
+                    // Adicione aqui um caminho para uma imagem de card genérica se você tiver uma.
+                    // Por exemplo: e.currentTarget.src = '/images/cards/fallback_card.webp';
+                    e.currentTarget.style.display = 'none'; // Esconde a imagem quebrada
+                    const parent = e.currentTarget.parentElement;
+                    if (parent && !parent.querySelector('.fallback-text')) {
+                      const fallbackText = document.createElement('div');
+                      fallbackText.className = 'fallback-text absolute inset-0 bg-gradient-to-br from-violet-100 to-pink-100 rounded flex items-center justify-center text-gray-700 font-semibold text-center text-xs md:text-sm p-1';
+                      fallbackText.textContent = card.label; // Exibe o nome do card no lugar da imagem
+                      parent.appendChild(fallbackText);
                     }
                   }}
                 />
