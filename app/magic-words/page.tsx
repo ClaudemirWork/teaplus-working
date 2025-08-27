@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ArrowLeft, Volume2, VolumeX } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+
+// Remova qualquer export de generateViewport ou metadata
+// Essas funções devem ficar em layout.tsx, não em componentes client
 
 // --- Interfaces ---
 interface Card {
@@ -24,7 +27,7 @@ interface Npc {
   image: string;
 }
 
-// --- BANCO COMPLETO DE CARDS (690+ cards) ---
+// --- BANCO COMPLETO DE CARDS ---
 const allCardsData: Card[] = [
   // AÇÕES (86 cards)
   { id: 'pensar', label: 'Pensar', image: '/images/cards/acoes/Pensar.webp', category: 'acoes' },
@@ -408,8 +411,7 @@ const Game = () => {
   const router = useRouter();
   const audioContextRef = useRef<AudioContext | null>(null);
   
-  // Agora todos os estados que não precisam de um valor inicial
-  // ou dependem de APIs do navegador são inicializados de forma atrasada
+  // Estados do jogo
   const [gameStatus, setGameStatus] = useState<'intro' | 'playing' | 'victory' | 'gameOver'>('intro');
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -436,15 +438,15 @@ const Game = () => {
 
   const gameMessages = {
     start: "Vamos começar! Preste atenção!",
-    correct: ["Isso mesmo! 🎉", "Você encontrou! ⭐", "Excelente! 🌟"],
-    error: "Ops, não foi esse. Tente novamente! ❤️",
-    phaseComplete: (phaseName: string) => `Parabéns! Você completou a fase ${phaseName}! ✨`,
-    gameOver: "Não foi dessa vez, mas você foi incrível! 😊"
+    correct: ["Isso mesmo!", "Você encontrou!", "Excelente!"],
+    error: "Ops, não foi esse. Tente novamente!",
+    phaseComplete: (phaseName: string) => `Parabéns! Você completou a fase ${phaseName}!`,
+    gameOver: "Não foi dessa vez, mas você foi incrível!"
   };
 
   useEffect(() => {
-    // Inicialização segura no cliente, só ocorre uma vez
-    if (!isInitialized) {
+    // Inicialização segura no cliente
+    if (!isInitialized && typeof window !== 'undefined') {
         setCurrentNpc(gameConfig.npcs[0]); 
         milaSpeak(introMessages[0]);
         setIsInitialized(true);
@@ -470,7 +472,7 @@ const Game = () => {
 
   const milaSpeak = useCallback((message: string) => {
     setMilaMessage(message);
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    if (isSoundOn && typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(message.replace(/[🎉⭐🌟❤️✨😊]/g, ''));
       utterance.lang = 'pt-BR';
@@ -511,28 +513,6 @@ const Game = () => {
     }
   }, [isSoundOn]);
 
-  const startGame = useCallback(() => {
-    setGameStatus('playing');
-    setCurrentPhaseIndex(0);
-    setScore(0);
-    setRoundsCompleted(0);
-    setLives(3);
-    if (typeof window !== 'undefined') {
-        window.speechSynthesis.cancel();
-    }
-    setMilaMessage(gameMessages.start);
-    setTimeout(() => nextRound(0), 2000);
-  }, [gameMessages, nextRound]);
-
-  const handleIntroStep = () => {
-    if (introStep < introMessages.length - 1) {
-      setIntroStep(prev => prev + 1);
-      milaSpeak(introMessages[introStep + 1]);
-    } else {
-      startGame();
-    }
-  };
-
   const nextRound = useCallback((phaseIdx: number) => {
     setIsUiBlocked(true);
     const currentPhaseConfig = gameConfig.phases[phaseIdx];
@@ -558,6 +538,28 @@ const Game = () => {
         setIsUiBlocked(false);
     }, 1200);
   }, [milaSpeak]);
+
+  const startGame = useCallback(() => {
+    setGameStatus('playing');
+    setCurrentPhaseIndex(0);
+    setScore(0);
+    setRoundsCompleted(0);
+    setLives(3);
+    if (typeof window !== 'undefined') {
+        window.speechSynthesis.cancel();
+    }
+    setMilaMessage(gameMessages.start);
+    setTimeout(() => nextRound(0), 2000);
+  }, [gameMessages, nextRound]);
+
+  const handleIntroStep = () => {
+    if (introStep < introMessages.length - 1) {
+      setIntroStep(prev => prev + 1);
+      milaSpeak(introMessages[introStep + 1]);
+    } else {
+      startGame();
+    }
+  };
 
   const handleCardClick = (card: Card) => {
     if (isUiBlocked || gameStatus !== 'playing') return;
@@ -617,7 +619,7 @@ const Game = () => {
     setGameStatus('playing');
     
     if (newPhaseIndex >= gameConfig.phases.length) {
-      milaSpeak("Parabéns! Você completou o jogo! 🎉");
+      milaSpeak("Parabéns! Você completou o jogo!");
       setGameStatus('gameOver');
     } else {
       setCurrentPhaseIndex(newPhaseIndex);
@@ -635,7 +637,7 @@ const Game = () => {
       <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 md:p-5 shadow-xl">
         <div className="text-center mb-3">
           <h2 className="text-sm md:text-lg font-bold text-gray-800 mb-2">
-            🌟 Fase {currentPhaseIndex + 1}: {phase.name} 🌟
+            Fase {currentPhaseIndex + 1}: {phase.name}
           </h2>
           <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
             <div 
@@ -763,7 +765,7 @@ const Game = () => {
                     onClick={startGame}
                     className="px-6 py-2 md:px-8 md:py-3 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-base md:text-lg rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
                   >
-                    🚀 Começar
+                    Começar
                   </button>
                 ) : (
                   <button
@@ -787,14 +789,14 @@ const Game = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center">
             <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400 mb-4">
-              🎉 Fase Completa! 🎉
+              Fase Completa!
             </h2>
             <p className="text-base text-gray-700 mb-4">+250 pontos de bônus!</p>
             <button 
               onClick={nextPhase} 
               className="w-full py-2 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold rounded-full"
             >
-              {currentPhaseIndex + 1 >= gameConfig.phases.length ? '🏆 Finalizar' : '🚀 Próxima Fase'}
+              {currentPhaseIndex + 1 >= gameConfig.phases.length ? 'Finalizar' : 'Próxima Fase'}
             </button>
           </div>
         </div>
@@ -819,14 +821,13 @@ const Game = () => {
     </>
   );
 
+  // Renderização principal SEM ClientOnly!
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-200 via-violet-200 to-pink-200 relative overflow-hidden">
-      <ClientOnly>
-        <div className="relative z-10 max-w-6xl mx-auto p-2 md:p-4">
-          {gameStatus === 'intro' ? renderIntroScreen() : renderGameContent()}
-        </div>
-        {renderModals()}
-      </ClientOnly>
+      <div className="relative z-10 max-w-6xl mx-auto p-2 md:p-4">
+        {gameStatus === 'intro' ? renderIntroScreen() : renderGameContent()}
+      </div>
+      {renderModals()}
       
       <style jsx>{`
         @keyframes shake {
@@ -867,3 +868,5 @@ const Game = () => {
     </div>
   );
 }
+
+export default Game;
