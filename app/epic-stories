@@ -1,606 +1,292 @@
-"use client";
+'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Volume2,
-  VolumeX,
-  RefreshCcw,
-  Play,
-  ArrowLeft,
-  Star,
-} from "lucide-react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 
-/**
- * HISTÓRIAS ÉPICAS — versão unificada (“golden”)
- *
- * ✔️ Next.js App Router + TailwindCSS
- * ✔️ Deploy seguro no Netlify (sem variáveis não inicializadas)
- * ✔️ SpeechSynthesis protegido contra SSR
- * ✔️ Estrutura de fases, slots, pontuação, vidas
- * ✔️ Mascote Leo com balão de fala (desktop + mobile)
- * ✔️ Cards carregados de /public/images/cards
- */
-
-// --- Tipos ---
+// --- Interfaces do Jogo ---
 interface Card {
   id: string;
   label: string;
   image: string;
-  category: "acoes" | "rotina" | "alimentos" | "animais" | "core";
+  category: 'personagens' | 'acoes' | 'emocoes' | 'lugares' | 'objetos' | 'tempo';
 }
 
-interface StorySlot {
-  id: string;
-  title: string;
-  categories: Card["category"][];
-  maxOptions?: number;
+interface StorySegment {
+  text: string;
+  type: Card['category'];
+  options: number;
+  selectedCard?: Card;
 }
 
-interface StoryTemplate {
-  id: string;
-  title: string;
-  prompt: string;
-  slots: StorySlot[];
-  baseText: string[];
+interface StoryLevel {
+  level: number;
+  name: string;
+  storiesToComplete: number;
+  templates: StorySegment[][]; // Array de templates de história
 }
 
-// --- Catálogo de cards ---
-const CARDS: Card[] = [
-  // Rotina & Ações
-  {
-    id: "brincar",
-    label: "Brincar",
-    image: "/images/cards/rotina/brincar.webp",
-    category: "rotina",
-  },
-  {
-    id: "estudar",
-    label: "Estudar",
-    image: "/images/cards/rotina/estudar.webp",
-    category: "rotina",
-  },
-  {
-    id: "ver_tv",
-    label: "Ver Televisão",
-    image: "/images/cards/rotina/ver_televisao.webp",
-    category: "rotina",
-  },
-  {
-    id: "caminhar",
-    label: "Caminhar",
-    image: "/images/cards/acoes/caminhar.webp",
-    category: "acoes",
-  },
-  {
-    id: "saltar",
-    label: "Saltar",
-    image: "/images/cards/acoes/saltar.webp",
-    category: "acoes",
-  },
-  {
-    id: "ler_livro",
-    label: "Ler Livro",
-    image: "/images/cards/acoes/ler_livro.webp",
-    category: "acoes",
-  },
+// --- BANCO DE CARDS NARRATIVOS (Baseado no seu log) ---
+// OBS: Este é um banco inicial. Precisamos expandi-lo com todos os seus cards.
+const narrativeCards: { [key in Card['category']]: Card[] } = {
+  personagens: [
+    { id: 'cachorro', label: 'um cachorro', image: '/images/cards/animais/cachorro.webp', category: 'personagens' },
+    { id: 'gato', label: 'um gato', image: '/images/cards/animais/gato.webp', category: 'personagens' },
+    { id: 'cavalo', label: 'um cavalo', image: '/images/cards/animais/cavalo.webp', category: 'personagens' },
+    { id: 'elefante', label: 'um elefante', image: '/images/cards/animais/elefante.webp', category: 'personagens' },
+    { id: 'eu', label: 'Eu', image: '/images/cards/core/eu.webp', category: 'personagens' },
+    { id: 'voce', label: 'Você', image: '/images/cards/core/voce.webp', category: 'personagens' },
+  ],
+  acoes: [
+    { id: 'brincar', label: 'brincar', image: '/images/cards/rotina/brincar.webp', category: 'acoes' },
+    { id: 'caminhar', label: 'caminhar', image: '/images/cards/acoes/caminhar.webp', category: 'acoes' },
+    { id: 'beber', label: 'beber', image: '/images/cards/acoes/beber.webp', category: 'acoes' },
+    { id: 'estudar', label: 'estudar', image: '/images/cards/rotina/estudar.webp', category: 'acoes' },
+    { id: 'ler_livro', label: 'ler um livro', image: '/images/cards/acoes/ler_livro.webp', category: 'acoes' },
+    { id: 'conversar', label: 'conversar', image: '/images/cards/acoes/conversar.webp', category: 'acoes' },
+  ],
+  emocoes: [
+    // Usando cards de 'acoes' como placeholder para emoções
+    { id: 'feliz', label: 'feliz', image: '/images/cards/acoes/saltar.webp', category: 'emocoes' },
+    { id: 'triste', label: 'triste', image: '/images/cards/acoes/pensar.webp', category: 'emocoes' },
+    { id: 'bravo', label: 'bravo', image: '/images/cards/acoes/gritar.webp', category: 'emocoes' },
+  ],
+  lugares: [
+    { id: 'casa', label: 'em casa', image: '/images/cards/casa/casa.webp', category: 'lugares' }, // Exemplo
+    { id: 'escola', label: 'na escola', image: '/images/cards/escola/escola.webp', category: 'lugares' },// Exemplo
+    { id: 'jardim', label: 'no jardim', image: '/images/cards/casa/jardim.webp', category: 'lugares' },
+  ],
+  objetos: [
+    { id: 'livro', label: 'o livro', image: '/images/cards/escola/livro.webp', category: 'objetos' },
+    { id: 'maca', label: 'a maçã', image: '/images/cards/alimentos/maca.webp', category: 'objetos' },
+    { id: 'cama', label: 'a cama', image: '/images/cards/casa/cama.webp', category: 'objetos' },
+    { id: 'mesa', label: 'a mesa', image: '/images/cards/casa/mesa.webp', category: 'objetos' },
+  ],
+  tempo: [
+    { id: 'hoje', label: 'Hoje', image: '/images/cards/rotina/hoje.webp', category: 'tempo' },
+    { id: 'manha', label: 'de manhã', image: '/images/cards/rotina/manha.webp', category: 'tempo' },
+    { id: 'noite', label: 'de noite', image: '/images/cards/rotina/noite.webp', category: 'tempo' },
+    { id: 'ontem', label: 'Ontem', image: '/images/cards/rotina/Ontem.webp', category: 'tempo' },
+  ]
+};
 
-  // Alimentos
-  {
-    id: "pizza",
-    label: "Pizza",
-    image: "/images/cards/alimentos/pizza.webp",
-    category: "alimentos",
-  },
-  {
-    id: "banana",
-    label: "Banana",
-    image: "/images/cards/alimentos/banana.webp",
-    category: "alimentos",
-  },
-  {
-    id: "salada",
-    label: "Salada",
-    image: "/images/cards/alimentos/salada.webp",
-    category: "alimentos",
-  },
-  {
-    id: "suco_laranja",
-    label: "Suco de Laranja",
-    image: "/images/cards/alimentos/suco_laranja.webp",
-    category: "alimentos",
-  },
-
-  // Animais
-  {
-    id: "cachorro",
-    label: "Cachorro",
-    image: "/images/cards/animais/cachorro.webp",
-    category: "animais",
-  },
-  {
-    id: "gato",
-    label: "Gato",
-    image: "/images/cards/animais/gato.webp",
-    category: "animais",
-  },
-  {
-    id: "coelho",
-    label: "Coelho",
-    image: "/images/cards/animais/coelho.webp",
-    category: "animais",
-  },
-  {
-    id: "elefante",
-    label: "Elefante",
-    image: "/images/cards/animais/elefante.webp",
-    category: "animais",
-  },
-
-  // Núcleo
-  {
-    id: "obrigado",
-    label: "Obrigado",
-    image: "/images/cards/core/obrigado.webp",
-    category: "core",
-  },
-  {
-    id: "sim",
-    label: "Sim",
-    image: "/images/cards/core/sim.webp",
-    category: "core",
-  },
-  {
-    id: "mais",
-    label: "Mais",
-    image: "/images/cards/core/mais.webp",
-    category: "core",
-  },
+// --- ESTRUTURA DAS FASES E TEMPLATES DE HISTÓRIAS ---
+const storyLevels: StoryLevel[] = [
+    {
+        level: 1,
+        name: "Minhas Primeiras Histórias",
+        storiesToComplete: 3,
+        templates: [
+            [{ text: "Era uma vez", type: "personagens", options: 3 }, { text: "que estava se sentindo", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "Hoje", type: "tempo", options: 3 }, { text: "", type: "personagens", options: 3 }, { text: "foi", type: "acoes", options: 4 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "Eu vi", type: "personagens", options: 4 }, { text: "", type: "acoes", options: 4 }, { text: "na", type: "lugares", options: 3 }, { text: ".", type: "acoes", options: 0 }],
+        ]
+    },
+    {
+        level: 2,
+        name: "Aventuras do Dia a Dia",
+        storiesToComplete: 4,
+        templates: [
+            [{ text: "Certo dia,", type: "personagens", options: 4 }, { text: "foi para a", type: "lugares", options: 3 }, { text: "para", type: "acoes", options: 4 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "Na escola, eu gosto de", type: "acoes", options: 4 }, { text: "com", type: "objetos", options: 3 }, { text: "e fico", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }],
+        ]
+    }
 ];
 
-// --- Fases ---
-const TEMPLATES: StoryTemplate[] = [
-  {
-    id: "fase_1",
-    title: "Capítulo 1 — A Primeira Aventura",
-    prompt:
-      "Era uma vez uma criança que queria {{acao_inicial}}. No caminho, encontrou um {{amigo}}. Juntos foram {{acao_juntos}} e depois comeram {{comida}}. No final disseram {{fecho}}.",
-    baseText: [
-      "Era uma vez uma criança que queria",
-      "No caminho, encontrou um",
-      "Juntos foram",
-      "e depois comeram",
-      "No final disseram",
-    ],
-    slots: [
-      {
-        id: "acao_inicial",
-        title: "Escolha o começo",
-        categories: ["rotina", "acoes"],
-        maxOptions: 6,
-      },
-      {
-        id: "amigo",
-        title: "Quem encontrou?",
-        categories: ["animais"],
-        maxOptions: 6,
-      },
-      {
-        id: "acao_juntos",
-        title: "O que fizeram?",
-        categories: ["acoes", "rotina"],
-        maxOptions: 6,
-      },
-      {
-        id: "comida",
-        title: "O que comeram?",
-        categories: ["alimentos"],
-        maxOptions: 6,
-      },
-      { id: "fecho", title: "Como terminou?", categories: ["core"], maxOptions: 4 },
-    ],
-  },
-  {
-    id: "fase_2",
-    title: "Capítulo 2 — Aventuras no Parque",
-    prompt:
-      "Hoje, a criança decidiu {{acao_inicial}}. Encontrou um {{amigo}}. Eles foram {{acao_juntos}} e beberam {{comida}}. No final disseram {{fecho}}.",
-    baseText: [
-      "Hoje, a criança decidiu",
-      "Encontrou um",
-      "Eles foram",
-      "e beberam",
-      "No final disseram",
-    ],
-    slots: [
-      {
-        id: "acao_inicial",
-        title: "Começo",
-        categories: ["acoes", "rotina"],
-        maxOptions: 8,
-      },
-      { id: "amigo", title: "Quem?", categories: ["animais"], maxOptions: 8 },
-      {
-        id: "acao_juntos",
-        title: "Fizeram o quê?",
-        categories: ["acoes", "rotina"],
-        maxOptions: 8,
-      },
-      {
-        id: "comida",
-        title: "Beberam/Comeram",
-        categories: ["alimentos"],
-        maxOptions: 8,
-      },
-      { id: "fecho", title: "Final", categories: ["core"], maxOptions: 4 },
-    ],
-  },
-];
+export default function HistoriasEpicasGame() {
+  // Estados do Jogo
+  const [gameState, setGameState] = useState<'intro' | 'playing' | 'storyComplete' | 'levelComplete'>('intro');
+  const [introStep, setIntroStep] = useState(0);
+  const [leoMessage, setLeoMessage] = useState('');
+  
+  // Estados da História
+  const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
+  const [storiesCompletedInLevel, setStoriesCompletedInLevel] = useState(0);
+  const [currentStoryTemplate, setCurrentStoryTemplate] = useState<StorySegment[]>([]);
+  const [storyProgress, setStoryProgress] = useState<StorySegment[]>([]);
+  const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
+  const [cardOptions, setCardOptions] = useState<Card[]>([]);
 
-// Utilitário: embaralhar e pegar n itens
-function pickRandom<T>(arr: T[], n: number) {
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy.slice(0, Math.max(1, n));
-}
+  const introMessages = [
+    "Bem vindo ao jogo 'Histórias épicas', aqui eu vou te ajudar a construir suas próprias estórias, e com isto, ajudar a todos neste mundo mágico, a ter um final feliz.",
+    "O jogo é bem simples, no alto, temos uma frase que é o resumo de cada estória no nível 1, e existe uma palavra que você deve escolher dos cards abaixo, que completa o sentimento ou a ação do personagem central.",
+    "Ao escolher o card, vou ler a frase resumo da sua história, e se concordar, salvamos e seguimos em frente para outras histórias.",
+    "Vamos comigo, escrever histórias lindas?"
+  ];
 
-// --- Componente principal ---
-export default function EpicStoriesGame() {
-  const router = useRouter();
-
-  const [templateIdx, setTemplateIdx] = useState(0);
-  const [selected, setSelected] = useState<Record<string, Card | null>>({});
-  const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(3);
-  const [soundOn, setSoundOn] = useState(true);
-  const [leoSpeech, setLeoSpeech] = useState(
-    "Olá! Eu sou o Leo. Vamos criar uma história juntos?"
-  );
-  const audioInitRef = useRef(false);
-
-  const template = TEMPLATES[templateIdx];
-
-  // opções para cada slot
-  const slotOptions = useMemo(() => {
-    const map: Record<string, Card[]> = {};
-    template.slots.forEach((slot) => {
-      const pool = CARDS.filter((c) => slot.categories.includes(c.category));
-      map[slot.id] = pickRandom(pool, slot.maxOptions ?? 6);
-    });
-    return map;
-  }, [template]);
-
-  // resetar escolhas ao trocar capítulo
-  useEffect(() => {
-    const init: Record<string, Card | null> = {};
-    template.slots.forEach((s) => (init[s.id] = null));
-    setSelected(init);
-  }, [template]);
-
-  // inicializar contexto de áudio
-  useEffect(() => {
-    const handler = () => {
-      if (audioInitRef.current) return;
-      audioInitRef.current = true;
-    };
-    if (typeof document !== "undefined") {
-      document.addEventListener("click", handler, { once: true });
-      return () => document.removeEventListener("click", handler);
+  // --- FUNÇÕES DE CONTROLE DO JOGO ---
+  const leoSpeak = useCallback((message: string) => {
+    setLeoMessage(message);
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(message);
+      utterance.lang = 'pt-BR';
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
     }
   }, []);
 
-  // fala do Leo
-  function speak(text: string) {
-    setLeoSpeech(text);
-    if (typeof window === "undefined") return;
-    if (!soundOn || !("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = "pt-BR";
-    utter.rate = 0.98;
-    utter.pitch = 1.05;
-    window.speechSynthesis.speak(utter);
-  }
-
-  function handlePick(slotId: string, card: Card | null) {
-    setSelected((prev) => ({ ...prev, [slotId]: card }));
-    if (card) speak(card.label);
-  }
-
-  function isStoryComplete() {
-    return template.slots.every((s) => selected[s.id]);
-  }
-
-  function narrateStory() {
-    const text = [
-      `${template.baseText[0]} ${selected["acao_inicial"]?.label}.`,
-      `${template.baseText[1]} ${selected["amigo"]?.label}.`,
-      `${template.baseText[2]} ${selected["acao_juntos"]?.label}`,
-      `${template.baseText[3]} ${selected["comida"]?.label}.`,
-      `${template.baseText[4]} ${selected["fecho"]?.label}!`,
-    ]
-      .filter(Boolean)
-      .join(" ");
-    speak(text);
-    setScore((s) => s + 300);
-  }
-
-  function nextChapter() {
-    if (templateIdx + 1 < TEMPLATES.length) {
-      setTemplateIdx((i) => i + 1);
-      setScore((s) => s + 150);
-      speak("Maravilha! Vamos para o próximo capítulo.");
+  useEffect(() => {
+    leoSpeak(introMessages[0]);
+  }, [leoSpeak]);
+  
+  const handleIntroNext = () => {
+    const nextStep = introStep + 1;
+    if (nextStep < introMessages.length) {
+      setIntroStep(nextStep);
+      leoSpeak(introMessages[nextStep]);
     } else {
-      speak("Você terminou as histórias desta versão! Em breve teremos mais capítulos.");
+      startGame();
     }
+  };
+
+  const startGame = () => {
+    setGameState('playing');
+    loadNewStory();
+  };
+  
+  const loadNewStory = () => {
+    const level = storyLevels[currentLevelIndex];
+    // Escolhe um template aleatório do nível atual
+    const randomTemplate = [...level.templates[Math.floor(Math.random() * level.templates.length)]];
+    
+    setCurrentStoryTemplate(randomTemplate);
+    setStoryProgress(randomTemplate.map(segment => ({ ...segment, selectedCard: undefined })));
+    setCurrentSegmentIndex(0);
+    generateCardOptions(randomTemplate[0]);
+    setGameState('playing');
+    leoSpeak(`Vamos criar uma nova história! ${randomTemplate[0].text}...`);
+  };
+
+  const generateCardOptions = (segment: StorySegment) => {
+    const { type, options } = segment;
+    const allCardsInCategory = narrativeCards[type];
+    const shuffled = [...allCardsInCategory].sort(() => 0.5 - Math.random());
+    setCardOptions(shuffled.slice(0, options));
+  };
+  
+  const handleCardSelection = (card: Card) => {
+    const updatedProgress = [...storyProgress];
+    updatedProgress[currentSegmentIndex].selectedCard = card;
+    setStoryProgress(updatedProgress);
+
+    const nextSegmentIndex = currentSegmentIndex + 1;
+    const isStoryFinished = nextSegmentIndex >= currentStoryTemplate.filter(s => s.options > 0).length;
+
+    if (isStoryFinished) {
+      const finalStoryText = updatedProgress
+        .map(s => `${s.text} ${s.selectedCard ? s.selectedCard.label : ''}`)
+        .join(' ')
+        .replace(/\s+/g, ' ').trim();
+      
+      leoSpeak(`Sua história ficou assim: "${finalStoryText}"... Incrível!`);
+      setStoriesCompletedInLevel(prev => prev + 1);
+      setGameState('storyComplete');
+    } else {
+      setCurrentSegmentIndex(nextSegmentIndex);
+      generateCardOptions(currentStoryTemplate[nextSegmentIndex]);
+      leoSpeak(`Perfeito! Agora, ${currentStoryTemplate[nextSegmentIndex].text}...`);
+    }
+  };
+
+  const handleNext = () => {
+      const level = storyLevels[currentLevelIndex];
+      if(storiesCompletedInLevel >= level.storiesToComplete) {
+          // Lógica para avançar de nível
+          const nextLevelIndex = currentLevelIndex + 1;
+          if(nextLevelIndex < storyLevels.length) {
+              setCurrentLevelIndex(nextLevelIndex);
+              setStoriesCompletedInLevel(0);
+              leoSpeak(`Parabéns! Você completou a fase ${level.name}! Vamos para a próxima!`);
+              loadNewStory();
+          } else {
+              leoSpeak("Uau! Você completou todas as histórias! Você é um escritor épico!");
+              // Fim de jogo
+          }
+      } else {
+          loadNewStory();
+      }
   }
 
-  function resetChapter() {
-    const init: Record<string, Card | null> = {};
-    template.slots.forEach((s) => (init[s.id] = null));
-    setSelected(init);
-    setLives(3);
-    speak("Vamos recomeçar este capítulo. Escolha novamente os cards.");
+  // --- RENDERIZAÇÃO DOS COMPONENTES VISUAIS ---
+  
+  const renderIntro = () => (
+    <div className="flex flex-col items-center text-center p-6 bg-white/90 rounded-3xl shadow-2xl max-w-lg mx-auto">
+      <img src="/images/mascotes/leo/leo_mago.webp" alt="Leo Mago" className="w-48 drop-shadow-lg mb-4"/>
+      <h1 className="text-3xl font-bold text-orange-600 mb-4">Histórias Épicas</h1>
+      <p className="text-base text-gray-700 mb-6 min-h-[100px] flex items-center justify-center">{leoMessage}</p>
+      <button onClick={handleIntroNext} className="px-8 py-3 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-lg rounded-full shadow-xl hover:scale-105 transition-transform">
+        {introStep < introMessages.length - 1 ? 'Continuar →' : 'Vamos Começar!'}
+      </button>
+    </div>
+  );
+
+  const renderGame = () => {
+    const level = storyLevels[currentLevelIndex];
+    return (
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-xl w-full max-w-5xl mx-auto">
+        {/* Cabeçalho */}
+        <div className="text-center mb-4">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-800">Fase {level.level}: {level.name}</h2>
+            <p className="text-sm text-gray-600">Histórias completas: {storiesCompletedInLevel} de {level.storiesToComplete}</p>
+        </div>
+
+        {/* Visualizador da História */}
+        <div className="bg-yellow-50 p-4 rounded-xl mb-6 border-2 border-yellow-200 min-h-[80px]">
+          <p className="text-lg md:text-xl text-gray-800">
+            {storyProgress.map((segment, index) => (
+              <span key={index} className={index === currentSegmentIndex && gameState === 'playing' ? 'font-bold text-blue-600' : ''}>
+                {segment.text}{' '}
+                {segment.selectedCard ? (
+                  <span className="inline-block bg-white p-1 rounded-md shadow-sm font-semibold text-blue-700">
+                    {segment.selectedCard.label}
+                  </span>
+                ) : (
+                  segment.options > 0 && <span className="text-gray-400">_____</span>
+                )}
+                {' '}
+              </span>
+            ))}
+          </p>
+        </div>
+        
+        {/* Balão de Fala do Leo */}
+        <div className="flex items-center gap-4 my-4 justify-center">
+           <img src="/images/mascotes/leo/leo_rosto.webp" alt="Leo" className="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-orange-400"/>
+           <div className="relative bg-white p-3 rounded-lg shadow-md flex-1">
+              <p className="text-center font-medium text-gray-700">{leoMessage}</p>
+           </div>
+        </div>
+
+        {/* Área de Ação (Cards ou Botão de Próxima) */}
+        {gameState === 'playing' ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            {cardOptions.map(card => (
+              <button 
+                key={card.id}
+                onClick={() => handleCardSelection(card)}
+                className="p-2 bg-white rounded-xl shadow-lg border-3 border-violet-200 hover:border-violet-500 hover:scale-105 transition-all transform focus:outline-none focus:ring-2 focus:ring-violet-500"
+              >
+                <div className="aspect-square bg-white rounded-md overflow-hidden">
+                  <img src={card.image} alt={card.label} className="w-full h-full object-contain"/>
+                </div>
+                <p className="mt-2 text-center font-bold text-sm text-gray-800">{card.label}</p>
+              </button>
+            ))}
+          </div>
+        ) : (
+            <div className='text-center mt-6'>
+                <button onClick={handleNext} className="px-8 py-3 bg-gradient-to-r from-orange-400 to-red-500 text-white font-bold text-lg rounded-full shadow-xl animate-pulse">
+                    Próxima História!
+                </button>
+            </div>
+        )}
+      </div>
+    );
   }
 
-  // --- UI ---
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-200 via-violet-200 to-pink-200">
-      {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-sm border-b border-violet-200">
-        <div className="max-w-6xl mx-auto px-3 py-2 flex items-center justify-between">
-          <button
-            onClick={() => router.push("/")}
-            className="p-2 rounded-lg hover:bg-violet-100"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="px-3 py-1 rounded-lg bg-yellow-400 text-white font-bold shadow">
-              <span className="text-xs">Pontos</span>{" "}
-              <span className="ml-1">{score}</span>
-            </div>
-            <div className="px-3 py-1 rounded-lg bg-rose-400 text-white font-bold shadow">
-              <span className="text-xs">Vidas</span>{" "}
-              <span className="ml-1">{"❤️".repeat(lives)}</span>
-            </div>
-            <button
-              onClick={() => setSoundOn((s) => !s)}
-              className="p-2 rounded-lg hover:bg-violet-100"
-            >
-              {soundOn ? (
-                <Volume2 className="w-5 h-5" />
-              ) : (
-                <VolumeX className="w-5 h-5" />
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto p-3 md:p-6">
-        {/* Título & Progresso */}
-        <div className="bg-white/90 border-2 border-violet-200 rounded-2xl p-4 shadow-lg mb-4">
-          <h1 className="text-xl md:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500">
-            Histórias Épicas — {TEMPLATES[templateIdx].title}
-          </h1>
-          <div className="mt-2 w-full bg-gray-200 h-4 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-green-400 to-sky-400 text-white text-xs font-bold flex items-center justify-center"
-              style={{
-                width: `${((templateIdx + 1) / TEMPLATES.length) * 100}%`,
-              }}
-            >
-              Capítulo {templateIdx + 1} / {TEMPLATES.length}
-            </div>
-          </div>
-        </div>
-
-        {/* Balão do Leo (mobile) */}
-        <div className="relative mb-4">
-          <div className="md:hidden flex items-center gap-3">
-            <LeoBubble text={leoSpeech} />
-          </div>
-        </div>
-
-        {/* Frase com lacunas */}
-        <div className="bg-white/90 border-2 border-pink-200 rounded-2xl shadow-xl p-4 md:p-6 mb-6">
-          <SentenceView template={template} selected={selected} />
-
-          <div className="flex flex-wrap gap-2 mt-4">
-            <button
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 text-white font-bold hover:bg-green-600"
-              onClick={() =>
-                speak("Escolha os cards para completar a história.")
-              }
-            >
-              <Play className="w-4 h-4" /> Ouça dica
-            </button>
-            <button
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-600 text-white font-bold hover:bg-gray-700"
-              onClick={resetChapter}
-            >
-              <RefreshCcw className="w-4 h-4" /> Recomeçar capítulo
-            </button>
-            {isStoryComplete() && (
-              <>
-                <button
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-600 text-white font-bold hover:bg-indigo-700"
-                  onClick={narrateStory}
-                >
-                  <Volume2 className="w-4 h-4" /> Ouvir a história
-                </button>
-                <button
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500 text-white font-bold hover:bg-amber-600"
-                  onClick={nextChapter}
-                >
-                  <Star className="w-4 h-4" /> Próximo capítulo
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Seleção de slots */}
-        {template.slots.map((slot) => (
-          <div
-            key={slot.id}
-            className="bg-white/90 border-2 border-violet-200 rounded-2xl shadow p-4 mb-5"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-gray-800">{slot.title}</h3>
-              {selected[slot.id] && (
-                <button
-                  className="text-sm text-rose-600 hover:underline"
-                  onClick={() => handlePick(slot.id, null)}
-                >
-                  limpar escolha
-                </button>
-              )}
-            </div>
-
-            {!selected[slot.id] ? (
-              <CardsGrid
-                options={slotOptions[slot.id]}
-                onPick={(c) => handlePick(slot.id, c)}
-              />
-            ) : (
-              <div className="flex items-center gap-3 p-3 bg-violet-50 rounded-xl border">
-                <CardThumb card={selected[slot.id] as Card} />
-                <span className="text-sm text-gray-700">
-                  Escolha feita. Você pode limpar e escolher outra.
-                </span>
-              </div>
-            )}
-          </div>
-        ))}
-      </main>
-
-      {/* Leo fixo no canto desktop */}
-      <div className="hidden md:block fixed bottom-2 left-2 pointer-events-none z-30">
-        <LeoCharacter text={leoSpeech} />
-      </div>
-    </div>
-  );
-}
-
-// --- Subcomponentes ---
-function SentenceView({
-  template,
-  selected,
-}: {
-  template: StoryTemplate;
-  selected: Record<string, Card | null>;
-}) {
-  const pieces = [
-    { text: template.baseText[0], slot: "acao_inicial" },
-    { text: template.baseText[1], slot: "amigo" },
-    { text: template.baseText[2], slot: "acao_juntos" },
-    { text: template.baseText[3], slot: "comida" },
-    { text: template.baseText[4], slot: "fecho" },
-  ];
-  return (
-    <p className="text-lg leading-relaxed">
-      {pieces.map((p, i) => (
-        <span key={i} className="mr-2">
-          {p.text}{" "}
-          {selected[p.slot] ? (
-            <strong className="text-indigo-600">
-              {selected[p.slot]?.label}
-            </strong>
-          ) : (
-            <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
-              [____]
-            </span>
-          )}
-        </span>
-      ))}
-    </p>
-  );
-}
-
-function CardsGrid({
-  options,
-  onPick,
-}: {
-  options: Card[];
-  onPick: (c: Card) => void;
-}) {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-      {options.map((card) => (
-        <button
-          key={card.id}
-          onClick={() => onPick(card)}
-          className="flex flex-col items-center p-2 bg-white rounded-xl shadow hover:bg-violet-50 border"
-        >
-          <img
-            src={card.image}
-            alt={card.label}
-            className="w-20 h-20 object-contain mb-1"
-            onError={(e) =>
-              ((e.target as HTMLImageElement).src =
-                "/images/fallback-card.png")
-            }
-          />
-          <span className="text-sm text-gray-700">{card.label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function CardThumb({ card }: { card: Card }) {
-  return (
-    <div className="flex flex-col items-center">
-      <img
-        src={card.image}
-        alt={card.label}
-        className="w-16 h-16 object-contain"
-        onError={(e) =>
-          ((e.target as HTMLImageElement).src = "/images/fallback-card.png")
-        }
-      />
-      <span className="text-xs text-gray-700">{card.label}</span>
-    </div>
-  );
-}
-
-function LeoCharacter({ text }: { text: string }) {
-  return (
-    <div className="flex items-end gap-2">
-      <img
-        src="/images/mascotes/leo/leo_mago_resultado.webp"
-        alt="Leo"
-        className="w-28 h-28 object-contain drop-shadow-xl"
-        onError={(e) =>
-          ((e.target as HTMLImageElement).src = "/images/fallback-leo.png")
-        }
-      />
-      <div className="bg-white border-2 border-violet-300 rounded-xl p-3 shadow max-w-xs">
-        <p className="text-sm text-gray-700">{text}</p>
-      </div>
-    </div>
-  );
-}
-
-function LeoBubble({ text }: { text: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <img
-        src="/images/mascotes/leo/leo_mago_resultado.webp"
-        alt="Leo"
-        className="w-16 h-16 object-contain drop-shadow"
-        onError={(e) =>
-          ((e.target as HTMLImageElement).src = "/images/fallback-leo.png")
-        }
-      />
-      <div className="bg-white border border-violet-200 rounded-lg p-2 shadow">
-        <p className="text-xs text-gray-700">{text}</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-yellow-100 via-orange-200 to-red-200 p-4 flex items-center justify-center font-sans">
+      {gameState === 'intro' ? renderIntro() : renderGame()}
     </div>
   );
 }
