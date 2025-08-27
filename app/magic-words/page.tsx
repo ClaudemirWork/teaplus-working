@@ -153,7 +153,7 @@ const allCardsData: Card[] = [
   { id: 'jantar_quente', label: 'Jantar Quente', image: '/images/cards/alimentos/jantar_quente.webp', category: 'alimentos' },
   { id: 'lunch_box', label: 'Marmita', image: '/images/cards/alimentos/lunch_box.webp', category: 'alimentos' },
   { id: 'maca', label: 'Maçã', image: '/images/cards/alimentos/maca.webp', category: 'alimentos' },
-  { id: 'macarrao_bologhesa', label: 'Macarrão Bolonhesa', image: '/images/cards/alimentos/macarrao_bologhesa.webp', category: 'alimentos' },
+  { id: 'macarrao_bologhesa', label: 'Macarrão Bolonhesa', image: '/images/cards/alimentos/macarrão_bologhesa.webp', category: 'alimentos' },
   { id: 'manga', label: 'Manga', image: '/images/cards/alimentos/manga.webp', category: 'alimentos' },
   { id: 'melancia', label: 'Melancia', image: '/images/cards/alimentos/melancia.webp', category: 'alimentos' },
   { id: 'melao', label: 'Melão', image: '/images/cards/alimentos/melao.webp', category: 'alimentos' },
@@ -397,7 +397,6 @@ const gameConfig = {
     { cards: 12, rounds: 12, name: "Feiticeiro das Palavras" }
   ] as Phase[],
   cards: allCardsData,
-  // APENAS MILA E LÉO COMO MASCOTES
   npcs: [
     { name: 'Mila', image: '/images/mascotes/mila/mila_rosto_resultado.webp' },
     { name: 'Léo', image: '/images/mascotes/leo/leo_rosto_resultado.webp' },
@@ -408,7 +407,6 @@ export default function MagicWordsGame() {
   const router = useRouter();
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  // Estados do jogo
   const [gameStatus, setGameStatus] = useState<'intro' | 'playing' | 'victory' | 'gameOver'>('intro');
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -425,7 +423,6 @@ export default function MagicWordsGame() {
   const [milaMessage, setMilaMessage] = useState("");
   const [introStep, setIntroStep] = useState(0);
 
-  // Mensagens da Mila para a introdução
   const introMessages = [
     "Olá, me chamo Mila, e sou a feiticeira da floresta deste mundo encantando. Sou uma feiticeira do bem, e quero lhe convidar a ajudar a pessoas a encontrar objetos que estão escondidos na floresta, e que eles não acham.",
     "Não se preocupe, eu vou ajudá-lo nesta tarefa, e você ao acertar as cartas com o que cada cidadão está procurando, ganha pontos, e bônus extras, podendo libertar poderes especiais no jogo.",
@@ -441,22 +438,26 @@ export default function MagicWordsGame() {
     gameOver: "Não foi dessa vez, mas você foi incrível! 😊"
   };
 
+  // Correção: Inicialização do primeiro NPC e mensagem no cliente
   useEffect(() => {
-    // Chamada inicial da voz e configuração do NPC somente no cliente
-    setCurrentNpc(gameConfig.npcs[0]); 
+    setCurrentNpc(gameConfig.npcs[0]);
     milaSpeak(introMessages[0]);
   }, []);
 
   useEffect(() => {
     const initAudio = () => {
-      if (!audioContextRef.current) {
+      if (typeof window !== 'undefined' && !audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
     };
-    document.addEventListener('click', initAudio, { once: true });
+    if (typeof window !== 'undefined') {
+      document.addEventListener('click', initAudio, { once: true });
+    }
     return () => {
-      document.removeEventListener('click', initAudio);
-      audioContextRef.current?.close();
+      if (typeof window !== 'undefined') {
+        document.removeEventListener('click', initAudio);
+        audioContextRef.current?.close();
+      }
     };
   }, []);
 
@@ -509,6 +510,9 @@ export default function MagicWordsGame() {
     setScore(0);
     setRoundsCompleted(0);
     setLives(3);
+    if (typeof window !== 'undefined') {
+        window.speechSynthesis.cancel(); // Limpa a fala da introdução
+    }
     setMilaMessage(gameMessages.start);
     setTimeout(() => nextRound(0), 2000);
   }, [gameMessages, nextRound]);
