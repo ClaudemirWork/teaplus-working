@@ -23,7 +23,7 @@ interface Npc {
   image: string;
 }
 
-// --- Componente de renderização apenas no lado do cliente ---
+// Componente para renderização apenas no lado do cliente
 const ClientOnly = ({ children }: { children: ReactNode }) => {
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
@@ -417,7 +417,7 @@ const gameConfig = {
 };
 
 // Componente do Jogo propriamente dito
-const GameContent = () => {
+const Game = () => {
   const router = useRouter();
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -459,20 +459,24 @@ const GameContent = () => {
 
   useEffect(() => {
     const initAudio = () => {
-      if (!audioContextRef.current) {
+      if (typeof window !== 'undefined' && !audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
     };
-    document.addEventListener('click', initAudio, { once: true });
+    if (typeof window !== 'undefined') {
+      document.addEventListener('click', initAudio, { once: true });
+    }
     return () => {
-      document.removeEventListener('click', initAudio);
-      audioContextRef.current?.close();
+      if (typeof window !== 'undefined') {
+        document.removeEventListener('click', initAudio);
+        audioContextRef.current?.close();
+      }
     };
   }, []);
 
   const milaSpeak = useCallback((message: string) => {
     setMilaMessage(message);
-    if ('speechSynthesis' in window) {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(message.replace(/[🎉⭐🌟❤️✨😊]/g, ''));
       utterance.lang = 'pt-BR';
@@ -483,7 +487,7 @@ const GameContent = () => {
   }, [isSoundOn]);
 
   const playSound = useCallback((type: 'correct' | 'wrong' | 'win') => {
-    if (!isSoundOn || !audioContextRef.current) return;
+    if (!isSoundOn || typeof window === 'undefined' || !audioContextRef.current) return;
     const ctx = audioContextRef.current;
     
     const playNote = (freq: number, startTime: number, duration: number) => {
@@ -634,115 +638,94 @@ const GameContent = () => {
     const progress = phase ? (roundsCompleted / phase.rounds) * 100 : 0;
   
     return (
-      <>
-        <div className="bg-white/90 rounded-2xl p-2 md:p-3 mb-3 md:mb-4 shadow-xl">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <button onClick={() => router.push('/')} className="p-1 md:p-1.5 hover:bg-pink-100 rounded-lg">
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <h1 className="text-sm md:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500">
-                ✨ Palavras Mágicas ✨
-              </h1>
-            </div>
-            
-            <div className="flex gap-1 md:gap-2">
-              <div className="bg-gradient-to-br from-red-400 to-pink-400 text-white px-2 md:px-3 py-1 rounded-lg">
-                <div className="text-[9px] md:text-[10px]">Vidas</div>
-                <div className="text-sm md:text-base font-bold">{'❤️'.repeat(lives)}</div>
-              </div>
-              <div className="bg-gradient-to-br from-yellow-400 to-orange-400 text-white px-2 md:px-3 py-1 rounded-lg">
-                <div className="text-[9px] md:text-[10px]">Pontos</div>
-                <div className="text-sm md:text-base font-bold">{score}</div>
-              </div>
-              <button onClick={() => setIsSoundOn(!isSoundOn)} className="p-1 hover:bg-pink-100 rounded-lg">
-                {isSoundOn ? <Volume2 className="w-4 h-4 md:w-5 md:h-5" /> : <VolumeX className="w-4 h-4 md:w-5 md:h-5" />}
-              </button>
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 md:p-5 shadow-xl">
+        <div className="text-center mb-3">
+          <h2 className="text-sm md:text-lg font-bold text-gray-800 mb-2">
+            🌟 Fase {currentPhaseIndex + 1}: {phase.name} 🌟
+          </h2>
+          <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-green-400 to-sky-400 flex items-center justify-center text-white text-xs font-bold transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            >
+              {roundsCompleted}/{phase.rounds}
             </div>
           </div>
         </div>
-
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 md:p-5 shadow-xl">
-          <div className="text-center mb-3">
-            <h2 className="text-sm md:text-lg font-bold text-gray-800 mb-2">
-              🌟 Fase {currentPhaseIndex + 1}: {phase.name} 🌟
-            </h2>
-            <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-green-400 to-sky-400 flex items-center justify-center text-white text-xs font-bold transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              >
-                {roundsCompleted}/{phase.rounds}
-              </div>
-            </div>
-          </div>
-    
-          <div className="flex flex-col md:flex-row items-center justify-center my-3 gap-3 md:gap-5">
-            <div className="bg-white p-2 md:p-3 rounded-xl shadow-md text-center border-2 border-pink-200 flex items-center gap-2 md:gap-3">
-              {currentNpc && (
-                <img 
-                  src={currentNpc.image} 
-                  alt={currentNpc.name}
-                  className="w-16 h-16 md:w-20 md:h-20 object-contain animate-bounce" 
-                  onError={(e) => e.currentTarget.src = '/images/mascotes/placeholder.webp'}
-                />
+  
+        <div className="flex flex-col md:flex-row items-center justify-center my-3 gap-3 md:gap-5">
+          <div className="bg-white p-2 md:p-3 rounded-xl shadow-md text-center border-2 border-pink-200 flex items-center gap-2 md:gap-3">
+            {currentNpc && (
+              <img 
+                src={currentNpc.image} 
+                alt={currentNpc.name}
+                className="w-16 h-16 md:w-20 md:h-20 object-contain animate-bounce" 
+                onError={(e) => {
+                  e.currentTarget.src = '';
+                  const parent = e.currentTarget.parentElement;
+                  if (parent && !parent.querySelector('.fallback-text')) {
+                    const fallbackText = document.createElement('div');
+                    fallbackText.className = 'fallback-text absolute inset-0 bg-gradient-to-br from-violet-100 to-pink-100 rounded flex items-center justify-center text-gray-700 font-semibold text-center text-sm';
+                    fallbackText.textContent = currentNpc.name;
+                    parent.appendChild(fallbackText);
+                  }
+                }}
+              />
+            )}
+            <div className="flex flex-col items-start">
+              <p className="font-bold text-sm md:text-base text-gray-800">{currentNpc?.name}</p>
+              {correctCard && (
+                <p className="text-lg md:text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500">
+                  {correctCard.label}
+                </p>
               )}
-              <div className="flex flex-col items-start">
-                <p className="font-bold text-sm md:text-base text-gray-800">{currentNpc?.name}</p>
-                {correctCard && (
-                  <p className="text-lg md:text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500">
-                    {correctCard.label}
-                  </p>
-                )}
-              </div>
             </div>
           </div>
-    
-          <div className={`
-            grid gap-2 md:gap-3 transition-opacity duration-500 max-w-5xl mx-auto
-            ${isUiBlocked ? 'opacity-50' : 'opacity-100'}
-            ${phase.cards <= 4 ? 'grid-cols-2 md:grid-cols-4' : ''}
-            ${phase.cards === 6 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-3' : ''}
-            ${phase.cards === 9 ? 'grid-cols-3 md:grid-cols-3' : ''}
-            ${phase.cards >= 12 ? 'grid-cols-3 md:grid-cols-4' : ''}
-          `}>
-            {currentCards.map((card) => (
-              <button
-                key={card.id}
-                onClick={() => handleCardClick(card)}
-                disabled={isUiBlocked}
-                className={`
-                  p-2 bg-white rounded-xl shadow-lg border-3 transition-all duration-300 transform 
-                  ${isUiBlocked ? 'cursor-wait' : 'hover:scale-105 hover:shadow-xl active:scale-95'}
-                  ${cardFeedback[card.id] === 'correct' ? 'border-green-400 scale-110 animate-pulse' : ''}
-                  ${cardFeedback[card.id] === 'wrong' ? 'border-red-400 animate-shake' : ''}
-                  ${!cardFeedback[card.id] ? 'border-violet-200' : ''}
-                `}
-              >
-                <div className="aspect-square relative">
-                  <img 
-                    src={card.image} 
-                    alt={card.label}
-                    className="w-full h-full object-contain rounded"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      const parent = e.currentTarget.parentElement;
-                      if (parent && !parent.querySelector('.fallback-text')) {
-                        const fallbackText = document.createElement('div');
-                        fallbackText.className = 'fallback-text absolute inset-0 bg-gradient-to-br from-violet-100 to-pink-100 rounded flex items-center justify-center text-gray-700 font-semibold text-center text-xs md:text-sm p-1';
-                        fallbackText.textContent = card.label;
-                        parent.appendChild(fallbackText);
-                      }
-                    }}
-                  />
-                </div>
-                <p className="mt-1 text-center font-bold text-[10px] md:text-xs">{card.label}</p>
-              </button>
-            ))}
-          </div>
         </div>
-        {renderModals()}
-      </>
+  
+        <div className={`
+          grid gap-2 md:gap-3 transition-opacity duration-500 max-w-5xl mx-auto
+          ${isUiBlocked ? 'opacity-50' : 'opacity-100'}
+          ${phase.cards <= 4 ? 'grid-cols-2 md:grid-cols-4' : ''}
+          ${phase.cards === 6 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-3' : ''}
+          ${phase.cards === 9 ? 'grid-cols-3 md:grid-cols-3' : ''}
+          ${phase.cards >= 12 ? 'grid-cols-3 md:grid-cols-4' : ''}
+        `}>
+          {currentCards.map((card) => (
+            <button
+              key={card.id}
+              onClick={() => handleCardClick(card)}
+              disabled={isUiBlocked}
+              className={`
+                p-2 bg-white rounded-xl shadow-lg border-3 transition-all duration-300 transform 
+                ${isUiBlocked ? 'cursor-wait' : 'hover:scale-105 hover:shadow-xl active:scale-95'}
+                ${cardFeedback[card.id] === 'correct' ? 'border-green-400 scale-110 animate-pulse' : ''}
+                ${cardFeedback[card.id] === 'wrong' ? 'border-red-400 animate-shake' : ''}
+                ${!cardFeedback[card.id] ? 'border-violet-200' : ''}
+              `}
+            >
+              <div className="aspect-square relative">
+                <img 
+                  src={card.image} 
+                  alt={card.label}
+                  className="w-full h-full object-contain rounded"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const parent = e.currentTarget.parentElement;
+                    if (parent && !parent.querySelector('.fallback-text')) {
+                      const fallbackText = document.createElement('div');
+                      fallbackText.className = 'fallback-text absolute inset-0 bg-gradient-to-br from-violet-100 to-pink-100 rounded flex items-center justify-center text-gray-700 font-semibold text-center text-xs md:text-sm p-1';
+                      fallbackText.textContent = card.label;
+                      parent.appendChild(fallbackText);
+                    }
+                  }}
+                />
+              </div>
+              <p className="mt-1 text-center font-bold text-[10px] md:text-xs">{card.label}</p>
+            </button>
+          ))}
+        </div>
+      </div>
     );
   };
 
@@ -803,7 +786,7 @@ const GameContent = () => {
       </div>
     );
   };
-  
+
   const renderModals = () => (
     <>
       {gameStatus === 'victory' && (
@@ -854,7 +837,7 @@ const GameContent = () => {
 export default function MagicWordsGameWrapper() {
   return (
     <ClientOnly>
-      <GameContent />
+      <Game />
     </ClientOnly>
   );
 }
