@@ -392,7 +392,14 @@ const gameConfig = {
     { cards: 12, rounds: 12, name: "Feiticeiro das Palavras" }
   ] as Phase[],
   cards: allCardsData,
-  npcNames: ['Maria', 'João', 'Ana', 'Lucas', 'Sofia', 'Pedro']
+  // Alteração aqui: Agora é um array de objetos com nome e imagem
+  npcs: [
+    { name: 'Mila', image: '/images/mascotes/mila/mila_rosto_resultado.webp' },
+    { name: 'Léo', image: '/images/mascotes/leo/leo_rosto_resultado.webp' },
+    { name: 'Maria', image: '/images/mascotes/genericos/maria.webp' },
+    { name: 'João', image: '/images/mascotes/genericos/joao.webp' },
+    { name: 'Ana', image: '/images/mascotes/genericos/ana.webp' },
+  ]
 };
 
 export default function MagicWordsGame() {
@@ -408,7 +415,7 @@ export default function MagicWordsGame() {
   
   const [currentCards, setCurrentCards] = useState<Card[]>([]);
   const [correctCard, setCorrectCard] = useState<Card | null>(null);
-  const [npcName, setNpcName] = useState('Maria');
+  const [currentNpc, setCurrentNpc] = useState(gameConfig.npcs[0]);
   const [cardFeedback, setCardFeedback] = useState<{ [key: string]: 'correct' | 'wrong' }>({});
 
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
@@ -432,11 +439,14 @@ export default function MagicWordsGame() {
     gameOver: "Não foi dessa vez, mas você foi incrível! 😊"
   };
 
-  useEffect(() => {
-    if (gameStatus === 'intro') {
-      milaSpeak(introMessages[introStep]);
+  // Mapeia o passo da introdução para a mensagem da Mila
+  const handleIntroStep = () => {
+    if (introStep < introMessages.length) {
+      const message = introMessages[introStep];
+      milaSpeak(message);
+      setIntroStep(prev => prev + 1);
     }
-  }, [gameStatus, introStep]);
+  };
 
   useEffect(() => {
     const initAudio = () => {
@@ -519,12 +529,13 @@ export default function MagicWordsGame() {
     setCurrentCards(roundCards);
     setCardFeedback({});
     
-    const randomNpcName = gameConfig.npcNames[Math.floor(Math.random() * gameConfig.npcNames.length)];
-    setNpcName(randomNpcName);
+    // Alteração aqui: Sorteia um NPC do novo array
+    const randomNpc = gameConfig.npcs[Math.floor(Math.random() * gameConfig.npcs.length)];
+    setCurrentNpc(randomNpc);
 
     setTimeout(() => {
         if(correct) {
-          milaSpeak(`${randomNpcName} quer o card '${correct.label}'. Você consegue encontrar?`);
+          milaSpeak(`${randomNpc.name} quer o card '${correct.label}'. Você consegue encontrar?`);
         }
         setIsUiBlocked(false);
     }, 1200);
@@ -619,9 +630,14 @@ export default function MagicWordsGame() {
         </div>
   
         <div className="flex justify-center my-3">
+          {/* Alteração aqui: Usa a imagem e o nome do NPC */}
           <div className="bg-white p-2 md:p-3 rounded-xl shadow-md text-center border-2 border-pink-200">
-            <div className="text-3xl md:text-4xl animate-bounce">🤔</div>
-            <p className="font-bold mt-1 text-xs md:text-sm">{npcName}</p>
+            <img 
+              src={currentNpc.image} 
+              alt={currentNpc.name}
+              className="w-20 h-20 object-contain mx-auto animate-bounce" 
+            />
+            <p className="font-bold mt-1 text-xs md:text-sm">{currentNpc.name}</p>
           </div>
         </div>
   
@@ -712,21 +728,14 @@ export default function MagicWordsGame() {
               </p>
               
               <div className="flex justify-center">
-                {introStep < introMessages.length - 1 ? (
+                {introStep < introMessages.length ? (
                   <button
-                    onClick={() => setIntroStep(prev => prev + 1)}
+                    onClick={handleIntroStep}
                     className="px-6 py-2 md:px-8 md:py-3 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-base md:text-lg rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
                   >
-                    Continuar
+                    {introStep < introMessages.length - 1 ? 'Continuar' : '🚀 Começar'}
                   </button>
-                ) : (
-                  <button
-                    onClick={startGame}
-                    className="px-6 py-2 md:px-8 md:py-3 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-base md:text-lg rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
-                  >
-                    🚀 Começar
-                  </button>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
