@@ -35,7 +35,6 @@ const ClientOnly = ({ children }: { children: ReactNode }) => {
   return <>{children}</>;
 };
 
-
 // --- BANCO COMPLETO DE CARDS (690+ cards) ---
 const allCardsData: Card[] = [
   // AÇÕES (86 cards)
@@ -421,6 +420,7 @@ const Game = () => {
   const router = useRouter();
   const audioContextRef = useRef<AudioContext | null>(null);
 
+  // Inicialização do estado do jogo
   const [gameStatus, setGameStatus] = useState<'intro' | 'playing' | 'victory' | 'gameOver'>('intro');
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -453,6 +453,7 @@ const Game = () => {
   };
 
   useEffect(() => {
+    // Inicialização segura no cliente
     setCurrentNpc(gameConfig.npcs[0]); 
     milaSpeak(introMessages[0]);
   }, []);
@@ -661,7 +662,7 @@ const Game = () => {
                 alt={currentNpc.name}
                 className="w-16 h-16 md:w-20 md:h-20 object-contain animate-bounce" 
                 onError={(e) => {
-                  e.currentTarget.src = '';
+                  e.currentTarget.style.display = 'none';
                   const parent = e.currentTarget.parentElement;
                   if (parent && !parent.querySelector('.fallback-text')) {
                     const fallbackText = document.createElement('div');
@@ -786,7 +787,7 @@ const Game = () => {
       </div>
     );
   };
-
+  
   const renderModals = () => (
     <>
       {gameStatus === 'victory' && (
