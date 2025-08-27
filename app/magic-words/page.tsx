@@ -400,10 +400,9 @@ export default function MagicWordsGame() {
   const audioContextRef = useRef<AudioContext | null>(null);
 
   // Estados do jogo
-  const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
+  const [gameStatus, setGameStatus] = useState<'intro' | 'playing' | 'victory' | 'gameOver'>('intro');
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isUiBlocked, setIsUiBlocked] = useState(false);
   const [roundsCompleted, setRoundsCompleted] = useState(0);
   
@@ -412,13 +411,20 @@ export default function MagicWordsGame() {
   const [npcName, setNpcName] = useState('Maria');
   const [cardFeedback, setCardFeedback] = useState<{ [key: string]: 'correct' | 'wrong' }>({});
 
-  const [milaMessage, setMilaMessage] = useState("");
-  const [showVictoryModal, setShowVictoryModal] = useState(false);
-  const [showGameOverModal, setShowGameOverModal] = useState(false);
+  const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
   const [isSoundOn, setIsSoundOn] = useState(true);
+  const [milaMessage, setMilaMessage] = useState("");
+  const [introStep, setIntroStep] = useState(0);
 
-  const milaMessages = {
-    intro: "Olá! Sou a Mila. Vamos descobrir o que as pessoas querem?",
+  // Mensagens da Mila para a introdução
+  const introMessages = [
+    "Olá, me chamo Mila, e sou a feiticeira da floresta deste mundo encantando. Sou uma feiticeira do bem, e quero lhe convidar a ajudar a pessoas a encontrar objetos que estão escondidos na floresta, e que eles não acham.",
+    "Não se preocupe, eu vou ajudá-lo nesta tarefa, e você ao acertar as cartas com o que cada cidadão está procurando, ganha pontos, e bônus extras, podendo libertar poderes especiais no jogo.",
+    "Basta seguir minha voz, e procurar o card que está sendo solicitado, e clicar nele. Se acertar, ganha pontos, mas se errar, não tem problema, não perde nada e pode começar de novo.",
+    "Vamos comigo nesta aventura? Clique em começar."
+  ];
+
+  const gameMessages = {
     start: "Vamos começar! Preste atenção!",
     correct: ["Isso mesmo! 🎉", "Você encontrou! ⭐", "Excelente! 🌟"],
     error: "Ops, não foi esse. Tente novamente! ❤️",
@@ -427,10 +433,10 @@ export default function MagicWordsGame() {
   };
 
   useEffect(() => {
-    if (!isPlaying && milaMessage === "") {
-      milaSpeak(milaMessages.intro);
+    if (gameStatus === 'intro') {
+      milaSpeak(introMessages[introStep]);
     }
-  }, []);
+  }, [gameStatus, introStep]);
 
   useEffect(() => {
     const initAudio = () => {
@@ -462,17 +468,17 @@ export default function MagicWordsGame() {
     const ctx = audioContextRef.current;
     
     const playNote = (freq: number, startTime: number, duration: number) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-        osc.start(startTime);
-        osc.stop(startTime + duration);
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
     };
 
     const now = ctx.currentTime;
@@ -482,24 +488,21 @@ export default function MagicWordsGame() {
     } else if (type === 'wrong') {
       playNote(164.81, now, 0.2);
     } else if (type === 'win') {
-        [523.25, 659.25, 783.99].forEach((freq, i) => {
-            playNote(freq, now + i * 0.1, 0.15);
-        });
+      [523.25, 659.25, 783.99].forEach((freq, i) => {
+        playNote(freq, now + i * 0.1, 0.15);
+      });
     }
   }, [isSoundOn]);
 
   const startGame = useCallback(() => {
-    console.log("Starting game with", gameConfig.cards.length, "total cards");
+    setGameStatus('playing');
     setCurrentPhaseIndex(0);
     setScore(0);
     setRoundsCompleted(0);
     setLives(3);
-    setIsPlaying(true);
-    setShowGameOverModal(false);
-    setShowVictoryModal(false);
-    milaSpeak(milaMessages.start);
+    setMilaMessage(gameMessages.start);
     setTimeout(() => nextRound(0), 2000);
-  }, [milaSpeak]);
+  }, [gameMessages]);
 
   const nextRound = useCallback((phaseIdx: number) => {
     setIsUiBlocked(true);
@@ -521,21 +524,21 @@ export default function MagicWordsGame() {
 
     setTimeout(() => {
         if(correct) {
-            milaSpeak(`${randomNpcName} quer o card '${correct.label}'. Você consegue encontrar?`);
+          milaSpeak(`${randomNpcName} quer o card '${correct.label}'. Você consegue encontrar?`);
         }
         setIsUiBlocked(false);
     }, 1200);
   }, [milaSpeak]);
 
   const handleCardClick = (card: Card) => {
-    if (isUiBlocked || !isPlaying) return;
+    if (isUiBlocked || gameStatus !== 'playing') return;
     setIsUiBlocked(true);
 
     if (card.id === correctCard?.id) {
       setScore(prev => prev + 100);
       setCardFeedback({ [card.id]: 'correct' });
       playSound('correct');
-      const randomMessage = milaMessages.correct[Math.floor(Math.random() * milaMessages.correct.length)];
+      const randomMessage = gameMessages.correct[Math.floor(Math.random() * gameMessages.correct.length)];
       milaSpeak(randomMessage);
       
       const newRoundsCompleted = roundsCompleted + 1;
@@ -554,14 +557,13 @@ export default function MagicWordsGame() {
       setLives(prev => prev - 1);
       setCardFeedback({ [card.id]: 'wrong', [correctCard!.id]: 'correct' });
       playSound('wrong');
-      milaSpeak(milaMessages.error);
+      milaSpeak(gameMessages.error);
       
       const newLives = lives - 1;
       if (newLives <= 0) {
         setTimeout(() => {
-          setIsPlaying(false);
-          setShowGameOverModal(true);
-          milaSpeak(milaMessages.gameOver);
+          setGameStatus('gameOver');
+          milaSpeak(gameMessages.gameOver);
         }, 2000);
       } else {
         setTimeout(() => {
@@ -576,18 +578,18 @@ export default function MagicWordsGame() {
     playSound('win');
     setScore(prev => prev + 250);
     if(phase) {
-        milaSpeak(milaMessages.phaseComplete(phase.name));
+      milaSpeak(gameMessages.phaseComplete(phase.name));
     }
-    setShowVictoryModal(true);
+    setGameStatus('victory');
   };
 
   const nextPhase = useCallback(() => {
     const newPhaseIndex = currentPhaseIndex + 1;
-    setShowVictoryModal(false);
+    setGameStatus('playing');
     
     if (newPhaseIndex >= gameConfig.phases.length) {
       milaSpeak("Parabéns! Você completou o jogo! 🎉");
-      setIsPlaying(false);
+      setGameStatus('gameOver');
     } else {
       setCurrentPhaseIndex(newPhaseIndex);
       setRoundsCompleted(0);
@@ -596,8 +598,181 @@ export default function MagicWordsGame() {
     }
   }, [currentPhaseIndex, nextRound, milaSpeak]);
 
-  const phase = gameConfig.phases[currentPhaseIndex];
-  const progress = phase ? (roundsCompleted / phase.rounds) * 100 : 0;
+  const renderGameContent = () => {
+    const phase = gameConfig.phases[currentPhaseIndex];
+    const progress = phase ? (roundsCompleted / phase.rounds) * 100 : 0;
+  
+    return (
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 md:p-5 shadow-xl">
+        <div className="text-center mb-3">
+          <h2 className="text-sm md:text-lg font-bold text-gray-800 mb-2">
+            🌟 Fase {currentPhaseIndex + 1}: {phase.name} 🌟
+          </h2>
+          <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-green-400 to-sky-400 flex items-center justify-center text-white text-xs font-bold transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            >
+              {roundsCompleted}/{phase.rounds}
+            </div>
+          </div>
+        </div>
+  
+        <div className="flex justify-center my-3">
+          <div className="bg-white p-2 md:p-3 rounded-xl shadow-md text-center border-2 border-pink-200">
+            <div className="text-3xl md:text-4xl animate-bounce">🤔</div>
+            <p className="font-bold mt-1 text-xs md:text-sm">{npcName}</p>
+          </div>
+        </div>
+  
+        <div className={`
+          grid gap-2 md:gap-3 transition-opacity duration-500 max-w-5xl mx-auto
+          ${isUiBlocked ? 'opacity-50' : 'opacity-100'}
+          ${phase.cards <= 4 ? 'grid-cols-2 md:grid-cols-4' : ''}
+          ${phase.cards === 6 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-3' : ''}
+          ${phase.cards === 9 ? 'grid-cols-3 md:grid-cols-3' : ''}
+          ${phase.cards >= 12 ? 'grid-cols-3 md:grid-cols-4' : ''}
+        `}>
+          {currentCards.map((card) => (
+            <button
+              key={card.id}
+              onClick={() => handleCardClick(card)}
+              disabled={isUiBlocked}
+              className={`
+                p-2 bg-white rounded-xl shadow-lg border-3 transition-all duration-300 transform 
+                ${isUiBlocked ? 'cursor-wait' : 'hover:scale-105 hover:shadow-xl active:scale-95'}
+                ${cardFeedback[card.id] === 'correct' ? 'border-green-400 scale-110 animate-pulse' : ''}
+                ${cardFeedback[card.id] === 'wrong' ? 'border-red-400 animate-shake' : ''}
+                ${!cardFeedback[card.id] ? 'border-violet-200' : ''}
+              `}
+            >
+              <div className="aspect-square relative">
+                <img 
+                  src={card.image} 
+                  alt={card.label}
+                  className="w-full h-full object-contain rounded"
+                  onError={(e) => {
+                    const img = e.currentTarget;
+                    img.style.display = 'none';
+                    const parent = img.parentElement;
+                    if (parent && !parent.querySelector('.fallback')) {
+                      const fallback = document.createElement('div');
+                      fallback.className = 'fallback absolute inset-0 bg-gradient-to-br from-violet-100 to-pink-100 rounded flex items-center justify-center';
+                      const emoji = card.category === 'animais' ? '🐾' : 
+                                     card.category === 'acoes' ? '👋' : 
+                                     card.category === 'alimentos' ? '🍎' : 
+                                     card.category === 'rotina' ? '⏰' : 
+                                     card.category === 'core' ? '💬' : 
+                                     card.category === 'casa' ? '🏠' :
+                                     card.category === 'escola' ? '📚' : '';
+                      fallback.innerHTML = `<span class="text-2xl md:text-3xl">${emoji}</span>`;
+                      parent.appendChild(fallback);
+                    }
+                  }}
+                />
+              </div>
+              <p className="mt-1 text-center font-bold text-[10px] md:text-xs">{card.label}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderIntroScreen = () => {
+    return (
+      <div className="flex flex-col items-center justify-end md:justify-center p-4 min-h-screen">
+        <div className="w-full md:max-w-4xl flex flex-col md:flex-row items-center justify-center gap-4">
+          
+          <div className="md:w-1/2 flex justify-center order-2 md:order-1">
+            <div className="w-[80%] h-[auto] max-w-[300px] drop-shadow-2xl animate-fade-in-up">
+              <img 
+                src="/images/mascotes/mila/mila_feiticeira_resultado.webp"
+                alt="Mila Feiticeira"
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement!.innerHTML = `
+                    <div class="w-full h-auto max-w-[300px] aspect-square bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-2xl animate-bounce">
+                      <span class="text-7xl">🧙‍♀️</span>
+                    </div>
+                  `;
+                }}
+              />
+            </div>
+          </div>
+  
+          <div className="md:w-1/2 flex justify-center order-1 md:order-2">
+            <div className="bg-white p-6 rounded-2xl shadow-xl border-4 border-violet-400 relative w-full max-w-xl animate-scale-in">
+              <h1 className="text-2xl md:text-3xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500 mb-4">
+                Boas-Vindas ao Palavras Mágicas!
+              </h1>
+              <p className="text-gray-700 text-base md:text-lg font-medium text-center mb-6">
+                {milaMessage}
+              </p>
+              
+              <div className="flex justify-center">
+                {introStep < introMessages.length - 1 ? (
+                  <button
+                    onClick={() => setIntroStep(prev => prev + 1)}
+                    className="px-6 py-2 md:px-8 md:py-3 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-base md:text-lg rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                  >
+                    Continuar
+                  </button>
+                ) : (
+                  <button
+                    onClick={startGame}
+                    className="px-6 py-2 md:px-8 md:py-3 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-base md:text-lg rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                  >
+                    🚀 Começar
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+  
+        </div>
+      </div>
+    );
+  };
+
+  const renderModals = () => (
+    <>
+      {gameStatus === 'victory' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center">
+            <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400 mb-4">
+              🎉 Fase Completa! 🎉
+            </h2>
+            <p className="text-base text-gray-700 mb-4">+250 pontos de bônus!</p>
+            <button 
+              onClick={nextPhase} 
+              className="w-full py-2 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold rounded-full"
+            >
+              {currentPhaseIndex + 1 >= gameConfig.phases.length ? '🏆 Finalizar' : '🚀 Próxima Fase'}
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {gameStatus === 'gameOver' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center">
+            <h2 className="text-2xl font-bold text-red-500 mb-4">Fim de Jogo</h2>
+            <p className="text-base text-gray-700 mb-4">
+              Pontuação: <span className="font-bold">{score}</span>
+            </p>
+            <button 
+              onClick={startGame} 
+              className="w-full py-2 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold rounded-full"
+            >
+              Tentar Novamente
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-200 via-violet-200 to-pink-200 relative overflow-hidden">
@@ -629,195 +804,10 @@ export default function MagicWordsGame() {
           </div>
         </div>
 
-        {isPlaying && phase ? (
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 md:p-5 shadow-xl">
-            <div className="text-center mb-3">
-              <h2 className="text-sm md:text-lg font-bold text-gray-800 mb-2">
-                🌟 Fase {currentPhaseIndex + 1}: {phase.name} 🌟
-              </h2>
-              <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-green-400 to-sky-400 flex items-center justify-center text-white text-xs font-bold transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                >
-                  {roundsCompleted}/{phase.rounds}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-center my-3">
-              <div className="bg-white p-2 md:p-3 rounded-xl shadow-md text-center border-2 border-pink-200">
-                <div className="text-3xl md:text-4xl animate-bounce">🤔</div>
-                <p className="font-bold mt-1 text-xs md:text-sm">{npcName}</p>
-              </div>
-            </div>
-
-            <div className={`
-              grid gap-2 md:gap-3 transition-opacity duration-500 max-w-5xl mx-auto
-              ${isUiBlocked ? 'opacity-50' : 'opacity-100'}
-              ${phase.cards <= 4 ? 'grid-cols-2 md:grid-cols-4' : ''}
-              ${phase.cards === 6 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-3' : ''}
-              ${phase.cards === 9 ? 'grid-cols-3 md:grid-cols-3' : ''}
-              ${phase.cards >= 12 ? 'grid-cols-3 md:grid-cols-4' : ''}
-            `}>
-              {currentCards.map((card) => (
-                <button
-                  key={card.id}
-                  onClick={() => handleCardClick(card)}
-                  disabled={isUiBlocked}
-                  className={`
-                    p-2 bg-white rounded-xl shadow-lg border-3 transition-all duration-300 transform 
-                    ${isUiBlocked ? 'cursor-wait' : 'hover:scale-105 hover:shadow-xl active:scale-95'}
-                    ${cardFeedback[card.id] === 'correct' ? 'border-green-400 scale-110 animate-pulse' : ''}
-                    ${cardFeedback[card.id] === 'wrong' ? 'border-red-400 animate-shake' : ''}
-                    ${!cardFeedback[card.id] ? 'border-violet-200' : ''}
-                  `}
-                >
-                  <div className="aspect-square relative">
-                    <img 
-                      src={card.image} 
-                      alt={card.label}
-                      className="w-full h-full object-contain rounded"
-                      onError={(e) => {
-                        const img = e.currentTarget;
-                        img.style.display = 'none';
-                        const parent = img.parentElement;
-                        if (parent && !parent.querySelector('.fallback')) {
-                          const fallback = document.createElement('div');
-                          fallback.className = 'fallback absolute inset-0 bg-gradient-to-br from-violet-100 to-pink-100 rounded flex items-center justify-center';
-                          const emoji = card.category === 'animais' ? '🐾' : 
-                                       card.category === 'acoes' ? '👋' : 
-                                       card.category === 'alimentos' ? '🍎' : 
-                                       card.category === 'rotina' ? '⏰' : 
-                                       card.category === 'core' ? '💬' : 
-                                       card.category === 'casa' ? '🏠' :
-                                       card.category === 'escola' ? '📚' : '';
-                          fallback.innerHTML = `<span class="text-2xl md:text-3xl">${emoji}</span>`;
-                          parent.appendChild(fallback);
-                        }
-                      }}
-                    />
-                  </div>
-                  <p className="mt-1 text-center font-bold text-[10px] md:text-xs">{card.label}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="text-center p-6 bg-white/90 rounded-3xl mt-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500 mb-4">
-              Bem-vindo ao Jogo de Palavras Mágicas!
-            </h2>
-            <p className="text-sm md:text-base mb-6">
-              Ajude a Mila a entender o que as pessoas querem dizer.
-              Temos mais de 600 cards para você aprender!
-            </p>
-            <button
-              onClick={startGame}
-              className="px-6 py-2 md:px-8 md:py-3 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-base md:text-lg rounded-full shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all"
-            >
-              🚀 Começar a Jogar
-            </button>
-          </div>
-        )}
+        {gameStatus === 'intro' ? renderIntroScreen() : renderGameContent()}
       </div>
 
-      {/* Mila no Desktop - Maior e melhor posicionada */}
-      <div className="hidden md:block fixed bottom-0 left-0 z-50 pointer-events-none">
-        <div className="relative">
-          <div className="relative w-72 h-72 ml-4 mb-2">
-            <img 
-              src="/images/mascotes/mila/mila_feiticeira_resultado.webp"
-              alt="Mila Feiticeira"
-              className="w-full h-full object-contain drop-shadow-2xl pointer-events-auto"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                const parent = e.currentTarget.parentElement;
-                if (parent) {
-                  parent.innerHTML = `
-                    <div class="w-56 h-56 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-2xl animate-bounce">
-                      <span class="text-7xl">🧙‍♀️</span>
-                    </div>
-                  `;
-                }
-              }}
-            />
-          </div>
-          
-          {milaMessage && (
-            <div className="absolute bottom-full mb-2 left-8 bg-white p-4 rounded-2xl shadow-2xl min-w-[300px] max-w-[450px] border-3 border-violet-400 pointer-events-auto">
-              <div className="absolute bottom-[-10px] left-20 w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[14px] border-t-white" />
-              <p className="text-gray-800 text-base font-semibold text-center">
-                {milaMessage}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Mila no Mobile */}
-      <div className="md:hidden relative mt-4 px-3 pb-6">
-        <div className="flex flex-col items-center">
-          <div className="w-36 h-36">
-            <img 
-              src="/images/mascotes/mila/mila_feiticeira_resultado.webp"
-              alt="Mila Feiticeira"
-              className="w-full h-full object-contain drop-shadow-xl"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement!.innerHTML = `
-                  <div class="w-32 h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-xl animate-bounce">
-                    <span class="text-5xl">🧙‍♀️</span>
-                  </div>
-                `;
-              }}
-            />
-          </div>
-          
-          {milaMessage && (
-            <div className="mt-3 bg-white p-3 rounded-2xl shadow-lg w-full max-w-xs border-2 border-violet-400">
-              <p className="text-gray-800 text-sm font-semibold text-center">
-                {milaMessage}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Modais */}
-      {showVictoryModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center">
-            <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400 mb-4">
-              🎉 Fase Completa! 🎉
-            </h2>
-            <p className="text-base text-gray-700 mb-4">+250 pontos de bônus!</p>
-            <button 
-              onClick={nextPhase} 
-              className="w-full py-2 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold rounded-full"
-            >
-              {currentPhaseIndex + 1 >= gameConfig.phases.length ? '🏆 Finalizar' : '🚀 Próxima Fase'}
-            </button>
-          </div>
-        </div>
-      )}
-      
-      {showGameOverModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center">
-            <h2 className="text-2xl font-bold text-red-500 mb-4">Fim de Jogo</h2>
-            <p className="text-base text-gray-700 mb-4">
-              Pontuação: <span className="font-bold">{score}</span>
-            </p>
-            <button 
-              onClick={startGame} 
-              className="w-full py-2 bg-gradient-to-r from-green-400 to-blue-400 text-white font-bold rounded-full"
-            >
-              Tentar Novamente
-            </button>
-          </div>
-        </div>
-      )}
+      {renderModals()}
       
       <style jsx>{`
         @keyframes shake {
@@ -827,6 +817,32 @@ export default function MagicWordsGame() {
         }
         .animate-shake {
           animation: shake 0.5s ease-in-out;
+        }
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-up {
+          animation: fade-in-up 1s ease-out;
+        }
+        @keyframes scale-in {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-scale-in {
+          animation: scale-in 0.7s ease-out;
         }
       `}</style>
     </div>
