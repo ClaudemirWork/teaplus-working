@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ArrowLeft, Volume2, VolumeX } from 'lucide-react';
+import { Heart, Star } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
 
 // --- Interfaces ---
 interface Card {
@@ -196,9 +195,7 @@ const allCardsData: Card[] = [
   { id: 'torta_maca', label: 'Torta de Maçã', image: '/images/cards/alimentos/torta_maca.webp', category: 'alimentos' },
   { id: 'uvas_verdes', label: 'Uvas Verdes', image: '/images/cards/alimentos/uvas_verdes.webp', category: 'alimentos' },
   { id: 'vegetais', label: 'Vegetais', image: '/images/cards/alimentos/vegetais.webp', category: 'alimentos' },
-
-  // [Resto dos arrays de cards continua igual...]
-  // ANIMAIS, CASA, CORE, ROTINA...
+  // ... (Restante dos cards)
 ];
 
 // Configuração do jogo
@@ -234,32 +231,48 @@ const Game = () => {
 
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
   const [isSoundOn, setIsSoundOn] = useState(true);
-  const [milaMessage, setMilaMessage] = useState("");
+  const [visibleMessage, setVisibleMessage] = useState(""); // Mensagem para ser exibida na UI
   const [introStep, setIntroStep] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // --- MENSAGENS DO JOGO ---
   const introMessages = [
-    "Olá, me chamo Mila, e sou a feiticeira da floresta deste mundo encantando. Sou uma feiticeira do bem, e quero lhe convidar a ajudar a pessoas a encontrar objetos que estão escondidos na floresta, e que eles não acham.",
-    "Não se preocupe, eu vou ajudá-lo nesta tarefa, e você ao acertar as cartas com o que cada cidadão está procurando, ganha pontos, e bônus extras, podendo libertar poderes especiais no jogo.",
-    "Basta seguir minha voz, e procurar o card que está sendo solicitado, e clicar nele. Se acertar, ganha pontos, mas se errar, não tem problema, não perde nada e pode começar de novo.",
-    "Vamos comigo nesta aventura?"
+    "Olá! Meu nome é Mila e eu sou a feiticeira guardiã deste mundo encantado.",
+    "Preciso da sua ajuda! Vários cidadãos da floresta perderam seus objetos mágicos e não conseguem encontrá-los.",
+    "Sua missão é ouvir o que eles procuram, encontrar o card correto e clicar nele. A cada acerto, você ganha pontos e bônus!",
+    "Se errar, não se preocupe, você pode tentar de novo. Vamos começar essa jornada mágica juntos?"
   ];
 
   const gameMessages = {
     start: "Vamos começar! Preste atenção!",
-    correct: ["Isso mesmo!", "Você encontrou!", "Excelente!"],
+    correct: ["Isso mesmo!", "Você encontrou!", "Excelente!", "Perfeito!", "Continue assim!"],
     error: "Ops, não foi esse. Tente novamente!",
     phaseComplete: (phaseName: string) => `Parabéns! Você completou a fase ${phaseName}!`,
     gameOver: "Não foi dessa vez, mas você foi incrível!"
   };
 
+  // --- FUNÇÕES DE CONTROLE ---
+
+  // Função centralizada para falar e exibir mensagem
+  const showAndSpeak = useCallback((message: string) => {
+    setVisibleMessage(message);
+    if (isSoundOn && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(message.replace(/[🎉⭐🌟❤️✨😊]/g, ''));
+      utterance.lang = 'pt-BR';
+      utterance.rate = 1;
+      utterance.pitch = 1.1;
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [isSoundOn]);
+  
   useEffect(() => {
     if (!isInitialized && typeof window !== 'undefined') {
         setCurrentNpc(gameConfig.npcs[0]); 
-        milaSpeak(introMessages[0]);
+        showAndSpeak(introMessages[0]);
         setIsInitialized(true);
     }
-  }, [isInitialized]);
+  }, [isInitialized, introMessages, showAndSpeak]);
 
   useEffect(() => {
     const initAudio = () => {
@@ -277,18 +290,6 @@ const Game = () => {
       }
     };
   }, []);
-
-  const milaSpeak = useCallback((message: string) => {
-    setMilaMessage(message);
-    if (isSoundOn && typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(message.replace(/[🎉⭐🌟❤️✨😊]/g, ''));
-      utterance.lang = 'pt-BR';
-      utterance.rate = 0.9;
-      utterance.pitch = 1.1;
-      window.speechSynthesis.speak(utterance);
-    }
-  }, [isSoundOn]);
 
   const playSound = useCallback((type: 'correct' | 'wrong' | 'win') => {
     if (!isSoundOn || typeof window === 'undefined' || !audioContextRef.current) return;
@@ -341,11 +342,11 @@ const Game = () => {
 
     setTimeout(() => {
         if(correct) {
-          milaSpeak(`${randomNpc.name} quer o card '${correct.label}'. Encontre!`);
+          showAndSpeak(`${randomNpc.name} precisa encontrar o card '${correct.label}'. Ajude!`);
         }
         setIsUiBlocked(false);
     }, 1200);
-  }, [milaSpeak]);
+  }, [showAndSpeak]);
 
   const startGame = useCallback(() => {
     setGameStatus('playing');
@@ -356,19 +357,18 @@ const Game = () => {
     if (typeof window !== 'undefined') {
         window.speechSynthesis.cancel();
     }
-    setMilaMessage(gameMessages.start);
+    showAndSpeak(gameMessages.start);
     setTimeout(() => nextRound(0), 2000);
-  }, [gameMessages, nextRound]);
+  }, [gameMessages, nextRound, showAndSpeak]);
 
   const handleIntroStep = () => {
-    if (introStep < introMessages.length - 1) {
-      setIntroStep(prev => prev + 1);
-      milaSpeak(introMessages[introStep + 1]);
-    } else {
-      startGame();
+    const nextStep = introStep + 1;
+    if (nextStep < introMessages.length) {
+      setIntroStep(nextStep);
+      showAndSpeak(introMessages[nextStep]);
     }
   };
-
+  
   const handleCardClick = (card: Card) => {
     if (isUiBlocked || gameStatus !== 'playing') return;
     setIsUiBlocked(true);
@@ -378,7 +378,7 @@ const Game = () => {
       setCardFeedback({ [card.id]: 'correct' });
       playSound('correct');
       const randomMessage = gameMessages.correct[Math.floor(Math.random() * gameMessages.correct.length)];
-      milaSpeak(randomMessage);
+      showAndSpeak(randomMessage);
       
       const newRoundsCompleted = roundsCompleted + 1;
       setRoundsCompleted(newRoundsCompleted);
@@ -396,13 +396,13 @@ const Game = () => {
       setLives(prev => prev - 1);
       setCardFeedback({ [card.id]: 'wrong', [correctCard!.id]: 'correct' });
       playSound('wrong');
-      milaSpeak(gameMessages.error);
+      showAndSpeak(gameMessages.error);
       
       const newLives = lives - 1;
       if (newLives <= 0) {
         setTimeout(() => {
           setGameStatus('gameOver');
-          milaSpeak(gameMessages.gameOver);
+          showAndSpeak(gameMessages.gameOver);
         }, 2000);
       } else {
         setTimeout(() => {
@@ -417,7 +417,7 @@ const Game = () => {
     playSound('win');
     setScore(prev => prev + 250);
     if(phase) {
-      milaSpeak(gameMessages.phaseComplete(phase.name));
+      showAndSpeak(gameMessages.phaseComplete(phase.name));
     }
     setGameStatus('victory');
   };
@@ -427,7 +427,7 @@ const Game = () => {
     setGameStatus('playing');
     
     if (newPhaseIndex >= gameConfig.phases.length) {
-      milaSpeak("Parabéns! Você completou o jogo!");
+      showAndSpeak("Parabéns! Você completou o jogo!");
       setGameStatus('gameOver');
     } else {
       setCurrentPhaseIndex(newPhaseIndex);
@@ -435,62 +435,59 @@ const Game = () => {
       setLives(3);
       setTimeout(() => nextRound(newPhaseIndex), 1000);
     }
-  }, [currentPhaseIndex, nextRound, milaSpeak]);
+  }, [currentPhaseIndex, nextRound, showAndSpeak]);
+  
+  // --- RENDERIZAÇÃO DOS COMPONENTES ---
 
   const renderGameContent = () => {
     const phase = gameConfig.phases[currentPhaseIndex];
     const progress = phase ? (roundsCompleted / phase.rounds) * 100 : 0;
-  
+    
     return (
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 md:p-5 shadow-xl">
-        <div className="text-center mb-3">
-          <h2 className="text-sm md:text-lg font-bold text-gray-800 mb-2">
-            Fase {currentPhaseIndex + 1}: {phase.name}
-          </h2>
-          <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 md:p-5 shadow-xl w-full flex flex-col h-full">
+        {/* --- NOVO CABEÇALHO (HEADLINE) --- */}
+        <div className="flex justify-between items-center mb-4 px-2">
+            <div className="flex items-center gap-2 bg-white/50 px-3 py-1 rounded-full">
+                <Star className="text-yellow-500" size={20}/>
+                <span className="font-bold text-lg text-gray-700">{score}</span>
+            </div>
+            <h2 className="text-sm md:text-lg font-bold text-gray-800 text-center">
+                Fase {currentPhaseIndex + 1}: {phase.name}
+            </h2>
+            <div className="flex items-center gap-2 bg-white/50 px-3 py-1 rounded-full">
+                <Heart className="text-red-500 fill-red-500" size={20}/>
+                <span className="font-bold text-lg text-gray-700">{lives}</span>
+            </div>
+        </div>
+        
+        {/* Barra de Progresso */}
+        <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden mb-4">
             <div 
               className="h-full bg-gradient-to-r from-green-400 to-sky-400 flex items-center justify-center text-white text-xs font-bold transition-all duration-500"
               style={{ width: `${progress}%` }}
             >
               {roundsCompleted}/{phase.rounds}
             </div>
-          </div>
         </div>
-  
-        {/* ÁREA DOS PERSONAGENS E CARTA PROCURADA */}
-        <div className="flex items-center justify-center my-4 gap-4">
-          {/* Personagens Mila e Léo */}
-          <div className="flex gap-2">
-            <img 
-              src="/images/mascotes/mila/mila_rosto_resultado.webp"
-              alt="Mila"
-              className="w-14 h-14 md:w-20 md:h-20 rounded-full border-3 border-violet-400 shadow-lg"
-            />
-            <img 
-              src="/images/mascotes/leo/leo_rosto_resultado.webp"
-              alt="Léo"
-              className="w-14 h-14 md:w-20 md:h-20 rounded-full border-3 border-orange-400 shadow-lg"
-            />
-          </div>
 
-          {/* Balão com a carta procurada */}
-          {correctCard && (
-            <div className="bg-gradient-to-r from-violet-100 to-pink-100 p-3 rounded-2xl shadow-lg border-2 border-violet-300">
-              <p className="text-xs md:text-sm font-bold text-gray-600 mb-2 text-center">Procure:</p>
-              <div className="flex items-center gap-3">
+        {/* --- NOVA ÁREA DE PEDIDO (MILA/LÉO) --- */}
+        <div className="flex items-center justify-center my-4 gap-4 p-2">
+            {currentNpc && (
                 <img 
-                  src={correctCard.image}
-                  alt={correctCard.label}
-                  className="w-16 h-16 md:w-24 md:h-24 object-contain rounded-lg bg-white p-1"
+                    src={currentNpc.image}
+                    alt={currentNpc.name}
+                    className="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-violet-400 shadow-lg flex-shrink-0"
                 />
-                <p className="text-lg md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500">
-                  {correctCard.label}
+            )}
+            <div className="relative bg-gradient-to-r from-violet-100 to-pink-100 p-3 rounded-xl shadow-md border-2 border-violet-300 w-full max-w-md">
+                <p className="text-center font-medium text-gray-800 md:text-lg">
+                    {visibleMessage}
                 </p>
-              </div>
+                {/* Flecha do balão de fala */}
+                <div className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-violet-100 border-b-2 border-l-2 border-violet-300 transform rotate-45"></div>
             </div>
-          )}
         </div>
-  
+      
         {/* Grade de cards */}
         <div className={`
           grid gap-2 md:gap-3 transition-opacity duration-500 max-w-5xl mx-auto
@@ -532,7 +529,7 @@ const Game = () => {
     const isLastStep = introStep === introMessages.length - 1;
 
     return (
-      <div className="flex flex-col items-center justify-end md:justify-center p-4 min-h-screen">
+      <div className="flex flex-col items-center justify-center p-4 min-h-screen">
         <div className="w-full md:max-w-4xl flex flex-col md:flex-row items-center justify-center gap-4">
           
           <div className="md:w-1/2 flex justify-center order-2 md:order-1">
@@ -550,8 +547,8 @@ const Game = () => {
               <h1 className="text-2xl md:text-3xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-pink-500 mb-4">
                 Boas-Vindas ao Palavras Mágicas!
               </h1>
-              <p className="text-gray-700 text-base md:text-lg font-medium text-center mb-6">
-                {milaMessage}
+              <p className="text-gray-700 text-base md:text-lg font-medium text-center mb-6 h-32">
+                {visibleMessage}
               </p>
               
               <div className="flex justify-center">
@@ -560,14 +557,14 @@ const Game = () => {
                     onClick={startGame}
                     className="px-6 py-2 md:px-8 md:py-3 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-base md:text-lg rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
                   >
-                    Começar
+                    Vamos comigo nesta aventura!
                   </button>
                 ) : (
                   <button
                     onClick={handleIntroStep}
-                    className="px-6 py-2 md:px-8 md:py-3 bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold text-base md:text-lg rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                    className="px-6 py-2 md:px-8 md:py-3 bg-gradient-to-r from-violet-500 to-pink-500 text-white font-bold text-base md:text-lg rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
                   >
-                    Continuar
+                    Seguir
                   </button>
                 )}
               </div>
@@ -617,8 +614,8 @@ const Game = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-200 via-violet-200 to-pink-200 relative overflow-hidden">
-      <div className="relative z-10 max-w-6xl mx-auto p-2 md:p-4">
+    <div className="min-h-screen bg-gradient-to-b from-sky-200 via-violet-200 to-pink-200 relative overflow-hidden flex items-center justify-center">
+      <div className="relative z-10 max-w-6xl w-full mx-auto p-2 md:p-4">
         {gameStatus === 'intro' ? renderIntroScreen() : renderGameContent()}
       </div>
       {renderModals()}
