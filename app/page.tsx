@@ -32,28 +32,29 @@ const App = () => {
 
   return (
     <div className="font-sans antialiased bg-slate-50 text-slate-700">
-      {/* ===== CABEÇALHO COM TAMANHO E LAYOUT MOBILE CORRIGIDOS ===== */}
+      {/* ===== CABEÇALHO COM HARMONIA E PROPORÇÃO AJUSTADAS ===== */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
-        {/* Padding vertical (py) ajustado para melhor encaixe no mobile */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 flex justify-between items-center">
-          <a href="/" className="flex items-center">
+        {/* 1. Padding vertical (py) reduzido para uma barra mais fina */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-3 flex justify-between items-center gap-4">
+          <a href="/" className="flex items-center flex-shrink-0">
             <Image
               src="/images/logo-luditea.png"
               alt="Logo LudiTEA"
-              width={224} // Tamanho real ou maior para otimização
-              height={69}  // Tamanho real ou maior para otimização
-              className="h-auto w-40 md:w-56" // TAMANHO DO LOGO AUMENTADO E RESPONSIVO
+              width={224}
+              height={69}
+              className="h-auto w-28 sm:w-36 md:w-48" // 2. Tamanho do logo ajustado para a nova proporção
               priority
             />
           </a>
-          <a href="/login" className="bg-slate-900 text-white px-6 py-2 rounded-full font-medium hover:bg-slate-700 transition-colors shadow-lg">
+          {/* 3. Botão ajustado para a nova altura do cabeçalho */}
+          <a href="/login" className="bg-slate-900 text-white px-5 py-1.5 rounded-full font-medium text-sm md:text-base hover:bg-slate-700 transition-colors shadow-lg flex-shrink-0">
             Entrar
           </a>
         </div>
       </header>
 
       <main>
-        {/* O resto do seu código da página continua aqui, sem alterações */}
+        {/* O resto do seu código da página continua aqui */}
         <section className="bg-gradient-to-br from-blue-100 to-white py-20 animate-fade-in"> <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center"> <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 mb-4 leading-tight drop-shadow-sm"> Uma jornada de <span className="text-blue-600">descobertas</span> e <span className="text-emerald-600">desenvolvimento</span> </h1> <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-3xl mx-auto"> A primeira plataforma brasileira integrada para o desenvolvimento de habilidades em pessoas com TEA e TDAH, com foco na individualidade e no aprendizado divertido. </p> <div className="flex justify-center"> <a href="#features-section" className="bg-blue-600 text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-transform transform hover:-translate-y-1"> Leia abaixo para conhecer mais <ChevronRight className="inline-block ml-2 w-5 h-5" /> </a> </div> </div> </section>
         <section id="features-section" className="py-20 bg-white"> <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"> <div className="text-center mb-16"> <h2 className="text-4xl font-bold text-slate-900 mb-4">Por que escolher o LudiTEA?</h2> <p className="text-xl text-slate-600 max-w-2xl mx-auto">Uma abordagem única e integrada para o desenvolvimento neurodivergente.</p> </div> <div className="grid grid-cols-1 md:grid-cols-3 gap-10"> {features.map((feature, index) => ( <div key={index} className="text-center p-8 bg-slate-50 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2"> <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center bg-white shadow-inner`}> {feature.icon} </div> <h3 className="text-2xl font-bold text-slate-900 mb-2">{feature.title}</h3> <p className="text-lg text-slate-600">{feature.description}</p> </div> ))} </div> </div> </section>
         <section className="py-20 bg-slate-50"> <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"> <div className="text-center mb-16"> <h2 className="text-4xl font-bold text-slate-900 mb-4">Como funciona</h2> <p className="text-xl text-slate-600 max-w-2xl mx-auto"> Três módulos integrados para um desenvolvimento completo, com atividades que se conectam. </p> </div> <div className="grid grid-cols-1 md:grid-cols-3 gap-10"> {modules.map((module, index) => ( <div key={index} className={`rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 ${module.bgColor}`}> <div className="flex items-center justify-center w-16 h-16 bg-white rounded-full mx-auto mb-6 shadow-md"> {module.icon} </div> <div className="text-center"> <h3 className="text-2xl font-bold text-slate-900 mb-1">{module.title}</h3> <p className="text-lg text-slate-600 mb-4">{module.subtitle}</p> </div> <ul className="space-y-3 text-lg text-slate-700"> {module.items.map((item, i) => ( <li key={i} className="flex items-center"> <CheckCircle className={`w-6 h-6 mr-3 text-emerald-500`} /> {item} </li> ))} </ul> </div> ))} </div> </div> </section>
@@ -71,7 +72,7 @@ const App = () => {
                   alt="Logo LudiTEA"
                   width={224}
                   height={69}
-                  className="h-auto w-40" // TAMANHO DO LOGO NO RODAPÉ
+                  className="h-auto w-36" // Tamanho do logo no rodapé ajustado
                 />
               </a>
               <p className="text-sm">
