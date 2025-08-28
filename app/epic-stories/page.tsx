@@ -1,18 +1,8 @@
 'use client';
 
-import React, {
-    useState,
-    useEffect,
-    useCallback
-} from 'react';
-import {
-    useRouter
-} from 'next/navigation';
-import {
-    BookText,
-    Sparkles,
-    Wand2
-} from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { BookText, Sparkles, Wand2 } from 'lucide-react';
 
 // --- Interfaces do Jogo (ATUALIZADA) ---
 interface Card {
@@ -34,347 +24,99 @@ interface StoryLevel {
     level: number;
     name: string;
     storiesToComplete: number;
-    templates: StorySegment[][]; // Array de templates de história
+    templates: StorySegment[][];
 }
 
-// --- BANCO DE CARDS NARRATIVOS (REVISADO E CORRIGIDO) ---
-const narrativeCards: {
-    [key in Card['category']]: Card[]
-} = {
-    personagens: [{
-        id: 'cachorro',
-        displayLabel: 'Cachorro',
-        sentenceLabel: 'um cachorro',
-        image: '/images/cards/animais/cachorro.webp',
-        category: 'personagens'
-    }, {
-        id: 'gato',
-        displayLabel: 'Gato',
-        sentenceLabel: 'um gato',
-        image: '/images/cards/animais/gato.webp',
-        category: 'personagens'
-    }, {
-        id: 'cavalo',
-        displayLabel: 'Cavalo',
-        sentenceLabel: 'um cavalo',
-        image: '/images/cards/animais/cavalo.webp',
-        category: 'personagens'
-    }, {
-        id: 'menina',
-        displayLabel: 'Menina',
-        sentenceLabel: 'uma menina',
-        image: '/images/cards/pessoas/menina.webp',
-        category: 'personagens'
-    }, {
-        id: 'menino',
-        displayLabel: 'Menino',
-        sentenceLabel: 'um menino',
-        image: '/images/cards/pessoas/menino.webp',
-        category: 'personagens'
-    }, {
-        id: 'eu',
-        displayLabel: 'Eu',
-        sentenceLabel: 'eu',
-        image: '/images/cards/core/eu.webp',
-        category: 'personagens'
-    }, {
-        id: 'voce',
-        displayLabel: 'Você',
-        sentenceLabel: 'você',
-        image: '/images/cards/core/voce.webp',
-        category: 'personagens'
-    }, ],
-    acoes: [{
-        id: 'brincar',
-        displayLabel: 'Brincar',
-        sentenceLabel: 'brincar',
-        image: '/images/cards/rotina/brincar.webp',
-        category: 'acoes'
-    }, {
-        id: 'caminhar',
-        displayLabel: 'Caminhar',
-        sentenceLabel: 'caminhar',
-        image: '/images/cards/acoes/caminhar.webp',
-        category: 'acoes'
-    }, {
-        id: 'beber',
-        displayLabel: 'Beber',
-        sentenceLabel: 'beber',
-        image: '/images/cards/acoes/beber.webp',
-        category: 'acoes'
-    }, {
-        id: 'estudar',
-        displayLabel: 'Estudar',
-        sentenceLabel: 'estudar',
-        image: '/images/cards/rotina/estudar.webp',
-        category: 'acoes'
-    }, {
-        id: 'ler_livro',
-        displayLabel: 'Ler Livro',
-        sentenceLabel: 'ler um livro',
-        image: '/images/cards/acoes/ler_livro.webp',
-        category: 'acoes'
-    }, {
-        id: 'conversar',
-        displayLabel: 'Conversar',
-        sentenceLabel: 'conversar',
-        image: '/images/cards/acoes/conversar.webp',
-        category: 'acoes'
-    }, {
-        id: 'escrever',
-        displayLabel: 'Escrever',
-        sentenceLabel: 'escrever',
-        image: '/images/cards/acoes/escrever.webp',
-        category: 'acoes'
-    }, {
-        id: 'comer',
-        displayLabel: 'Comer',
-        sentenceLabel: 'comer',
-        image: '/images/cards/acoes/mastigar.webp',
-        category: 'acoes'
-    }, ],
-    emocoes: [{
-        id: 'feliz',
-        displayLabel: 'Feliz',
-        sentenceLabel: 'feliz',
-        image: '/images/cards/descritivo/feliz.webp',
-        category: 'emocoes'
-    }, {
-        id: 'triste',
-        displayLabel: 'Triste',
-        sentenceLabel: 'triste',
-        image: '/images/cards/descritivo/triste.webp',
-        category: 'emocoes'
-    }, {
-        id: 'bravo',
-        displayLabel: 'Bravo',
-        sentenceLabel: 'bravo',
-        image: '/images/cards/descritivo/bravo.webp',
-        category: 'emocoes'
-    }, {
-        id: 'com_medo',
-        displayLabel: 'Com Medo',
-        sentenceLabel: 'com medo',
-        image: '/images/cards/descritivo/com_medo.webp',
-        category: 'emocoes'
-    }, {
-        id: 'animado',
-        displayLabel: 'Animado',
-        sentenceLabel: 'animado',
-        image: '/images/cards/descritivo/animado.webp',
-        category: 'emocoes'
-    }, {
-        id: 'calmo',
-        displayLabel: 'Calmo',
-        sentenceLabel: 'calmo',
-        image: '/images/cards/descritivo/calmo.webp',
-        category: 'emocoes'
-    }, ],
-    lugares: [{
-        id: 'casa',
-        displayLabel: 'Casa',
-        sentenceLabel: 'em casa',
-        image: '/images/cards/casa/casa.webp',
-        category: 'lugares'
-    }, {
-        id: 'escola',
-        displayLabel: 'Escola',
-        sentenceLabel: 'na escola',
-        image: '/images/cards/escola/escola.webp',
-        category: 'lugares'
-    }, {
-        id: 'parque',
-        displayLabel: 'Parque',
-        sentenceLabel: 'no parque',
-        image: '/images/cards/lugares/parque.webp',
-        category: 'lugares'
-    }, {
-        id: 'quarto',
-        displayLabel: 'Quarto',
-        sentenceLabel: 'no quarto',
-        image: '/images/cards/casa/quarto.webp',
-        category: 'lugares'
-    }, ],
-    objetos: [{
-        id: 'livro',
-        displayLabel: 'Livro',
-        sentenceLabel: 'o livro',
-        image: '/images/cards/escola/livro.webp',
-        category: 'objetos'
-    }, {
-        id: 'maca',
-        displayLabel: 'Maçã',
-        sentenceLabel: 'a maçã',
-        image: '/images/cards/alimentos/maca.webp',
-        category: 'objetos'
-    }, {
-        id: 'cama',
-        displayLabel: 'Cama',
-        sentenceLabel: 'a cama',
-        image: '/images/cards/casa/cama.webp',
-        category: 'objetos'
-    }, {
-        id: 'mesa',
-        displayLabel: 'Mesa',
-        sentenceLabel: 'a mesa',
-        image: '/images/cards/casa/mesa.webp',
-        category: 'objetos'
-    }, ],
-    tempo: [{
-        id: 'hoje',
-        displayLabel: 'Hoje',
-        sentenceLabel: 'Hoje',
-        image: '/images/cards/rotina/hoje.webp',
-        category: 'tempo'
-    }, {
-        id: 'manha',
-        displayLabel: 'Manhã',
-        sentenceLabel: 'de manhã',
-        image: '/images/cards/rotina/manha.webp',
-        category: 'tempo'
-    }, {
-        id: 'noite',
-        displayLabel: 'Noite',
-        sentenceLabel: 'de noite',
-        image: '/images/cards/rotina/noite.webp',
-        category: 'tempo'
-    }, {
-        id: 'tarde',
-        displayLabel: 'Tarde',
-        sentenceLabel: 'de tarde',
-        image: '/images/cards/rotina/Tarde.webp',
-        category: 'tempo'
-    }, ]
+// --- BANCO DE CARDS NARRATIVOS (VALIDADO COM SUA LISTA DE ARQUIVOS) ---
+const narrativeCards: { [key in Card['category']]: Card[] } = {
+    personagens: [
+        { id: 'cachorro', displayLabel: 'Cachorro', sentenceLabel: 'um cachorro', image: '/images/cards/animais/cachorro.webp', category: 'personagens' },
+        { id: 'gato', displayLabel: 'Gato', sentenceLabel: 'um gato', image: '/images/cards/animais/gato.webp', category: 'personagens' },
+        { id: 'cavalo', displayLabel: 'Cavalo', sentenceLabel: 'um cavalo', image: '/images/cards/animais/cavalo.webp', category: 'personagens' },
+        { id: 'menina', displayLabel: 'Menina', sentenceLabel: 'uma menina', image: '/images/cards/pessoas/menina.webp', category: 'personagens' },
+        { id: 'menino', displayLabel: 'Menino', sentenceLabel: 'um menino', image: '/images/cards/pessoas/menino.webp', category: 'personagens' },
+        { id: 'eu', displayLabel: 'Eu', sentenceLabel: 'eu', image: '/images/cards/core/eu.webp', category: 'personagens' },
+        { id: 'voce', displayLabel: 'Você', sentenceLabel: 'você', image: '/images/cards/core/voce.webp', category: 'personagens' },
+        { id: 'amigo', displayLabel: 'Amigo', sentenceLabel: 'um amigo', image: '/images/cards/pessoas/amigo.webp', category: 'personagens' },
+    ],
+    acoes: [
+        { id: 'brincar', displayLabel: 'Brincar', sentenceLabel: 'brincar', image: '/images/cards/rotina/brincar.webp', category: 'acoes' },
+        { id: 'caminhar', displayLabel: 'Caminhar', sentenceLabel: 'caminhar', image: '/images/cards/acoes/caminhar.webp', category: 'acoes' },
+        { id: 'beber', displayLabel: 'Beber', sentenceLabel: 'beber', image: '/images/cards/acoes/beber.webp', category: 'acoes' },
+        { id: 'estudar', displayLabel: 'Estudar', sentenceLabel: 'estudar', image: '/images/cards/rotina/estudar.webp', category: 'acoes' },
+        { id: 'ler_livro', displayLabel: 'Ler Livro', sentenceLabel: 'ler um livro', image: '/images/cards/acoes/ler_livro.webp', category: 'acoes' },
+        { id: 'conversar', displayLabel: 'Conversar', sentenceLabel: 'conversar', image: '/images/cards/acoes/conversar.webp', category: 'acoes' },
+        { id: 'escrever', displayLabel: 'Escrever', sentenceLabel: 'escrever', image: '/images/cards/acoes/escrever.webp', category: 'acoes' },
+        { id: 'comer', displayLabel: 'Comer', sentenceLabel: 'comer', image: '/images/cards/acoes/mastigar.webp', category: 'acoes' },
+    ],
+    emocoes: [
+        { id: 'feliz', displayLabel: 'Feliz', sentenceLabel: 'feliz', image: '/images/cards/acoes/saltar.webp', category: 'emocoes' }, // Ação representativa
+        { id: 'triste', displayLabel: 'Triste', sentenceLabel: 'triste', image: '/images/cards/acoes/pensar.webp', category: 'emocoes' }, // Ação representativa
+        { id: 'bravo', displayLabel: 'Bravo', sentenceLabel: 'bravo', image: '/images/cards/acoes/gritar.webp', category: 'emocoes' }, // Ação representativa
+        { id: 'surpreso', displayLabel: 'Surpreso', sentenceLabel: 'surpreso', image: '/images/cards/descritivo/surpreso.webp', category: 'emocoes' },
+        { id: 'animado', displayLabel: 'Animado', sentenceLabel: 'animado', image: '/images/cards/acoes/aplaudir.webp', category: 'emocoes' }, // Ação representativa
+    ],
+    lugares: [
+        { id: 'sofa', displayLabel: 'Sofá', sentenceLabel: 'no sofá', image: '/images/cards/casa/sofa.webp', category: 'lugares' },
+        { id: 'cama', displayLabel: 'Cama', sentenceLabel: 'na cama', image: '/images/cards/casa/cama.webp', category: 'lugares' },
+        { id: 'parque', displayLabel: 'Parque', sentenceLabel: 'no parque', image: '/images/cards/lugares/parque.webp', category: 'lugares' },
+        { id: 'jardim', displayLabel: 'Jardim', sentenceLabel: 'no jardim', image: '/images/cards/casa/jardim.webp', category: 'lugares' },
+    ],
+    objetos: [
+        { id: 'livro', displayLabel: 'Livro', sentenceLabel: 'o livro', image: '/images/cards/escola/livro.webp', category: 'objetos' },
+        { id: 'maca', displayLabel: 'Maçã', sentenceLabel: 'a maçã', image: '/images/cards/alimentos/maca.webp', category: 'objetos' },
+        { id: 'mesa', displayLabel: 'Mesa', sentenceLabel: 'a mesa', image: '/images/cards/casa/mesa.webp', category: 'objetos' },
+        { id: 'bola', displayLabel: 'Bola', sentenceLabel: 'a bola', image: '/images/cards/brinquedos/bola.webp', category: 'objetos' },
+        { id: 'lapis', displayLabel: 'Lápis', sentenceLabel: 'o lápis', image: '/images/cards/escola/lapis.webp', category: 'objetos' },
+    ],
+    tempo: [
+        { id: 'hoje', displayLabel: 'Hoje', sentenceLabel: 'Hoje', image: '/images/cards/rotina/hoje.webp', category: 'tempo' },
+        { id: 'manha', displayLabel: 'Manhã', sentenceLabel: 'de manhã', image: '/images/cards/rotina/manha.webp', category: 'tempo' },
+        { id: 'noite', displayLabel: 'Noite', sentenceLabel: 'de noite', image: '/images/cards/rotina/noite.webp', category: 'tempo' },
+        { id: 'tarde', displayLabel: 'Tarde', sentenceLabel: 'de tarde', image: '/images/cards/rotina/Tarde.webp', category: 'tempo' },
+    ]
 };
 
 // --- ESTRUTURA DAS FASES E TEMPLATES DE HISTÓRIAS ---
-const storyLevels: StoryLevel[] = [{
-    level: 1,
-    name: "Primeiras Aventuras",
-    storiesToComplete: 3,
-    templates: [
-        [{
-            text: "Era uma vez",
-            type: "personagens",
-            options: 3
-        }, {
-            text: "que estava se sentindo",
-            type: "emocoes",
-            options: 3
-        }, {
-            text: ".",
-            type: "acoes",
-            options: 0
-        }],
-        [{
-            text: "Hoje",
-            type: "tempo",
-            options: 3
-        }, {
-            text: "",
-            type: "personagens",
-            options: 3
-        }, {
-            text: "foi",
-            type: "acoes",
-            options: 4
-        }, {
-            text: ".",
-            type: "acoes",
-            options: 0
-        }],
-        [{
-            text: "Eu vi",
-            type: "personagens",
-            options: 4
-        }, {
-            text: "",
-            type: "acoes",
-            options: 4
-        }, {
-            text: "",
-            type: "lugares",
-            options: 3
-        }, {
-            text: ".",
-            type: "acoes",
-            options: 0
-        }],
-    ]
-}, {
-    level: 2,
-    name: "Mundo de Descobertas",
-    storiesToComplete: 4,
-    templates: [
-        [{
-            text: "Certo dia,",
-            type: "personagens",
-            options: 4
-        }, {
-            text: "foi para",
-            type: "lugares",
-            options: 3
-        }, {
-            text: "para",
-            type: "acoes",
-            options: 4
-        }, {
-            text: ".",
-            type: "acoes",
-            options: 0
-        }],
-        [{
-            text: "Na escola, eu gosto de",
-            type: "acoes",
-            options: 4
-        }, {
-            text: "com",
-            type: "objetos",
-            options: 3
-        }, {
-            text: "e fico",
-            type: "emocoes",
-            options: 3
-        }, {
-            text: ".",
-            type: "acoes",
-            options: 0
-        }],
-        [{
-            text: "De repente, ",
-            type: "personagens",
-            options: 3
-        }, {
-            text: "encontrou",
-            type: "objetos",
-            options: 3
-        }, {
-            text: "e ficou muito",
-            type: "emocoes",
-            options: 3
-        }, {
-            text: ".",
-            type: "acoes",
-            options: 0
-        }]
-    ]
-}];
+const storyLevels: StoryLevel[] = [
+    {
+        level: 1,
+        name: "Primeiras Aventuras",
+        storiesToComplete: 3,
+        templates: [
+            [{ text: "Era uma vez", type: "personagens", options: 3 }, { text: "que estava se sentindo", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "Hoje", type: "tempo", options: 3 }, { text: "", type: "personagens", options: 3 }, { text: "foi", type: "acoes", options: 4 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "Eu vi", type: "personagens", options: 4 }, { text: "", type: "acoes", options: 4 }, { text: "", type: "lugares", options: 3 }, { text: ".", type: "acoes", options: 0 }],
+        ]
+    },
+    {
+        level: 2,
+        name: "Mundo de Descobertas",
+        storiesToComplete: 4,
+        templates: [
+            [{ text: "Certo dia,", type: "personagens", options: 4 }, { text: "foi para", type: "lugares", options: 3 }, { text: "para", type: "acoes", options: 4 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "Na escola, eu gosto de", type: "acoes", options: 4 }, { text: "com", type: "objetos", options: 3 }, { text: "e fico", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "De repente, ", type: "personagens", options: 3 }, { text: "encontrou", type: "objetos", options: 3 }, { text: "e ficou muito", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }]
+        ]
+    }
+];
+
 
 export default function HistoriasEpicasGame() {
     const router = useRouter();
     
     // Estados do Jogo
-    const [gameState, setGameState] = useState < 'intro' | 'playing' | 'storyComplete' | 'levelComplete' | 'gameOver' > ('intro');
+    const [gameState, setGameState] = useState<'intro' | 'playing' | 'storyComplete' | 'levelComplete' | 'gameOver'>('intro');
     const [introStep, setIntroStep] = useState(0);
     const [leoMessage, setLeoMessage] = useState('');
-
+    
     // Estados da História
     const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
     const [storiesCompletedInLevel, setStoriesCompletedInLevel] = useState(0);
-    const [currentStoryTemplate, setCurrentStoryTemplate] = useState < StorySegment[] > ([]);
-    const [storyProgress, setStoryProgress] = useState < StorySegment[] > ([]);
+    const [currentStoryTemplate, setCurrentStoryTemplate] = useState<StorySegment[]>([]);
+    const [storyProgress, setStoryProgress] = useState<StorySegment[]>([]);
     const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
-    const [cardOptions, setCardOptions] = useState < Card[] > ([]);
+    const [cardOptions, setCardOptions] = useState<Card[]>([]);
 
     const introMessages = [
         "Bem vindo ao jogo 'Histórias Épicas', aqui eu vou te ajudar a construir suas próprias estórias, e com isto, ajudar a todos neste mundo mágico, a ter um final feliz.",
@@ -398,7 +140,7 @@ export default function HistoriasEpicasGame() {
     useEffect(() => {
         leoSpeak(introMessages[0]);
     }, [leoSpeak]);
-
+    
     const handleIntroNext = () => {
         const nextStep = introStep + 1;
         if (nextStep < introMessages.length) {
@@ -453,7 +195,7 @@ export default function HistoriasEpicasGame() {
         const shuffled = [...allCardsInCategory].sort(() => 0.5 - Math.random());
         setCardOptions(shuffled.slice(0, options));
     }, []);
-
+    
     const handleCardSelection = (card: Card) => {
         if (gameState !== 'playing') return;
 
@@ -501,16 +243,14 @@ export default function HistoriasEpicasGame() {
             loadNewStory(currentLevelIndex);
         }
     }, [currentLevelIndex, storiesCompletedInLevel, loadNewStory, leoSpeak]);
-
+    
     // Renderiza o background animado
     const AnimatedBackground = () => (
         <div className="absolute inset-0 z-0 overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-300 via-pink-200 to-orange-200 opacity-80 animate-gradient-shift"></div>
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-bl from-blue-300 via-green-200 to-yellow-200 opacity-80 animate-gradient-shift-reverse blur-3xl"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-300 via-pink-200 to-orange-200 opacity-80 animate-gradient-shift"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-bl from-blue-300 via-green-200 to-yellow-200 opacity-80 animate-gradient-shift-reverse blur-3xl"></div>
         </div>
     );
-
-    // --- RENDERIZAÇÃO DOS COMPONENTES VISUAIS ---
 
     const renderIntro = () => (
         <div className="relative z-10 flex flex-col items-center text-center p-6 bg-white/95 rounded-3xl shadow-2xl max-w-xl mx-auto border-4 border-violet-400 animate-scale-in">
@@ -533,7 +273,6 @@ export default function HistoriasEpicasGame() {
         const level = storyLevels[currentLevelIndex];
         return (
             <div className="relative z-10 bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-xl w-full max-w-6xl mx-auto border-4 border-violet-300 animate-fade-in">
-                {/* Cabeçalho do Jogo */}
                 <div className="flex justify-between items-center bg-gradient-to-r from-violet-200 to-pink-200 p-3 rounded-t-xl -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 shadow-md">
                     <div className="flex items-center gap-2 text-purple-700 font-bold text-lg md:text-xl">
                         <BookText size={24} /> Fase {level.level}: {level.name}
@@ -542,8 +281,6 @@ export default function HistoriasEpicasGame() {
                         <Wand2 size={24} /> Histórias: {storiesCompletedInLevel} / {level.storiesToComplete}
                     </div>
                 </div>
-
-                {/* Visualizador da História */}
                 <div className="bg-yellow-50 p-4 rounded-xl mb-6 border-2 border-yellow-300 min-h-[100px] flex items-center justify-center text-center shadow-inner">
                     <p className="text-xl md:text-2xl text-gray-800 font-semibold leading-relaxed">
                         {storyProgress.map((segment, index) => (
@@ -561,16 +298,12 @@ export default function HistoriasEpicasGame() {
                         ))}
                     </p>
                 </div>
-
-                {/* Balão de Fala do Leo */}
                 <div className="flex flex-col md:flex-row items-center gap-4 my-6 justify-center">
                     <img src="/images/mascotes/leo/leo_rosto_resultado.webp" alt="Leo" className="w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-orange-500 shadow-lg flex-shrink-0 animate-float" />
                     <div className="relative bg-white p-4 rounded-lg shadow-md flex-1 text-center min-h-[80px] flex items-center justify-center">
                         <p className="text-lg md:text-xl font-medium text-gray-800">{leoMessage}</p>
                     </div>
                 </div>
-
-                {/* Área de Ação (Cards ou Botão de Próxima) */}
                 {gameState === 'playing' ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-6 animate-fade-in-up">
                         {cardOptions.map(card => (
@@ -590,8 +323,6 @@ export default function HistoriasEpicasGame() {
                         </button>
                     </div>
                 )}
-
-                {/* Modal de Fim de Jogo */}
                 {gameState === 'gameOver' && (
                     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 animate-fade-in">
                         <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border-4 border-yellow-400 animate-scale-in">
@@ -612,7 +343,6 @@ export default function HistoriasEpicasGame() {
             <AnimatedBackground />
             {gameState === 'intro' ? renderIntro() : renderGame()}
             <style jsx>{`
-                /* Todas as animações e estilos aqui */
                 @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
                 @keyframes gradient-shift-reverse { 0% { background-position: 100% 50%; } 50% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
                 .animate-gradient-shift { background-size: 200% 200%; animation: gradient-shift 15s ease infinite; }
