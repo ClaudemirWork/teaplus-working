@@ -68,18 +68,18 @@ const narrativeCards: { [key in Card['category']]: Card[] } = {
 // --- NÍVEIS DO JOGO (Pode ser ajustado para o Palavras Mágicas) ---
 const storyLevels: StoryLevel[] = [
     {
-        level: 1, name: "Primeiras Palavras", storiesToComplete: 3,
+        level: 1, name: "Quebrando o Feitiço", storiesToComplete: 3,
         templates: [
-            [{ text: "Era uma vez", type: "personagens", options: 3 }, { text: "que gostava de", type: "acoes", options: 3 }, { text: ".", type: "acoes", options: 0 }],
-            [{ text: "", type: "tempo", options: 3 }, { text: "", type: "personagens", options: 3 }, { text: "foi", type: "acoes", options: 4 }, { text: ".", type: "acoes", options: 0 }],
-            [{ text: "Eu vi", type: "personagens", options: 4 }, { text: "a", type: "acoes", options: 4 }, { text: "", type: "lugares", options: 3 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "O ferreiro precisa de um", type: "objetos", options: 3 }, { text: "para trabalhar.", type: "acoes", options: 0 }],
+            [{ text: "A camponesa quer", type: "acoes", options: 4 }, { text: "no campo.", type: "acoes", options: 0 }],
+            [{ text: "O guarda do castelo viu", type: "personagens", options: 4 }, { text: "se aproximando.", type: "acoes", options: 0 }],
         ]
     },
     {
-        level: 2, name: "Mundo da Fantasia", storiesToComplete: 4,
+        level: 2, name: "Ajudando o Reino", storiesToComplete: 4,
         templates: [
-            [{ text: "Certo dia,", type: "personagens", options: 4 }, { text: "foi para", type: "lugares", options: 3 }, { text: "para", type: "acoes", options: 4 }, { text: ".", type: "acoes", options: 0 }],
-            [{ text: "Na escola, eu gosto de", type: "acoes", options: 4 }, { text: "com", type: "objetos", options: 3 }, { text: "e fico a", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "Para a festa no castelo, precisamos de", type: "objetos", options: 4 }, { text: "e", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "O mago precisa", type: "acoes", options: 4 }, { text: "em seu laboratório", type: "lugares", options: 3 }, { text: ".", type: "acoes", options: 0 }],
         ]
     }
 ];
@@ -95,11 +95,12 @@ export default function PalavrasMagicasGame() {
     const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
     const [cardOptions, setCardOptions] = useState<Card[]>([]);
 
+    // ===== TEXTO DA INTRODUÇÃO ATUALIZADO =====
     const introMessages = [
-        "Bem-vindo ao 'Palavras Mágicas'! Eu sou a Mila e vou te ajudar a formar frases incríveis!",
-        "É super fácil! No alto, vamos ter o começo de uma frase...",
-        "Você escolhe um card para continuar a frase, e eu leio como ficou. Vamos avançando até o final!",
-        "Pronto para começar a magia das palavras comigo?"
+        "Bem vindo ao jogo 'Palavras mágicas', você é nosso herói, e vamos precisar muito de sua ajuda",
+        "Toda a população deste reino, perdeu a voz, devido a um feitiço de um bruxo poderoso.",
+        "Você terá que encontrar dentro das cartas que serão exibidas, o que cada habitante precisa. Cada acerto seu, devolve a voz para ele, quebrando o encanto.",
+        "Basta seguir minha orientação, e ficar atento para a carta correta, e pronto! Se errar, não faz mal, basta começar de novo! Vamos começar e salvar todo mundo?"
     ];
 
     const milaSpeak = useCallback((message: string) => {
@@ -108,7 +109,7 @@ export default function PalavrasMagicasGame() {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(message);
             utterance.lang = 'pt-BR';
-            utterance.rate = 1.0; // A Mila pode falar um pouquinho mais rápido
+            utterance.rate = 1.0;
             window.speechSynthesis.speak(utterance);
         }
     }, []);
@@ -139,7 +140,7 @@ export default function PalavrasMagicasGame() {
         const level = storyLevels[levelIndex];
         if (!level) {
             setGameState('gameOver');
-            milaSpeak("Incrível! Você completou todas as fases de Palavras Mágicas!");
+            milaSpeak("Conseguimos! Graças a você, o feitiço foi quebrado e todos no reino recuperaram suas vozes! Você é um verdadeiro herói!");
             return;
         }
         const randomTemplate = [...level.templates[Math.floor(Math.random() * level.templates.length)]];
@@ -154,7 +155,7 @@ export default function PalavrasMagicasGame() {
         }
         setGameState('playing');
         const firstSegmentText = randomTemplate[0] ? randomTemplate[0].text : "Vamos lá...";
-        milaSpeak(`Vamos criar uma nova frase! ${firstSegmentText}...`);
+        milaSpeak(`Vamos ajudar o próximo habitante! ${firstSegmentText}...`);
     }, [milaSpeak]);
 
     const generateCardOptions = useCallback((segment: StorySegment) => {
@@ -175,7 +176,6 @@ export default function PalavrasMagicasGame() {
         setStoryProgress(updatedProgress);
         let nextSegmentIndex = currentSegmentIndex + 1;
         
-        // Pula segmentos que não precisam de cards (como o ponto final)
         while(nextSegmentIndex < currentStoryTemplate.length && currentStoryTemplate[nextSegmentIndex].options === 0) {
             nextSegmentIndex++;
         }
@@ -185,7 +185,7 @@ export default function PalavrasMagicasGame() {
             const finalStoryText = updatedProgress
                 .map(s => `${s.text} ${s.selectedCard ? s.selectedCard.sentenceLabel : ''}`)
                 .join(' ').replace(/\s+/g, ' ').trim();
-            milaSpeak(`Sua frase ficou assim: "${finalStoryText}". Perfeito!`);
+            milaSpeak(`Isso! Você quebrou o encanto! A frase ficou: "${finalStoryText}".`);
             setStoriesCompletedInLevel(prev => prev + 1);
             setGameState('storyComplete');
         } else {
@@ -193,7 +193,7 @@ export default function PalavrasMagicasGame() {
             const nextSegment = currentStoryTemplate[nextSegmentIndex];
             if (nextSegment && nextSegment.options > 0) {
                 generateCardOptions(nextSegment);
-                milaSpeak(`Ótimo! Agora, ${nextSegment.text || '...'} `);
+                milaSpeak(`Conseguimos! Agora, ${nextSegment.text || '...'} `);
             }
         }
     };
@@ -205,11 +205,11 @@ export default function PalavrasMagicasGame() {
             if (nextLevelIndex < storyLevels.length) {
                 setCurrentLevelIndex(nextLevelIndex);
                 setStoriesCompletedInLevel(0);
-                milaSpeak(`Eba! Você completou a fase ${level.name}! Vamos para a próxima!`);
+                milaSpeak(`Você foi ótimo! Fase ${level.name} completa! Vamos para o próximo desafio!`);
                 setTimeout(() => loadNewStory(nextLevelIndex), 3000);
             } else {
                 setGameState('gameOver');
-                milaSpeak("Uau! Você completou tudo! Você é um mestre das palavras mágicas!");
+                milaSpeak("Uau! Você salvou todo mundo! Você é um verdadeiro mestre das palavras mágicas!");
             }
         } else {
             loadNewStory(currentLevelIndex);
@@ -220,14 +220,13 @@ export default function PalavrasMagicasGame() {
 
     const renderTitleScreen = () => (
         <div className="relative w-full h-screen flex justify-center items-center bg-gradient-to-b from-[#2a0c42] to-[#6d1d61] overflow-hidden">
-            {/* Efeitos de Partículas Mágicas com Tailwind */}
             <div className="absolute top-0 left-0 w-full h-full particles-bg animate-zoom"></div>
-
             <div className="relative z-10 flex flex-col items-center text-center text-white animate-fade-in">
                 <div className="animate-float">
                     <Image
-                        src="/images/mascotes/mila/mila_fada_resultado.webp" // <-- Mascote MILA
-                        alt="Mila Fada"
+                        // ===== IMAGEM DA MASCOTE CORRIGIDA =====
+                        src="/images/mascotes/mila/mila_boas_vindas_resultado.webp"
+                        alt="Mascote Mila dando boas vindas"
                         width={380}
                         height={380}
                         className="w-[220px] h-auto sm:w-[320px] md:w-[380px] drop-shadow-2xl mb-[-25px]"
@@ -244,7 +243,7 @@ export default function PalavrasMagicasGame() {
                     onClick={handleStartIntro} 
                     className="text-xl font-bold text-[#2a0c42] bg-gradient-to-r from-pink-400 to-purple-400 rounded-full px-10 py-4 shadow-lg cta-shadow-magic transition-transform duration-300 ease-in-out hover:scale-105 animate-pulse-magic"
                 >
-                    Começar a Magia
+                    Salvar o Reino!
                 </button>
             </div>
         </div>
@@ -254,12 +253,20 @@ export default function PalavrasMagicasGame() {
         <div className="w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-300 via-pink-200 to-orange-200">
             <div className="relative z-10 flex flex-col items-center text-center p-6 bg-white/95 rounded-3xl shadow-2xl max-w-xl mx-auto border-4 border-pink-400 animate-scale-in">
                 <div className="w-48 h-auto drop-shadow-xl mb-4">
-                    <Image src="/images/mascotes/mila/mila_fada_resultado.webp" alt="Mila Fada" width={200} height={200} className="w-full h-full object-contain" priority/>
+                    <Image 
+                        // ===== IMAGEM DA MASCOTE CORRIGIDA =====
+                        src="/images/mascotes/mila/mila_boas_vindas_resultado.webp" 
+                        alt="Mascote Mila" 
+                        width={200} 
+                        height={200} 
+                        className="w-full h-full object-contain" 
+                        priority
+                    />
                 </div>
-                <h1 className="text-3xl font-bold text-purple-600 mb-4">Como Jogar</h1>
-                <p className="text-base text-gray-700 mb-8 min-h-[100px] flex items-center justify-center">{milaMessage}</p>
+                <h1 className="text-3xl font-bold text-purple-600 mb-4">A Missão</h1>
+                <p className="text-base text-gray-700 mb-8 min-h-[120px] flex items-center justify-center">{milaMessage}</p>
                 <button onClick={handleIntroNext} className="px-8 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-lg rounded-full shadow-xl hover:scale-105 transition-transform">
-                    {introStep < introMessages.length - 1 ? 'Entendi, vamos lá! →' : 'Começar!'}
+                    {introStep < introMessages.length - 1 ? 'Entendi, continuar! →' : 'Vamos começar!'}
                 </button>
             </div>
         </div>
@@ -272,7 +279,7 @@ export default function PalavrasMagicasGame() {
                 <div className="relative z-10 bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-xl w-full max-w-6xl mx-auto border-4 border-pink-300 animate-fade-in">
                     <div className="flex justify-between items-center bg-gradient-to-r from-pink-200 to-purple-200 p-3 rounded-t-xl -m-4 md:-m-6 mb-6 shadow-md">
                         <div className="flex items-center gap-2 text-purple-700 font-bold text-lg md:text-xl"><BookText size={24} /> Fase {level.level}: {level.name}</div>
-                        <div className="flex items-center gap-2 text-pink-700 font-bold text-lg md:text-xl"><Wand2 size={24} /> Frases: {storiesCompletedInLevel} / {level.storiesToComplete}</div>
+                        <div className="flex items-center gap-2 text-pink-700 font-bold text-lg md:text-xl"><Wand2 size={24} /> Vidas Salvas: {storiesCompletedInLevel} / {level.storiesToComplete}</div>
                     </div>
                     <div className="bg-purple-50 p-4 rounded-xl mb-6 border-2 border-purple-200 min-h-[100px] flex items-center justify-center text-center shadow-inner">
                         <p className="text-xl md:text-2xl text-gray-800 font-semibold leading-relaxed">
@@ -287,7 +294,8 @@ export default function PalavrasMagicasGame() {
                     </div>
                     <div className="flex flex-col md:flex-row items-center gap-4 my-6 justify-center">
                         <div className="w-28 h-28 md:w-36 md:h-36 relative flex-shrink-0">
-                            <Image src="/images/mascotes/mila/mila_rosto_resultado.webp" alt="Mila" fill sizes="(max-width: 768px) 112px, 144px" className="rounded-full border-4 border-pink-500 shadow-lg animate-float" />
+                            {/* ===== IMAGEM DO ROSTO CORRIGIDA (CONFORME SUA LISTA) ===== */}
+                                <Image src="/images/mascotes/mila/mila_rosto_resultado.webp" alt="Rosto da Mila" fill sizes="(max-width: 768px) 112px, 144px" className="rounded-full border-4 border-pink-500 shadow-lg animate-float" />
                         </div>
                         <div className="relative bg-white p-4 rounded-lg shadow-md flex-1 text-center min-h-[80px] flex items-center justify-center">
                             <p className="text-lg md:text-xl font-medium text-gray-800">{milaMessage}</p>
@@ -307,7 +315,7 @@ export default function PalavrasMagicasGame() {
                     ) : (
                         <div className='text-center mt-8 animate-fade-in-up'>
                             <button onClick={handleNextStoryOrLevel} className="px-10 py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-xl rounded-full shadow-xl hover:shadow-2xl animate-pulse-fade hover:scale-105 transition-all duration-300">
-                                {storiesCompletedInLevel >= level.storiesToComplete ? 'Próxima Fase!' : 'Próxima Frase!'}
+                                {storiesCompletedInLevel >= level.storiesToComplete ? 'Próxima Fase!' : 'Próximo Desafio!'}
                             </button>
                         </div>
                     )}
@@ -328,13 +336,9 @@ export default function PalavrasMagicasGame() {
         <>
             {renderContent()}
             <style jsx global>{`
-                /* Dica: Para a fonte do título ficar perfeita, importe no seu layout.tsx ou no global.css */
-                /* @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap'); */
                 .font-display {
-                    font-family: 'Patrick Hand', cursive, sans-serif; /* Fonte mais amigável */
+                    font-family: 'Patrick Hand', cursive, sans-serif;
                 }
-
-                /* Animações e Estilos Compartilhados */
                 @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes zoom { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
@@ -342,17 +346,7 @@ export default function PalavrasMagicasGame() {
                 @keyframes pulse-fade { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
                 @keyframes pulse-text { 0%, 100% { color: #8b5cf6; } 50% { color: #7c3aed; } }
                 @keyframes scale-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-
-                .animate-float { animation: float 4s ease-in-out infinite; }
-                .animate-fade-in { animation: fadeIn 1s ease-in-out; }
-                .animate-zoom { animation: zoom 40s infinite; }
-                .animate-fade-in-up { animation: fade-in-up 0.7s ease-out forwards; }
-                .animate-pulse-fade { animation: pulse-fade 2s infinite ease-in-out; }
-                .animate-pulse-text { animation: pulse-text 1.5s infinite alternate ease-in-out; }
-                .animate-scale-in { animation: scale-in 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
-                
-                /* Animação específica do botão da tela de título */
-                @keyframes pulse-magic { 
+                @keyframes pulse-magic { 
                   0%, 100% { 
                     transform: scale(1); 
                     box-shadow: 0 0 15px #f472b6, 0 0 25px #c084fc; 
@@ -362,19 +356,18 @@ export default function PalavrasMagicasGame() {
                     box-shadow: 0 0 25px #f472b6, 0 0 40px #a855f7; 
                   } 
                 }
-
-                .animate-pulse-magic {
-                    animation: pulse-magic 2.5s infinite;
-                }
-
-                /* Estilo do fundo de partículas mágicas */
+                .animate-float { animation: float 4s ease-in-out infinite; }
+                .animate-fade-in { animation: fadeIn 1s ease-in-out; }
+                .animate-zoom { animation: zoom 40s infinite; }
+                .animate-fade-in-up { animation: fade-in-up 0.7s ease-out forwards; }
+                .animate-pulse-fade { animation: pulse-fade 2s infinite ease-in-out; }
+                .animate-pulse-text { animation: pulse-text 1.5s infinite alternate ease-in-out; }
+                .animate-scale-in { animation: scale-in 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
+                .animate-pulse-magic { animation: pulse-magic 2.5s infinite; }
                 .particles-bg::before {
                     content: '';
                     position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
+                    top: 0; left: 0; width: 100%; height: 100%;
                     background-image: 
                         radial-gradient(1.5px 1.5px at 15% 35%, #f9a8d4, transparent),
                         radial-gradient(1px 1px at 70% 15%, white, transparent),
@@ -386,7 +379,6 @@ export default function PalavrasMagicasGame() {
                     background-size: 250px 250px;
                     opacity: 0.9;
                 }
-                
                 .title-text-shadow-magic {
                     text-shadow: 0 0 8px rgba(244, 114, 182, 0.7), 0 0 16px rgba(192, 132, 252, 0.5), 0 0 24px rgba(233, 213, 255, 0.5);
                 }
