@@ -91,14 +91,13 @@ const App = () => {
       {/* ===== CABEÇALHO ATUALIZADO ===== */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          {/* DIV do Logo antigo foi removida e substituída por esta */}
           <a href="/" className="flex items-center">
             <Image
-              src="/images/simbolo_Luditea_novo.png" // 1. CAMINHO DO NOVO LOGO
+              src="/images/simbolo_Luditea_novo.png" // CAMINHO CORRIGIDO
               alt="Logo LudiTEA"
-              width={180} // 2. LARGURA AJUSTADA
-              height={55} // 3. ALTURA AJUSTADA
-              priority // Opcional: faz o logo carregar mais rápido
+              width={180} // LARGURA NO CABEÇALHO
+              height={55} // ALTURA NO CABEÇALHO
+              priority
             />
           </a>
           <a href="/login" className="bg-slate-900 text-white px-6 py-2 rounded-full font-medium hover:bg-slate-700 transition-colors shadow-lg">
@@ -129,7 +128,7 @@ const App = () => {
         <section id="features-section" className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-slate-900 mb-4">Por que escolher o LudiTEA?</h2> {/* NOME ATUALIZADO */}
+              <h2 className="text-4xl font-bold text-slate-900 mb-4">Por que escolher o LudiTEA?</h2>
               <p className="text-xl text-slate-600 max-w-2xl mx-auto">Uma abordagem única e integrada para o desenvolvimento neurodivergente.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -146,8 +145,6 @@ const App = () => {
           </div>
         </section>
         
-        {/* Resto do código da página continua igual, apenas com as trocas de nome */}
-        {/* ... (código da seção "Como funciona") ... */}
         <section className="py-20 bg-slate-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
@@ -200,7 +197,7 @@ const App = () => {
               Comece sua jornada hoje
             </h2>
             <p className="text-xl mb-10 max-w-2xl mx-auto">
-              Junte-se às famílias e profissionais que confiam no LudiTEA. {/* NOME ATUALIZADO */}
+              Junte-se às famílias e profissionais que confiam no LudiTEA.
             </p>
             <a href="/login" className="bg-white text-blue-600 px-8 py-4 rounded-full font-bold shadow-lg hover:bg-blue-50 transition-transform transform hover:-translate-y-1">
               Testar Gratuitamente
@@ -214,13 +211,12 @@ const App = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div>
-              {/* Div do logo antigo foi trocada por esta */}
               <a href="/" className="mb-4 inline-block">
                 <Image
-                  src="/images/simbolo_Luditea_novo.png" // 1. CAMINHO DO NOVO LOGO
+                  src="/images/simbolo_Luditea_novo.png" // CAMINHO CORRIGIDO
                   alt="Logo LudiTEA"
-                  width={140} // 2. LARGURA AJUSTADA
-                  height={43} // 3. ALTURA AJUSTADA
+                  width={140} // LARGURA NO RODAPÉ
+                  height={43} // ALTURA NO RODAPÉ
                 />
               </a>
               <p className="text-sm">
@@ -260,7 +256,7 @@ const App = () => {
               ))}
             </ul>
             <p className="text-sm text-slate-500 mt-8">
-              © 2025 LudiTEA. Todos os direitos reservados. {/* NOME E ANO ATUALIZADOS */}
+              © 2025 LudiTEA. Todos os direitos reservados.
             </p>
           </div>
         </div>
