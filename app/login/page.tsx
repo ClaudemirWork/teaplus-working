@@ -148,13 +148,19 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="max-w-md w-full bg-white rounded-3xl p-8 sm:p-12 shadow-lg">
-        <div className="flex justify-center mb-6">
-            <img src="/images/Teaplus-logo.png" alt="TeaPlus Logo" className="w-40 h-40" />
+        {/* Logo LudiTEA aumentado e centralizado */}
+        <div className="flex justify-center mb-8">
+          <img 
+            src="/images/logo-luditea.png" 
+            alt="LudiTEA Logo" 
+            className="h-24 sm:h-28 md:h-32 w-auto object-contain"
+          />
         </div>
+        
+        {/* Descrição do app */}
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-slate-900">TeaPlus Suite</h2>
-          <p className="text-slate-600 text-sm">Aplicativo de apoio ao paciente com TEA, TDAH</p>
-          <p className="text-xs text-green-600 mt-1">🔒 Autenticação Segura</p>
+          <p className="text-slate-600 text-sm">Aplicativo de apoio ao paciente com TEA e TDAH</p>
+          <p className="text-xs text-green-600 mt-2">🔒 Autenticação Segura</p>
         </div>
 
         {message && (
