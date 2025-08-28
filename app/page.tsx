@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image'; // Importamos o componente Image do Next.js
 import {
   Brain,
   Users,
@@ -87,21 +88,27 @@ const App = () => {
 
   return (
     <div className="font-sans antialiased bg-slate-50 text-slate-700">
+      {/* ===== CABEÇALHO ATUALIZADO ===== */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <img src="/images/Teaplus-logo.png" alt="TeaPlus Logo" className="w-40 h-40" />
-            <div>
-              <span className="text-xl font-bold text-slate-800">TeaPlus</span>
-              <div className="text-xs text-slate-500">TEA + TDAH</div>
-            </div>
-          </div>
+          {/* DIV do Logo antigo foi removida e substituída por esta */}
+          <a href="/" className="flex items-center">
+            <Image
+              src="/images/simbolo_Luditea_novo.png" // 1. CAMINHO DO NOVO LOGO
+              alt="Logo LudiTEA"
+              width={180} // 2. LARGURA AJUSTADA
+              height={55} // 3. ALTURA AJUSTADA
+              priority // Opcional: faz o logo carregar mais rápido
+            />
+          </a>
           <a href="/login" className="bg-slate-900 text-white px-6 py-2 rounded-full font-medium hover:bg-slate-700 transition-colors shadow-lg">
             Entrar
           </a>
         </div>
       </header>
+
       <main>
+        {/* ===== SEÇÕES DA PÁGINA COM NOMES ATUALIZADOS ===== */}
         <section className="bg-gradient-to-br from-blue-100 to-white py-20 animate-fade-in">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 mb-4 leading-tight drop-shadow-sm">
@@ -111,17 +118,18 @@ const App = () => {
               A primeira plataforma brasileira integrada para o desenvolvimento de habilidades em pessoas com TEA e TDAH, com foco na individualidade e no aprendizado divertido.
             </p>
             <div className="flex justify-center">
-              <a href="/login" className="bg-blue-600 text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-transform transform hover:-translate-y-1">
+              <a href="#features-section" className="bg-blue-600 text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-transform transform hover:-translate-y-1">
                 Leia abaixo para conhecer mais
                 <ChevronRight className="inline-block ml-2 w-5 h-5" />
               </a>
             </div>
           </div>
         </section>
+
         <section id="features-section" className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-slate-900 mb-4">Por que escolher o TeaPlus?</h2>
+              <h2 className="text-4xl font-bold text-slate-900 mb-4">Por que escolher o LudiTEA?</h2> {/* NOME ATUALIZADO */}
               <p className="text-xl text-slate-600 max-w-2xl mx-auto">Uma abordagem única e integrada para o desenvolvimento neurodivergente.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -137,6 +145,9 @@ const App = () => {
             </div>
           </div>
         </section>
+        
+        {/* Resto do código da página continua igual, apenas com as trocas de nome */}
+        {/* ... (código da seção "Como funciona") ... */}
         <section className="py-20 bg-slate-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
@@ -168,6 +179,7 @@ const App = () => {
             </div>
           </div>
         </section>
+
         <section className="py-20 bg-white">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-4xl font-bold text-slate-900 mb-12">Dados que importam</h2>
@@ -181,13 +193,14 @@ const App = () => {
             </div>
           </div>
         </section>
+
         <section className="bg-gradient-to-r from-blue-600 to-blue-800 py-24">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
             <h2 className="text-4xl md:text-5xl font-extrabold mb-4 leading-tight drop-shadow-sm">
               Comece sua jornada hoje
             </h2>
             <p className="text-xl mb-10 max-w-2xl mx-auto">
-              Junte-se às famílias e profissionais que confiam no TeaPlus.
+              Junte-se às famílias e profissionais que confiam no LudiTEA. {/* NOME ATUALIZADO */}
             </p>
             <a href="/login" className="bg-white text-blue-600 px-8 py-4 rounded-full font-bold shadow-lg hover:bg-blue-50 transition-transform transform hover:-translate-y-1">
               Testar Gratuitamente
@@ -195,14 +208,21 @@ const App = () => {
           </div>
         </section>
       </main>
+
+      {/* ===== RODAPÉ ATUALIZADO ===== */}
       <footer className="bg-slate-900 text-slate-400 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div>
-              <div className="flex items-center space-x-3 mb-4">
-                <img src="/images/Teaplus-logo.png" alt="TeaPlus Logo" className="w-8 h-8" />
-                <span className="text-xl font-bold text-white">TeaPlus</span>
-              </div>
+              {/* Div do logo antigo foi trocada por esta */}
+              <a href="/" className="mb-4 inline-block">
+                <Image
+                  src="/images/simbolo_Luditea_novo.png" // 1. CAMINHO DO NOVO LOGO
+                  alt="Logo LudiTEA"
+                  width={140} // 2. LARGURA AJUSTADA
+                  height={43} // 3. ALTURA AJUSTADA
+                />
+              </a>
               <p className="text-sm">
                 Plataforma brasileira integrada para desenvolvimento neurodivergente, com foco em TEA e TDAH.
               </p>
@@ -240,7 +260,7 @@ const App = () => {
               ))}
             </ul>
             <p className="text-sm text-slate-500 mt-8">
-              © 2025 TeaPlus. Todos os direitos reservados.
+              © 2025 LudiTEA. Todos os direitos reservados. {/* NOME E ANO ATUALIZADOS */}
             </p>
           </div>
         </div>
