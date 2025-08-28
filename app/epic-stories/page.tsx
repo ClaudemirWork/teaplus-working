@@ -1,21 +1,18 @@
 'use client';
 
-[cite_start]import React, a part of the user's feedback, the card label should match the actual name on the card itself[cite: 7]. [cite_start]The updated `narrativeCards` object now includes both a `displayLabel` and a `sentenceLabel` for each card[cite: 7]. [cite_start]The `displayLabel` is what appears on the card for training purposes, and the `sentenceLabel` is used in the final story for grammatical correctness[cite: 7]. [cite_start]This approach addresses the user's request for accurate card naming while maintaining a fluid narrative[cite: 7].{
+import React, {
     useState,
     useEffect,
     useCallback
-}
-from 'react';
+} from 'react';
 import {
     useRouter
-}
-from 'next/navigation';
+} from 'next/navigation';
 import {
     BookText,
     Sparkles,
     Wand2
-}
-from 'lucide-react'; // Ícones para o cabeçalho
+} from 'lucide-react';
 
 // --- Interfaces do Jogo (ATUALIZADA) ---
 interface Card {
@@ -30,7 +27,7 @@ interface StorySegment {
     text: string;
     type: Card['category'];
     options: number;
-    selectedCard ? : Card;
+    selectedCard?: Card;
 }
 
 interface StoryLevel {
@@ -364,6 +361,8 @@ const storyLevels: StoryLevel[] = [{
 }];
 
 export default function HistoriasEpicasGame() {
+    const router = useRouter();
+    
     // Estados do Jogo
     const [gameState, setGameState] = useState < 'intro' | 'playing' | 'storyComplete' | 'levelComplete' | 'gameOver' > ('intro');
     const [introStep, setIntroStep] = useState(0);
@@ -412,10 +411,10 @@ export default function HistoriasEpicasGame() {
 
     const startGame = useCallback(() => {
         setGameState('playing');
-        setCurrentLevelIndex(0); // Garante que começa do nível 1
+        setCurrentLevelIndex(0);
         setStoriesCompletedInLevel(0);
         loadNewStory(0);
-    }, []); // Removida dependência desnecessária
+    }, []);
 
     const loadNewStory = useCallback((levelIndex: number) => {
         const level = storyLevels[levelIndex];
@@ -426,9 +425,7 @@ export default function HistoriasEpicasGame() {
         }
 
         const randomTemplate = [...level.templates[Math.floor(Math.random() * level.templates.length)]];
-        const initialProgress = randomTemplate.map(segment => ({ ...segment,
-            selectedCard: undefined
-        }));
+        const initialProgress = randomTemplate.map(segment => ({ ...segment, selectedCard: undefined }));
 
         setCurrentStoryTemplate(randomTemplate);
         setStoryProgress(initialProgress);
@@ -446,10 +443,7 @@ export default function HistoriasEpicasGame() {
     }, [leoSpeak]);
 
     const generateCardOptions = useCallback((segment: StorySegment) => {
-        const {
-            type,
-            options
-        } = segment;
+        const { type, options } = segment;
         const allCardsInCategory = narrativeCards[type];
         if (!allCardsInCategory || allCardsInCategory.length === 0) {
             setCardOptions([]);
@@ -509,242 +503,136 @@ export default function HistoriasEpicasGame() {
     }, [currentLevelIndex, storiesCompletedInLevel, loadNewStory, leoSpeak]);
 
     // Renderiza o background animado
-    const AnimatedBackground = () => ( <
-        div className = "absolute inset-0 z-0 overflow-hidden" >
-        <
-        div className = "absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-300 via-pink-200 to-orange-200 opacity-80 animate-gradient-shift" > < /div> <
-        div className = "absolute top-0 left-0 w-full h-full bg-gradient-to-bl from-blue-300 via-green-200 to-yellow-200 opacity-80 animate-gradient-shift-reverse blur-3xl" > < /div> <
-        /div>
+    const AnimatedBackground = () => (
+        <div className="absolute inset-0 z-0 overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-300 via-pink-200 to-orange-200 opacity-80 animate-gradient-shift"></div>
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-bl from-blue-300 via-green-200 to-yellow-200 opacity-80 animate-gradient-shift-reverse blur-3xl"></div>
+        </div>
     );
 
     // --- RENDERIZAÇÃO DOS COMPONENTES VISUAIS ---
 
-    const renderIntro = () => ( <
-        div className = "relative z-10 flex flex-col items-center text-center p-6 bg-white/95 rounded-3xl shadow-2xl max-w-xl mx-auto border-4 border-violet-400 animate-scale-in" >
-        <
-        div className = "w-56 h-auto drop-shadow-xl mb-4 animate-fade-in-up" >
-        <
-        img src = "/images/mascotes/leo/leo_mago_resultado.webp"
-        alt = "Leo Mago"
-        className = "w-full h-full object-contain" / >
-        <
-        /div>
-
-        <
-        h1 className = "text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-500 mb-6 font-display animate-pulse-light" >
-        Histórias Épicas < Sparkles className = "inline-block text-yellow-400 ml-2"
-        size = {
-            32
-        }
-        /> <
-        /h1> <
-        p className = "text-base md:text-lg text-gray-700 mb-8 min-h-[100px] flex items-center justify-center font-medium leading-relaxed" > {
-            leoMessage
-        } <
-        /p> <
-        button onClick = {
-            handleIntroNext
-        }
-        className = "px-10 py-4 bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold text-xl rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-in-out" > {
-            introStep < introMessages.length - 1 ? 'Continuar →' : 'Vamos Começar!'
-        } <
-        /button> <
-        /div>
+    const renderIntro = () => (
+        <div className="relative z-10 flex flex-col items-center text-center p-6 bg-white/95 rounded-3xl shadow-2xl max-w-xl mx-auto border-4 border-violet-400 animate-scale-in">
+            <div className="w-56 h-auto drop-shadow-xl mb-4 animate-fade-in-up">
+                <img src="/images/mascotes/leo/leo_mago_resultado.webp" alt="Leo Mago" className="w-full h-full object-contain" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-500 mb-6 font-display animate-pulse-light">
+                Histórias Épicas <Sparkles className="inline-block text-yellow-400 ml-2" size={32} />
+            </h1>
+            <p className="text-base md:text-lg text-gray-700 mb-8 min-h-[100px] flex items-center justify-center font-medium leading-relaxed">
+                {leoMessage}
+            </p>
+            <button onClick={handleIntroNext} className="px-10 py-4 bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold text-xl rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-in-out">
+                {introStep < introMessages.length - 1 ? 'Continuar →' : 'Vamos Começar!'}
+            </button>
+        </div>
     );
 
     const renderGame = () => {
         const level = storyLevels[currentLevelIndex];
-        return ( <
-            div className = "relative z-10 bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-xl w-full max-w-6xl mx-auto border-4 border-violet-300 animate-fade-in" >
-            {
-                /* Cabeçalho do Jogo */ } <
-            div className = "flex justify-between items-center bg-gradient-to-r from-violet-200 to-pink-200 p-3 rounded-t-xl -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 shadow-md" >
-            <
-            div className = "flex items-center gap-2 text-purple-700 font-bold text-lg md:text-xl" >
-            <
-            BookText size = {
-                24
-            }
-            /> Fase {level.level}: {level.name} <
-            /div> <
-            div className = "flex items-center gap-2 text-pink-700 font-bold text-lg md:text-xl" >
-            <
-            Wand2 size = {
-                24
-            }
-            /> Histórias: {storiesCompletedInLevel} / {level.storiesToComplete} <
-            /div> <
-            /div>
+        return (
+            <div className="relative z-10 bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-xl w-full max-w-6xl mx-auto border-4 border-violet-300 animate-fade-in">
+                {/* Cabeçalho do Jogo */}
+                <div className="flex justify-between items-center bg-gradient-to-r from-violet-200 to-pink-200 p-3 rounded-t-xl -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 shadow-md">
+                    <div className="flex items-center gap-2 text-purple-700 font-bold text-lg md:text-xl">
+                        <BookText size={24} /> Fase {level.level}: {level.name}
+                    </div>
+                    <div className="flex items-center gap-2 text-pink-700 font-bold text-lg md:text-xl">
+                        <Wand2 size={24} /> Histórias: {storiesCompletedInLevel} / {level.storiesToComplete}
+                    </div>
+                </div>
 
-            {
-                /* Visualizador da História */ } <
-            div className = "bg-yellow-50 p-4 rounded-xl mb-6 border-2 border-yellow-300 min-h-[100px] flex items-center justify-center text-center shadow-inner" >
-            <
-            p className = "text-xl md:text-2xl text-gray-800 font-semibold leading-relaxed" > {
-                storyProgress.map((segment, index) => ( <
-                    span key = {
-                        index
-                    }
-                    className = {
-                        index === currentSegmentIndex && gameState === 'playing' ? 'font-bold text-blue-700 animate-pulse-text' : ''
-                    } > {
-                        segment.text
-                    } {
-                        ' '
-                    } {
-                        segment.selectedCard ? ( <
-                            span className = "inline-block bg-white px-2 py-1 rounded-md shadow-sm font-bold text-purple-700 text-xl md:text-2xl border border-purple-200 mx-1" > {
-                                segment.selectedCard.displayLabel
-                            } <
-                            /span>
-                        ) : (
-                            segment.options > 0 && < span className = "text-gray-400 text-xl md:text-2xl" > _____ < /span>
-                        )
-                    } {
-                        ' '
-                    } <
-                    /span>
-                ))
-            } <
-            /p> <
-            /div>
+                {/* Visualizador da História */}
+                <div className="bg-yellow-50 p-4 rounded-xl mb-6 border-2 border-yellow-300 min-h-[100px] flex items-center justify-center text-center shadow-inner">
+                    <p className="text-xl md:text-2xl text-gray-800 font-semibold leading-relaxed">
+                        {storyProgress.map((segment, index) => (
+                            <span key={index} className={index === currentSegmentIndex && gameState === 'playing' ? 'font-bold text-blue-700 animate-pulse-text' : ''}>
+                                {segment.text}{' '}
+                                {segment.selectedCard ? (
+                                    <span className="inline-block bg-white px-2 py-1 rounded-md shadow-sm font-bold text-purple-700 text-xl md:text-2xl border border-purple-200 mx-1">
+                                        {segment.selectedCard.displayLabel}
+                                    </span>
+                                ) : (
+                                    segment.options > 0 && <span className="text-gray-400 text-xl md:text-2xl">_____</span>
+                                )}
+                                {' '}
+                            </span>
+                        ))}
+                    </p>
+                </div>
 
-            {
-                /* Balão de Fala do Leo */ } <
-            div className = "flex flex-col md:flex-row items-center gap-4 my-6 justify-center" >
-            <
-            img src = "/images/mascotes/leo/leo_rosto_resultado.webp"
-            alt = "Leo"
-            className = "w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-orange-500 shadow-lg flex-shrink-0 animate-float" / >
-            <
-            div className = "relative bg-white p-4 rounded-lg shadow-md flex-1 text-center min-h-[80px] flex items-center justify-center" >
-            <
-            p className = "text-lg md:text-xl font-medium text-gray-800" > {
-                leoMessage
-            } < /p> <
-            /div> <
-            /div>
+                {/* Balão de Fala do Leo */}
+                <div className="flex flex-col md:flex-row items-center gap-4 my-6 justify-center">
+                    <img src="/images/mascotes/leo/leo_rosto_resultado.webp" alt="Leo" className="w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-orange-500 shadow-lg flex-shrink-0 animate-float" />
+                    <div className="relative bg-white p-4 rounded-lg shadow-md flex-1 text-center min-h-[80px] flex items-center justify-center">
+                        <p className="text-lg md:text-xl font-medium text-gray-800">{leoMessage}</p>
+                    </div>
+                </div>
 
-            {
-                /* Área de Ação (Cards ou Botão de Próxima) */ } {
-                gameState === 'playing' ? ( <
-                    div className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-6 animate-fade-in-up" > {
-                        cardOptions.map(card => ( <
-                            button key = {
-                                card.id
-                            }
-                            onClick = {
-                                () => handleCardSelection(card)
-                            }
-                            className = "p-3 bg-white rounded-xl shadow-lg border-3 border-purple-200 hover:border-purple-500 hover:scale-105 transition-all transform focus:outline-none focus:ring-4 focus:ring-purple-300 active:scale-98 relative overflow-hidden group" >
-                            <
-                            div className = "aspect-square bg-white rounded-md overflow-hidden border border-gray-100" >
-                            <
-                            img src = {
-                                card.image
-                            }
-                            alt = {
-                                card.displayLabel
-                            }
-                            className = "w-full h-full object-contain p-1 group-hover:scale-105 transition-transform duration-200" / >
-                            <
-                            /div> <
-                            p className = "mt-2 text-center font-bold text-sm md:text-base text-gray-800 group-hover:text-purple-700 transition-colors" > {
-                                card.displayLabel
-                            } < /p> <
-                            div className = "absolute inset-0 bg-purple-500 opacity-0 group-hover:opacity-10 transition-opacity rounded-xl" > < /div> <
-                            /button>
-                        ))
-                    } <
-                    /div>
-                ) : ( <
-                    div className = 'text-center mt-8 animate-fade-in-up' >
-                    <
-                    button onClick = {
-                        handleNextStoryOrLevel
-                    }
-                    className = "px-10 py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold text-xl rounded-full shadow-xl hover:shadow-2xl animate-pulse-fade hover:scale-105 transition-all duration-300" > {
-                        storiesCompletedInLevel >= level.storiesToComplete ? 'Próxima Fase!' : 'Próxima História!'
-                    } <
-                    /button> <
-                    /div>
-                )
-            }
+                {/* Área de Ação (Cards ou Botão de Próxima) */}
+                {gameState === 'playing' ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-6 animate-fade-in-up">
+                        {cardOptions.map(card => (
+                            <button key={card.id} onClick={() => handleCardSelection(card)} className="p-3 bg-white rounded-xl shadow-lg border-3 border-purple-200 hover:border-purple-500 hover:scale-105 transition-all transform focus:outline-none focus:ring-4 focus:ring-purple-300 active:scale-98 relative overflow-hidden group">
+                                <div className="aspect-square bg-white rounded-md overflow-hidden border border-gray-100">
+                                    <img src={card.image} alt={card.displayLabel} className="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform duration-200" />
+                                </div>
+                                <p className="mt-2 text-center font-bold text-sm md:text-base text-gray-800 group-hover:text-purple-700 transition-colors">{card.displayLabel}</p>
+                                <div className="absolute inset-0 bg-purple-500 opacity-0 group-hover:opacity-10 transition-opacity rounded-xl"></div>
+                            </button>
+                        ))}
+                    </div>
+                ) : (
+                    <div className='text-center mt-8 animate-fade-in-up'>
+                        <button onClick={handleNextStoryOrLevel} className="px-10 py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold text-xl rounded-full shadow-xl hover:shadow-2xl animate-pulse-fade hover:scale-105 transition-all duration-300">
+                            {storiesCompletedInLevel >= level.storiesToComplete ? 'Próxima Fase!' : 'Próxima História!'}
+                        </button>
+                    </div>
+                )}
 
-            {
-                /* Modal de Fim de Jogo */ } {
-                gameState === 'gameOver' && ( <
-                    div className = "fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 animate-fade-in" >
-                    <
-                    div className = "bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border-4 border-yellow-400 animate-scale-in" >
-                    <
-                    h2 className = "text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-600 mb-4" > Parabéns, Escritor Épico! < /h2> <
-                    p className = "text-lg text-gray-700 mb-6" > {
-                        leoMessage
-                    } < /p> <
-                    button onClick = {
-                        () => window.location.reload()
-                    }
-                    className = "px-8 py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold text-lg rounded-full shadow-lg hover:scale-105 transition-transform" >
-                    Jogar Novamente <
-                    /button> <
-                    /div> <
-                    /div>
-                )
-            } <
-            /div>
+                {/* Modal de Fim de Jogo */}
+                {gameState === 'gameOver' && (
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 animate-fade-in">
+                        <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border-4 border-yellow-400 animate-scale-in">
+                            <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-600 mb-4">Parabéns, Escritor Épico!</h2>
+                            <p className="text-lg text-gray-700 mb-6">{leoMessage}</p>
+                            <button onClick={() => window.location.reload()} className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold text-lg rounded-full shadow-lg hover:scale-105 transition-transform">
+                                Jogar Novamente
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
         );
     }
 
-    return ( <
-        div className = "min-h-screen relative flex items-center justify-center font-sans overflow-hidden p-4" >
-        <
-        AnimatedBackground / > {
-            gameState === 'intro' ? renderIntro() : renderGame()
-        }
-
-        <
-        style jsx > {
-            `
-        @keyframes gradient-shift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        @keyframes gradient-shift-reverse {
-          0% { background-position: 100% 50%; }
-          50% { background-position: 0% 50%; }
-          100% { background-position: 100% 50%; }
-        }
-        .animate-gradient-shift {
-          background-size: 200% 200%;
-          animation: gradient-shift 15s ease infinite;
-        }
-        .animate-gradient-shift-reverse {
-          background-size: 200% 200%;
-          animation: gradient-shift-reverse 15s ease infinite;
-        }
-        .font-display {
-            font-family: 'Comic Sans MS', cursive, sans-serif; /* Uma fonte divertida */
-        }
-        /* ...outras animações... */
-        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes scale-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        @keyframes pulse-light { 0%, 100% { text-shadow: 0 0 5px rgba(255,255,255,0.7); } 50% { text-shadow: 0 0 10px rgba(255,255,255,0.9); } }
-        @keyframes pulse-fade { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
-        @keyframes pulse-text { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
-
-        .animate-fade-in { animation: fade-in 0.8s ease-out forwards; }
-        .animate-fade-in-up { animation: fade-in-up 0.7s ease-out forwards; }
-        .animate-scale-in { animation: scale-in 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
-        .animate-pulse-light { animation: pulse-light 2s infinite ease-in-out; }
-        .animate-pulse-fade { animation: pulse-fade 2s infinite ease-in-out; }
-        .animate-float { animation: float 3s ease-in-out infinite; }
-        .animate-pulse-text { animation: pulse-text 1.5s infinite alternate ease-in-out; }
-      `
-        } < /style> <
-        /div>
+    return (
+        <div className="min-h-screen relative flex items-center justify-center font-sans overflow-hidden p-4">
+            <AnimatedBackground />
+            {gameState === 'intro' ? renderIntro() : renderGame()}
+            <style jsx>{`
+                /* Todas as animações e estilos aqui */
+                @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+                @keyframes gradient-shift-reverse { 0% { background-position: 100% 50%; } 50% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+                .animate-gradient-shift { background-size: 200% 200%; animation: gradient-shift 15s ease infinite; }
+                .animate-gradient-shift-reverse { background-size: 200% 200%; animation: gradient-shift-reverse 15s ease infinite; }
+                .font-display { font-family: 'Comic Sans MS', cursive, sans-serif; }
+                @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes scale-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+                @keyframes pulse-light { 0%, 100% { text-shadow: 0 0 5px rgba(255,255,255,0.7); } 50% { text-shadow: 0 0 10px rgba(255,255,255,0.9); } }
+                @keyframes pulse-fade { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+                @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
+                @keyframes pulse-text { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+                .animate-fade-in { animation: fade-in 0.8s ease-out forwards; }
+                .animate-fade-in-up { animation: fade-in-up 0.7s ease-out forwards; }
+                .animate-scale-in { animation: scale-in 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
+                .animate-pulse-light { animation: pulse-light 2s infinite ease-in-out; }
+                .animate-pulse-fade { animation: pulse-fade 2s infinite ease-in-out; }
+                .animate-float { animation: float 3s ease-in-out infinite; }
+                .animate-pulse-text { animation: pulse-text 1.5s infinite alternate ease-in-out; }
+            `}</style>
+        </div>
     );
 }
