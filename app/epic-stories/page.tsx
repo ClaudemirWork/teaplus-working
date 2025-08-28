@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image'; // Importação do componente de Imagem do Next.js
+import Image from 'next/image';
 import { BookText, Sparkles, Wand2 } from 'lucide-react';
 
 // --- Interfaces do Jogo ---
@@ -13,7 +13,6 @@ interface Card {
     category: 'personagens' | 'acoes' | 'emocoes' | 'lugares' | 'objetos' | 'tempo';
 }
 
-// ... (O restante das interfaces e dos bancos de dados de cards e histórias permanece o mesmo)
 interface StorySegment {
     text: string;
     type: Card['category'];
@@ -28,6 +27,7 @@ interface StoryLevel {
     templates: StorySegment[][];
 }
 
+// --- BANCO DE CARDS NARRATIVOS (MAPEAMENTO FIEL E AUDITADO) ---
 const narrativeCards: { [key in Card['category']]: Card[] } = {
     personagens: [
         { id: 'cachorro', displayLabel: 'Cachorro', sentenceLabel: 'um cachorro', image: '/images/cards/animais/cachorro.webp', category: 'personagens' },
@@ -90,9 +90,8 @@ const storyLevels: StoryLevel[] = [
     }
 ];
 
-
 export default function HistoriasEpicasGame() {
-    const [gameState, setGameState] = useState<'titleScreen' | 'intro' | 'playing' | 'storyComplete' | 'levelComplete' | 'gameOver'>('titleScreen');
+    const [gameState, setGameState] = useState<'intro' | 'playing' | 'storyComplete' | 'levelComplete' | 'gameOver'>('intro');
     const [introStep, setIntroStep] = useState(0);
     const [leoMessage, setLeoMessage] = useState('');
     const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
@@ -109,7 +108,6 @@ export default function HistoriasEpicasGame() {
         "Vamos comigo, escrever histórias lindas?"
     ];
 
-    // --- FUNÇÕES DE CONTROLE DO JOGO ---
     const leoSpeak = useCallback((message: string) => {
         setLeoMessage(message);
         if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -120,13 +118,13 @@ export default function HistoriasEpicasGame() {
             window.speechSynthesis.speak(utterance);
         }
     }, []);
-    
-    const handleStartIntro = () => {
-        setGameState('intro');
-        leoSpeak(introMessages[0]);
-    };
-    
-    // ... (Restante das funções de controle do jogo permanecem as mesmas)
+
+    useEffect(() => {
+        if (gameState === 'intro') {
+            leoSpeak(introMessages[0]);
+        }
+    }, [gameState, leoSpeak]);
+
     const handleIntroNext = () => {
         const nextStep = introStep + 1;
         if (nextStep < introMessages.length) {
@@ -136,12 +134,14 @@ export default function HistoriasEpicasGame() {
             startGame();
         }
     };
+
     const startGame = useCallback(() => {
         setGameState('playing');
         setCurrentLevelIndex(0);
         setStoriesCompletedInLevel(0);
         loadNewStory(0);
     }, []);
+
     const loadNewStory = useCallback((levelIndex: number) => {
         const level = storyLevels[levelIndex];
         if (!level) {
@@ -163,6 +163,7 @@ export default function HistoriasEpicasGame() {
         const firstSegmentText = randomTemplate[0] ? randomTemplate[0].text : "Começando...";
         leoSpeak(`Vamos criar uma nova história! ${firstSegmentText}...`);
     }, [leoSpeak]);
+
     const generateCardOptions = useCallback((segment: StorySegment) => {
         const { type, options } = segment;
         const allCardsInCategory = narrativeCards[type];
@@ -173,6 +174,7 @@ export default function HistoriasEpicasGame() {
         const shuffled = [...allCardsInCategory].sort(() => 0.5 - Math.random());
         setCardOptions(shuffled.slice(0, options));
     }, []);
+
     const handleCardSelection = (card: Card) => {
         if (gameState !== 'playing') return;
         const updatedProgress = [...storyProgress];
@@ -197,6 +199,7 @@ export default function HistoriasEpicasGame() {
             }
         }
     };
+
     const handleNextStoryOrLevel = useCallback(() => {
         const level = storyLevels[currentLevelIndex];
         if (storiesCompletedInLevel >= level.storiesToComplete) {
@@ -215,42 +218,17 @@ export default function HistoriasEpicasGame() {
         }
     }, [currentLevelIndex, storiesCompletedInLevel, loadNewStory, leoSpeak]);
 
-
-    // --- RENDERIZAÇÃO ---
-
-    const renderTitleScreen = () => (
-        <div className="title-screen-container">
-            <div className="stars"></div>
-            <div className="twinkling"></div>
-            <div className="content">
-                {/* A tag 'priority' avisa o Next.js para carregar esta imagem primeiro */}
-                <Image 
-                    src="/images/mascotes/leo/leo_mago_resultado.webp" 
-                    alt="Leo Mago" 
-                    width={350} 
-                    height={350} 
-                    className="leo-mago-main"
-                    priority 
-                />
-                <h1 className="title-text">Histórias Épicas</h1>
-                <p className="subtitle-text">Uma aventura de criação e fantasia</p>
-                <button onClick={handleStartIntro} className="cta-button">
-                    Começar Aventura
-                </button>
-            </div>
+    const AnimatedBackground = () => (
+        <div className="absolute inset-0 z-[-1] overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-300 via-pink-200 to-orange-200 opacity-80 animate-gradient-shift"></div>
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-bl from-blue-300 via-green-200 to-yellow-200 opacity-80 animate-gradient-shift-reverse blur-3xl"></div>
         </div>
     );
-    
+
     const renderIntro = () => (
-        <div className="relative z-10 flex flex-col items-center text-center p-6 bg-white/95 rounded-3xl shadow-2xl max-w-xl mx-auto border-4 border-violet-400">
-             <div className="w-48 h-auto drop-shadow-xl mb-4">
-                <Image 
-                    src="/images/mascotes/leo/leo_mago_resultado.webp" 
-                    alt="Leo Mago" 
-                    width={200} 
-                    height={200} 
-                    className="w-full h-full object-contain"
-                />
+        <div className="flex flex-col items-center text-center p-6 bg-white/95 rounded-3xl shadow-2xl max-w-xl mx-auto border-4 border-violet-400 animate-scale-in">
+            <div className="w-48 h-auto drop-shadow-xl mb-4">
+                <Image src="/images/mascotes/leo/leo_mago_resultado.webp" alt="Leo Mago" width={200} height={200} className="w-full h-full object-contain" priority/>
             </div>
             <h1 className="text-3xl font-bold text-orange-600 mb-4">Como Jogar</h1>
             <p className="text-base text-gray-700 mb-8 min-h-[100px] flex items-center justify-center">{leoMessage}</p>
@@ -263,27 +241,17 @@ export default function HistoriasEpicasGame() {
     const renderGame = () => {
         const level = storyLevels[currentLevelIndex];
         return (
-            <div className="relative z-10 bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-xl w-full max-w-6xl mx-auto border-4 border-violet-300">
-                <div className="flex justify-between items-center bg-gradient-to-r from-violet-200 to-pink-200 p-3 rounded-t-xl -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 shadow-md">
-                    <div className="flex items-center gap-2 text-purple-700 font-bold text-lg md:text-xl">
-                        <BookText size={24} /> Fase {level.level}: {level.name}
-                    </div>
-                    <div className="flex items-center gap-2 text-pink-700 font-bold text-lg md:text-xl">
-                        <Wand2 size={24} /> Histórias: {storiesCompletedInLevel} / {level.storiesToComplete}
-                    </div>
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-xl w-full max-w-6xl mx-auto border-4 border-violet-300 animate-fade-in">
+                <div className="flex justify-between items-center bg-gradient-to-r from-violet-200 to-pink-200 p-3 rounded-t-xl -m-4 md:-m-6 mb-6 shadow-md">
+                    <div className="flex items-center gap-2 text-purple-700 font-bold text-lg md:text-xl"><BookText size={24} /> Fase {level.level}: {level.name}</div>
+                    <div className="flex items-center gap-2 text-pink-700 font-bold text-lg md:text-xl"><Wand2 size={24} /> Histórias: {storiesCompletedInLevel} / {level.storiesToComplete}</div>
                 </div>
                 <div className="bg-yellow-50 p-4 rounded-xl mb-6 border-2 border-yellow-300 min-h-[100px] flex items-center justify-center text-center shadow-inner">
                     <p className="text-xl md:text-2xl text-gray-800 font-semibold leading-relaxed">
                         {storyProgress.map((segment, index) => (
                             <span key={index} className={index === currentSegmentIndex && gameState === 'playing' ? 'font-bold text-blue-700 animate-pulse-text' : ''}>
                                 {segment.text}{' '}
-                                {segment.selectedCard ? (
-                                    <span className="inline-block bg-white px-2 py-1 rounded-md shadow-sm font-bold text-purple-700 text-xl md:text-2xl border border-purple-200 mx-1">
-                                        {segment.selectedCard.displayLabel}
-                                    </span>
-                                ) : (
-                                    segment.options > 0 && <span className="text-gray-400 text-xl md:text-2xl">_____</span>
-                                )}
+                                {segment.selectedCard ? (<span className="inline-block bg-white px-2 py-1 rounded-md shadow-sm font-bold text-purple-700 text-xl md:text-2xl border border-purple-200 mx-1">{segment.selectedCard.displayLabel}</span>) : (segment.options > 0 && <span className="text-gray-400 text-xl md:text-2xl">_____</span>)}
                                 {' '}
                             </span>
                         ))}
@@ -291,13 +259,7 @@ export default function HistoriasEpicasGame() {
                 </div>
                 <div className="flex flex-col md:flex-row items-center gap-4 my-6 justify-center">
                     <div className="w-28 h-28 md:w-36 md:h-36 relative flex-shrink-0">
-                        <Image 
-                            src="/images/mascotes/leo/leo_rosto_resultado.webp" 
-                            alt="Leo"
-                            fill
-                            sizes="(max-width: 768px) 112px, 144px"
-                            className="rounded-full border-4 border-orange-500 shadow-lg animate-float" 
-                        />
+                        <Image src="/images/mascotes/leo/leo_rosto_resultado.webp" alt="Leo" fill sizes="(max-width: 768px) 112px, 144px" className="rounded-full border-4 border-orange-500 shadow-lg animate-float" />
                     </div>
                     <div className="relative bg-white p-4 rounded-lg shadow-md flex-1 text-center min-h-[80px] flex items-center justify-center">
                         <p className="text-lg md:text-xl font-medium text-gray-800">{leoMessage}</p>
@@ -308,16 +270,9 @@ export default function HistoriasEpicasGame() {
                         {cardOptions.map(card => (
                             <button key={card.id} onClick={() => handleCardSelection(card)} className="p-3 bg-white rounded-xl shadow-lg border-3 border-purple-200 hover:border-purple-500 hover:scale-105 transition-all transform focus:outline-none focus:ring-4 focus:ring-purple-300 active:scale-98 relative overflow-hidden group">
                                 <div className="aspect-square relative bg-white rounded-md overflow-hidden border border-gray-100">
-                                    <Image 
-                                        src={card.image} 
-                                        alt={card.displayLabel}
-                                        fill
-                                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-                                        className="object-contain p-1 group-hover:scale-105 transition-transform duration-200" 
-                                    />
+                                    <Image src={card.image} alt={card.displayLabel} fill sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw" className="object-contain p-1 group-hover:scale-105 transition-transform duration-200" />
                                 </div>
                                 <p className="mt-2 text-center font-bold text-sm md:text-base text-gray-800 group-hover:text-purple-700 transition-colors">{card.displayLabel}</p>
-                                <div className="absolute inset-0 bg-purple-500 opacity-0 group-hover:opacity-10 transition-opacity rounded-xl"></div>
                             </button>
                         ))}
                     </div>
@@ -332,19 +287,18 @@ export default function HistoriasEpicasGame() {
         );
     }
     
-    const renderContent = () => {
-        switch (gameState) {
-            case 'titleScreen': return renderTitleScreen();
-            case 'intro': return renderIntro();
-            default: return renderGame();
-        }
-    };
-    
     return (
-        <div className="min-h-screen relative font-sans overflow-hidden flex justify-center items-center">
-            {renderContent()}
+        <div className="min-h-screen relative font-sans overflow-hidden flex justify-center items-center p-4">
+            <AnimatedBackground />
+            {gameState === 'intro' ? renderIntro() : renderGame()}
+
             <style jsx global>{`
-                /* ... (Todos os estilos e animações da versão anterior permanecem aqui) ... */
+                /* Adicionando animações globais para reutilização */
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes scale-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+                .animate-fade-in { animation: fadeIn 0.8s ease-out forwards; }
+                .animate-scale-in { animation: scale-in 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
+                /* ...outras animações... */
             `}</style>
         </div>
     );
