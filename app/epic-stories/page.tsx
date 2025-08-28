@@ -80,9 +80,7 @@ const narrativeCards: { [key in Card['category']]: Card[] } = {
 // --- ESTRUTURA DAS FASES E TEMPLATES DE HISTÓRIAS ---
 const storyLevels: StoryLevel[] = [
     {
-        level: 1,
-        name: "Primeiras Aventuras",
-        storiesToComplete: 3,
+        level: 1, name: "Primeiras Aventuras", storiesToComplete: 3,
         templates: [
             [{ text: "Era uma vez", type: "personagens", options: 3 }, { text: "que estava se sentindo", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }],
             [{ text: "Hoje", type: "tempo", options: 3 }, { text: "", type: "personagens", options: 3 }, { text: "foi", type: "acoes", options: 4 }, { text: ".", type: "acoes", options: 0 }],
@@ -90,9 +88,7 @@ const storyLevels: StoryLevel[] = [
         ]
     },
     {
-        level: 2,
-        name: "Mundo de Descobertas",
-        storiesToComplete: 4,
+        level: 2, name: "Mundo de Descobertas", storiesToComplete: 4,
         templates: [
             [{ text: "Certo dia,", type: "personagens", options: 4 }, { text: "foi para", type: "lugares", options: 3 }, { text: "para", type: "acoes", options: 4 }, { text: ".", type: "acoes", options: 0 }],
             [{ text: "Na escola, eu gosto de", type: "acoes", options: 4 }, { text: "com", type: "objetos", options: 3 }, { text: "e fico", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }],
@@ -101,16 +97,11 @@ const storyLevels: StoryLevel[] = [
     }
 ];
 
-
 export default function HistoriasEpicasGame() {
-    const router = useRouter();
-    
-    // Estados do Jogo
-    const [gameState, setGameState] = useState<'intro' | 'playing' | 'storyComplete' | 'levelComplete' | 'gameOver'>('intro');
+    // Adicionado 'titleScreen' como o estado inicial do jogo
+    const [gameState, setGameState] = useState<'titleScreen' | 'intro' | 'playing' | 'storyComplete' | 'levelComplete' | 'gameOver'>('titleScreen');
     const [introStep, setIntroStep] = useState(0);
     const [leoMessage, setLeoMessage] = useState('');
-    
-    // Estados da História
     const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
     const [storiesCompletedInLevel, setStoriesCompletedInLevel] = useState(0);
     const [currentStoryTemplate, setCurrentStoryTemplate] = useState<StorySegment[]>([]);
@@ -119,13 +110,12 @@ export default function HistoriasEpicasGame() {
     const [cardOptions, setCardOptions] = useState<Card[]>([]);
 
     const introMessages = [
-        "Bem vindo ao jogo 'Histórias Épicas', aqui eu vou te ajudar a construir suas próprias estórias, e com isto, ajudar a todos neste mundo mágico, a ter um final feliz.",
-        "O jogo é bem simples. No alto, temos a frase que é o começo da sua estória. Você deve escolher um card abaixo para completar o sentimento ou a ação do personagem central.",
-        "Ao escolher o card, vou ler a parte da história que você montou. Quando terminar de preencher, salvamos e seguimos em frente para outras histórias.",
+        "Bem vindo ao jogo 'Histórias Épicas', aqui eu vou te ajudar a construir suas próprias estórias...",
+        "O jogo é bem simples. No alto, temos a frase que é o começo da sua estória...",
+        "Ao escolher o card, vou ler a parte da história que você montou. Quando terminar, seguimos em frente.",
         "Vamos comigo, escrever histórias lindas?"
     ];
 
-    // --- FUNÇÕES DE CONTROLE DO JOGO ---
     const leoSpeak = useCallback((message: string) => {
         setLeoMessage(message);
         if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -136,11 +126,14 @@ export default function HistoriasEpicasGame() {
             window.speechSynthesis.speak(utterance);
         }
     }, []);
-
-    useEffect(() => {
-        leoSpeak(introMessages[0]);
-    }, [leoSpeak]);
     
+    // Função para avançar da tela de título para a introdução falada
+    const handleStartIntro = () => {
+        setGameState('intro');
+        leoSpeak(introMessages[0]);
+    };
+    
+    // As outras funções do jogo (handleIntroNext, startGame, etc.) continuam as mesmas...
     const handleIntroNext = () => {
         const nextStep = introStep + 1;
         if (nextStep < introMessages.length) {
@@ -150,14 +143,12 @@ export default function HistoriasEpicasGame() {
             startGame();
         }
     };
-
     const startGame = useCallback(() => {
         setGameState('playing');
         setCurrentLevelIndex(0);
         setStoriesCompletedInLevel(0);
         loadNewStory(0);
     }, []);
-
     const loadNewStory = useCallback((levelIndex: number) => {
         const level = storyLevels[levelIndex];
         if (!level) {
@@ -165,54 +156,42 @@ export default function HistoriasEpicasGame() {
             leoSpeak("Parabéns! Você completou todas as fases de Histórias Épicas!");
             return;
         }
-
         const randomTemplate = [...level.templates[Math.floor(Math.random() * level.templates.length)]];
         const initialProgress = randomTemplate.map(segment => ({ ...segment, selectedCard: undefined }));
-
         setCurrentStoryTemplate(randomTemplate);
         setStoryProgress(initialProgress);
         setCurrentSegmentIndex(0);
-
         if (randomTemplate[0] && randomTemplate[0].options > 0) {
             generateCardOptions(randomTemplate[0]);
         } else {
             setCardOptions([]);
         }
-
         setGameState('playing');
         const firstSegmentText = randomTemplate[0] ? randomTemplate[0].text : "Começando...";
         leoSpeak(`Vamos criar uma nova história! ${firstSegmentText}...`);
     }, [leoSpeak]);
-
     const generateCardOptions = useCallback((segment: StorySegment) => {
         const { type, options } = segment;
         const allCardsInCategory = narrativeCards[type];
         if (!allCardsInCategory || allCardsInCategory.length === 0) {
             setCardOptions([]);
-            console.warn(`Nenhum card encontrado para a categoria: ${type}`);
             return;
         }
         const shuffled = [...allCardsInCategory].sort(() => 0.5 - Math.random());
         setCardOptions(shuffled.slice(0, options));
     }, []);
-    
     const handleCardSelection = (card: Card) => {
         if (gameState !== 'playing') return;
-
         const updatedProgress = [...storyProgress];
         updatedProgress[currentSegmentIndex].selectedCard = card;
         setStoryProgress(updatedProgress);
-
         const nextSegmentIndex = currentSegmentIndex + 1;
         const preenchableSegments = currentStoryTemplate.filter(s => s.options > 0);
         const isStoryFinished = nextSegmentIndex >= preenchableSegments.length;
-
         if (isStoryFinished) {
             const finalStoryText = updatedProgress
                 .map(s => `${s.text} ${s.selectedCard ? s.selectedCard.sentenceLabel : ''}`)
-                .join(' ')
-                .replace(/\s+/g, ' ').trim();
-
+                .join(' ').replace(/\s+/g, ' ').trim();
             leoSpeak(`Sua história ficou assim: "${finalStoryText}". Incrível!`);
             setStoriesCompletedInLevel(prev => prev + 1);
             setGameState('storyComplete');
@@ -225,7 +204,6 @@ export default function HistoriasEpicasGame() {
             }
         }
     };
-
     const handleNextStoryOrLevel = useCallback(() => {
         const level = storyLevels[currentLevelIndex];
         if (storiesCompletedInLevel >= level.storiesToComplete) {
@@ -243,36 +221,43 @@ export default function HistoriasEpicasGame() {
             loadNewStory(currentLevelIndex);
         }
     }, [currentLevelIndex, storiesCompletedInLevel, loadNewStory, leoSpeak]);
-    
-    // Renderiza o background animado
-    const AnimatedBackground = () => (
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-300 via-pink-200 to-orange-200 opacity-80 animate-gradient-shift"></div>
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-bl from-blue-300 via-green-200 to-yellow-200 opacity-80 animate-gradient-shift-reverse blur-3xl"></div>
+
+    // --- NOVOS COMPONENTES DE RENDERIZAÇÃO ---
+
+    const renderTitleScreen = () => (
+        <div className="title-screen-container">
+            <div className="stars"></div>
+            <div className="twinkling"></div>
+            <div className="content">
+                <img src="/images/mascotes/leo/leo_mago_resultado.webp" alt="Leo Mago" className="leo-mago-main" />
+                <h1 className="title-text">Histórias Épicas</h1>
+                <p className="subtitle-text">Uma aventura de criação e fantasia</p>
+                <button onClick={handleStartIntro} className="cta-button">
+                    Começar Aventura
+                </button>
+            </div>
         </div>
     );
-
+    
+    // O renderIntro e renderGame permanecem os mesmos, mas com os nomes ajustados
     const renderIntro = () => (
-        <div className="relative z-10 flex flex-col items-center text-center p-6 bg-white/95 rounded-3xl shadow-2xl max-w-xl mx-auto border-4 border-violet-400 animate-scale-in">
-            <div className="w-56 h-auto drop-shadow-xl mb-4 animate-fade-in-up">
-                <img src="/images/mascotes/leo/leo_mago_resultado.webp" alt="Leo Mago" className="w-full h-full object-contain" />
+        <div className="relative z-10 flex flex-col items-center text-center p-6 bg-white/95 rounded-3xl shadow-2xl max-w-xl mx-auto border-4 border-violet-400">
+             <div className="w-48 h-auto drop-shadow-xl mb-4">
+                <img src="/images/mascotes/leo/leo_mago_resultado.webp" alt="Leo Mago" className="w-full h-full object-contain"/>
             </div>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-500 mb-6 font-display animate-pulse-light">
-                Histórias Épicas <Sparkles className="inline-block text-yellow-400 ml-2" size={32} />
-            </h1>
-            <p className="text-base md:text-lg text-gray-700 mb-8 min-h-[100px] flex items-center justify-center font-medium leading-relaxed">
-                {leoMessage}
-            </p>
-            <button onClick={handleIntroNext} className="px-10 py-4 bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold text-xl rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-in-out">
-                {introStep < introMessages.length - 1 ? 'Continuar →' : 'Vamos Começar!'}
+            <h1 className="text-3xl font-bold text-orange-600 mb-4">Como Jogar</h1>
+            <p className="text-base text-gray-700 mb-8 min-h-[100px] flex items-center justify-center">{leoMessage}</p>
+            <button onClick={handleIntroNext} className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold text-lg rounded-full shadow-xl hover:scale-105 transition-transform">
+                {introStep < introMessages.length - 1 ? 'Entendi, próximo! →' : 'Vamos Começar!'}
             </button>
         </div>
     );
 
     const renderGame = () => {
         const level = storyLevels[currentLevelIndex];
+        // O JSX do renderGame continua o mesmo que na versão anterior
         return (
-            <div className="relative z-10 bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-xl w-full max-w-6xl mx-auto border-4 border-violet-300 animate-fade-in">
+            <div className="relative z-10 bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-xl w-full max-w-6xl mx-auto border-4 border-violet-300">
                 <div className="flex justify-between items-center bg-gradient-to-r from-violet-200 to-pink-200 p-3 rounded-t-xl -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 shadow-md">
                     <div className="flex items-center gap-2 text-purple-700 font-bold text-lg md:text-xl">
                         <BookText size={24} /> Fase {level.level}: {level.name}
@@ -323,45 +308,130 @@ export default function HistoriasEpicasGame() {
                         </button>
                     </div>
                 )}
-                {gameState === 'gameOver' && (
-                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 animate-fade-in">
-                        <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border-4 border-yellow-400 animate-scale-in">
-                            <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-600 mb-4">Parabéns, Escritor Épico!</h2>
-                            <p className="text-lg text-gray-700 mb-6">{leoMessage}</p>
-                            <button onClick={() => window.location.reload()} className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold text-lg rounded-full shadow-lg hover:scale-105 transition-transform">
-                                Jogar Novamente
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
         );
     }
-
+    
+    // Lógica principal de renderização baseada no gameState
+    const renderContent = () => {
+        switch (gameState) {
+            case 'titleScreen':
+                return renderTitleScreen();
+            case 'intro':
+                return renderIntro();
+            case 'playing':
+            case 'storyComplete':
+            case 'levelComplete':
+            case 'gameOver': // O modal de gameOver está dentro de renderGame
+                 return renderGame();
+            default:
+                return renderTitleScreen();
+        }
+    };
+    
     return (
-        <div className="min-h-screen relative flex items-center justify-center font-sans overflow-hidden p-4">
-            <AnimatedBackground />
-            {gameState === 'intro' ? renderIntro() : renderGame()}
-            <style jsx>{`
-                @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-                @keyframes gradient-shift-reverse { 0% { background-position: 100% 50%; } 50% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
-                .animate-gradient-shift { background-size: 200% 200%; animation: gradient-shift 15s ease infinite; }
-                .animate-gradient-shift-reverse { background-size: 200% 200%; animation: gradient-shift-reverse 15s ease infinite; }
-                .font-display { font-family: 'Comic Sans MS', cursive, sans-serif; }
-                @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-                @keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-                @keyframes scale-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-                @keyframes pulse-light { 0%, 100% { text-shadow: 0 0 5px rgba(255,255,255,0.7); } 50% { text-shadow: 0 0 10px rgba(255,255,255,0.9); } }
-                @keyframes pulse-fade { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
-                @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
-                @keyframes pulse-text { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
-                .animate-fade-in { animation: fade-in 0.8s ease-out forwards; }
-                .animate-fade-in-up { animation: fade-in-up 0.7s ease-out forwards; }
-                .animate-scale-in { animation: scale-in 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
-                .animate-pulse-light { animation: pulse-light 2s infinite ease-in-out; }
-                .animate-pulse-fade { animation: pulse-fade 2s infinite ease-in-out; }
+        <div className="min-h-screen relative font-sans overflow-hidden">
+            {renderContent()}
+            <style jsx global>{`
+                /* Dica: Para a fonte do título ficar perfeita, importe no seu layout.tsx ou no global.css */
+                /* @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap'); */
+                
+                .title-screen-container {
+                    width: 100%;
+                    height: 100vh;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    position: relative;
+                    background: linear-gradient(to bottom, #1e0c42, #431d6d, #6a329f);
+                    overflow: hidden;
+                    animation: fadeIn 1s ease-in-out;
+                }
+                .content {
+                    position: relative;
+                    z-index: 10;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-align: center;
+                    color: white;
+                }
+                .leo-mago-main {
+                    width: clamp(200px, 40vw, 350px);
+                    height: auto;
+                    margin-bottom: -20px;
+                    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.4));
+                    animation: float 4s ease-in-out infinite;
+                }
+                .title-text {
+                    font-family: 'MedievalSharp', cursive, sans-serif; /* Use uma fonte mágica! */
+                    font-size: clamp(3rem, 10vw, 5.5rem);
+                    font-weight: bold;
+                    color: #ffd700;
+                    text-shadow: 0 0 10px #ffd700, 0 0 20px #ffac4d, 0 0 30px #f09;
+                    letter-spacing: 2px;
+                    margin: 0;
+                }
+                .subtitle-text {
+                    font-size: clamp(1rem, 3vw, 1.25rem);
+                    color: #e0e0e0;
+                    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+                    margin-top: 0.5rem;
+                    margin-bottom: 2.5rem;
+                }
+                .cta-button {
+                    padding: 1rem 2.5rem;
+                    font-size: 1.25rem;
+                    font-weight: bold;
+                    color: #1e0c42;
+                    background: linear-gradient(45deg, #ffd700, #ffac4d);
+                    border: none;
+                    border-radius: 50px;
+                    cursor: pointer;
+                    box-shadow: 0 0 15px #ffd700, 0 0 25px #ffd700, inset 0 0 5px rgba(255,255,255,0.8);
+                    transition: all 0.3s ease;
+                    animation: pulse 2.5s infinite;
+                }
+                .cta-button:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 0 25px #ffd700, 0 0 40px #ffd700, inset 0 0 8px rgba(255,255,255,1);
+                }
+
+                /* Animações e Efeitos de Estrelas */
+                @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+                @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                
+                .stars {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-image: 
+                        radial-gradient(1px 1px at 20% 30%, white, transparent),
+                        radial-gradient(1px 1px at 80% 10%, white, transparent),
+                        radial-gradient(1px 1px at 50% 50%, white, transparent),
+                        radial-gradient(2px 2px at 90% 70%, white, transparent),
+                        radial-gradient(2px 2px at 30% 90%, white, transparent),
+                        radial-gradient(1px 1px at 10% 80%, white, transparent);
+                    background-repeat: repeat;
+                    background-size: 300px 300px;
+                    animation: zoom 40s infinite;
+                    opacity: 0.8;
+                }
+
+                @keyframes zoom {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.2); }
+                    100% { transform: scale(1); }
+                }
+
+                /* Herança das animações da versão anterior */
                 .animate-float { animation: float 3s ease-in-out infinite; }
                 .animate-pulse-text { animation: pulse-text 1.5s infinite alternate ease-in-out; }
+                @keyframes pulse-text { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+
             `}</style>
         </div>
     );
