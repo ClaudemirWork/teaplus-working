@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { BookText, Sparkles, Wand2 } from 'lucide-react';
 
-// --- Interfaces do Jogo (ATUALIZADA) ---
+// --- Interfaces do Jogo ---
 interface Card {
     id: string;
-    displayLabel: string; // O que aparece no card (ex: "Gato")
-    sentenceLabel: string; // O que vai para a frase (ex: "um gato")
+    displayLabel: string;
+    sentenceLabel: string;
     image: string;
     category: 'personagens' | 'acoes' | 'emocoes' | 'lugares' | 'objetos' | 'tempo';
 }
@@ -27,17 +26,15 @@ interface StoryLevel {
     templates: StorySegment[][];
 }
 
-// --- BANCO DE CARDS NARRATIVOS (VALIDADO COM SUA LISTA DE ARQUIVOS) ---
+// --- BANCO DE CARDS NARRATIVOS (MAPEAMENTO FIEL E AUDITADO) ---
+// Usando apenas cards da sua lista "allCardsData"
 const narrativeCards: { [key in Card['category']]: Card[] } = {
     personagens: [
         { id: 'cachorro', displayLabel: 'Cachorro', sentenceLabel: 'um cachorro', image: '/images/cards/animais/cachorro.webp', category: 'personagens' },
         { id: 'gato', displayLabel: 'Gato', sentenceLabel: 'um gato', image: '/images/cards/animais/gato.webp', category: 'personagens' },
         { id: 'cavalo', displayLabel: 'Cavalo', sentenceLabel: 'um cavalo', image: '/images/cards/animais/cavalo.webp', category: 'personagens' },
-        { id: 'menina', displayLabel: 'Menina', sentenceLabel: 'uma menina', image: '/images/cards/pessoas/menina.webp', category: 'personagens' },
-        { id: 'menino', displayLabel: 'Menino', sentenceLabel: 'um menino', image: '/images/cards/pessoas/menino.webp', category: 'personagens' },
         { id: 'eu', displayLabel: 'Eu', sentenceLabel: 'eu', image: '/images/cards/core/eu.webp', category: 'personagens' },
         { id: 'voce', displayLabel: 'Você', sentenceLabel: 'você', image: '/images/cards/core/voce.webp', category: 'personagens' },
-        { id: 'amigo', displayLabel: 'Amigo', sentenceLabel: 'um amigo', image: '/images/cards/pessoas/amigo.webp', category: 'personagens' },
     ],
     acoes: [
         { id: 'brincar', displayLabel: 'Brincar', sentenceLabel: 'brincar', image: '/images/cards/rotina/brincar.webp', category: 'acoes' },
@@ -50,24 +47,21 @@ const narrativeCards: { [key in Card['category']]: Card[] } = {
         { id: 'comer', displayLabel: 'Comer', sentenceLabel: 'comer', image: '/images/cards/acoes/mastigar.webp', category: 'acoes' },
     ],
     emocoes: [
-        { id: 'feliz', displayLabel: 'Feliz', sentenceLabel: 'feliz', image: '/images/cards/acoes/saltar.webp', category: 'emocoes' }, // Ação representativa
-        { id: 'triste', displayLabel: 'Triste', sentenceLabel: 'triste', image: '/images/cards/acoes/pensar.webp', category: 'emocoes' }, // Ação representativa
-        { id: 'bravo', displayLabel: 'Bravo', sentenceLabel: 'bravo', image: '/images/cards/acoes/gritar.webp', category: 'emocoes' }, // Ação representativa
-        { id: 'surpreso', displayLabel: 'Surpreso', sentenceLabel: 'surpreso', image: '/images/cards/descritivo/surpreso.webp', category: 'emocoes' },
-        { id: 'animado', displayLabel: 'Animado', sentenceLabel: 'animado', image: '/images/cards/acoes/aplaudir.webp', category: 'emocoes' }, // Ação representativa
+        { id: 'saltar', displayLabel: 'Saltar', sentenceLabel: 'saltar de alegria', image: '/images/cards/acoes/saltar.webp', category: 'emocoes' },
+        { id: 'pensar', displayLabel: 'Pensar', sentenceLabel: 'ficar pensativo(a)', image: '/images/cards/acoes/Pensar.webp', category: 'emocoes' },
+        { id: 'gritar', displayLabel: 'Gritar', sentenceLabel: 'gritar de raiva', image: '/images/cards/acoes/gritar.webp', category: 'emocoes' },
+        { id: 'aplaudir', displayLabel: 'Aplaudir', sentenceLabel: 'aplaudir animadamente', image: '/images/cards/acoes/aplaudir.webp', category: 'emocoes' },
     ],
     lugares: [
         { id: 'sofa', displayLabel: 'Sofá', sentenceLabel: 'no sofá', image: '/images/cards/casa/sofa.webp', category: 'lugares' },
         { id: 'cama', displayLabel: 'Cama', sentenceLabel: 'na cama', image: '/images/cards/casa/cama.webp', category: 'lugares' },
-        { id: 'parque', displayLabel: 'Parque', sentenceLabel: 'no parque', image: '/images/cards/lugares/parque.webp', category: 'lugares' },
-        { id: 'jardim', displayLabel: 'Jardim', sentenceLabel: 'no jardim', image: '/images/cards/casa/jardim.webp', category: 'lugares' },
+        { id: 'mesa', displayLabel: 'Mesa', sentenceLabel: 'na mesa', image: '/images/cards/casa/mesa.webp', category: 'lugares' },
     ],
     objetos: [
         { id: 'livro', displayLabel: 'Livro', sentenceLabel: 'o livro', image: '/images/cards/escola/livro.webp', category: 'objetos' },
         { id: 'maca', displayLabel: 'Maçã', sentenceLabel: 'a maçã', image: '/images/cards/alimentos/maca.webp', category: 'objetos' },
-        { id: 'mesa', displayLabel: 'Mesa', sentenceLabel: 'a mesa', image: '/images/cards/casa/mesa.webp', category: 'objetos' },
-        { id: 'bola', displayLabel: 'Bola', sentenceLabel: 'a bola', image: '/images/cards/brinquedos/bola.webp', category: 'objetos' },
         { id: 'lapis', displayLabel: 'Lápis', sentenceLabel: 'o lápis', image: '/images/cards/escola/lapis.webp', category: 'objetos' },
+        { id: 'caderno', displayLabel: 'Caderno', sentenceLabel: 'o caderno', image: '/images/cards/escola/caderno.webp', category: 'objetos' },
     ],
     tempo: [
         { id: 'hoje', displayLabel: 'Hoje', sentenceLabel: 'Hoje', image: '/images/cards/rotina/hoje.webp', category: 'tempo' },
@@ -82,23 +76,23 @@ const storyLevels: StoryLevel[] = [
     {
         level: 1, name: "Primeiras Aventuras", storiesToComplete: 3,
         templates: [
-            [{ text: "Era uma vez", type: "personagens", options: 3 }, { text: "que estava se sentindo", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }],
-            [{ text: "Hoje", type: "tempo", options: 3 }, { text: "", type: "personagens", options: 3 }, { text: "foi", type: "acoes", options: 4 }, { text: ".", type: "acoes", options: 0 }],
-            [{ text: "Eu vi", type: "personagens", options: 4 }, { text: "", type: "acoes", options: 4 }, { text: "", type: "lugares", options: 3 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "Era uma vez", type: "personagens", options: 3 }, { text: "que estava a", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "", type: "tempo", options: 3 }, { text: "", type: "personagens", options: 3 }, { text: "foi", type: "acoes", options: 4 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "Eu vi", type: "personagens", options: 4 }, { text: "a", type: "acoes", options: 4 }, { text: "", type: "lugares", options: 3 }, { text: ".", type: "acoes", options: 0 }],
         ]
     },
     {
         level: 2, name: "Mundo de Descobertas", storiesToComplete: 4,
         templates: [
             [{ text: "Certo dia,", type: "personagens", options: 4 }, { text: "foi para", type: "lugares", options: 3 }, { text: "para", type: "acoes", options: 4 }, { text: ".", type: "acoes", options: 0 }],
-            [{ text: "Na escola, eu gosto de", type: "acoes", options: 4 }, { text: "com", type: "objetos", options: 3 }, { text: "e fico", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }],
-            [{ text: "De repente, ", type: "personagens", options: 3 }, { text: "encontrou", type: "objetos", options: 3 }, { text: "e ficou muito", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }]
+            [{ text: "Na escola, eu gosto de", type: "acoes", options: 4 }, { text: "com", type: "objetos", options: 3 }, { text: "e fico a", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }],
+            [{ text: "De repente, ", type: "personagens", options: 3 }, { text: "encontrou", type: "objetos", options: 3 }, { text: "e decidiu", type: "emocoes", options: 3 }, { text: ".", type: "acoes", options: 0 }]
         ]
     }
 ];
 
+
 export default function HistoriasEpicasGame() {
-    // Adicionado 'titleScreen' como o estado inicial do jogo
     const [gameState, setGameState] = useState<'titleScreen' | 'intro' | 'playing' | 'storyComplete' | 'levelComplete' | 'gameOver'>('titleScreen');
     const [introStep, setIntroStep] = useState(0);
     const [leoMessage, setLeoMessage] = useState('');
@@ -127,13 +121,11 @@ export default function HistoriasEpicasGame() {
         }
     }, []);
     
-    // Função para avançar da tela de título para a introdução falada
     const handleStartIntro = () => {
         setGameState('intro');
         leoSpeak(introMessages[0]);
     };
     
-    // As outras funções do jogo (handleIntroNext, startGame, etc.) continuam as mesmas...
     const handleIntroNext = () => {
         const nextStep = introStep + 1;
         if (nextStep < introMessages.length) {
@@ -149,6 +141,7 @@ export default function HistoriasEpicasGame() {
         setStoriesCompletedInLevel(0);
         loadNewStory(0);
     }, []);
+
     const loadNewStory = useCallback((levelIndex: number) => {
         const level = storyLevels[levelIndex];
         if (!level) {
@@ -170,6 +163,7 @@ export default function HistoriasEpicasGame() {
         const firstSegmentText = randomTemplate[0] ? randomTemplate[0].text : "Começando...";
         leoSpeak(`Vamos criar uma nova história! ${firstSegmentText}...`);
     }, [leoSpeak]);
+
     const generateCardOptions = useCallback((segment: StorySegment) => {
         const { type, options } = segment;
         const allCardsInCategory = narrativeCards[type];
@@ -180,6 +174,7 @@ export default function HistoriasEpicasGame() {
         const shuffled = [...allCardsInCategory].sort(() => 0.5 - Math.random());
         setCardOptions(shuffled.slice(0, options));
     }, []);
+    
     const handleCardSelection = (card: Card) => {
         if (gameState !== 'playing') return;
         const updatedProgress = [...storyProgress];
@@ -204,6 +199,7 @@ export default function HistoriasEpicasGame() {
             }
         }
     };
+
     const handleNextStoryOrLevel = useCallback(() => {
         const level = storyLevels[currentLevelIndex];
         if (storiesCompletedInLevel >= level.storiesToComplete) {
@@ -221,9 +217,9 @@ export default function HistoriasEpicasGame() {
             loadNewStory(currentLevelIndex);
         }
     }, [currentLevelIndex, storiesCompletedInLevel, loadNewStory, leoSpeak]);
-
-    // --- NOVOS COMPONENTES DE RENDERIZAÇÃO ---
-
+    
+    // --- COMPONENTES DE RENDERIZAÇÃO ---
+    
     const renderTitleScreen = () => (
         <div className="title-screen-container">
             <div className="stars"></div>
@@ -239,7 +235,6 @@ export default function HistoriasEpicasGame() {
         </div>
     );
     
-    // O renderIntro e renderGame permanecem os mesmos, mas com os nomes ajustados
     const renderIntro = () => (
         <div className="relative z-10 flex flex-col items-center text-center p-6 bg-white/95 rounded-3xl shadow-2xl max-w-xl mx-auto border-4 border-violet-400">
              <div className="w-48 h-auto drop-shadow-xl mb-4">
@@ -255,7 +250,6 @@ export default function HistoriasEpicasGame() {
 
     const renderGame = () => {
         const level = storyLevels[currentLevelIndex];
-        // O JSX do renderGame continua o mesmo que na versão anterior
         return (
             <div className="relative z-10 bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-xl w-full max-w-6xl mx-auto border-4 border-violet-300">
                 <div className="flex justify-between items-center bg-gradient-to-r from-violet-200 to-pink-200 p-3 rounded-t-xl -mx-4 -mt-4 md:-mx-6 md:-mt-6 mb-6 shadow-md">
@@ -312,126 +306,40 @@ export default function HistoriasEpicasGame() {
         );
     }
     
-    // Lógica principal de renderização baseada no gameState
     const renderContent = () => {
         switch (gameState) {
-            case 'titleScreen':
-                return renderTitleScreen();
-            case 'intro':
-                return renderIntro();
-            case 'playing':
-            case 'storyComplete':
-            case 'levelComplete':
-            case 'gameOver': // O modal de gameOver está dentro de renderGame
-                 return renderGame();
-            default:
-                return renderTitleScreen();
+            case 'titleScreen': return renderTitleScreen();
+            case 'intro': return renderIntro();
+            default: return renderGame();
         }
     };
     
     return (
-        <div className="min-h-screen relative font-sans overflow-hidden">
+        <div className="min-h-screen relative font-sans overflow-hidden flex justify-center items-center">
             {renderContent()}
             <style jsx global>{`
-                /* Dica: Para a fonte do título ficar perfeita, importe no seu layout.tsx ou no global.css */
-                /* @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap'); */
-                
-                .title-screen-container {
-                    width: 100%;
-                    height: 100vh;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    position: relative;
-                    background: linear-gradient(to bottom, #1e0c42, #431d6d, #6a329f);
-                    overflow: hidden;
-                    animation: fadeIn 1s ease-in-out;
-                }
-                .content {
-                    position: relative;
-                    z-index: 10;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    text-align: center;
-                    color: white;
-                }
-                .leo-mago-main {
-                    width: clamp(200px, 40vw, 350px);
-                    height: auto;
-                    margin-bottom: -20px;
-                    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.4));
-                    animation: float 4s ease-in-out infinite;
-                }
-                .title-text {
-                    font-family: 'MedievalSharp', cursive, sans-serif; /* Use uma fonte mágica! */
-                    font-size: clamp(3rem, 10vw, 5.5rem);
-                    font-weight: bold;
-                    color: #ffd700;
-                    text-shadow: 0 0 10px #ffd700, 0 0 20px #ffac4d, 0 0 30px #f09;
-                    letter-spacing: 2px;
-                    margin: 0;
-                }
-                .subtitle-text {
-                    font-size: clamp(1rem, 3vw, 1.25rem);
-                    color: #e0e0e0;
-                    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
-                    margin-top: 0.5rem;
-                    margin-bottom: 2.5rem;
-                }
-                .cta-button {
-                    padding: 1rem 2.5rem;
-                    font-size: 1.25rem;
-                    font-weight: bold;
-                    color: #1e0c42;
-                    background: linear-gradient(45deg, #ffd700, #ffac4d);
-                    border: none;
-                    border-radius: 50px;
-                    cursor: pointer;
-                    box-shadow: 0 0 15px #ffd700, 0 0 25px #ffd700, inset 0 0 5px rgba(255,255,255,0.8);
-                    transition: all 0.3s ease;
-                    animation: pulse 2.5s infinite;
-                }
-                .cta-button:hover {
-                    transform: scale(1.05);
-                    box-shadow: 0 0 25px #ffd700, 0 0 40px #ffd700, inset 0 0 8px rgba(255,255,255,1);
-                }
-
-                /* Animações e Efeitos de Estrelas */
+                /* Estilos da Tela de Título e Animações */
+                .title-screen-container { width: 100%; height: 100vh; display: flex; justify-content: center; align-items: center; position: relative; background: linear-gradient(to bottom, #1e0c42, #431d6d, #6a329f); overflow: hidden; animation: fadeIn 1s ease-in-out; }
+                .content { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; text-align: center; color: white; }
+                .leo-mago-main { width: clamp(200px, 40vw, 350px); height: auto; margin-bottom: -20px; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.4)); animation: float 4s ease-in-out infinite; }
+                .title-text { font-family: 'MedievalSharp', cursive, sans-serif; font-size: clamp(3rem, 10vw, 5.5rem); font-weight: bold; color: #ffd700; text-shadow: 0 0 10px #ffd700, 0 0 20px #ffac4d, 0 0 30px #f09; letter-spacing: 2px; margin: 0; }
+                .subtitle-text { font-size: clamp(1rem, 3vw, 1.25rem); color: #e0e0e0; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); margin-top: 0.5rem; margin-bottom: 2.5rem; }
+                .cta-button { padding: 1rem 2.5rem; font-size: 1.25rem; font-weight: bold; color: #1e0c42; background: linear-gradient(45deg, #ffd700, #ffac4d); border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 0 15px #ffd700, 0 0 25px #ffd700, inset 0 0 5px rgba(255,255,255,0.8); transition: all 0.3s ease; animation: pulse 2.5s infinite; }
+                .cta-button:hover { transform: scale(1.05); box-shadow: 0 0 25px #ffd700, 0 0 40px #ffd700, inset 0 0 8px rgba(255,255,255,1); }
                 @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
                 @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                .stars { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(1px 1px at 20% 30%, white, transparent), radial-gradient(1px 1px at 80% 10%, white, transparent), radial-gradient(1px 1px at 50% 50%, white, transparent), radial-gradient(2px 2px at 90% 70%, white, transparent), radial-gradient(2px 2px at 30% 90%, white, transparent), radial-gradient(1px 1px at 10% 80%, white, transparent); background-repeat: repeat; background-size: 300px 300px; animation: zoom 40s infinite; opacity: 0.8; }
+                @keyframes zoom { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
                 
-                .stars {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background-image: 
-                        radial-gradient(1px 1px at 20% 30%, white, transparent),
-                        radial-gradient(1px 1px at 80% 10%, white, transparent),
-                        radial-gradient(1px 1px at 50% 50%, white, transparent),
-                        radial-gradient(2px 2px at 90% 70%, white, transparent),
-                        radial-gradient(2px 2px at 30% 90%, white, transparent),
-                        radial-gradient(1px 1px at 10% 80%, white, transparent);
-                    background-repeat: repeat;
-                    background-size: 300px 300px;
-                    animation: zoom 40s infinite;
-                    opacity: 0.8;
-                }
-
-                @keyframes zoom {
-                    0% { transform: scale(1); }
-                    50% { transform: scale(1.2); }
-                    100% { transform: scale(1); }
-                }
-
-                /* Herança das animações da versão anterior */
+                /* Estilos do Jogo */
                 .animate-float { animation: float 3s ease-in-out infinite; }
                 .animate-pulse-text { animation: pulse-text 1.5s infinite alternate ease-in-out; }
-                @keyframes pulse-text { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
-
+                @keyframes pulse-text { 0%, 100% { color: #2563eb; } 50% { color: #1d4ed8; } }
+                .animate-fade-in-up { animation: fade-in-up 0.7s ease-out forwards; }
+                @keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+                .animate-pulse-fade { animation: pulse-fade 2s infinite ease-in-out; }
+                @keyframes pulse-fade { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
             `}</style>
         </div>
     );
