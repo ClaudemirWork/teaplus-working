@@ -148,12 +148,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="max-w-md w-full bg-white rounded-3xl p-8 sm:p-12 shadow-lg">
-        {/* Logo LudiTEA aumentado e centralizado */}
+        {/* Logo LudiTEA 2x maior e centralizado */}
         <div className="flex justify-center mb-8">
           <img 
             src="/images/logo-luditea.png" 
             alt="LudiTEA Logo" 
-            className="h-24 sm:h-28 md:h-32 w-auto object-contain"
+            className="h-48 sm:h-56 md:h-64 w-auto object-contain"
           />
         </div>
         
