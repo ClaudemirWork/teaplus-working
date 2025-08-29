@@ -1,9 +1,9 @@
-// app/components/activities/memory-game/MemoryGame.tsx
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import styles from './MemoryGame.module.css';
+import confetti from 'canvas-confetti';
+import styles from './memory-game.module.css';
 
 // Avatares organizados por mundo/categoria
 const AVATAR_WORLDS = {
@@ -54,7 +54,8 @@ const MASCOT_IMAGES = {
     strong: 'leo_forca_resultado',
     thumbsUp: 'leo_joinha_resultado',
     magic: 'leo_mago_resultado',
-    surprised: 'leo_surpreso_resultado'
+    surprised: 'leo_surpreso_resultado',
+    pointing: 'leo_apontando_resultado'
   },
   mila: {
     intro: 'mila_boas_vindas_resultado',
@@ -71,22 +72,19 @@ const DIFFICULTY_SETTINGS = {
     pairs: 4,
     gridCols: 4,
     gridRows: 2,
-    time: 60,
-    stars: { perfect: 3, good: 2, normal: 1 }
+    time: 60
   },
   medium: {
     pairs: 6,
     gridCols: 4,
     gridRows: 3,
-    time: 90,
-    stars: { perfect: 3, good: 2, normal: 1 }
+    time: 90
   },
   hard: {
     pairs: 8,
     gridCols: 4,
     gridRows: 4,
-    time: 120,
-    stars: { perfect: 3, good: 2, normal: 1 }
+    time: 120
   }
 };
 
@@ -302,6 +300,13 @@ export default function MemoryGame() {
     setIsTimerActive(false);
     setGameState('victory');
     setMascotImage('happy');
+    
+    // Confetti!
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
   };
 
   // Game Over
@@ -491,7 +496,7 @@ export default function MemoryGame() {
                         className="w-full h-full object-cover rounded-lg"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = '/images/avatares/Face_1.webp'; // Fallback image
+                          target.src = '/images/avatares/Face_1.webp';
                         }}
                       />
                       {card.isMatched && (
