@@ -129,9 +129,9 @@ const App = () => {
 
   return (
     <div className="font-sans antialiased bg-slate-50 text-slate-700">
-      {/* ===== HEADER - Logo 2.5x MAIOR e centralizado ===== */}
+      {/* ===== HEADER CORRIGIDO - Padding ajustado ===== */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 flex justify-center items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex justify-center items-center">
           <a href="/" className="flex items-center">
             <Image
               src="/images/logo-luditea.png"
