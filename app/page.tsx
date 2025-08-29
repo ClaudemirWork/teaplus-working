@@ -129,15 +129,15 @@ const App = () => {
 
   return (
     <div className="font-sans antialiased bg-slate-50 text-slate-700">
-      {/* ===== HEADER - Logo aumentado 3.5x ===== */}
+      {/* ===== HEADER - Logo aumentado 4.5x ===== */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-5 flex justify-between items-center gap-4">
           <a href="/" className="flex items-center flex-shrink-0">
             <Image
               src="/images/logo-luditea.png"
               alt="Logo LudiTEA"
-              width={500}
-              height={156}
+              width={1000}
+              height={312}
               className="h-28 sm:h-36 md:h-44 w-auto object-contain"
               priority
             />
