@@ -323,11 +323,11 @@ export default function MemoryGame() {
     setMascotImage('pointing');
   };
 
-  // Função para obter caminho correto da imagem do mascote
+  // Função para obter caminho correto da imagem do mascote - CORRIGIDO
   const getMascotImagePath = () => {
     const mascotData = currentMascot === 'leo' ? MASCOT_IMAGES.leo : MASCOT_IMAGES.mila;
     const imageName = mascotData[mascotImage as keyof typeof mascotData] || mascotData.intro;
-    return `/images/mascotes/${imageName}.webp`;
+    return `https://raw.githubusercontent.com/ClaudemirWork/teaplus-working/main/public/images/${imageName}.webp`;
   };
 
   return (
@@ -491,12 +491,12 @@ export default function MemoryGame() {
                     {/* Frente da Carta */}
                     <div className={`${styles.cardFace} ${styles.cardFront} ${card.isMatched ? styles.matched : ''}`}>
                       <img
-                        src={`/images/avatares/${card.avatar}.webp`}
+                        src={`https://raw.githubusercontent.com/ClaudemirWork/teaplus-working/main/public/images/avatares/${card.avatar}.webp`}
                         alt="Avatar"
                         className="w-full h-full object-cover rounded-lg"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = '/images/avatares/Face_1.webp';
+                          target.src = 'https://raw.githubusercontent.com/ClaudemirWork/teaplus-working/main/public/images/avatares/Face_1.webp';
                         }}
                       />
                       {card.isMatched && (
@@ -542,7 +542,7 @@ export default function MemoryGame() {
                   className="w-40 h-40 rounded-full border-4 border-yellow-400 object-cover"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    target.src = '/images/mascotes/leo_feliz_resultado.webp';
+                    target.src = 'https://raw.githubusercontent.com/ClaudemirWork/teaplus-working/main/public/images/leo_feliz_resultado.webp';
                   }}
                 />
               </div>
