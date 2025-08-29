@@ -1,5 +1,4 @@
 /* Estilos para o Jogo da Memória - CSS Modules */
-
 /* Container da carta com perspectiva */
 .cardContainer {
   perspective: 1000px;
@@ -19,7 +18,7 @@
 }
 
 /* Rotação quando a carta está virada */
-.cardContainer.flipped .cardInner {
+.flipped {
   transform: rotateY(180deg);
 }
 
@@ -36,7 +35,7 @@
   border-radius: 0.5rem;
 }
 
-/* Verso da carta (lado com logo TeaPlus) */
+/* Verso da carta */
 .cardBack {
   background: linear-gradient(135deg, #14b8a6 0%, #2563eb 100%);
 }
@@ -46,7 +45,7 @@
   font-size: clamp(0.875rem, 2.5vw, 1.5rem);
 }
 
-/* Frente da carta (lado com emoji) */
+/* Frente da carta */
 .cardFront {
   background: white;
   transform: rotateY(180deg);
@@ -58,7 +57,7 @@
 }
 
 /* Estado quando o par foi encontrado */
-.cardFront.matched {
+.matched .cardFront {
   background: #dcfce7;
   border: 2px solid #86efac;
 }
