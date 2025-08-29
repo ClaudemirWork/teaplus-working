@@ -129,8 +129,8 @@ const App = () => {
 
   return (
     <div className="font-sans antialiased bg-slate-50 text-slate-700">
-      {/* ===== HEADER CORRIGIDO - Padding ajustado ===== */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      {/* ===== HEADER CORRIGIDO - Removido o comportamento 'sticky' ===== */}
+      <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex justify-center items-center">
           <a href="/" className="flex items-center">
             <Image
