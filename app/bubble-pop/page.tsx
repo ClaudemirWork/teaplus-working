@@ -53,7 +53,7 @@ interface Bubble {
   speed: number;
   color: string;
   points: number;
-  type: 'air' | 'oxygen' | 'fish' | 'algae' | 'mine' | 'treasure' | 'pearl';
+  type: 'air' | 'oxygen' | 'pink' | 'purple' | 'yellow' | 'green' | 'orange' | 'mine' | 'treasure' | 'pearl';
   popped: boolean;
   opacity: number;
   horizontalMovement?: number;
@@ -97,64 +97,72 @@ export default function OceanBubblePop() {
   const [bubblesRemaining, setBubblesRemaining] = useState(0);
   const [bubblesSpawned, setBubblesSpawned] = useState(0);
 
-  // Configuração dos níveis - Oceano
+  // Configuração dos níveis - VELOCIDADE CONSTANTE, MAIS BOLHAS
   const levelConfigs = [
     { 
       level: 1, 
       name: 'Superfície (0-10m)', 
       depth: '0-10m',
-      totalBubbles: 100,
-      minePercentage: 0.1,  // 10% minas
-      spawnRate: 800,
-      speedMultiplier: 1,
-      oxygenDrain: 0.5,
+      totalBubbles: 200,        // MUITAS bolhas
+      minePercentage: 0.05,     // 5% minas apenas
+      spawnRate: 400,           // Spawn rápido
+      oxygenDrain: 0.3,
       bgGradient: 'from-cyan-300 to-blue-400'
     },
     { 
       level: 2, 
       name: 'Águas Rasas (10-30m)', 
       depth: '10-30m',
-      totalBubbles: 80,
-      minePercentage: 0.2,  // 20% minas
-      spawnRate: 700,
-      speedMultiplier: 1.2,
-      oxygenDrain: 0.7,
+      totalBubbles: 150,        // Ainda muitas bolhas
+      minePercentage: 0.15,     // 15% minas
+      spawnRate: 450,
+      oxygenDrain: 0.5,
       bgGradient: 'from-blue-400 to-blue-500'
     },
     { 
       level: 3, 
       name: 'Zona Média (30-60m)', 
       depth: '30-60m',
-      totalBubbles: 60,
-      minePercentage: 0.35, // 35% minas
-      spawnRate: 600,
-      speedMultiplier: 1.4,
-      oxygenDrain: 0.9,
+      totalBubbles: 100,        // Quantidade média
+      minePercentage: 0.30,     // 30% minas
+      spawnRate: 500,
+      oxygenDrain: 0.7,
       bgGradient: 'from-blue-500 to-blue-700'
     },
     { 
       level: 4, 
       name: 'Águas Fundas (60-100m)', 
       depth: '60-100m',
-      totalBubbles: 40,
-      minePercentage: 0.5,  // 50% minas
-      spawnRate: 500,
-      speedMultiplier: 1.6,
-      oxygenDrain: 1.1,
+      totalBubbles: 60,         // Poucas bolhas
+      minePercentage: 0.45,     // 45% minas
+      spawnRate: 550,
+      oxygenDrain: 0.9,
       bgGradient: 'from-blue-700 to-indigo-900'
     },
     { 
       level: 5, 
       name: 'Zona Abissal (100m+)', 
       depth: '100m+',
-      totalBubbles: 25,
-      minePercentage: 0.65, // 65% minas
-      spawnRate: 400,
-      speedMultiplier: 1.8,
-      oxygenDrain: 1.3,
+      totalBubbles: 40,         // Muito poucas bolhas
+      minePercentage: 0.60,     // 60% minas
+      spawnRate: 600,
+      oxygenDrain: 1.1,
       bgGradient: 'from-indigo-900 to-black'
     }
   ];
+
+  // Sistema de bolhas coloridas com pontuações
+  const coloredBubbles = {
+    air: { color: '#E0F2FE', points: 5, size: 40 },        // Azul claro - básica
+    oxygen: { color: '#60A5FA', points: 15, size: 55 },    // Azul médio - média
+    pink: { color: '#F9A8D4', points: 20, size: 45 },      // Rosa - boa
+    purple: { color: '#C084FC', points: 25, size: 45 },    // Roxo - muito boa
+    yellow: { color: '#FDE047', points: 30, size: 45 },    // Amarelo - ótima
+    green: { color: '#86EFAC', points: 35, size: 45 },     // Verde - excelente
+    orange: { color: '#FB923C', points: 40, size: 45 },    // Laranja - super
+    treasure: { color: '#FFD700', points: 50, size: 50 },  // Dourado - tesouro
+    pearl: { color: '#FFF0F5', points: 100, size: 40 }     // Pérola - rara
+  };
 
   useEffect(() => {
     setIsMobile(window.innerWidth < 640);
@@ -190,71 +198,75 @@ export default function OceanBubblePop() {
     
     const gameArea = gameAreaRef.current.getBoundingClientRect();
     
-    // Determinar tipo de bolha baseado na profundidade
+    // Determinar tipo de bolha
     const rand = Math.random();
     let type: Bubble['type'] = 'air';
-    let color = '#87CEEB';
-    let points = 10;
-    let size = Math.random() * 25 + 35; // 35-60px
+    let bubbleConfig = coloredBubbles.air;
     let horizontalMovement = 0;
     
     if (rand < config.minePercentage) {
       // Mina submarina
       type = 'mine';
-      color = '#8B0000';
-      points = -30;
-      size = 45;
+      bubbleConfig = { color: '#8B0000', points: -20, size: 45 };
     } else {
-      // Bolhas benéficas
-      const beneficialRand = Math.random();
-      if (beneficialRand < 0.6) {
-        // Bolha de ar normal
-        type = 'air';
-        color = '#E0F2FE';
-        points = 10;
-        size = Math.random() * 20 + 35;
-      } else if (beneficialRand < 0.75) {
-        // Bolha de oxigênio (grande)
-        type = 'oxygen';
-        color = '#60A5FA';
-        points = 30;
-        size = 60;
-      } else if (beneficialRand < 0.85) {
-        // Bolha-peixe (movimento horizontal)
-        type = 'fish';
-        color = '#FCD34D';
-        points = 25;
-        size = 45;
-        horizontalMovement = (Math.random() - 0.5) * 2;
-      } else if (beneficialRand < 0.92) {
-        // Bolha-alga (remove minas próximas)
-        type = 'algae';
-        color = '#10B981';
-        points = 20;
-        size = 50;
-      } else if (beneficialRand < 0.97) {
-        // Tesouro
-        type = 'treasure';
-        color = '#FFD700';
-        points = 50;
-        size = 55;
+      // Selecionar bolha colorida baseada no nível
+      const colorRand = Math.random();
+      
+      if (currentLevel === 1) {
+        // Nível 1: Mais bolhas básicas, algumas coloridas
+        if (colorRand < 0.5) type = 'air';
+        else if (colorRand < 0.7) type = 'oxygen';
+        else if (colorRand < 0.85) type = 'pink';
+        else if (colorRand < 0.95) type = 'purple';
+        else type = 'treasure';
+      } else if (currentLevel === 2) {
+        // Nível 2: Mais variedade
+        if (colorRand < 0.3) type = 'air';
+        else if (colorRand < 0.5) type = 'oxygen';
+        else if (colorRand < 0.65) type = 'pink';
+        else if (colorRand < 0.75) type = 'purple';
+        else if (colorRand < 0.85) type = 'yellow';
+        else if (colorRand < 0.95) type = 'green';
+        else type = 'treasure';
+      } else if (currentLevel === 3) {
+        // Nível 3: Todas as cores
+        if (colorRand < 0.2) type = 'air';
+        else if (colorRand < 0.35) type = 'oxygen';
+        else if (colorRand < 0.5) type = 'pink';
+        else if (colorRand < 0.6) type = 'purple';
+        else if (colorRand < 0.7) type = 'yellow';
+        else if (colorRand < 0.8) type = 'green';
+        else if (colorRand < 0.9) type = 'orange';
+        else if (colorRand < 0.97) type = 'treasure';
+        else type = 'pearl';
       } else {
-        // Pérola (rara)
-        type = 'pearl';
-        color = '#FFF0F5';
-        points = 100;
-        size = 40;
+        // Níveis 4 e 5: Mais bolhas valiosas (compensar dificuldade)
+        if (colorRand < 0.1) type = 'air';
+        else if (colorRand < 0.2) type = 'oxygen';
+        else if (colorRand < 0.35) type = 'purple';
+        else if (colorRand < 0.5) type = 'yellow';
+        else if (colorRand < 0.65) type = 'green';
+        else if (colorRand < 0.75) type = 'orange';
+        else if (colorRand < 0.9) type = 'treasure';
+        else type = 'pearl';
+      }
+      
+      bubbleConfig = coloredBubbles[type as keyof typeof coloredBubbles];
+      
+      // Movimento horizontal para algumas bolhas especiais
+      if (type === 'pearl' || type === 'treasure') {
+        horizontalMovement = (Math.random() - 0.5) * 1.5;
       }
     }
     
     const newBubble: Bubble = {
       id: Date.now() + Math.random(),
-      x: Math.random() * (gameArea.width - size),
-      y: gameArea.height + size,
-      size: size,
-      speed: (Math.random() * 1.5 + 1) * config.speedMultiplier,
-      color: color,
-      points: points,
+      x: Math.random() * (gameArea.width - bubbleConfig.size),
+      y: gameArea.height + bubbleConfig.size,
+      size: bubbleConfig.size + (Math.random() * 10 - 5), // Variação de tamanho
+      speed: 2, // VELOCIDADE CONSTANTE
+      color: bubbleConfig.color,
+      points: bubbleConfig.points,
       type: type,
       popped: false,
       opacity: 1,
@@ -278,10 +290,10 @@ export default function OceanBubblePop() {
         return { ...bubble, opacity: bubble.opacity - 0.05 };
       }
       
-      let newY = bubble.y - bubble.speed;
+      let newY = bubble.y - bubble.speed; // Velocidade constante
       let newX = bubble.x;
       
-      // Movimento horizontal para bolhas-peixe
+      // Movimento horizontal para bolhas especiais
       if (bubble.horizontalMovement) {
         newX += bubble.horizontalMovement;
         
@@ -296,9 +308,8 @@ export default function OceanBubblePop() {
       if (newY < -bubble.size) {
         if (!bubble.popped && bubble.type !== 'mine') {
           setMissedBubbles(prev => prev + 1);
-          setCombo(0); // Reset combo
-          // Perder oxigênio por perder bolha
-          setOxygenLevel(prev => Math.max(0, prev - 2));
+          setCombo(0);
+          setOxygenLevel(prev => Math.max(0, prev - 1));
         }
         return { ...bubble, y: newY, opacity: 0 };
       }
@@ -336,12 +347,12 @@ export default function OceanBubblePop() {
       ...particle,
       x: particle.x + particle.vx,
       y: particle.y + particle.vy,
-      vy: particle.vy + 0.2, // Gravidade menor (água)
+      vy: particle.vy + 0.2,
       life: particle.life - 0.03
     })).filter(particle => particle.life > 0));
   };
 
-  // Som de estouro melhorado
+  // Som de estouro
   const playPopSound = (type: Bubble['type']) => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -351,71 +362,50 @@ export default function OceanBubblePop() {
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
       
-      switch(type) {
-        case 'mine':
-          // Som de explosão
-          const noise = audioContext.createOscillator();
-          const noiseGain = audioContext.createGain();
-          noise.type = 'sawtooth';
-          noise.frequency.value = 100;
-          noise.connect(noiseGain);
-          noiseGain.connect(audioContext.destination);
-          noiseGain.gain.setValueAtTime(0.5, audioContext.currentTime);
-          noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-          noise.start(audioContext.currentTime);
-          noise.stop(audioContext.currentTime + 0.3);
-          
-          // Baixa frequência para impacto
-          oscillator.frequency.value = 50;
-          oscillator.type = 'sine';
-          gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + 0.2);
-          break;
-          
-        case 'oxygen':
-        case 'treasure':
-        case 'pearl':
-          // Som brilhante
-          oscillator.frequency.value = 1200;
-          oscillator.type = 'sine';
-          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + 0.3);
-          
-          // Harmônico
-          const harmonic = audioContext.createOscillator();
-          const harmonicGain = audioContext.createGain();
-          harmonic.frequency.value = 1600;
-          harmonic.connect(harmonicGain);
-          harmonicGain.connect(audioContext.destination);
-          harmonicGain.gain.setValueAtTime(0.2, audioContext.currentTime);
-          harmonicGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
-          harmonic.start(audioContext.currentTime);
-          harmonic.stop(audioContext.currentTime + 0.4);
-          break;
-          
-        case 'fish':
-          // Som aquático
-          oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-          oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
-          oscillator.type = 'sine';
-          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + 0.15);
-          break;
-          
-        default:
-          // Som de bolha normal
-          oscillator.frequency.value = 600 + Math.random() * 300;
-          oscillator.type = 'sine';
-          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + 0.05);
+      if (type === 'mine') {
+        // Som de explosão
+        const noise = audioContext.createOscillator();
+        const noiseGain = audioContext.createGain();
+        noise.type = 'sawtooth';
+        noise.frequency.value = 100;
+        noise.connect(noiseGain);
+        noiseGain.connect(audioContext.destination);
+        noiseGain.gain.setValueAtTime(0.5, audioContext.currentTime);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        noise.start(audioContext.currentTime);
+        noise.stop(audioContext.currentTime + 0.3);
+        
+        oscillator.frequency.value = 50;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.2);
+      } else if (type === 'pearl' || type === 'treasure') {
+        // Som especial
+        oscillator.frequency.value = 1200;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+      } else {
+        // Som de bolha normal com variação baseada na cor
+        const freqMap = {
+          air: 600,
+          oxygen: 700,
+          pink: 800,
+          purple: 900,
+          yellow: 1000,
+          green: 1100,
+          orange: 1200
+        };
+        oscillator.frequency.value = freqMap[type as keyof typeof freqMap] || 600;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.05);
       }
     } catch (e) {
       // Silently fail
@@ -433,13 +423,11 @@ export default function OceanBubblePop() {
     playPopSound(bubble.type);
     
     if (bubble.type === 'mine') {
-      // Explosão de mina
       createParticles(x, y, bubble.color, true);
       setScore(prev => Math.max(0, prev + bubble.points));
       setCombo(0);
-      setOxygenLevel(prev => Math.max(0, prev - 10)); // Perde muito oxigênio
+      setOxygenLevel(prev => Math.max(0, prev - 10));
     } else {
-      // Bolha benéfica
       createParticles(x, y, bubble.color);
       setPoppedBubbles(prev => prev + 1);
       setCombo(prev => {
@@ -452,35 +440,15 @@ export default function OceanBubblePop() {
       const finalPoints = Math.round(bubble.points * comboMultiplier);
       setScore(prev => prev + finalPoints);
       
-      // Efeitos especiais
+      // Recuperar oxigênio baseado no tipo
       if (bubble.type === 'oxygen') {
-        setOxygenLevel(prev => Math.min(100, prev + 15));
-      } else if (bubble.type === 'algae') {
-        // Remove minas próximas
-        removeNearbyMines(x, y);
-      } else if (bubble.type === 'air') {
-        setOxygenLevel(prev => Math.min(100, prev + 5));
+        setOxygenLevel(prev => Math.min(100, prev + 10));
+      } else if (bubble.type === 'pearl') {
+        setOxygenLevel(prev => Math.min(100, prev + 20));
+      } else {
+        setOxygenLevel(prev => Math.min(100, prev + 3));
       }
     }
-  };
-
-  // Remover minas próximas (power-up alga)
-  const removeNearbyMines = (x: number, y: number) => {
-    const radius = 100;
-    setBubbles(prev => prev.map(bubble => {
-      if (bubble.type === 'mine' && !bubble.popped) {
-        const distance = Math.sqrt(
-          Math.pow(bubble.x + bubble.size/2 - x, 2) + 
-          Math.pow(bubble.y + bubble.size/2 - y, 2)
-        );
-        if (distance < radius) {
-          createParticles(bubble.x + bubble.size/2, bubble.y + bubble.size/2, '#10B981');
-          setScore(s => s + 10); // Bonus por neutralizar mina
-          return { ...bubble, popped: true };
-        }
-      }
-      return bubble;
-    }));
   };
 
   // Handle de clique/toque
@@ -526,7 +494,7 @@ export default function OceanBubblePop() {
     };
   }, [isPlaying]);
 
-  // Spawn de bolhas controlado
+  // Spawn de bolhas
   useEffect(() => {
     if (!isPlaying) return;
     
@@ -565,10 +533,8 @@ export default function OceanBubblePop() {
     
     const config = levelConfigs[currentLevel - 1];
     
-    // Nível completo quando todas as bolhas foram spawnadas e não há mais na tela
     if (bubblesSpawned >= config.totalBubbles && bubbles.length === 0) {
       if (currentLevel < 5) {
-        // Próximo nível
         setCompletedLevels(prev => [...prev, currentLevel]);
         setLevelMessage(`🌊 Profundidade ${config.depth} Completa!`);
         setShowLevelTransition(true);
@@ -583,10 +549,9 @@ export default function OceanBubblePop() {
           setCombo(0);
           setBubblesSpawned(0);
           setBubblesRemaining(nextConfig.totalBubbles);
-          setOxygenLevel(100); // Restaura oxigênio no novo nível
+          setOxygenLevel(100);
         }, 2500);
       } else {
-        // Fim do jogo
         endGame();
       }
     }
@@ -634,7 +599,7 @@ export default function OceanBubblePop() {
         
 🌊 Resultado do Oceano de Bolhas:
 - Profundidade Alcançada: ${levelConfigs[Math.max(...completedLevels, 0)]?.depth || '0m'}
-- Bolhas de Ar Coletadas: ${poppedBubbles}
+- Bolhas Coletadas: ${poppedBubbles}
 - Precisão: ${accuracy}%
 - Combo Máximo: ${maxCombo}
 - Pontuação Total: ${score} pontos`);
@@ -677,6 +642,10 @@ export default function OceanBubblePop() {
                   src="https://raw.githubusercontent.com/ClaudemirWork/teaplus-working/main/public/images/mila_boas_vindas_resultado.webp"
                   alt="Mila"
                   className="w-32 h-32 mx-auto rounded-full border-4 border-blue-400 shadow-lg"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
                 />
                 <h2 className="text-2xl font-bold text-blue-800 mt-4">
                   Mila convida você para uma aventura submarina!
@@ -687,26 +656,31 @@ export default function OceanBubblePop() {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
                   <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">🎯 Objetivo:</h3>
                   <p className="text-xs sm:text-sm text-gray-600">
-                    Colete bolhas de ar para respirar! Evite minas submarinas!
+                    Colete bolhas coloridas! Cada cor vale pontos diferentes!
                   </p>
                 </div>
                 
                 <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 sm:p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">🫧 Bolhas Especiais:</h3>
+                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">🫧 Pontuação das Cores:</h3>
                   <ul className="text-xs sm:text-sm text-gray-600 space-y-1">
-                    <li>💨 Oxigênio = +15 ar</li>
-                    <li>🐠 Peixe = move horizontal</li>
-                    <li>🌿 Alga = remove minas</li>
-                    <li>💎 Pérola = 100 pontos!</li>
+                    <li>🔵 Azul = 5 pts</li>
+                    <li>💗 Rosa = 20 pts</li>
+                    <li>💜 Roxo = 25 pts</li>
+                    <li>💛 Amarelo = 30 pts</li>
+                    <li>💚 Verde = 35 pts</li>
+                    <li>🧡 Laranja = 40 pts</li>
+                    <li>💎 Pérola = 100 pts!</li>
                   </ul>
                 </div>
                 
                 <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 sm:p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">🏊‍♀️ Profundidades:</h3>
+                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">📊 Níveis:</h3>
                   <ul className="text-xs sm:text-sm text-gray-600 space-y-1">
-                    <li>0-10m: Muitas bolhas</li>
-                    <li>30-60m: Perigo médio</li>
-                    <li>100m+: Zona abissal!</li>
+                    <li>Nível 1: 200 bolhas!</li>
+                    <li>Nível 2: 150 bolhas</li>
+                    <li>Nível 3: 100 bolhas</li>
+                    <li>Nível 4: 60 bolhas</li>
+                    <li>Nível 5: 40 bolhas</li>
                   </ul>
                 </div>
               </div>
@@ -719,7 +693,7 @@ export default function OceanBubblePop() {
               >
                 🤿 Mergulhar no Oceano
               </button>
-              <p className="text-sm text-gray-600 mt-2">5 profundidades para explorar!</p>
+              <p className="text-sm text-gray-600 mt-2">Velocidade constante, foco na diferenciação!</p>
             </div>
           </div>
         ) : !showResults ? (
@@ -787,11 +761,15 @@ export default function OceanBubblePop() {
               onMouseDown={handleInteraction}
               onTouchStart={handleInteraction}
             >
-              {/* Imagem da Mila no fundo */}
-              <img 
-                src="https://raw.githubusercontent.com/ClaudemirWork/teaplus-working/main/public/images/mila_feiticeira_resultado.webp"
-                alt=""
-                className="absolute inset-0 w-full h-full object-contain opacity-10 pointer-events-none"
+              {/* Imagem da Mila no fundo - CORRIGIDA */}
+              <div 
+                className="absolute inset-0 w-full h-full opacity-10 pointer-events-none"
+                style={{
+                  backgroundImage: `url(https://raw.githubusercontent.com/ClaudemirWork/teaplus-working/main/public/images/mila_feiticeira_resultado.webp)`,
+                  backgroundSize: 'contain',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat'
+                }}
               />
 
               {/* Transição de nível */}
@@ -828,36 +806,21 @@ export default function OceanBubblePop() {
                       : bubble.type === 'pearl'
                       ? 'radial-gradient(circle, #FFF0F5, #FFB6C1)'
                       : bubble.color,
-                    border: bubble.type === 'oxygen' ? '3px solid #FFFFFF' :
-                            bubble.type === 'mine' ? '2px solid #FF0000' :
-                            bubble.type === 'algae' ? '2px solid #065F46' : 'none',
+                    border: bubble.type === 'pearl' ? '2px solid #FFD700' :
+                            bubble.type === 'treasure' ? '2px solid #FFA500' :
+                            bubble.type === 'mine' ? '2px solid #FF0000' : 
+                            '1px solid rgba(255,255,255,0.3)',
                     opacity: bubble.opacity,
-                    boxShadow: bubble.type === 'oxygen' ? '0 0 15px #60A5FA' :
-                               bubble.type === 'treasure' ? '0 0 20px #FFD700' :
-                               bubble.type === 'pearl' ? '0 0 25px #FFF0F5' :
-                               '0 2px 4px rgba(0,0,0,0.1)',
+                    boxShadow: bubble.type === 'pearl' ? '0 0 20px #FFF0F5' :
+                               bubble.type === 'treasure' ? '0 0 15px #FFD700' :
+                               '0 2px 8px rgba(0,0,0,0.2)',
                     transform: `scale(${bubble.popped ? 1.5 : 1})`,
                   }}
                 >
-                  {/* Ícones nas bolhas */}
+                  {/* Ícones nas bolhas especiais */}
                   {bubble.type === 'mine' && (
                     <div className="absolute inset-0 flex items-center justify-center text-white text-xl font-bold">
                       💣
-                    </div>
-                  )}
-                  {bubble.type === 'fish' && (
-                    <div className="absolute inset-0 flex items-center justify-center text-xl">
-                      🐠
-                    </div>
-                  )}
-                  {bubble.type === 'algae' && (
-                    <div className="absolute inset-0 flex items-center justify-center text-xl">
-                      🌿
-                    </div>
-                  )}
-                  {bubble.type === 'treasure' && (
-                    <div className="absolute inset-0 flex items-center justify-center text-xl">
-                      💰
                     </div>
                   )}
                   {bubble.type === 'pearl' && (
@@ -865,9 +828,15 @@ export default function OceanBubblePop() {
                       🦪
                     </div>
                   )}
-                  {bubble.type === 'oxygen' && (
-                    <div className="absolute inset-0 flex items-center justify-center text-white font-bold">
-                      O₂
+                  {bubble.type === 'treasure' && (
+                    <div className="absolute inset-0 flex items-center justify-center text-xl">
+                      💰
+                    </div>
+                  )}
+                  {/* Mostrar pontos nas bolhas coloridas */}
+                  {!['mine', 'pearl', 'treasure'].includes(bubble.type) && (
+                    <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xs">
+                      +{bubble.points}
                     </div>
                   )}
                 </div>
@@ -973,9 +942,9 @@ export default function OceanBubblePop() {
               <h4 className="font-bold text-gray-800 mb-3 text-sm sm:text-base">🌊 Relatório de Mergulho:</h4>
               <div className="space-y-1 text-xs sm:text-sm">
                 <p>• Profundidade Máxima: {levelConfigs[Math.max(...completedLevels, 0)]?.depth || '0m'}</p>
-                <p>• Bolhas de Ar Coletadas: {poppedBubbles}</p>
+                <p>• Bolhas Coletadas: {poppedBubbles}</p>
                 <p>• Minas Evitadas: {missedBubbles}</p>
-                <p>• Habilidade de Mergulho: {accuracy > 80 ? '⭐⭐⭐' : accuracy > 60 ? '⭐⭐' : '⭐'}</p>
+                <p>• Habilidade: {accuracy > 80 ? '⭐⭐⭐' : accuracy > 60 ? '⭐⭐' : '⭐'}</p>
               </div>
             </div>
             
