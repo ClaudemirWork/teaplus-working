@@ -8,7 +8,7 @@ const App = () => {
   const router = useRouter();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window!== 'undefined') {
       const isLoggedIn = localStorage.getItem('teaplus_session');
       if (isLoggedIn === 'active') {
         router.replace('/profileselection');
@@ -53,30 +53,9 @@ const App = () => {
     </svg>
   );
 
-  const features = [
-    {
-      icon: <BrainIcon className="text-blue-500 w-7 h-7 md:w-8 md:h-8" />,
-      title: "Baseado em Ciência",
-      description: "Atividades fundamentadas em ABA, TEACCH e Neuropsicologia Cognitiva.",
-    },
-    {
-      icon: <HeartHandshakeIcon className="text-emerald-500 w-7 h-7 md:w-8 md:h-8" />,
-      title: "Integração TEA + TDAH",
-      description: "Primeira plataforma brasileira a trabalhar especificamente com ambos os transtornos.",
-    },
-    {
-      icon: <UsersIcon className="text-orange-500 w-7 h-7 md:w-8 md:h-8" />,
-      title: "Para toda a família",
-      description: "Interface adaptada para crianças, adolescentes, pais e profissionais.",
-    },
-  ];
+  const features =;
 
-  const modules = [
-    {
-      icon: <CheckCircleIcon className="text-blue-500 w-6 h-6 md:w-8 md:h-8" />,
-      title: "Módulo TEA",
-      subtitle: "Habilidades sociais e comunicação",
-      items: ["Comunicação visual", "Interação social", "Rotinas estruturadas"],
+  const modules =,
       bgColor: "bg-blue-50",
       dotColor: "bg-blue-500"
     },
@@ -92,53 +71,28 @@ const App = () => {
       icon: <BrainIcon className="text-emerald-500 w-6 h-6 md:w-8 md:h-8" />,
       title: "Interseção",
       subtitle: "Atividades integradas",
-      items: ["Regulação emocional", "Autoconhecimento", "Tomada de decisão"],
+      items:,
       bgColor: "bg-emerald-50",
       dotColor: "bg-emerald-500"
     },
   ];
 
-  const stats = [
-    {
-      value: "50-70%",
-      label: "das crianças com TEA também apresentam TDAH",
-      color: "text-blue-500"
-    },
-    {
-      value: "32+",
-      label: "atividades cientificamente validadas",
-      color: "text-emerald-500"
-    },
-    {
-      value: "100%",
-      label: "segurança jurídica e conformidade",
-      color: "text-orange-500"
-    },
-  ];
+  const stats =;
 
-  const bibliography = [
-    "Diamond, A. (2013). Executive Functions. Annual Review of Psychology",
-    "ABA Intervention Strategies for Autism Spectrum Disorder",
-    "TEACCH Structured Teaching Approaches",
-    "CDC Guidelines for Autism Spectrum Disorder",
-    "Neuropsychological Assessment for Developmental Disorders",
-    "Social Scripts & Video Modeling Strategies",
-    "DSM-5 Criteria for ADHD and Autism Spectrum",
-    "Journal of Applied Behavior Analysis",
-  ];
+  const bibliography =;
 
   return (
     <div className="font-sans antialiased bg-slate-50 text-slate-700">
-      {/* ===== HEADER - Logo aumentado 4.5x ===== */}
+      {/* ===== HEADER - Logo com largura ajustada para ser maior, faixa branca com altura contida ===== */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-5 flex justify-between items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-3 flex justify-between items-center gap-4">
           <a href="/" className="flex items-center flex-shrink-0">
             <Image
               src="/images/logo-luditea.png"
               alt="Logo LudiTEA"
-              width={1000}
-              height={312}
-              className="h-28 sm:h-36 md:h-44 w-auto object-contain"
+              width={200} // Corrigido: Usando largura fixa para ser maior
+              height={62} // Corrigido: Altura proporcional para manter a qualidade
+              className="w-48 sm:w-64 md:w-80 h-auto object-contain" // Corrigido: Usando largura responsiva, altura automática
               priority
             />
           </a>
