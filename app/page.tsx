@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 const App = () => {
   const router = useRouter();
-  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -16,25 +15,6 @@ const App = () => {
       }
     }
   }, [router]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Função para scroll suave
-  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    const targetId = e.currentTarget.getAttribute('href')?.slice(1);
-    if (targetId) {
-      const element = document.getElementById(targetId);
-      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
 
   // SVG Icons as components
   const BrainIcon = ({ className }: { className?: string }) => (
@@ -64,6 +44,12 @@ const App = () => {
   const SparklesIcon = ({ className }: { className?: string }) => (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+    </svg>
+  );
+
+  const ChevronRightIcon = ({ className }: { className?: string }) => (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
     </svg>
   );
 
@@ -143,23 +129,31 @@ const App = () => {
 
   return (
     <div className="font-sans antialiased bg-slate-50 text-slate-700">
-      <header className={`bg-white shadow-sm fixed top-0 w-full z-50 transition-all duration-300`}>
-        <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center items-center transition-all duration-300 ${isScrolled ? 'py-0.5' : 'py-1.5'}`}>
-          <a href="#hero-section" onClick={handleSmoothScroll} className="flex items-center">
+      {/* ===== HEADER - Logo aumentado 4.5x ===== */}
+      <header className="bg-white shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-5 flex justify-between items-center gap-4">
+          <a href="/" className="flex items-center flex-shrink-0">
             <Image
               src="/images/logo-luditea.png"
               alt="Logo LudiTEA"
-              width={500}
-              height={156}
-              className={`transition-all duration-300 h-auto ${isScrolled ? 'w-full max-w-[180px] sm:max-w-[220px] md:max-w-[260px]' : 'w-full max-w-[320px] sm:max-w-[400px] md:max-w-[480px]'}`}
+              width={1000}
+              height={312}
+              className="h-28 sm:h-36 md:h-44 w-auto object-contain"
               priority
             />
+          </a>
+          <a 
+            href="/login" 
+            className="bg-slate-900 text-white px-4 sm:px-6 py-2 md:py-2.5 rounded-full font-medium text-sm md:text-base hover:bg-slate-700 transition-colors shadow-lg flex-shrink-0 whitespace-nowrap"
+          >
+            Entrar
           </a>
         </div>
       </header>
 
-      <main className="pt-24 md:pt-28">
-        <section id="hero-section" className="bg-gradient-to-br from-blue-100 to-white py-12 sm:py-16 md:py-20 transition-all duration-700 ease-in-out">
+      <main>
+        {/* ===== HERO SECTION - Totalmente responsiva ===== */}
+        <section className="bg-gradient-to-br from-blue-100 to-white py-12 sm:py-16 md:py-20 animate-fade-in">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-4 leading-tight drop-shadow-sm">
               Uma jornada de <span className="text-blue-600">descobertas</span> e{' '}
@@ -170,17 +164,19 @@ const App = () => {
               com foco na individualidade e no aprendizado divertido.
             </p>
             <div className="flex justify-center">
-              <a
-                href="/login"
-                className="bg-blue-600 text-white px-8 sm:px-10 py-3 md:py-4 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-transform transform hover:-translate-y-1 text-base sm:text-lg inline-flex items-center"
+              <a 
+                href="#features-section" 
+                className="bg-blue-600 text-white px-6 sm:px-8 py-3 md:py-4 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-transform transform hover:-translate-y-1 text-sm sm:text-base inline-flex items-center"
               >
-                Clique para conhecer e entrar
+                Leia abaixo para conhecer mais
+                <ChevronRightIcon className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
               </a>
             </div>
           </div>
         </section>
 
-        <section id="features-section" className="py-12 sm:py-16 md:py-20 bg-white scroll-mt-20">
+        {/* ===== FEATURES SECTION - Responsiva ===== */}
+        <section id="features-section" className="py-12 sm:py-16 md:py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10 md:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-4">
@@ -207,7 +203,8 @@ const App = () => {
           </div>
         </section>
 
-        <section id="how-it-works" className="py-12 sm:py-16 md:py-20 bg-slate-50 scroll-mt-20">
+        {/* ===== MODULES SECTION - Responsiva ===== */}
+        <section className="py-12 sm:py-16 md:py-20 bg-slate-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10 md:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-4">Como funciona</h2>
@@ -242,7 +239,8 @@ const App = () => {
           </div>
         </section>
 
-        <section id="stats-section" className="py-12 sm:py-16 md:py-20 bg-white scroll-mt-20">
+        {/* ===== STATS SECTION - Responsiva ===== */}
+        <section className="py-12 sm:py-16 md:py-20 bg-white">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-8 md:mb-12">
               Dados que importam
@@ -260,7 +258,8 @@ const App = () => {
           </div>
         </section>
 
-        <section id="cta-section" className="bg-gradient-to-r from-blue-600 to-blue-800 py-16 sm:py-20 md:py-24 scroll-mt-20">
+        {/* ===== CTA SECTION - Responsiva ===== */}
+        <section className="bg-gradient-to-r from-blue-600 to-blue-800 py-16 sm:py-20 md:py-24">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 leading-tight drop-shadow-sm">
               Comece sua jornada hoje
@@ -278,6 +277,7 @@ const App = () => {
         </section>
       </main>
 
+      {/* ===== FOOTER RESPONSIVO ===== */}
       <footer className="bg-slate-900 text-slate-400 py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-8 md:mb-12">
