@@ -129,16 +129,15 @@ const App = () => {
 
   return (
     <div className="font-sans antialiased bg-slate-50 text-slate-700">
-      {/* ===== HEADER CORRIGIDO - Removido o comportamento 'sticky' ===== */}
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex justify-center items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-center items-center">
           <a href="/" className="flex items-center">
             <Image
               src="/images/logo-luditea.png"
               alt="Logo LudiTEA"
               width={500}
               height={156}
-              className="w-full max-w-sm sm:max-w-md md:max-w-2xl h-auto"
+              className="w-full max-w-xs sm:max-w-sm md:max-w-md h-auto"
               priority
             />
           </a>
@@ -146,7 +145,6 @@ const App = () => {
       </header>
 
       <main>
-        {/* ===== HERO SECTION ===== */}
         <section className="bg-gradient-to-br from-blue-100 to-white py-12 sm:py-16 md:py-20 animate-fade-in">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-4 leading-tight drop-shadow-sm">
@@ -168,7 +166,6 @@ const App = () => {
           </div>
         </section>
 
-        {/* ===== FEATURES SECTION ===== */}
         <section id="features-section" className="py-12 sm:py-16 md:py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10 md:mb-16">
@@ -196,7 +193,6 @@ const App = () => {
           </div>
         </section>
 
-        {/* ===== MODULES SECTION ===== */}
         <section className="py-12 sm:py-16 md:py-20 bg-slate-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10 md:mb-16">
@@ -232,7 +228,6 @@ const App = () => {
           </div>
         </section>
 
-        {/* ===== STATS SECTION ===== */}
         <section className="py-12 sm:py-16 md:py-20 bg-white">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-8 md:mb-12">
@@ -251,7 +246,6 @@ const App = () => {
           </div>
         </section>
 
-        {/* ===== CTA SECTION ===== */}
         <section className="bg-gradient-to-r from-blue-600 to-blue-800 py-16 sm:py-20 md:py-24">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 leading-tight drop-shadow-sm">
@@ -270,7 +264,6 @@ const App = () => {
         </section>
       </main>
 
-      {/* ===== FOOTER ===== */}
       <footer className="bg-slate-900 text-slate-400 py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-8 md:mb-12">
