@@ -129,27 +129,38 @@ const App = () => {
 
   return (
     <div className="font-sans antialiased bg-slate-50 text-slate-700">
-      {/* ===== HEADER - Logo aumentado 4.5x ===== */}
+      {/* ===== HEADER - Logo com posição absoluta ===== */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-5 flex justify-between items-center gap-4">
-          <a href="/" className="flex items-center flex-shrink-0">
-            <Image
-              src="/images/logo-luditea.png"
-              alt="Logo LudiTEA"
-              width={1000}
-              height={312}
-              className="h-28 sm:h-36 md:h-44 w-auto object-contain"
-              priority
-            />
-          </a>
-          <a 
-            href="/login" 
-            className="bg-slate-900 text-white px-4 sm:px-6 py-2 md:py-2.5 rounded-full font-medium text-sm md:text-base hover:bg-slate-700 transition-colors shadow-lg flex-shrink-0 whitespace-nowrap"
-          >
-            Entrar
-          </a>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          {/* Container com altura fixa */}
+          <div className="h-16 md:h-20 flex items-center justify-between">
+            {/* Logo com posição absoluta - não afeta altura do header */}
+            <div className="relative w-48 sm:w-56 md:w-64">
+              <a href="/" className="absolute top-1/2 -translate-y-1/2 z-20">
+                <Image
+                  src="/images/logo-luditea.png"
+                  alt="Logo LudiTEA"
+                  width={1000}
+                  height={312}
+                  className="h-32 sm:h-40 md:h-48 w-auto object-contain"
+                  priority
+                />
+              </a>
+            </div>
+            
+            {/* Botão Entrar - permanece no lugar */}
+            <a 
+              href="/login" 
+              className="bg-slate-900 text-white px-4 sm:px-6 py-2 md:py-2.5 rounded-full font-medium text-sm md:text-base hover:bg-slate-700 transition-colors shadow-lg flex-shrink-0 whitespace-nowrap z-20 relative"
+            >
+              Entrar
+            </a>
+          </div>
         </div>
       </header>
+
+      {/* Adicione este espaçamento logo após o header se necessário */}
+      <div className="h-8 sm:h-10 md:h-12"></div>
 
       <main>
         {/* ===== HERO SECTION - Totalmente responsiva ===== */}
