@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import styles from './memory-game.module.css';
@@ -114,32 +114,159 @@ export default function MemoryGame() {
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [currentMascot, setCurrentMascot] = useState<Mascot>('leo');
   const [mascotImage, setMascotImage] = useState('intro');
+  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   // Narração dos mascotes
   const MASCOT_NARRATIONS = {
     leo: {
-      intro: "Olá, amigo! Eu sou o Leo! 🦁 As memórias dos habitantes do mundo mágico foram embaralhadas! Vamos ajudá-los encontrando os pares corretos?",
+      intro: "Olá, amigo! Eu sou o Leo! As memórias dos habitantes do mundo mágico foram embaralhadas! Vamos ajudá-los encontrando os pares corretos?",
       start: "Vamos começar! Clique nas cartas para virá-las e encontre os pares iguais!",
-      firstMatch: "Muito bem! Você encontrou o primeiro par! Continue assim! 🌟",
+      firstMatch: "Muito bem! Você encontrou o primeiro par! Continue assim!",
       combo: "Incrível! Você está em sequência!",
       struggling: "Não desista! Respire fundo e tente lembrar onde viu cada avatar!",
       halfWay: "Metade do caminho! Você está indo muito bem!",
       almostThere: "Quase lá! Só faltam poucos pares!",
-      victory: "Parabéns! Você restaurou todas as memórias! Os habitantes agradecem sua ajuda! ✨",
-      timeWarning: "Cuidado! O tempo está acabando! ⏰"
+      victory: "Parabéns! Você restaurou todas as memórias! Os habitantes agradecem sua ajuda!",
+      timeWarning: "Cuidado! O tempo está acabando!"
     },
     mila: {
-      intro: "Oi! Sou a Mila! 🦊 Que confusão! Todas as memórias se misturaram! Que tal ajudarmos nossos amigos a se reencontrarem?",
+      intro: "Oi! Sou a Mila! Que confusão! Todas as memórias se misturaram! Que tal ajudarmos nossos amigos a se reencontrarem?",
       start: "Preparado? Memorize bem onde está cada avatar e encontre os pares!",
-      firstMatch: "Eba! Primeiro par encontrado! Você tem ótima memória! 💫",
+      firstMatch: "Eba! Primeiro par encontrado! Você tem ótima memória!",
       combo: "Uau! Sequência perfeita!",
       struggling: "Calma! Às vezes é bom parar e pensar onde viu cada personagem!",
       halfWay: "Metade concluída! Está indo super bem!",
       almostThere: "Falta pouco! Você consegue!",
-      victory: "Fantástico! Todas as memórias foram restauradas! Você é demais! 🎉",
-      timeWarning: "Atenção! O tempo está voando! ⏱️"
+      victory: "Fantástico! Todas as memórias foram restauradas! Você é demais!",
+      timeWarning: "Atenção! O tempo está voando!"
     }
   };
+
+  // Inicializar AudioContext
+  useEffect(() => {
+    audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
+  // Função para criar e tocar sons
+  const playSound = (type: 'flip' | 'match' | 'error' | 'victory') => {
+    if (!isSoundEnabled || !audioContextRef.current) return;
+
+    const audioContext = audioContextRef.current;
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    switch (type) {
+      case 'flip':
+        // Som de virar carta - suave
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+        break;
+      
+      case 'match':
+        // Som de acerto - alegre
+        oscillator.frequency.setValueAtTime(523, audioContext.currentTime);
+        oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.1);
+        oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.2);
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+        break;
+      
+      case 'error':
+        // Som de erro - suave
+        oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.2);
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.2);
+        break;
+      
+      case 'victory':
+        // Som de vitória - fanfarra
+        const notes = [523, 659, 784, 1047];
+        notes.forEach((freq, i) => {
+          const osc = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          osc.connect(gain);
+          gain.connect(audioContext.destination);
+          osc.frequency.setValueAtTime(freq, audioContext.currentTime + i * 0.1);
+          gain.gain.setValueAtTime(0.3, audioContext.currentTime + i * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.1 + 0.3);
+          osc.start(audioContext.currentTime + i * 0.1);
+          osc.stop(audioContext.currentTime + i * 0.1 + 0.3);
+        });
+        break;
+    }
+  };
+
+  // Função para falar o texto
+  const speakText = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'pt-BR';
+      utterance.rate = 0.9;
+      utterance.pitch = 1.1;
+      utterance.volume = 1;
+      
+      // Aguardar as vozes carregarem
+      const setVoice = () => {
+        const voices = window.speechSynthesis.getVoices();
+        const ptVoices = voices.filter(voice => voice.lang.includes('pt'));
+        
+        if (ptVoices.length > 0) {
+          if (currentMascot === 'mila') {
+            const femaleVoice = ptVoices.find(voice => 
+              voice.name.toLowerCase().includes('female') || 
+              voice.name.includes('Maria') ||
+              voice.name.includes('Fernanda')
+            );
+            if (femaleVoice) utterance.voice = femaleVoice;
+          } else {
+            const maleVoice = ptVoices.find(voice => 
+              voice.name.toLowerCase().includes('male') || 
+              voice.name.includes('Daniel') ||
+              voice.name.includes('Ricardo')
+            );
+            if (maleVoice) utterance.voice = maleVoice;
+          }
+        }
+      };
+      
+      if (window.speechSynthesis.getVoices().length > 0) {
+        setVoice();
+      } else {
+        window.speechSynthesis.onvoiceschanged = setVoice;
+      }
+      
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // Falar quando mudar a tela
+  useEffect(() => {
+    if (gameState === 'intro') {
+      setTimeout(() => {
+        speakText(MASCOT_NARRATIONS[currentMascot].intro);
+      }, 500);
+    }
+  }, [gameState, currentMascot]);
 
   // Inicializar jogo
   const initializeGame = useCallback(() => {
@@ -151,12 +278,10 @@ export default function MemoryGame() {
       return;
     }
     
-    // Selecionar avatares aleatórios
     const selectedAvatars = [...world.avatars]
       .sort(() => Math.random() - 0.5)
       .slice(0, settings.pairs);
     
-    // Criar pares e embaralhar
     const gameCards: Card[] = [];
     selectedAvatars.forEach((avatar, index) => {
       gameCards.push(
@@ -175,7 +300,6 @@ export default function MemoryGame() {
       );
     });
     
-    // Embaralhar cartas
     const shuffledCards = gameCards.sort(() => Math.random() - 0.5);
     
     setCards(shuffledCards);
@@ -188,7 +312,6 @@ export default function MemoryGame() {
     setTimeLeft(settings.time);
     setIsTimerActive(false);
     
-    // Escolher mascote aleatório
     const mascot = Math.random() > 0.5 ? 'leo' : 'mila';
     setCurrentMascot(mascot);
     setMascotImage('intro');
@@ -222,12 +345,14 @@ export default function MemoryGame() {
     const card = cards.find(c => c.id === cardId);
     if (!card || card.isFlipped || card.isMatched) return;
     
-    // Iniciar timer no primeiro clique
+    // Som de virar carta
+    playSound('flip');
+    
     if (!isTimerActive && moves === 0) {
       setIsTimerActive(true);
+      speakText(MASCOT_NARRATIONS[currentMascot].start);
     }
     
-    // Virar carta
     const newCards = cards.map(c => 
       c.id === cardId ? { ...c, isFlipped: true } : c
     );
@@ -236,7 +361,6 @@ export default function MemoryGame() {
     const newSelected = [...selectedCards, cardId];
     setSelectedCards(newSelected);
     
-    // Verificar par
     if (newSelected.length === 2) {
       setMoves(moves + 1);
       checkMatch(newSelected);
@@ -252,6 +376,8 @@ export default function MemoryGame() {
     if (first && second && first.avatar === second.avatar) {
       // Par encontrado!
       setTimeout(() => {
+        playSound('match');
+        
         setCards(prev => prev.map(c => 
           c.id === first.id || c.id === second.id 
             ? { ...c, isMatched: true }
@@ -264,21 +390,35 @@ export default function MemoryGame() {
           setMaxCombo(newCombo);
         }
         
-        setMatches(prev => prev + 1);
+        const newMatches = matches + 1;
+        setMatches(newMatches);
         setScore(prev => prev + (100 * newCombo));
         setSelectedCards([]);
         
-        // Atualizar imagem do mascote
-        setMascotImage(newCombo > 2 ? 'magic' : 'thumbsUp');
-        
-        // Primeira conquista
+        // Narração especial
         if (matches === 0) {
+          speakText(MASCOT_NARRATIONS[currentMascot].firstMatch);
           setMascotImage('happy');
+        } else if (newCombo > 2) {
+          speakText(MASCOT_NARRATIONS[currentMascot].combo);
+          setMascotImage('magic');
+        } else {
+          setMascotImage('thumbsUp');
+        }
+        
+        // Verificar progresso
+        const settings = DIFFICULTY_SETTINGS[difficulty];
+        if (newMatches === Math.floor(settings.pairs / 2)) {
+          speakText(MASCOT_NARRATIONS[currentMascot].halfWay);
+        } else if (newMatches === settings.pairs - 1) {
+          speakText(MASCOT_NARRATIONS[currentMascot].almostThere);
         }
       }, 600);
     } else {
       // Não é par
       setTimeout(() => {
+        playSound('error');
+        
         setCards(prev => prev.map(c => 
           c.id === first?.id || c.id === second?.id 
             ? { ...c, isFlipped: false }
@@ -287,8 +427,8 @@ export default function MemoryGame() {
         setCombo(0);
         setSelectedCards([]);
         
-        // Encorajamento se estiver com dificuldade
         if (moves > 10 && matches < 2) {
+          speakText(MASCOT_NARRATIONS[currentMascot].struggling);
           setMascotImage('strong');
         }
       }, 1000);
@@ -301,7 +441,9 @@ export default function MemoryGame() {
     setGameState('victory');
     setMascotImage('happy');
     
-    // Confetti!
+    playSound('victory');
+    speakText(MASCOT_NARRATIONS[currentMascot].victory);
+    
     confetti({
       particleCount: 100,
       spread: 70,
@@ -314,6 +456,7 @@ export default function MemoryGame() {
     setIsTimerActive(false);
     setGameState('victory');
     setMascotImage('surprised');
+    speakText("O tempo acabou! Mas não desista, você pode tentar novamente!");
   };
 
   // Iniciar jogo
@@ -323,7 +466,7 @@ export default function MemoryGame() {
     setMascotImage('pointing');
   };
 
-  // Função para obter caminho correto da imagem do mascote - CORRIGIDO
+  // Função para obter caminho correto da imagem do mascote
   const getMascotImagePath = () => {
     const mascotData = currentMascot === 'leo' ? MASCOT_IMAGES.leo : MASCOT_IMAGES.mila;
     const imageName = mascotData[mascotImage as keyof typeof mascotData] || mascotData.intro;
@@ -347,7 +490,7 @@ export default function MemoryGame() {
               </h1>
               
               {/* Mascote e Narração */}
-              <div className="flex items-center justify-center mb-6">
+              <div className="flex items-center justify-center mb-6 relative">
                 <div className="relative">
                   <img 
                     src={getMascotImagePath()}
@@ -362,12 +505,35 @@ export default function MemoryGame() {
                     {currentMascot === 'leo' ? '🦁' : '🦊'}
                   </motion.div>
                 </div>
+                
+                {/* Botão de áudio */}
+                <button
+                  onClick={() => speakText(MASCOT_NARRATIONS[currentMascot].intro)}
+                  className="absolute top-0 right-0 p-2 bg-yellow-400 rounded-full hover:bg-yellow-500 transition-colors"
+                  aria-label="Repetir narração"
+                >
+                  🔊
+                </button>
               </div>
               
               <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl p-4 mb-6">
                 <p className="text-lg text-gray-800 text-center">
                   {MASCOT_NARRATIONS[currentMascot].intro}
                 </p>
+              </div>
+              
+              {/* Botão de Som */}
+              <div className="flex justify-center mb-4">
+                <button
+                  onClick={() => setIsSoundEnabled(!isSoundEnabled)}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                    isSoundEnabled 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-gray-300 text-gray-600'
+                  }`}
+                >
+                  {isSoundEnabled ? '🔊 Som Ligado' : '🔇 Som Desligado'}
+                </button>
               </div>
               
               {/* Seleção de Mundo */}
