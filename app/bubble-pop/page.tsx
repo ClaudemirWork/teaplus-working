@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link'
 import { ChevronLeft, Save } from 'lucide-react';
 import { createClient } from '../utils/supabaseClient'
+import confetti from 'canvas-confetti';
+import styles from './bubble-pop.module.css';
 
 // Componente do Cabeçalho Padrão
 const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: any) => (
@@ -128,16 +130,17 @@ export default function OceanBubblePop() {
   const [bossDefeated, setBossDefeated] = useState(false);
   const [freedCreatures, setFreedCreatures] = useState<string[]>([]);
   const [checkpointBubbles, setCheckpointBubbles] = useState(0);
+  const [levelCompleted, setLevelCompleted] = useState(false);
 
-  // Configuração dos 10 níveis + Boss
+  // Configuração dos 10 níveis + Boss - VELOCIDADE REDUZIDA
   const levelConfigs = [
     { 
       level: 1, 
       name: 'Superfície - Bolhas Coloridas', 
       depth: '0-10m',
-      totalBubbles: 150,
+      totalBubbles: 100, // Reduzido para testes mais rápidos
       minePercentage: 0.05,
-      spawnRate: 500,
+      spawnRate: 600,
       oxygenDrain: 0.3,
       bgGradient: 'from-cyan-300 to-blue-400',
       equipment: null,
@@ -147,9 +150,9 @@ export default function OceanBubblePop() {
       level: 2, 
       name: 'Águas Rasas - Salvando Peixes', 
       depth: '10-20m',
-      totalBubbles: 140,
+      totalBubbles: 110,
       minePercentage: 0.1,
-      spawnRate: 480,
+      spawnRate: 580,
       oxygenDrain: 0.4,
       bgGradient: 'from-blue-400 to-blue-500',
       equipment: 'mask',
@@ -159,9 +162,9 @@ export default function OceanBubblePop() {
       level: 3, 
       name: 'Zona Clara - Multiplicadores', 
       depth: '20-30m',
-      totalBubbles: 130,
+      totalBubbles: 120,
       minePercentage: 0.15,
-      spawnRate: 460,
+      spawnRate: 560,
       oxygenDrain: 0.5,
       bgGradient: 'from-blue-500 to-blue-600',
       equipment: 'fins',
@@ -171,9 +174,9 @@ export default function OceanBubblePop() {
       level: 4, 
       name: 'Águas Médias - Power-ups', 
       depth: '30-40m',
-      totalBubbles: 120,
+      totalBubbles: 130,
       minePercentage: 0.2,
-      spawnRate: 440,
+      spawnRate: 540,
       oxygenDrain: 0.6,
       bgGradient: 'from-blue-600 to-blue-700',
       equipment: 'tank',
@@ -183,9 +186,9 @@ export default function OceanBubblePop() {
       level: 5, 
       name: 'Zona Mista - Todos Elementos', 
       depth: '40-50m',
-      totalBubbles: 110,
+      totalBubbles: 140,
       minePercentage: 0.25,
-      spawnRate: 420,
+      spawnRate: 520,
       oxygenDrain: 0.7,
       bgGradient: 'from-blue-700 to-indigo-700',
       equipment: 'suit',
@@ -195,9 +198,9 @@ export default function OceanBubblePop() {
       level: 6, 
       name: 'Correntes Marinhas', 
       depth: '50-60m',
-      totalBubbles: 100,
+      totalBubbles: 150,
       minePercentage: 0.3,
-      spawnRate: 400,
+      spawnRate: 500,
       oxygenDrain: 0.8,
       bgGradient: 'from-indigo-700 to-indigo-800',
       equipment: 'light',
@@ -207,9 +210,9 @@ export default function OceanBubblePop() {
       level: 7, 
       name: 'Zona Escura', 
       depth: '60-70m',
-      totalBubbles: 90,
+      totalBubbles: 140,
       minePercentage: 0.35,
-      spawnRate: 380,
+      spawnRate: 480,
       oxygenDrain: 0.9,
       bgGradient: 'from-indigo-800 to-indigo-900',
       equipment: null,
@@ -219,9 +222,9 @@ export default function OceanBubblePop() {
       level: 8, 
       name: 'Águas Profundas', 
       depth: '70-80m',
-      totalBubbles: 80,
+      totalBubbles: 130,
       minePercentage: 0.4,
-      spawnRate: 360,
+      spawnRate: 460,
       oxygenDrain: 1.0,
       bgGradient: 'from-indigo-900 to-purple-900',
       equipment: null,
@@ -231,9 +234,9 @@ export default function OceanBubblePop() {
       level: 9, 
       name: 'Zona Abissal', 
       depth: '80-90m',
-      totalBubbles: 70,
+      totalBubbles: 120,
       minePercentage: 0.45,
-      spawnRate: 340,
+      spawnRate: 440,
       oxygenDrain: 1.1,
       bgGradient: 'from-purple-900 to-black',
       equipment: null,
@@ -243,9 +246,9 @@ export default function OceanBubblePop() {
       level: 10, 
       name: 'Portal do Abismo', 
       depth: '90-100m',
-      totalBubbles: 60,
+      totalBubbles: 100,
       minePercentage: 0.5,
-      spawnRate: 320,
+      spawnRate: 420,
       oxygenDrain: 1.2,
       bgGradient: 'from-black to-purple-950',
       equipment: null,
@@ -256,9 +259,9 @@ export default function OceanBubblePop() {
       level: 11, 
       name: 'Reino do Senhor dos Mares', 
       depth: 'ABISMO',
-      totalBubbles: 100,
+      totalBubbles: 150,
       minePercentage: 0.3,
-      spawnRate: 300,
+      spawnRate: 400,
       oxygenDrain: 0, // Sem oxigênio!
       bgGradient: 'from-purple-950 via-black to-red-950',
       equipment: null,
@@ -310,11 +313,12 @@ export default function OceanBubblePop() {
       light: false
     });
     setCheckpointBubbles(0);
+    setLevelCompleted(false);
   };
 
   // Criar nova bolha com todas as mecânicas
   const createBubble = () => {
-    if (!isPlaying || !gameAreaRef.current) return;
+    if (!isPlaying || !gameAreaRef.current || levelCompleted) return;
     
     const config = levelConfigs[currentLevel - 1];
     
@@ -401,7 +405,7 @@ export default function OceanBubblePop() {
       x: Math.random() * (gameArea.width - bubbleConfig.size),
       y: gameArea.height + bubbleConfig.size,
       size: bubbleConfig.size + (Math.random() * 10 - 5),
-      speed: 2, // VELOCIDADE CONSTANTE
+      speed: 1.2, // VELOCIDADE REDUZIDA (era 2)
       color: bubbleConfig.color,
       points: bubbleConfig.points,
       type: type,
@@ -622,9 +626,9 @@ export default function OceanBubblePop() {
       // Bomba - reinicia nível se não tiver proteção
       createParticles(x, y, bubble.color, 'explosion');
       
-      if (hasProtection) {
-        setHasProtection(false);
-        setLevelMessage('⚠️ Proteção Perdida! Cuidado!');
+      if (equipment.suit) { // Traje dá proteção
+        setEquipment(prev => ({ ...prev, suit: false }));
+        setLevelMessage('⚠️ Proteção do Traje Perdida!');
         setTimeout(() => setLevelMessage(''), 2000);
       } else {
         // Reiniciar nível
@@ -761,6 +765,7 @@ export default function OceanBubblePop() {
       setMagnetActive(false);
       setShowLevelTransition(false);
       setIsPlaying(true);
+      setLevelCompleted(false);
     }, 2000);
   };
 
@@ -773,6 +778,35 @@ export default function OceanBubblePop() {
       setLevelMessage('🔓 FASE SECRETA DESBLOQUEADA!');
       setShowBossLevel(true);
     }
+  };
+
+  // Efeito de celebração com confetti
+  const createCelebrationBurst = () => {
+    // Confetti da biblioteca
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+    
+    // Múltiplos bursts
+    setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 }
+      });
+    }, 200);
+    
+    setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 }
+      });
+    }, 400);
   };
 
   // Handle de clique/toque
@@ -820,18 +854,18 @@ export default function OceanBubblePop() {
 
   // Spawn de bolhas
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || levelCompleted) return;
     
     const config = levelConfigs[currentLevel - 1];
     
     const spawnInterval = setInterval(() => {
-      if (bubblesSpawned < config.totalBubbles) {
+      if (bubblesSpawned < config.totalBubbles && !levelCompleted) {
         createBubble();
       }
     }, config.spawnRate);
     
     return () => clearInterval(spawnInterval);
-  }, [isPlaying, currentLevel, bubblesSpawned]);
+  }, [isPlaying, currentLevel, bubblesSpawned, levelCompleted]);
 
   // Timer do multiplicador
   useEffect(() => {
@@ -886,13 +920,16 @@ export default function OceanBubblePop() {
     return () => clearInterval(drainInterval);
   }, [isPlaying, currentLevel, equipment.tank]);
 
-  // Verificar fim do nível
+  // Verificar fim do nível - CORRIGIDO
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || levelCompleted) return;
     
     const config = levelConfigs[currentLevel - 1];
     
-    if (bubblesSpawned >= config.totalBubbles && bubbles.length === 0) {
+    // Verificar se todas as bolhas foram spawnadas e processadas
+    if (bubblesSpawned >= config.totalBubbles && bubbles.filter(b => !b.popped).length === 0) {
+      setLevelCompleted(true);
+      
       if (currentLevel === 11) {
         // Vitória do Boss!
         setBossDefeated(true);
@@ -903,7 +940,7 @@ export default function OceanBubblePop() {
         setLevelMessage(`🌊 ${config.name} Completo!`);
         setShowLevelTransition(true);
         
-        // Efeito de "estouro" no final da fase
+        // Efeito de celebração
         createCelebrationBurst();
         
         setTimeout(() => {
@@ -920,6 +957,8 @@ export default function OceanBubblePop() {
           setCheckpointBubbles(0);
           setMultiplier(1);
           setMagnetActive(false);
+          setLevelCompleted(false);
+          setIsPlaying(true); // Continuar jogando
         }, 3000);
       } else if (currentLevel === 10) {
         // Fim do jogo normal ou acesso ao boss
@@ -927,6 +966,7 @@ export default function OceanBubblePop() {
           // Ir para o boss
           setLevelMessage('🌊 ENTRANDO NO REINO DO SENHOR DOS MARES!');
           setShowLevelTransition(true);
+          createCelebrationBurst();
           
           setTimeout(() => {
             setCurrentLevel(11);
@@ -935,18 +975,33 @@ export default function OceanBubblePop() {
             setBubblesRemaining(bossConfig.totalBubbles);
             setShowLevelTransition(false);
             setOxygenLevel(100);
+            setLevelCompleted(false);
+            setIsPlaying(true);
           }, 3000);
         } else {
           endGame();
         }
+      } else {
+        endGame();
       }
     }
-  }, [isPlaying, currentLevel, bubblesSpawned, bubbles, showBossLevel]);
+  }, [isPlaying, currentLevel, bubblesSpawned, bubbles, showBossLevel, levelCompleted]);
 
   // Sequência de vitória do boss
   const victorySequence = () => {
     setIsPlaying(false);
     setLevelMessage('🎉 SENHOR DOS MARES DERROTADO!');
+    
+    // Múltiplos confettis
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => {
+        confetti({
+          particleCount: 100,
+          spread: 100,
+          origin: { y: Math.random() }
+        });
+      }, i * 300);
+    }
     
     // Liberar todas as criaturas
     const creatures = ['🐠', '🐟', '🐡', '🦈', '🐙', '🦑', '🦀', '🦞', '🐢', '🐳', '🐬', '🦭'];
@@ -965,32 +1020,33 @@ export default function OceanBubblePop() {
     }, 200);
   };
 
-  // Efeito de celebração
-  const createCelebrationBurst = () => {
-    if (!gameAreaRef.current) return;
-    
-    const gameArea = gameAreaRef.current.getBoundingClientRect();
-    const centerX = gameArea.width / 2;
-    const centerY = gameArea.height / 2;
-    
-    for (let i = 0; i < 100; i++) {
-      setTimeout(() => {
-        createParticles(
-          centerX + (Math.random() - 0.5) * 200,
-          centerY + (Math.random() - 0.5) * 200,
-          ['#FFD700', '#FF69B4', '#00CED1', '#98FB98'][Math.floor(Math.random() * 4)],
-          'shockwave'
-        );
-      }, i * 10);
-    }
-  };
-
   const endGame = (bossVictory = false) => {
     setIsPlaying(false);
     setShowResults(true);
     
-    if (currentLevel === 10 || currentLevel === 11) {
-      setCompletedLevels(prev => [...prev, currentLevel]);
+    if (bossVictory) {
+      // Celebração final épica
+      const duration = 5 * 1000;
+      const end = Date.now() + duration;
+      
+      (function frame() {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 }
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 }
+        });
+        
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
     }
     
     const totalAttempts = poppedBubbles + missedBubbles;
@@ -1067,7 +1123,7 @@ export default function OceanBubblePop() {
 
       <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
         {!jogoIniciado ? (
-          // Tela inicial
+          // Tela inicial - mantida igual
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8">
               <div className="text-center mb-6">
@@ -1116,7 +1172,7 @@ export default function OceanBubblePop() {
                     <li>🥽 Máscara - Nível 2</li>
                     <li>🦶 Nadadeiras - Nível 3</li>
                     <li>🤿 Tanque - Nível 4</li>
-                    <li>👔 Traje - Nível 5</li>
+                    <li>👔 Traje - Nível 5 (Proteção)</li>
                     <li>🔦 Lanterna - Nível 6</li>
                   </ul>
                 </div>
@@ -1137,12 +1193,12 @@ export default function OceanBubblePop() {
                 🤿 Iniciar Aventura Épica
               </button>
               <p className="text-sm text-gray-600 mt-2">
-                10 níveis + Fase Secreta do Boss!
+                10 níveis + Fase Secreta do Boss! (Velocidade constante)
               </p>
             </div>
           </div>
         ) : !showResults ? (
-          // Área de jogo
+          // Área de jogo - com todas as melhorias
           <div className="space-y-4">
             {/* Status */}
             <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4">
@@ -1195,7 +1251,6 @@ export default function OceanBubblePop() {
               <span className={`text-2xl ${equipment.tank ? '' : 'opacity-30'}`}>🤿</span>
               <span className={`text-2xl ${equipment.suit ? '' : 'opacity-30'}`}>👔</span>
               <span className={`text-2xl ${equipment.light ? '' : 'opacity-30'}`}>🔦</span>
-              {hasProtection && <span className="text-2xl animate-pulse">🛡️</span>}
             </div>
 
             {/* Barra de Oxigênio (não aparece no boss) */}
@@ -1246,9 +1301,9 @@ export default function OceanBubblePop() {
                 </div>
               )}
 
-              {/* Transição de nível */}
+              {/* Transição de nível com animação */}
               {showLevelTransition && (
-                <div className="absolute inset-0 bg-white/95 flex items-center justify-center z-30">
+                <div className={styles.levelTransition}>
                   <div className="text-center">
                     <div className="text-4xl sm:text-6xl mb-2 animate-bounce">
                       {currentLevel === 11 ? '👑' : '🌊'}
@@ -1256,9 +1311,9 @@ export default function OceanBubblePop() {
                     <div className="text-xl sm:text-3xl font-bold text-blue-600">
                       {levelMessage}
                     </div>
-                    {currentLevel < 11 && (
+                    {currentLevel < 11 && levelConfigs[currentLevel] && (
                       <div className="text-sm sm:text-base text-gray-600 mt-2">
-                        Próximo: {levelConfigs[currentLevel]?.name}
+                        Próximo: {levelConfigs[currentLevel].name}
                       </div>
                     )}
                   </div>
@@ -1271,7 +1326,7 @@ export default function OceanBubblePop() {
                   {freedCreatures.map((creature, i) => (
                     <div 
                       key={i}
-                      className="text-4xl animate-bounce"
+                      className={`text-4xl ${styles.fishEscape}`}
                       style={{
                         animationDelay: `${i * 0.1}s`
                       }}
@@ -1282,13 +1337,13 @@ export default function OceanBubblePop() {
                 </div>
               )}
 
-              {/* Bolhas */}
+              {/* Bolhas com animações CSS */}
               {bubbles.map(bubble => (
                 <div
                   key={bubble.id}
                   className={`absolute rounded-full transition-opacity ${
                     bubble.popped ? 'pointer-events-none' : 'cursor-pointer'
-                  }`}
+                  } ${styles.bubbleContainer}`}
                   style={{
                     left: `${bubble.x}px`,
                     top: `${bubble.y}px`,
@@ -1369,11 +1424,13 @@ export default function OceanBubblePop() {
                 </div>
               ))}
 
-              {/* Partículas */}
+              {/* Partículas com animações CSS */}
               {particles.map(particle => (
                 <div
                   key={particle.id}
-                  className="absolute rounded-full pointer-events-none"
+                  className={`${styles.particle} ${
+                    particle.type === 'star' ? styles.particleStar : ''
+                  }`}
                   style={{
                     left: `${particle.x}px`,
                     top: `${particle.y}px`,
@@ -1381,7 +1438,6 @@ export default function OceanBubblePop() {
                     height: particle.type === 'star' ? '8px' : particle.type === 'fish' ? '20px' : '6px',
                     background: particle.color,
                     opacity: particle.life,
-                    transform: particle.type === 'star' ? 'rotate(45deg)' : 'none'
                   }}
                 >
                   {particle.type === 'fish' && '🐠'}
@@ -1408,7 +1464,7 @@ export default function OceanBubblePop() {
               {/* Boss aparece no nível 11 */}
               {currentLevel === 11 && (
                 <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2">
-                  <div className="text-6xl animate-pulse">
+                  <div className={`text-6xl ${styles.victoryAnimation}`}>
                     👹
                   </div>
                   <div className="text-white font-bold text-center">
@@ -1441,10 +1497,10 @@ export default function OceanBubblePop() {
             </div>
           </div>
         ) : (
-          // Tela de resultados
+          // Tela de resultados com animações
           <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
             <div className="text-center mb-6">
-              <div className="text-5xl sm:text-6xl mb-4">
+              <div className={`text-5xl sm:text-6xl mb-4 ${bossDefeated ? styles.victoryAnimation : ''}`}>
                 {bossDefeated ? '👑' : 
                  completedLevels.length === 10 ? '🏆' : 
                  savedFish > 20 ? '🐠' : '🌊'}
