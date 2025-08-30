@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import styles from './emotionmaze.module.css';
 
-// Sistema de Power-ups
+// Sistema de Power-ups SIMPLIFICADO
 const POWERUPS = {
   wallPass: {
     name: 'Atravessador',
@@ -30,13 +30,6 @@ const POWERUPS = {
     duration: 20,
     color: '#FFD700',
     description: 'Pontos em dobro!'
-  },
-  speed: {
-    name: 'Velocidade',
-    icon: '⚡',
-    duration: 25,
-    color: '#FF6B6B',
-    description: 'Movimento rápido!'
   }
 };
 
@@ -105,7 +98,7 @@ const createMaze8x8 = (complexity: number = 1): number[][] => {
   
   // Define caminhos baseado na complexidade
   if (complexity === 1) {
-    // Labirinto muito simples - linha reta
+    // Labirinto muito simples
     for (let i = 1; i < 7; i++) {
       maze[1][i] = 0;
       maze[6][i] = 0;
@@ -149,7 +142,7 @@ const createMaze8x8 = (complexity: number = 1): number[][] => {
   return maze;
 };
 
-// CONFIGURAÇÃO DOS 30 NÍVEIS - SEM PISOS ESPECIAIS PROBLEMÁTICOS
+// CONFIGURAÇÃO DOS 30 NÍVEIS - SIMPLIFICADO
 const LEVELS = [
   // MUNDO 1 - INTRODUÇÃO (Níveis 1-10)
   {
@@ -278,7 +271,7 @@ const LEVELS = [
     ],
     megaGems: [],
     powerups: [
-      { x: 3, y: 1, type: 'speed' },
+      { x: 3, y: 1, type: 'reveal' },
       { x: 5, y: 5, type: 'doublePoints' }
     ],
     keys: [],
@@ -287,8 +280,8 @@ const LEVELS = [
   },
   {
     id: 7,
-    name: 'Velocidade Máxima',
-    story: 'Use o poder da velocidade!',
+    name: 'Tesouros Múltiplos',
+    story: 'Colete todos os tesouros!',
     emotion: 'courage',
     size: 8,
     grid: createMaze8x8(3),
@@ -303,7 +296,7 @@ const LEVELS = [
     specialGems: [{ x: 5, y: 5, type: 'special' }],
     megaGems: [{ x: 1, y: 4, type: 'mega' }],
     powerups: [
-      { x: 3, y: 5, type: 'speed' },
+      { x: 3, y: 5, type: 'doublePoints' },
       { x: 4, y: 1, type: 'reveal' }
     ],
     keys: [],
@@ -365,7 +358,7 @@ const LEVELS = [
       { x: 6, y: 5, type: 'mega' }
     ],
     powerups: [
-      { x: 3, y: 5, type: 'speed' },
+      { x: 3, y: 5, type: 'doublePoints' },
       { x: 5, y: 3, type: 'wallPass' }
     ],
     keys: [],
@@ -397,7 +390,6 @@ const LEVELS = [
     powerups: [
       { x: 2, y: 5, type: 'reveal' },
       { x: 4, y: 1, type: 'doublePoints' },
-      { x: 5, y: 4, type: 'speed' },
       { x: 1, y: 6, type: 'wallPass' }
     ],
     keys: [],
@@ -414,7 +406,6 @@ const LEVELS = [
     size: 8,
     grid: (() => {
       const maze = createMaze8x8(2);
-      // Adiciona parede para forçar uso da porta
       maze[3][2] = 1;
       maze[3][4] = 1;
       return maze;
@@ -430,7 +421,7 @@ const LEVELS = [
     megaGems: [],
     powerups: [{ x: 5, y: 2, type: 'reveal' }],
     keys: [{ x: 1, y: 5, id: 'key1' }],
-    doors: [{ x: 3, y: 3, keyId: 'key1' }], // Porta bloqueia o caminho
+    doors: [{ x: 3, y: 3, keyId: 'key1' }],
     perfectTime: 70
   },
   {
@@ -459,7 +450,7 @@ const LEVELS = [
     ],
     megaGems: [{ x: 3, y: 5, type: 'mega' }],
     powerups: [
-      { x: 4, y: 2, type: 'speed' },
+      { x: 4, y: 2, type: 'doublePoints' },
       { x: 2, y: 5, type: 'doublePoints' }
     ],
     keys: [
@@ -493,7 +484,7 @@ const LEVELS = [
     ],
     megaGems: [],
     powerups: [
-      { x: 3, y: 2, type: 'speed' },
+      { x: 3, y: 2, type: 'reveal' },
       { x: 5, y: 1, type: 'wallPass' }
     ],
     keys: [{ x: 2, y: 4, id: 'key1' }],
@@ -508,7 +499,7 @@ const LEVELS = [
     size: 8,
     grid: (() => {
       const maze = createMaze8x8(2);
-      maze[4][5] = 1; // Parede extra
+      maze[4][5] = 1;
       return maze;
     })(),
     start: { x: 1, y: 1 },
@@ -533,7 +524,7 @@ const LEVELS = [
       { x: 4, y: 3, type: 'doublePoints' }
     ],
     keys: [{ x: 1, y: 3, id: 'key1' }],
-    doors: [{ x: 3, y: 6, keyId: 'key1' }], // Porta protege mega gema
+    doors: [{ x: 3, y: 6, keyId: 'key1' }],
     perfectTime: 85
   },
   {
@@ -558,7 +549,7 @@ const LEVELS = [
     ],
     megaGems: [{ x: 4, y: 1, type: 'mega' }],
     powerups: [
-      { x: 2, y: 5, type: 'speed' },
+      { x: 2, y: 5, type: 'doublePoints' },
       { x: 5, y: 3, type: 'wallPass' },
       { x: 1, y: 2, type: 'reveal' }
     ],
@@ -595,7 +586,7 @@ const LEVELS = [
     megaGems: [{ x: 1, y: 5, type: 'mega' }],
     powerups: [
       { x: 4, y: 4, type: 'doublePoints' },
-      { x: 2, y: 2, type: 'speed' }
+      { x: 2, y: 2, type: 'reveal' }
     ],
     keys: [
       { x: 6, y: 3, id: 'key1' },
@@ -638,7 +629,7 @@ const LEVELS = [
     powerups: [
       { x: 3, y: 2, type: 'reveal' },
       { x: 4, y: 4, type: 'wallPass' },
-      { x: 1, y: 2, type: 'speed' }
+      { x: 1, y: 2, type: 'doublePoints' }
     ],
     keys: [{ x: 6, y: 4, id: 'key1' }],
     doors: [{ x: 3, y: 3, keyId: 'key1' }],
@@ -676,7 +667,6 @@ const LEVELS = [
     powerups: [
       { x: 2, y: 1, type: 'doublePoints' },
       { x: 4, y: 3, type: 'reveal' },
-      { x: 5, y: 5, type: 'speed' },
       { x: 3, y: 2, type: 'wallPass' }
     ],
     keys: [],
@@ -709,7 +699,7 @@ const LEVELS = [
       { x: 5, y: 1, type: 'mega' }
     ],
     powerups: [
-      { x: 3, y: 1, type: 'speed' },
+      { x: 3, y: 1, type: 'doublePoints' },
       { x: 4, y: 5, type: 'wallPass' },
       { x: 1, y: 3, type: 'doublePoints' }
     ],
@@ -756,7 +746,6 @@ const LEVELS = [
     powerups: [
       { x: 2, y: 1, type: 'reveal' },
       { x: 3, y: 4, type: 'doublePoints' },
-      { x: 4, y: 2, type: 'speed' },
       { x: 5, y: 3, type: 'wallPass' }
     ],
     keys: [
@@ -781,7 +770,6 @@ const mirrorLevel = (level: any, newId: number) => {
   mirrored.story = `Versão espelhada: ${level.story}`;
   mirrored.emotion = 'mirror';
   
-  // Espelha coordenadas
   const mirrorX = (x: number) => 7 - x;
   
   mirrored.start = { x: mirrorX(level.start.x), y: level.start.y };
@@ -824,7 +812,6 @@ const mirrorLevel = (level: any, newId: number) => {
     x: mirrorX(d.x)
   }));
   
-  // Espelha o grid
   mirrored.grid = level.grid.map((row: number[]) => [...row].reverse());
   
   return mirrored;
@@ -948,21 +935,17 @@ export default function EmotionMaze() {
 
   // Criar explosão de mega gema
   const createMegaGemExplosion = () => {
-    // Toca som especial
     if (soundEnabled) playSound('megaGem', 0.5);
     
-    // Cria elemento de explosão
     const explosion = document.createElement('div');
     explosion.className = styles.megaGemExplosion;
     explosion.innerHTML = '🌟';
     document.body.appendChild(explosion);
     
-    // Remove após animação
     setTimeout(() => {
       document.body.removeChild(explosion);
     }, 1500);
     
-    // Adiciona tremor na tela
     const container = document.querySelector(`.${styles.gameContainer}`);
     if (container) {
       container.classList.add(styles.screenShake);
@@ -971,7 +954,6 @@ export default function EmotionMaze() {
       }, 500);
     }
     
-    // Mensagem motivacional
     const message = MOTIVATIONAL_MESSAGES[Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)];
     const messageEl = document.createElement('div');
     messageEl.className = styles.motivationalMessage;
@@ -982,7 +964,6 @@ export default function EmotionMaze() {
       document.body.removeChild(messageEl);
     }, 2000);
     
-    // Cria partículas douradas
     for (let i = 0; i < 20; i++) {
       setTimeout(() => {
         const particle = document.createElement('div');
@@ -998,7 +979,6 @@ export default function EmotionMaze() {
       }, i * 50);
     }
     
-    // Confete extra
     confetti({
       particleCount: 150,
       spread: 100,
@@ -1007,18 +987,26 @@ export default function EmotionMaze() {
     });
   };
 
-  // Mover jogador
+  // Mover jogador - SIMPLIFICADO
   const movePlayer = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
     if (gameState !== 'playing') return;
 
     const newPos = { ...playerPosition };
-    const moveSpeed = activePowerup === 'speed' ? 2 : 1;
     
+    // SEMPRE move 1 casa por vez
     switch(direction) {
-      case 'up': newPos.y = Math.max(0, newPos.y - moveSpeed); break;
-      case 'down': newPos.y = Math.min(7, newPos.y + moveSpeed); break;
-      case 'left': newPos.x = Math.max(0, newPos.x - moveSpeed); break;
-      case 'right': newPos.x = Math.min(7, newPos.x + moveSpeed); break;
+      case 'up': 
+        newPos.y = Math.max(0, newPos.y - 1); 
+        break;
+      case 'down': 
+        newPos.y = Math.min(7, newPos.y + 1); 
+        break;
+      case 'left': 
+        newPos.x = Math.max(0, newPos.x - 1); 
+        break;
+      case 'right': 
+        newPos.x = Math.min(7, newPos.x + 1); 
+        break;
     }
 
     // Verifica paredes
@@ -1027,15 +1015,13 @@ export default function EmotionMaze() {
       return;
     }
 
-    // Verifica portas FECHADAS
+    // Verifica portas
     const door = level.doors?.find(d => d.x === newPos.x && d.y === newPos.y);
     if (door && !openedDoors.has(door.keyId)) {
-      // Verifica se tem a chave
       if (collectedItems.keys.has(door.keyId)) {
         setOpenedDoors(prev => new Set(prev).add(door.keyId));
         if (soundEnabled) playSound('door');
       } else {
-        // Porta fechada, não pode passar
         return;
       }
     }
@@ -1071,7 +1057,6 @@ export default function EmotionMaze() {
       setScore(prev => prev + points);
       if (soundEnabled) playSound('gem', 0.4);
       
-      // Efeito visual menor para gema especial
       confetti({
         particleCount: 30,
         spread: 50,
@@ -1079,7 +1064,7 @@ export default function EmotionMaze() {
       });
     }
 
-    // MEGA GEMAS!
+    // MEGA GEMAS
     const megaGem = level.megaGems?.find(g => g.x === newPos.x && g.y === newPos.y);
     if (megaGem && !collectedItems.megaGems.has(posKey)) {
       setCollectedItems(prev => ({
@@ -1088,8 +1073,6 @@ export default function EmotionMaze() {
       }));
       const points = activePowerup === 'doublePoints' ? 2000 : 1000;
       setScore(prev => prev + points);
-      
-      // EXPLOSÃO ÉPICA!
       createMegaGemExplosion();
     }
 
@@ -1144,7 +1127,6 @@ export default function EmotionMaze() {
     setScore(finalScore);
     setTotalScore(prev => prev + finalScore);
     
-    // Calcula estrelas
     let earnedStars = 1;
     const totalGems = (level.gems?.length || 0) + 
                       (level.specialGems?.length || 0) + 
@@ -1168,7 +1150,6 @@ export default function EmotionMaze() {
       origin: { y: 0.6 }
     });
     
-    // Verifica desbloqueio do mundo espelhado
     if (currentLevel === 19) {
       setTimeout(() => {
         setGameState('mirrorUnlocked');
@@ -1393,7 +1374,6 @@ export default function EmotionMaze() {
 
         {gameState === 'playing' && level && (
           <>
-            {/* Informações no topo */}
             <div className="flex flex-wrap justify-center gap-2 mb-2">
               <div className="bg-white/90 px-2 py-1 rounded text-xs font-bold text-gray-800">
                 ⭐ {score}
@@ -1412,7 +1392,6 @@ export default function EmotionMaze() {
               )}
             </div>
 
-            {/* Labirinto 8x8 */}
             <div className="flex justify-center items-center flex-1">
               <div 
                 className={styles.mazeGrid}
@@ -1426,7 +1405,6 @@ export default function EmotionMaze() {
               </div>
             </div>
 
-            {/* Controles */}
             <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white/90 rounded-xl p-3 shadow-lg">
               <div className="grid grid-cols-3 gap-1 w-32">
                 <div></div>
