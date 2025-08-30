@@ -98,14 +98,6 @@ const NPCS = [
   { id: 'penguin', emoji: '🐧', name: 'Pinguim' }
 ];
 
-// Tipos de pisos especiais
-const FLOOR_TYPES = {
-  normal: { icon: '', class: '' },
-  ice: { icon: '🧊', class: styles.cellIce },
-  sand: { icon: '🏜️', class: styles.cellSand },
-  spring: { icon: '🔄', class: styles.cellSpring }
-};
-
 // Função para criar labirinto 8x8 básico
 const createMaze8x8 = (complexity: number = 1): number[][] => {
   // Cria um labirinto 8x8 com bordas
@@ -157,7 +149,7 @@ const createMaze8x8 = (complexity: number = 1): number[][] => {
   return maze;
 };
 
-// CONFIGURAÇÃO DOS 30 NÍVEIS
+// CONFIGURAÇÃO DOS 30 NÍVEIS - SEM PISOS ESPECIAIS PROBLEMÁTICOS
 const LEVELS = [
   // MUNDO 1 - INTRODUÇÃO (Níveis 1-10)
   {
@@ -170,14 +162,12 @@ const LEVELS = [
     start: { x: 1, y: 1 },
     end: { x: 6, y: 6 },
     npcs: [{ type: NPCS[0], x: 3, y: 3 }],
-    gems: [{ x: 5, y: 5, type: 'normal' }], // Apenas 1 gema normal
+    gems: [{ x: 5, y: 5, type: 'normal' }],
     specialGems: [],
     megaGems: [],
     powerups: [],
     keys: [],
     doors: [],
-    specialFloors: [],
-    enemies: [],
     perfectTime: 30
   },
   {
@@ -199,8 +189,6 @@ const LEVELS = [
     powerups: [],
     keys: [],
     doors: [],
-    specialFloors: [],
-    enemies: [],
     perfectTime: 40
   },
   {
@@ -222,8 +210,6 @@ const LEVELS = [
     powerups: [{ x: 4, y: 3, type: 'reveal' }],
     keys: [],
     doors: [],
-    specialFloors: [],
-    enemies: [],
     perfectTime: 45
   },
   {
@@ -240,13 +226,11 @@ const LEVELS = [
       { x: 2, y: 2, type: 'normal' },
       { x: 4, y: 5, type: 'normal' }
     ],
-    specialGems: [{ x: 3, y: 3, type: 'special' }], // Primeira gema especial!
+    specialGems: [{ x: 3, y: 3, type: 'special' }],
     megaGems: [],
     powerups: [{ x: 5, y: 1, type: 'doublePoints' }],
     keys: [],
     doors: [],
-    specialFloors: [],
-    enemies: [],
     perfectTime: 50
   },
   {
@@ -264,15 +248,13 @@ const LEVELS = [
       { x: 5, y: 4, type: 'normal' }
     ],
     specialGems: [{ x: 4, y: 1, type: 'special' }],
-    megaGems: [{ x: 1, y: 6, type: 'mega' }], // PRIMEIRA MEGA GEMA!
+    megaGems: [{ x: 1, y: 6, type: 'mega' }],
     powerups: [
       { x: 6, y: 2, type: 'reveal' },
       { x: 2, y: 4, type: 'wallPass' }
     ],
     keys: [],
     doors: [],
-    specialFloors: [],
-    enemies: [],
     perfectTime: 60
   },
   {
@@ -301,8 +283,6 @@ const LEVELS = [
     ],
     keys: [],
     doors: [],
-    specialFloors: [],
-    enemies: [],
     perfectTime: 70
   },
   {
@@ -328,8 +308,6 @@ const LEVELS = [
     ],
     keys: [],
     doors: [],
-    specialFloors: [],
-    enemies: [],
     perfectTime: 65
   },
   {
@@ -360,8 +338,6 @@ const LEVELS = [
     ],
     keys: [],
     doors: [],
-    specialFloors: [],
-    enemies: [],
     perfectTime: 75
   },
   {
@@ -394,8 +370,6 @@ const LEVELS = [
     ],
     keys: [],
     doors: [],
-    specialFloors: [],
-    enemies: [],
     perfectTime: 80
   },
   {
@@ -428,19 +402,23 @@ const LEVELS = [
     ],
     keys: [],
     doors: [],
-    specialFloors: [],
-    enemies: [],
     perfectTime: 90
   },
 
-  // MUNDO 2 - MECÂNICAS AVANÇADAS (Níveis 11-20)
+  // MUNDO 2 - PORTAS E CHAVES (Níveis 11-20)
   {
     id: 11,
     name: 'Portas e Chaves',
-    story: 'Use a chave para abrir a porta!',
+    story: 'Pegue a chave 🗝️ para abrir a porta 🚪!',
     emotion: 'joy',
     size: 8,
-    grid: createMaze8x8(2),
+    grid: (() => {
+      const maze = createMaze8x8(2);
+      // Adiciona parede para forçar uso da porta
+      maze[3][2] = 1;
+      maze[3][4] = 1;
+      return maze;
+    })(),
     start: { x: 1, y: 1 },
     end: { x: 6, y: 6 },
     npcs: [{ type: NPCS[0], x: 5, y: 5 }],
@@ -452,18 +430,21 @@ const LEVELS = [
     megaGems: [],
     powerups: [{ x: 5, y: 2, type: 'reveal' }],
     keys: [{ x: 1, y: 5, id: 'key1' }],
-    doors: [{ x: 3, y: 3, keyId: 'key1' }],
-    specialFloors: [],
-    enemies: [],
+    doors: [{ x: 3, y: 3, keyId: 'key1' }], // Porta bloqueia o caminho
     perfectTime: 70
   },
   {
     id: 12,
-    name: 'Piso de Gelo',
-    story: 'Cuidado! O gelo é escorregadio!',
+    name: 'Duas Portas',
+    story: 'Cada chave abre uma porta diferente!',
     emotion: 'calm',
     size: 8,
-    grid: createMaze8x8(2),
+    grid: (() => {
+      const maze = createMaze8x8(2);
+      maze[2][3] = 1;
+      maze[5][3] = 1;
+      return maze;
+    })(),
     start: { x: 1, y: 1 },
     end: { x: 6, y: 6 },
     npcs: [{ type: NPCS[1], x: 4, y: 3 }],
@@ -481,20 +462,20 @@ const LEVELS = [
       { x: 4, y: 2, type: 'speed' },
       { x: 2, y: 5, type: 'doublePoints' }
     ],
-    keys: [],
-    doors: [],
-    specialFloors: [
-      { x: 2, y: 2, type: 'ice' },
-      { x: 3, y: 2, type: 'ice' },
-      { x: 4, y: 2, type: 'ice' }
+    keys: [
+      { x: 6, y: 1, id: 'key1' },
+      { x: 1, y: 6, id: 'key2' }
     ],
-    enemies: [],
+    doors: [
+      { x: 2, y: 2, keyId: 'key1' },
+      { x: 5, y: 5, keyId: 'key2' }
+    ],
     perfectTime: 75
   },
   {
     id: 13,
-    name: 'Areia Movediça',
-    story: 'A areia deixa tudo mais lento!',
+    name: 'Labirinto com Segredos',
+    story: 'Encontre todas as chaves para avançar!',
     emotion: 'courage',
     size: 8,
     grid: createMaze8x8(3),
@@ -517,21 +498,19 @@ const LEVELS = [
     ],
     keys: [{ x: 2, y: 4, id: 'key1' }],
     doors: [{ x: 4, y: 4, keyId: 'key1' }],
-    specialFloors: [
-      { x: 3, y: 3, type: 'sand' },
-      { x: 3, y: 4, type: 'sand' },
-      { x: 3, y: 5, type: 'sand' }
-    ],
-    enemies: [],
     perfectTime: 80
   },
   {
     id: 14,
-    name: 'Molas Saltitantes',
-    story: 'As molas fazem você pular longe!',
+    name: 'Mega Tesouro Protegido',
+    story: 'A mega gema está atrás da porta!',
     emotion: 'sadness',
     size: 8,
-    grid: createMaze8x8(2),
+    grid: (() => {
+      const maze = createMaze8x8(2);
+      maze[4][5] = 1; // Parede extra
+      return maze;
+    })(),
     start: { x: 1, y: 1 },
     end: { x: 6, y: 6 },
     npcs: [{ type: NPCS[3], x: 5, y: 3 }],
@@ -553,19 +532,14 @@ const LEVELS = [
       { x: 3, y: 1, type: 'reveal' },
       { x: 4, y: 3, type: 'doublePoints' }
     ],
-    keys: [],
-    doors: [],
-    specialFloors: [
-      { x: 2, y: 3, type: 'spring' },
-      { x: 5, y: 4, type: 'spring' }
-    ],
-    enemies: [],
+    keys: [{ x: 1, y: 3, id: 'key1' }],
+    doors: [{ x: 3, y: 6, keyId: 'key1' }], // Porta protege mega gema
     perfectTime: 85
   },
   {
     id: 15,
-    name: 'Labirinto Misto',
-    story: 'Todos os pisos especiais juntos!',
+    name: 'Labirinto das Portas',
+    story: 'Muitas portas para abrir!',
     emotion: 'fear',
     size: 8,
     grid: createMaze8x8(3),
@@ -596,18 +570,12 @@ const LEVELS = [
       { x: 3, y: 3, keyId: 'key1' },
       { x: 5, y: 5, keyId: 'key2' }
     ],
-    specialFloors: [
-      { x: 2, y: 2, type: 'ice' },
-      { x: 4, y: 3, type: 'sand' },
-      { x: 5, y: 2, type: 'spring' }
-    ],
-    enemies: [],
     perfectTime: 95
   },
   {
     id: 16,
-    name: 'Múltiplas Chaves',
-    story: 'Encontre todas as chaves na ordem certa!',
+    name: 'Três Chaves Mágicas',
+    story: 'Encontre as três chaves na ordem certa!',
     emotion: 'joy',
     size: 8,
     grid: createMaze8x8(3),
@@ -639,8 +607,6 @@ const LEVELS = [
       { x: 4, y: 5, keyId: 'key2' },
       { x: 2, y: 4, keyId: 'key3' }
     ],
-    specialFloors: [],
-    enemies: [],
     perfectTime: 100
   },
   {
@@ -676,11 +642,6 @@ const LEVELS = [
     ],
     keys: [{ x: 6, y: 4, id: 'key1' }],
     doors: [{ x: 3, y: 3, keyId: 'key1' }],
-    specialFloors: [
-      { x: 2, y: 3, type: 'ice' },
-      { x: 4, y: 2, type: 'sand' }
-    ],
-    enemies: [],
     perfectTime: 110
   },
   {
@@ -720,10 +681,6 @@ const LEVELS = [
     ],
     keys: [],
     doors: [],
-    specialFloors: [
-      { x: 3, y: 3, type: 'spring' }
-    ],
-    enemies: [],
     perfectTime: 120
   },
   {
@@ -764,12 +721,6 @@ const LEVELS = [
       { x: 3, y: 4, keyId: 'key1' },
       { x: 5, y: 3, keyId: 'key2' }
     ],
-    specialFloors: [
-      { x: 2, y: 2, type: 'ice' },
-      { x: 4, y: 4, type: 'sand' },
-      { x: 6, y: 5, type: 'spring' }
-    ],
-    enemies: [],
     perfectTime: 130
   },
   {
@@ -818,13 +769,6 @@ const LEVELS = [
       { x: 4, y: 4, keyId: 'key2' },
       { x: 5, y: 1, keyId: 'key3' }
     ],
-    specialFloors: [
-      { x: 2, y: 3, type: 'ice' },
-      { x: 3, y: 2, type: 'sand' },
-      { x: 4, y: 5, type: 'spring' },
-      { x: 6, y: 4, type: 'ice' }
-    ],
-    enemies: [],
     perfectTime: 150
   }
 ];
@@ -845,7 +789,7 @@ const mirrorLevel = (level: any, newId: number) => {
   
   mirrored.npcs = level.npcs.map((npc: any) => ({
     ...npc,
-    type: NPCS[9 - (NPCS.indexOf(npc.type) % 10)], // NPC diferente
+    type: NPCS[9 - (NPCS.indexOf(npc.type) % 10)],
     x: mirrorX(npc.x),
     y: npc.y
   }));
@@ -878,11 +822,6 @@ const mirrorLevel = (level: any, newId: number) => {
   mirrored.doors = level.doors.map((d: any) => ({
     ...d,
     x: mirrorX(d.x)
-  }));
-  
-  mirrored.specialFloors = level.specialFloors.map((f: any) => ({
-    ...f,
-    x: mirrorX(f.x)
   }));
   
   // Espelha o grid
@@ -924,7 +863,6 @@ export default function EmotionMaze() {
   const [showCutscene, setShowCutscene] = useState(false);
   const [cutsceneContent, setCutsceneContent] = useState({ title: '', text: '', image: '' });
   const [isMobile, setIsMobile] = useState(false);
-  const [isSliding, setIsSliding] = useState(false);
 
   const level = ALL_LEVELS[currentLevel];
   const currentEmotion = level?.emotion || 'joy';
@@ -1069,34 +1007,9 @@ export default function EmotionMaze() {
     });
   };
 
-  // Verificar piso especial
-  const checkSpecialFloor = (x: number, y: number) => {
-    const floor = level.specialFloors?.find(f => f.x === x && f.y === y);
-    if (!floor) return { x, y };
-    
-    let newX = x;
-    let newY = y;
-    
-    switch (floor.type) {
-      case 'ice':
-        // Continua deslizando na mesma direção
-        // (implementação simplificada)
-        break;
-      case 'sand':
-        // Movimento lento (já tratado no movePlayer)
-        break;
-      case 'spring':
-        // Pula 2 casas na direção do movimento
-        // (implementação simplificada)
-        break;
-    }
-    
-    return { x: newX, y: newY };
-  };
-
   // Mover jogador
   const movePlayer = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
-    if (gameState !== 'playing' || isSliding) return;
+    if (gameState !== 'playing') return;
 
     const newPos = { ...playerPosition };
     const moveSpeed = activePowerup === 'speed' ? 2 : 1;
@@ -1114,7 +1027,7 @@ export default function EmotionMaze() {
       return;
     }
 
-    // Verifica portas
+    // Verifica portas FECHADAS
     const door = level.doors?.find(d => d.x === newPos.x && d.y === newPos.y);
     if (door && !openedDoors.has(door.keyId)) {
       // Verifica se tem a chave
@@ -1122,22 +1035,21 @@ export default function EmotionMaze() {
         setOpenedDoors(prev => new Set(prev).add(door.keyId));
         if (soundEnabled) playSound('door');
       } else {
-        return; // Porta fechada
+        // Porta fechada, não pode passar
+        return;
       }
     }
 
-    // Verifica piso especial
-    const finalPos = checkSpecialFloor(newPos.x, newPos.y);
-    
-    setPlayerPosition(finalPos);
+    // Move o jogador
+    setPlayerPosition(newPos);
     setMoves(prev => prev + 1);
     if (soundEnabled) playSound('footstep', 0.1);
 
     // Coleta de itens
-    const posKey = `${finalPos.x},${finalPos.y}`;
+    const posKey = `${newPos.x},${newPos.y}`;
 
     // Gemas normais
-    const gem = level.gems?.find(g => g.x === finalPos.x && g.y === finalPos.y);
+    const gem = level.gems?.find(g => g.x === newPos.x && g.y === newPos.y);
     if (gem && !collectedItems.gems.has(posKey)) {
       setCollectedItems(prev => ({
         ...prev,
@@ -1149,7 +1061,7 @@ export default function EmotionMaze() {
     }
 
     // Gemas especiais
-    const specialGem = level.specialGems?.find(g => g.x === finalPos.x && g.y === finalPos.y);
+    const specialGem = level.specialGems?.find(g => g.x === newPos.x && g.y === newPos.y);
     if (specialGem && !collectedItems.specialGems.has(posKey)) {
       setCollectedItems(prev => ({
         ...prev,
@@ -1168,7 +1080,7 @@ export default function EmotionMaze() {
     }
 
     // MEGA GEMAS!
-    const megaGem = level.megaGems?.find(g => g.x === finalPos.x && g.y === finalPos.y);
+    const megaGem = level.megaGems?.find(g => g.x === newPos.x && g.y === newPos.y);
     if (megaGem && !collectedItems.megaGems.has(posKey)) {
       setCollectedItems(prev => ({
         ...prev,
@@ -1182,7 +1094,7 @@ export default function EmotionMaze() {
     }
 
     // Power-ups
-    const powerup = level.powerups?.find(p => p.x === finalPos.x && p.y === finalPos.y);
+    const powerup = level.powerups?.find(p => p.x === newPos.x && p.y === newPos.y);
     if (powerup && !collectedItems.powerups.has(posKey)) {
       setCollectedItems(prev => ({
         ...prev,
@@ -1196,7 +1108,7 @@ export default function EmotionMaze() {
     }
 
     // Chaves
-    const key = level.keys?.find(k => k.x === finalPos.x && k.y === finalPos.y);
+    const key = level.keys?.find(k => k.x === newPos.x && k.y === newPos.y);
     if (key && !collectedItems.keys.has(key.id)) {
       setCollectedItems(prev => ({
         ...prev,
@@ -1207,7 +1119,7 @@ export default function EmotionMaze() {
     }
 
     // NPCs
-    const npc = level.npcs?.find(n => n.x === finalPos.x && n.y === finalPos.y);
+    const npc = level.npcs?.find(n => n.x === newPos.x && n.y === newPos.y);
     if (npc && !collectedItems.npcs.has(posKey)) {
       setCollectedItems(prev => ({
         ...prev,
@@ -1219,10 +1131,10 @@ export default function EmotionMaze() {
     }
 
     // Verifica fim do nível
-    if (finalPos.x === level.end.x && finalPos.y === level.end.y) {
+    if (newPos.x === level.end.x && newPos.y === level.end.y) {
       completeLevel();
     }
-  }, [gameState, playerPosition, level, collectedItems, openedDoors, activePowerup, soundEnabled, isSliding]);
+  }, [gameState, playerPosition, level, collectedItems, openedDoors, activePowerup, soundEnabled]);
 
   // Completar nível
   const completeLevel = () => {
@@ -1323,9 +1235,9 @@ export default function EmotionMaze() {
     const megaGem = level.megaGems?.find(g => g.x === x && g.y === y && !collectedItems.megaGems.has(`${x},${y}`));
     const powerup = level.powerups?.find(p => p.x === x && p.y === y && !collectedItems.powerups.has(`${x},${y}`));
     const key = level.keys?.find(k => k.x === x && k.y === y && !collectedItems.keys.has(k.id));
-    const door = level.doors?.find(d => d.x === x && d.y === y && !openedDoors.has(d.keyId));
+    const door = level.doors?.find(d => d.x === x && d.y === y);
+    const doorIsOpen = door ? openedDoors.has(door.keyId) : false;
     const npc = level.npcs?.find(n => n.x === x && n.y === y && !collectedItems.npcs.has(`${x},${y}`));
-    const specialFloor = level.specialFloors?.find(f => f.x === x && f.y === y);
     
     let className = styles.cell;
     
@@ -1333,12 +1245,9 @@ export default function EmotionMaze() {
       className += ` ${styles.cellWall}`;
     } else {
       className += ` ${styles.cellPath}`;
-      if (specialFloor) {
-        className += ` ${FLOOR_TYPES[specialFloor.type as keyof typeof FLOOR_TYPES].class}`;
-      }
     }
     
-    if (door) {
+    if (door && !doorIsOpen) {
       className += ` ${styles.door}`;
     }
     
@@ -1356,7 +1265,8 @@ export default function EmotionMaze() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          position: 'relative'
+          position: 'relative',
+          backgroundColor: door && !doorIsOpen ? '#8B4513' : undefined
         }}
       >
         {isPlayer && <span className={styles.player} style={{ fontSize }}>🧑</span>}
@@ -1367,7 +1277,7 @@ export default function EmotionMaze() {
         {megaGem && !isPlayer && <span className={styles.megaGem} style={{ fontSize }}>🌟</span>}
         {powerup && !isPlayer && <span style={{ fontSize }}>{POWERUPS[powerup.type as keyof typeof POWERUPS].icon}</span>}
         {key && !isPlayer && <span className={styles.key} style={{ fontSize }}>🗝️</span>}
-        {door && !isPlayer && <span style={{ fontSize }}>🚪</span>}
+        {door && !doorIsOpen && !isPlayer && <span style={{ fontSize, filter: 'brightness(1.5)' }}>🚪</span>}
       </div>
     );
   };
@@ -1465,6 +1375,11 @@ export default function EmotionMaze() {
               <div className="text-5xl mb-4 text-center">{cutsceneContent.image}</div>
               <h2 className="text-xl font-bold mb-3 text-gray-800 text-center">{cutsceneContent.title}</h2>
               <p className="text-sm text-gray-700 mb-4 text-center">{cutsceneContent.text}</p>
+              {level.keys && level.keys.length > 0 && (
+                <div className="bg-yellow-100 rounded p-2 mb-3">
+                  <p className="text-xs font-bold">🗝️ Pegue chaves para abrir 🚪 portas!</p>
+                </div>
+              )}
               <button
                 onClick={startLevel}
                 className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg font-bold"
