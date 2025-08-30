@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import styles from './emotionmaze.module.css';
 
-// Sistema de Power-ups ATUALIZADO
+// Sistema de Power-ups
 const POWERUPS = {
   wallPass: {
     name: 'Atravessador de Paredes',
@@ -33,14 +33,13 @@ const POWERUPS = {
   }
 };
 
-// Configuração de sons
+// Configuração de sons (SEM O SOM DE SUCESSO)
 const SOUNDS = {
   footstep: '/sounds/footstep.wav',
   checkpoint: '/sounds/coin.wav',
   powerup: '/sounds/magic.wav',
   gem: '/sounds/coin.wav',
-  wallPass: '/sounds/magic.wav',
-  gameComplete: '/sounds/sucess.wav'
+  wallPass: '/sounds/magic.wav'
 };
 
 // Função para tocar som
@@ -605,6 +604,7 @@ export default function EmotionMaze() {
     
     setStars(earnedStars);
     
+    // Apenas confete, SEM SOM!
     confetti({
       particleCount: 100,
       spread: 70,
@@ -638,7 +638,12 @@ export default function EmotionMaze() {
       });
       setShowCutscene(true);
     } else {
-      if (soundEnabled) playSound('gameComplete', 0.5);
+      // Jogo completo - apenas confete extra, SEM SOM!
+      confetti({
+        particleCount: 200,
+        spread: 100,
+        origin: { y: 0.5 }
+      });
       setGameState('gameComplete');
     }
   };
@@ -706,7 +711,6 @@ export default function EmotionMaze() {
 
   const emotionTheme = EMOTIONS[currentEmotion];
 
-  // JSX COMPLETO
   return (
     <div className={`${styles.gameContainer} ${styles[`theme${currentEmotion.charAt(0).toUpperCase() + currentEmotion.slice(1)}`]}`}>
       <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
