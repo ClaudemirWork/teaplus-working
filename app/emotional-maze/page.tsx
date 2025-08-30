@@ -33,14 +33,14 @@ const POWERUPS = {
   }
 };
 
-// Configuração de sons COMPLETA
+// Configuração de sons
 const SOUNDS = {
   footstep: '/sounds/footstep.wav',
   checkpoint: '/sounds/coin.wav',
-  powerup: '/sounds/magic.wav', // Você já trocou este arquivo por um mais curto
+  powerup: '/sounds/magic.wav',
   gem: '/sounds/coin.wav',
   wallPass: '/sounds/magic.wav',
-  levelComplete: '/sounds/sucess.wav' // Restaurado!
+  levelComplete: '/sounds/sucess.wav'
 };
 
 // Função para tocar som
@@ -342,8 +342,19 @@ export default function EmotionMaze() {
   const [allLevels, setAllLevels] = useState(LEVELS);
   const [showPath, setShowPath] = useState(false);
   const [showGems, setShowGems] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const level = allLevels[currentLevel] || LEVELS[0];
+
+  // Detectar mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -431,7 +442,6 @@ export default function EmotionMaze() {
   const startLevel = () => {
     setShowCutscene(false);
     setGameState('playing');
-    // SEM DIÁLOGO DOS MASCOTES! Direto para o jogo
   };
 
   const movePlayer = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
@@ -463,7 +473,6 @@ export default function EmotionMaze() {
       if (soundEnabled) playSound('wallPass', 0.2);
     }
 
-    // Verificar gema
     const gemKey = `${newPos.x},${newPos.y}`;
     const gem = level.gems?.find(g => g.x === newPos.x && g.y === newPos.y);
     if (gem && !collectedGems.has(gemKey)) {
@@ -473,7 +482,6 @@ export default function EmotionMaze() {
       if (soundEnabled) playSound('gem');
     }
 
-    // Verificar checkpoint
     const checkpointKey = `${newPos.x},${newPos.y}`;
     const checkpoint = level.checkpoints?.find(cp => cp.x === newPos.x && cp.y === newPos.y);
     if (checkpoint && !visitedCheckpoints.has(checkpointKey)) {
@@ -483,7 +491,6 @@ export default function EmotionMaze() {
       if (soundEnabled) playSound('checkpoint');
     }
 
-    // Verificar power-up
     const powerupKey = `${newPos.x},${newPos.y}`;
     const powerup = level.powerups?.find(p => p.x === newPos.x && p.y === newPos.y);
     if (powerup && !collectedPowerups.has(powerupKey)) {
@@ -504,7 +511,6 @@ export default function EmotionMaze() {
       }
     }
 
-    // Verificar NPC
     if (!npcFollowing && level.npc && newPos.x === level.npcPosition.x && newPos.y === level.npcPosition.y) {
       setNpcFollowing(true);
       setRescuedNpcs(prev => [...prev, level.npc.id]);
@@ -513,7 +519,6 @@ export default function EmotionMaze() {
       if (soundEnabled) playSound('checkpoint', 0.5);
     }
 
-    // Verificar fim do nível
     if (newPos.x === level.end.x && newPos.y === level.end.y) {
       completeLevel();
     }
@@ -535,7 +540,6 @@ export default function EmotionMaze() {
     
     setStars(earnedStars);
     
-    // Som de vitória e confete
     if (soundEnabled) playSound('levelComplete');
     confetti({
       particleCount: 100,
@@ -618,22 +622,34 @@ export default function EmotionMaze() {
     
     if (isOnPath && !isPlayer && !isEnd) className += ` ${styles.cellRevealed}`;
     
-    const cellSize = level.size > 20 ? 16 : level.size > 10 ? 24 : 32;
+    // Tamanho responsivo das células
+    const cellSize = isMobile 
+      ? level.size > 10 ? '20px' : level.size > 7 ? '28px' : '35px'
+      : level.size > 10 ? '24px' : level.size > 7 ? '32px' : '40px';
+    
+    const fontSize = isMobile ? '12px' : '16px';
     
     return (
       <div 
         key={`${x}-${y}`} 
         className={className}
-        style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
+        style={{ 
+          width: cellSize, 
+          height: cellSize,
+          fontSize: fontSize,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
       >
-        {isPlayer && <span className={styles.player}>🧑</span>}
-        {isEnd && !isPlayer && <span>🎯</span>}
-        {isNpc && <span className={styles.npc}>{level.npc.emoji}</span>}
-        {isCheckpoint && !visitedCheckpoints.has(`${x},${y}`) && !isPlayer && !isNpc && <span>⭐</span>}
+        {isPlayer && <span style={{ fontSize }}>🧑</span>}
+        {isEnd && !isPlayer && <span style={{ fontSize }}>🎯</span>}
+        {isNpc && <span style={{ fontSize }}>{level.npc.emoji}</span>}
+        {isCheckpoint && !visitedCheckpoints.has(`${x},${y}`) && !isPlayer && !isNpc && <span style={{ fontSize }}>⭐</span>}
         {isPowerup && !isPlayer && (
-          <span>{POWERUPS[level.powerups.find(p => p.x === x && p.y === y)?.type as keyof typeof POWERUPS]?.icon}</span>
+          <span style={{ fontSize }}>{POWERUPS[level.powerups.find(p => p.x === x && p.y === y)?.type as keyof typeof POWERUPS]?.icon}</span>
         )}
-        {isGem && (showGems || !isWall) && !isPlayer && <span>💎</span>}
+        {isGem && (showGems || !isWall) && !isPlayer && <span style={{ fontSize }}>💎</span>}
       </div>
     );
   };
@@ -641,18 +657,19 @@ export default function EmotionMaze() {
   const emotionTheme = EMOTIONS[currentEmotion];
 
   return (
-    <div className={`${styles.gameContainer} ${styles[`theme${currentEmotion.charAt(0).toUpperCase() + currentEmotion.slice(1)}`]}`}>
+    <div className={`${styles.gameContainer} ${styles[`theme${currentEmotion.charAt(0).toUpperCase() + currentEmotion.slice(1)}`]}`}
+      style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      
       <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between h-14">
             <Link href="/dashboard" className="flex items-center text-teal-600 hover:text-teal-700">
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-5 w-5" />
               <span className="ml-1 font-medium hidden sm:inline">Voltar</span>
             </Link>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
+            <h1 className="text-base sm:text-xl font-bold text-gray-800 flex items-center gap-2">
               <Heart className="text-red-500 h-5 w-5" />
-              <span className="hidden sm:inline">Labirinto das Emoções</span>
-              <span className="sm:hidden">Labirinto</span>
+              <span>Labirinto</span>
             </h1>
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
@@ -666,70 +683,55 @@ export default function EmotionMaze() {
 
       {gameState === 'playing' && (
         <>
-          <div className={styles.emotionIndicator}>
-            <div className={styles.emotionTitle}>Emoção</div>
-            <div className={styles.emotionCurrent}>
-              <span className={styles.emotionIcon}>{emotionTheme.icon}</span>
-              <span className="hidden sm:inline">{emotionTheme.name}</span>
-            </div>
+          <div className="bg-white/90 rounded-lg px-3 py-1 m-2 inline-block">
+            <span className="text-sm font-bold text-gray-800">
+              {emotionTheme.icon} {emotionTheme.name}
+            </span>
           </div>
           
           {activePowerup && (
-            <div className={styles.powerupIndicator} style={{ backgroundColor: POWERUPS[activePowerup as keyof typeof POWERUPS].color }}>
-              <div className="text-white font-bold text-sm">
-                {POWERUPS[activePowerup as keyof typeof POWERUPS].icon} {POWERUPS[activePowerup as keyof typeof POWERUPS].name}
-              </div>
-              <div className="text-white text-xl font-bold">
-                {powerupTimeLeft}s
-              </div>
+            <div className="bg-purple-600 text-white rounded-lg px-3 py-1 m-2 inline-block">
+              <span className="text-sm font-bold">
+                {POWERUPS[activePowerup as keyof typeof POWERUPS].icon} {powerupTimeLeft}s
+              </span>
             </div>
           )}
         </>
       )}
 
-      <main className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <main className="flex-1 p-4 flex flex-col" style={{ paddingBottom: isMobile ? '150px' : '20px' }}>
         {gameState === 'intro' && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center space-y-6"
+            className="text-center space-y-4"
           >
-            <div className="bg-white/90 backdrop-blur rounded-2xl p-6 sm:p-8 shadow-xl max-w-3xl mx-auto">
-              <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-800">
+            <div className="bg-white/90 backdrop-blur rounded-2xl p-6 shadow-xl max-w-3xl mx-auto">
+              <h1 className="text-2xl sm:text-4xl font-bold mb-4 text-gray-800">
                 O Labirinto das Emoções
               </h1>
               
-              <div className="flex justify-center gap-4 mb-6">
-                <div className="text-5xl sm:text-6xl animate-bounce">🦁</div>
-                <div className="text-5xl sm:text-6xl animate-bounce" style={{ animationDelay: '0.1s' }}>🦄</div>
+              <div className="flex justify-center gap-4 mb-4">
+                <div className="text-5xl">🦁</div>
+                <div className="text-5xl">🦄</div>
               </div>
               
-              <p className="text-base sm:text-lg text-gray-600 mb-6">
-                Ajude Leo e Mila a resgatar amigos perdidos em labirintos emocionais!
-                Complete os 5 níveis para desbloquear os MUNDOS ESPELHADOS!
+              <p className="text-sm sm:text-lg text-gray-700 mb-4">
+                Ajude Leo e Mila a resgatar amigos perdidos!
               </p>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-6">
-                {Object.entries(EMOTIONS).map(([key, emotion]) => (
-                  <div key={key} className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                    <div className="text-2xl sm:text-3xl mb-2">{emotion.icon}</div>
-                    <div className="font-semibold text-sm sm:text-base">{emotion.name}</div>
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {Object.entries(EMOTIONS).slice(0, 6).map(([key, emotion]) => (
+                  <div key={key} className="bg-gray-50 rounded-lg p-2">
+                    <div className="text-2xl">{emotion.icon}</div>
+                    <div className="text-xs font-semibold text-gray-800">{emotion.name}</div>
                   </div>
                 ))}
               </div>
               
-              <div className="bg-purple-100 rounded-lg p-3 sm:p-4 mb-6">
-                <h3 className="font-bold text-purple-800 mb-2">🎮 Power-ups!</h3>
-                <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
-                  <div>🕐 Atravessar</div>
-                  <div>👁️ Revelar</div>
-                  <div>💎 Gemas</div>
-                </div>
-              </div>
-              
               <button
                 onClick={startGame}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-lg sm:text-xl font-bold hover:scale-105 transition-transform"
+                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl text-lg font-bold"
               >
                 <Play className="inline mr-2" />
                 Começar
@@ -739,23 +741,18 @@ export default function EmotionMaze() {
         )}
 
         {showCutscene && (
-          <div className={styles.cutscene}>
+          <div className="flex items-center justify-center flex-1">
             <motion.div 
-              className={styles.cutsceneContent}
+              className="bg-white/90 rounded-2xl p-6 max-w-md"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
             >
-              <div className="text-5xl sm:text-6xl mb-4">{cutsceneContent.image}</div>
-              <h2 className="text-xl sm:text-2xl font-bold mb-4">{cutsceneContent.title}</h2>
-              <p className="text-base sm:text-lg mb-6">{cutsceneContent.text}</p>
-              {currentLevel >= 5 && (
-                <div className="bg-yellow-100 p-3 rounded-lg mb-4">
-                  <p className="text-sm font-bold">⚠️ MUNDO ESPELHADO!</p>
-                </div>
-              )}
+              <div className="text-5xl mb-4 text-center">{cutsceneContent.image}</div>
+              <h2 className="text-xl font-bold mb-3 text-gray-800 text-center">{cutsceneContent.title}</h2>
+              <p className="text-sm text-gray-700 mb-4 text-center">{cutsceneContent.text}</p>
               <button
                 onClick={startLevel}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-bold"
+                className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg font-bold"
               >
                 Vamos lá!
               </button>
@@ -764,204 +761,165 @@ export default function EmotionMaze() {
         )}
 
         {gameState === 'playing' && (
-          <div className="flex flex-col items-center gap-4">
+          <>
             {/* Informações no topo para mobile */}
-            <div className="flex flex-wrap justify-center gap-2 sm:hidden">
-              <div className="bg-white/90 px-3 py-1 rounded-lg flex items-center gap-1">
-                <Star className="text-yellow-500 h-4 w-4" />
-                <span className="text-sm font-bold">{score}</span>
+            <div className="flex flex-wrap justify-center gap-2 mb-2">
+              <div className="bg-white/90 px-2 py-1 rounded text-xs font-bold text-gray-800">
+                ⭐ {score}
               </div>
-              <div className="bg-white/90 px-3 py-1 rounded-lg flex items-center gap-1">
-                <Gem className="text-purple-500 h-4 w-4" />
-                <span className="text-sm">{collectedGems.size}/{level.gems?.length || 0}</span>
+              <div className="bg-white/90 px-2 py-1 rounded text-xs text-gray-800">
+                💎 {collectedGems.size}/{level.gems?.length || 0}
               </div>
-              <div className="bg-white/90 px-3 py-1 rounded-lg flex items-center gap-1">
-                <Users className="text-blue-500 h-4 w-4" />
-                <span className="text-sm">{npcFollowing ? '1/1' : '0/1'}</span>
+              <div className="bg-white/90 px-2 py-1 rounded text-xs text-gray-800">
+                🐾 {npcFollowing ? '✅' : '0/1'}
               </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 items-center justify-center">
+            {/* Labirinto */}
+            <div className="flex justify-center items-center flex-1">
               <div 
-                className={styles.mazeGrid} 
                 style={{ 
+                  display: 'grid',
                   gridTemplateColumns: `repeat(${level.size}, 1fr)`,
-                  maxWidth: '100%',
-                  overflow: 'auto'
+                  gap: '1px',
+                  backgroundColor: 'rgba(0,0,0,0.1)',
+                  padding: '4px',
+                  borderRadius: '8px'
                 }}
               >
                 {level.grid.map((row, y) =>
                   row.map((_, x) => renderCell(x, y))
                 )}
               </div>
-
-              {/* Painel lateral apenas em desktop */}
-              <div className="hidden sm:block space-y-4">
-                <div className="bg-white/90 backdrop-blur rounded-xl p-4 space-y-2">
-                  <div className="text-lg font-bold">Nível {currentLevel + 1} de {allLevels.length}</div>
-                  <div className="flex items-center gap-2">
-                    <Users className="text-blue-500" />
-                    <span>NPCs: {npcFollowing ? '1/1' : '0/1'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Gem className="text-purple-500" />
-                    <span>Gemas: {collectedGems.size}/{level.gems?.length || 0}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Compass className="text-green-500" />
-                    <span>Movimentos: {moves}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="text-orange-500" />
-                    <span>Tempo: {Math.floor(timeElapsed / 60)}:{(timeElapsed % 60).toString().padStart(2, '0')}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Star className="text-yellow-500" />
-                    <span>Pontos: {score}</span>
-                  </div>
-                </div>
-              </div>
             </div>
 
-            {/* Controles de movimento para mobile e desktop */}
-            <div className="bg-white/90 backdrop-blur rounded-xl p-3 sm:p-4 fixed bottom-4 right-4 sm:relative sm:bottom-auto sm:right-auto">
-              <div className="grid grid-cols-3 gap-1 sm:gap-2 w-28 sm:w-36 mx-auto">
+            {/* Controles */}
+            <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white/90 rounded-xl p-3 shadow-lg">
+              <div className="grid grid-cols-3 gap-1 w-32">
                 <div></div>
                 <button
                   onClick={() => movePlayer('up')}
-                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 sm:p-3 rounded-lg"
+                  className="bg-blue-500 text-white p-3 rounded-lg active:bg-blue-600"
                 >
                   ↑
                 </button>
                 <div></div>
                 <button
                   onClick={() => movePlayer('left')}
-                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 sm:p-3 rounded-lg"
+                  className="bg-blue-500 text-white p-3 rounded-lg active:bg-blue-600"
                 >
                   ←
                 </button>
                 <button
                   onClick={() => movePlayer('down')}
-                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 sm:p-3 rounded-lg"
+                  className="bg-blue-500 text-white p-3 rounded-lg active:bg-blue-600"
                 >
                   ↓
                 </button>
                 <button
                   onClick={() => movePlayer('right')}
-                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 sm:p-3 rounded-lg"
+                  className="bg-blue-500 text-white p-3 rounded-lg active:bg-blue-600"
                 >
                   →
                 </button>
               </div>
             </div>
-          </div>
+          </>
         )}
 
         {gameState === 'mirrorUnlocked' && (
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white/90 backdrop-blur rounded-2xl p-6 sm:p-8 max-w-2xl mx-auto text-center"
-          >
-            <Sparkles className="w-16 sm:w-20 h-16 sm:h-20 text-yellow-500 mx-auto mb-4" />
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
-              MUNDOS ESPELHADOS!
-            </h2>
-            <p className="text-lg sm:text-xl mb-6">
-              Você completou todos os níveis normais!
-            </p>
-            <div className="bg-yellow-100 rounded-lg p-4 mb-6">
-              <p className="font-bold text-base sm:text-lg mb-2">🪞 Como funciona:</p>
-              <p className="text-sm sm:text-base">Tudo está invertido! Esquerda é direita!</p>
-            </div>
-            <button
-              onClick={() => setGameState('levelComplete')}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-lg sm:text-xl font-bold hover:scale-105 transition-transform"
+          <div className="flex items-center justify-center flex-1">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white/90 rounded-2xl p-6 max-w-md text-center"
             >
-              Aceitar Desafio!
-            </button>
-          </motion.div>
+              <Sparkles className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold mb-3 text-purple-600">
+                MUNDOS ESPELHADOS!
+              </h2>
+              <p className="text-gray-700 mb-4">
+                Tudo está invertido! Esquerda é direita!
+              </p>
+              <button
+                onClick={() => setGameState('levelComplete')}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold"
+              >
+                Aceitar Desafio!
+              </button>
+            </motion.div>
+          </div>
         )}
 
         {gameState === 'levelComplete' && (
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white/90 backdrop-blur rounded-2xl p-6 sm:p-8 max-w-2xl mx-auto text-center"
-          >
-            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Nível Completo!</h2>
-            
-            <div className="flex justify-center gap-2 mb-4">
-              {[1, 2, 3].map(i => (
-                <Star
-                  key={i}
-                  className={`w-10 sm:w-12 h-10 sm:h-12 ${i <= stars ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
-                />
-              ))}
-            </div>
-            
-            <div className="space-y-2 mb-6 text-sm sm:text-base">
-              <p>Tempo: {Math.floor(timeElapsed / 60)}:{(timeElapsed % 60).toString().padStart(2, '0')}</p>
-              <p>Movimentos: {moves}</p>
-              <p>NPCs: {npcFollowing ? '✅' : '❌'}</p>
-              <p>Gemas: {collectedGems.size}/{level.gems?.length || 0}</p>
-              <p className="text-xl sm:text-2xl font-bold">Pontuação: {score}</p>
-            </div>
-            
-            {currentLevel < allLevels.length - 1 ? (
+          <div className="flex items-center justify-center flex-1">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white/90 rounded-2xl p-6 max-w-md text-center"
+            >
+              <h2 className="text-2xl font-bold mb-3 text-gray-800">Nível Completo!</h2>
+              
+              <div className="flex justify-center gap-2 mb-3">
+                {[1, 2, 3].map(i => (
+                  <Star
+                    key={i}
+                    className={`w-10 h-10 ${i <= stars ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+                  />
+                ))}
+              </div>
+              
+              <div className="text-sm text-gray-700 space-y-1 mb-4">
+                <p>Movimentos: {moves}</p>
+                <p>Gemas: {collectedGems.size}/{level.gems?.length || 0}</p>
+                <p className="text-xl font-bold text-gray-800">Pontos: {score}</p>
+              </div>
+              
               <button
                 onClick={nextLevel}
-                className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg font-bold hover:scale-105 transition-transform"
+                className="bg-green-500 text-white px-6 py-3 rounded-lg font-bold w-full"
               >
                 {currentLevel === 4 ? 'Mundos Espelhados!' : 'Próximo Nível'}
               </button>
-            ) : (
-              <button
-                onClick={() => window.location.reload()}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-lg font-bold hover:scale-105 transition-transform"
-              >
-                Jogar Novamente
-              </button>
-            )}
-          </motion.div>
+            </motion.div>
+          </div>
         )}
 
         {gameState === 'gameComplete' && (
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white/90 backdrop-blur rounded-2xl p-6 sm:p-8 max-w-3xl mx-auto text-center"
-          >
-            <Sparkles className="w-16 sm:w-20 h-16 sm:h-20 text-yellow-500 mx-auto mb-4 animate-spin" />
-            <h2 className="text-3xl sm:text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
-              VOCÊ É O MESTRE!
-            </h2>
-            <p className="text-xl sm:text-2xl mb-6">
-              Completou TODOS os labirintos!
-            </p>
-            
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              {rescuedNpcs.map(npcId => {
-                const npc = NPCS.find(n => n.id === npcId);
-                return npc ? (
-                  <div key={npcId} className="text-3xl sm:text-4xl">
-                    {npc.emoji}
-                  </div>
-                ) : null;
-              })}
-            </div>
-            
-            <p className="text-3xl sm:text-4xl font-bold mb-6 animate-pulse">
-              Pontuação: {score}
-            </p>
-            
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-lg sm:text-xl font-bold hover:scale-105 transition-transform"
+          <div className="flex items-center justify-center flex-1">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white/90 rounded-2xl p-6 max-w-md text-center"
             >
-              Jogar Novamente
-            </button>
-          </motion.div>
+              <Sparkles className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+              <h2 className="text-3xl font-bold mb-3 text-purple-600">
+                VOCÊ VENCEU!
+              </h2>
+              
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {rescuedNpcs.map(npcId => {
+                  const npc = NPCS.find(n => n.id === npcId);
+                  return npc ? (
+                    <div key={npcId} className="text-3xl">
+                      {npc.emoji}
+                    </div>
+                  ) : null;
+                })}
+              </div>
+              
+              <p className="text-2xl font-bold text-gray-800 mb-4">
+                Pontuação: {score}
+              </p>
+              
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold w-full"
+              >
+                Jogar Novamente
+              </button>
+            </motion.div>
+          </div>
         )}
       </main>
     </div>
