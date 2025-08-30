@@ -33,21 +33,29 @@ const POWERUPS = {
   }
 };
 
-// Configuração de sons (SEM O SOM DE SUCESSO)
+// Configuração de sons (APENAS OS SONS QUE FUNCIONAM BEM)
 const SOUNDS = {
   footstep: '/sounds/footstep.wav',
   checkpoint: '/sounds/coin.wav',
   powerup: '/sounds/magic.wav',
   gem: '/sounds/coin.wav',
   wallPass: '/sounds/magic.wav'
+  // REMOVIDO COMPLETAMENTE O SOM SUCESS/LEVELCOMPLETE
 };
 
 // Função para tocar som
 const playSound = (soundName: keyof typeof SOUNDS, volume: number = 0.3) => {
+  // Verificação extra de segurança - nunca tocar sucess
+  if (soundName === 'sucess' || soundName === 'levelComplete' || soundName === 'gameComplete') {
+    return; // NÃO TOCAR NADA
+  }
+  
   try {
-    const audio = new Audio(SOUNDS[soundName]);
-    audio.volume = volume;
-    audio.play().catch(() => {});
+    if (SOUNDS[soundName]) {
+      const audio = new Audio(SOUNDS[soundName]);
+      audio.volume = volume;
+      audio.play().catch(() => {});
+    }
   } catch (error) {
     console.log('Som não encontrado:', soundName);
   }
@@ -604,7 +612,7 @@ export default function EmotionMaze() {
     
     setStars(earnedStars);
     
-    // Apenas confete, SEM SOM!
+    // APENAS CONFETE VISUAL, NENHUM SOM!
     confetti({
       particleCount: 100,
       spread: 70,
@@ -638,7 +646,7 @@ export default function EmotionMaze() {
       });
       setShowCutscene(true);
     } else {
-      // Jogo completo - apenas confete extra, SEM SOM!
+      // APENAS CONFETE NO FINAL, SEM SOM!
       confetti({
         particleCount: 200,
         spread: 100,
