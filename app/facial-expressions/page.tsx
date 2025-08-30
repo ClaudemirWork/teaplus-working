@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ChevronLeft, Volume2, VolumeX, Star, Trophy, Heart, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -28,39 +29,73 @@ const playSound = (soundName: keyof typeof SOUNDS, volume: number = 0.3) => {
   }
 };
 
-// Configuração dos Cards CAA
+// Configuração dos Cards CAA - USANDO IMAGENS REAIS
 const CARD_CATEGORIES = {
   emocoes: [
-    { id: 'feliz', label: 'Feliz', emoji: '😊' },
-    { id: 'triste', label: 'Triste', emoji: '😢' },
-    { id: 'bravo', label: 'Bravo', emoji: '😡' },
-    { id: 'medo', label: 'Medo', emoji: '😨' },
-    { id: 'surpreso', label: 'Surpreso', emoji: '😮' },
-    { id: 'cansado', label: 'Cansado', emoji: '😴' },
-    { id: 'doente', label: 'Doente', emoji: '🤒' },
-    { id: 'amor', label: 'Amor', emoji: '🥰' }
+    { id: 'feliz', label: 'Feliz', path: '/cards/emocoes/feliz.webp' },
+    { id: 'triste', label: 'Triste', path: '/cards/emocoes/triste.webp' },
+    { id: 'bravo', label: 'Bravo', path: '/cards/emocoes/bravo.webp' },
+    { id: 'medo', label: 'Medo', path: '/cards/emocoes/medo.webp' },
+    { id: 'surpreso', label: 'Surpreso', path: '/cards/emocoes/surpreso.webp' },
+    { id: 'cansado', label: 'Cansado', path: '/cards/emocoes/cansado.webp' },
+    { id: 'doente', label: 'Doente', path: '/cards/emocoes/doente.webp' },
+    { id: 'amor', label: 'Amor', path: '/cards/emocoes/amor.webp' },
+    { id: 'animado', label: 'Animado', path: '/cards/emocoes/animado.webp' },
+    { id: 'preocupado', label: 'Preocupado', path: '/cards/emocoes/preocupado.webp' }
   ],
   acoes: [
-    { id: 'comer', label: 'Comer', emoji: '🍽️' },
-    { id: 'beber', label: 'Beber', emoji: '🥤' },
-    { id: 'dormir', label: 'Dormir', emoji: '😴' },
-    { id: 'brincar', label: 'Brincar', emoji: '🎮' },
-    { id: 'correr', label: 'Correr', emoji: '🏃' },
-    { id: 'pular', label: 'Pular', emoji: '🦘' },
-    { id: 'sentar', label: 'Sentar', emoji: '🪑' },
-    { id: 'andar', label: 'Andar', emoji: '🚶' }
+    { id: 'comer', label: 'Comer', path: '/cards/acoes/comer.webp' },
+    { id: 'beber', label: 'Beber', path: '/cards/acoes/beber.webp' },
+    { id: 'dormir', label: 'Dormir', path: '/cards/acoes/dormir.webp' },
+    { id: 'brincar', label: 'Brincar', path: '/cards/acoes/brincar.webp' },
+    { id: 'correr', label: 'Correr', path: '/cards/acoes/correr.webp' },
+    { id: 'pular', label: 'Pular', path: '/cards/acoes/pular.webp' },
+    { id: 'sentar', label: 'Sentar', path: '/cards/acoes/sentar.webp' },
+    { id: 'andar', label: 'Andar', path: '/cards/acoes/andar.webp' },
+    { id: 'abracar', label: 'Abraçar', path: '/cards/acoes/abracar.webp' },
+    { id: 'chorar', label: 'Chorar', path: '/cards/acoes/chorar.webp' },
+    { id: 'rir', label: 'Rir', path: '/cards/acoes/rir.webp' },
+    { id: 'escovar', label: 'Escovar', path: '/cards/acoes/escovar.webp' }
   ],
-  expressoes: [
-    { id: 'chorando', label: 'Chorando', emoji: '😭' },
-    { id: 'rindo', label: 'Rindo', emoji: '😂' },
-    { id: 'pensando', label: 'Pensando', emoji: '🤔' },
-    { id: 'confuso', label: 'Confuso', emoji: '😕' }
+  necessidades: [
+    { id: 'fome', label: 'Fome', path: '/cards/necessidades/fome.webp' },
+    { id: 'sede', label: 'Sede', path: '/cards/necessidades/sede.webp' },
+    { id: 'banheiro', label: 'Banheiro', path: '/cards/necessidades/banheiro.webp' },
+    { id: 'ajuda', label: 'Ajuda', path: '/cards/necessidades/ajuda.webp' },
+    { id: 'parar', label: 'Parar', path: '/cards/necessidades/parar.webp' },
+    { id: 'mais', label: 'Mais', path: '/cards/necessidades/mais.webp' },
+    { id: 'acabou', label: 'Acabou', path: '/cards/necessidades/acabou.webp' },
+    { id: 'quero', label: 'Quero', path: '/cards/necessidades/quero.webp' }
   ],
-  atividades: [
-    { id: 'bicicleta', label: 'Bicicleta', emoji: '🚴' },
-    { id: 'carro', label: 'Carro', emoji: '🚗' },
-    { id: 'nadando', label: 'Nadando', emoji: '🏊' },
-    { id: 'jogando', label: 'Jogando', emoji: '⚽' }
+  pessoas: [
+    { id: 'mae', label: 'Mãe', path: '/cards/pessoas/mae.webp' },
+    { id: 'pai', label: 'Pai', path: '/cards/pessoas/pai.webp' },
+    { id: 'irmao', label: 'Irmão', path: '/cards/pessoas/irmao.webp' },
+    { id: 'irma', label: 'Irmã', path: '/cards/pessoas/irma.webp' },
+    { id: 'amigo', label: 'Amigo', path: '/cards/pessoas/amigo.webp' },
+    { id: 'professora', label: 'Professora', path: '/cards/pessoas/professora.webp' },
+    { id: 'medico', label: 'Médico', path: '/cards/pessoas/medico.webp' },
+    { id: 'eu', label: 'Eu', path: '/cards/pessoas/eu.webp' }
+  ],
+  escola: [
+    { id: 'escola', label: 'Escola', path: '/cards/escola/escola.webp' },
+    { id: 'sala', label: 'Sala', path: '/cards/escola/sala.webp' },
+    { id: 'livro', label: 'Livro', path: '/cards/escola/livro.webp' },
+    { id: 'lapis', label: 'Lápis', path: '/cards/escola/lapis.webp' },
+    { id: 'recreio', label: 'Recreio', path: '/cards/escola/recreio.webp' },
+    { id: 'lanche', label: 'Lanche', path: '/cards/escola/lanche.webp' },
+    { id: 'mochila', label: 'Mochila', path: '/cards/escola/mochila.webp' },
+    { id: 'tarefa', label: 'Tarefa', path: '/cards/escola/tarefa.webp' }
+  ],
+  rotina: [
+    { id: 'acordar', label: 'Acordar', path: '/cards/rotina/acordar.webp' },
+    { id: 'banho', label: 'Banho', path: '/cards/rotina/banho.webp' },
+    { id: 'cafe', label: 'Café', path: '/cards/rotina/cafe.webp' },
+    { id: 'almoco', label: 'Almoço', path: '/cards/rotina/almoco.webp' },
+    { id: 'jantar', label: 'Jantar', path: '/cards/rotina/jantar.webp' },
+    { id: 'dormir_rotina', label: 'Dormir', path: '/cards/rotina/dormir.webp' },
+    { id: 'segundafeira', label: 'Segunda', path: '/cards/rotina/segundafeira.webp' },
+    { id: 'tercafeira', label: 'Terça', path: '/cards/rotina/tercafeira.webp' }
   ]
 };
 
@@ -73,81 +108,97 @@ const LIBERATION_MILESTONES = [
   { points: 10000, emotion: 'TODAS', emoji: '🌈', message: 'VOCÊ LIBERTOU TODAS AS EMOÇÕES DO MUNDO!' }
 ];
 
-// Configuração dos níveis
+// Configuração dos níveis - EXPANDIDO E PROGRESSIVO
 const generateLevels = () => {
   const levels = [];
   
-  // Mundo 1 - Emoções Básicas (1-10)
-  for (let i = 1; i <= 10; i++) {
-    const numCards = Math.min(2 + Math.floor(i / 3), 4);
+  // MUNDO 1 - Emoções Básicas (1-15)
+  for (let i = 1; i <= 15; i++) {
+    const numCards = Math.min(2 + Math.floor((i - 1) / 3), 5);
     levels.push({
       id: i,
       world: 1,
       name: `Emoções ${i}`,
-      category: 'emocoes',
+      categories: ['emocoes'],
       numCards: numCards,
-      questionsPerLevel: 3 + Math.floor(i / 2),
+      questionsPerLevel: 3 + Math.floor((i - 1) / 3),
       pointsPerCorrect: 100,
-      requiredPoints: 100 * (3 + Math.floor(i / 2))
+      description: 'Identifique as emoções'
     });
   }
   
-  // Mundo 2 - Ações (11-20)
-  for (let i = 11; i <= 20; i++) {
-    const numCards = Math.min(3 + Math.floor((i - 10) / 3), 5);
+  // MUNDO 2 - Ações (16-30)
+  for (let i = 16; i <= 30; i++) {
+    const numCards = Math.min(3 + Math.floor((i - 16) / 3), 6);
     levels.push({
       id: i,
       world: 2,
-      name: `Ações ${i - 10}`,
-      category: 'acoes',
+      name: `Ações ${i - 15}`,
+      categories: ['acoes'],
       numCards: numCards,
-      questionsPerLevel: 4 + Math.floor((i - 10) / 2),
-      pointsPerCorrect: 150,
-      requiredPoints: 150 * (4 + Math.floor((i - 10) / 2))
+      questionsPerLevel: 4 + Math.floor((i - 16) / 3),
+      pointsPerCorrect: 120,
+      description: 'Identifique as ações'
     });
   }
   
-  // Mundo 3 - Expressões (21-30)
-  for (let i = 21; i <= 30; i++) {
-    const numCards = Math.min(4 + Math.floor((i - 20) / 3), 6);
+  // MUNDO 3 - Emoções + Ações (31-45)
+  for (let i = 31; i <= 45; i++) {
+    const numCards = Math.min(4 + Math.floor((i - 31) / 3), 7);
     levels.push({
       id: i,
       world: 3,
-      name: `Expressões ${i - 20}`,
-      category: 'expressoes',
+      name: `Mix ${i - 30}`,
+      categories: ['emocoes', 'acoes'],
       numCards: numCards,
-      questionsPerLevel: 5 + Math.floor((i - 20) / 2),
-      pointsPerCorrect: 200,
-      requiredPoints: 200 * (5 + Math.floor((i - 20) / 2))
+      questionsPerLevel: 5 + Math.floor((i - 31) / 4),
+      pointsPerCorrect: 150,
+      description: 'Emoções e Ações misturadas'
     });
   }
   
-  // Mundo 4 - Atividades (31-40)
-  for (let i = 31; i <= 40; i++) {
-    const numCards = Math.min(4 + Math.floor((i - 30) / 2), 7);
+  // MUNDO 4 - Necessidades + Pessoas (46-60)
+  for (let i = 46; i <= 60; i++) {
+    const numCards = Math.min(4 + Math.floor((i - 46) / 3), 8);
     levels.push({
       id: i,
       world: 4,
-      name: `Atividades ${i - 30}`,
-      category: 'atividades',
+      name: `Social ${i - 45}`,
+      categories: ['necessidades', 'pessoas'],
       numCards: numCards,
-      questionsPerLevel: 6 + Math.floor((i - 30) / 2),
-      pointsPerCorrect: 250,
-      requiredPoints: 250 * (6 + Math.floor((i - 30) / 2))
+      questionsPerLevel: 6 + Math.floor((i - 46) / 4),
+      pointsPerCorrect: 180,
+      description: 'Necessidades e Pessoas'
     });
   }
   
-  // Mundo 5 - Mix Total (41-50)
-  for (let i = 41; i <= 50; i++) {
+  // MUNDO 5 - Escola + Rotina (61-75)
+  for (let i = 61; i <= 75; i++) {
+    const numCards = Math.min(5 + Math.floor((i - 61) / 3), 8);
     levels.push({
       id: i,
       world: 5,
-      name: `Desafio ${i - 40}`,
-      category: 'mix',
-      numCards: Math.min(6 + Math.floor((i - 40) / 2), 8),
-      questionsPerLevel: 8 + Math.floor((i - 40) / 2),
-      pointsPerCorrect: 300,
-      requiredPoints: 300 * (8 + Math.floor((i - 40) / 2))
+      name: `Dia a Dia ${i - 60}`,
+      categories: ['escola', 'rotina'],
+      numCards: numCards,
+      questionsPerLevel: 7 + Math.floor((i - 61) / 4),
+      pointsPerCorrect: 200,
+      description: 'Escola e Rotina'
+    });
+  }
+  
+  // MUNDO 6 - Mix Total (76-100)
+  for (let i = 76; i <= 100; i++) {
+    const numCards = Math.min(6 + Math.floor((i - 76) / 4), 10);
+    levels.push({
+      id: i,
+      world: 6,
+      name: `Desafio Final ${i - 75}`,
+      categories: ['emocoes', 'acoes', 'necessidades', 'pessoas', 'escola', 'rotina'],
+      numCards: numCards,
+      questionsPerLevel: 8 + Math.floor((i - 76) / 5),
+      pointsPerCorrect: 250,
+      description: 'Todas as categorias!'
     });
   }
   
@@ -171,6 +222,7 @@ export default function FacialExpressions() {
   const [liberatedEmotions, setLiberatedEmotions] = useState<string[]>([]);
   const [attempts, setAttempts] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   const level = LEVELS[currentLevel];
 
@@ -183,6 +235,27 @@ export default function FacialExpressions() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Pré-carregar imagens
+  useEffect(() => {
+    if (level && currentCards.length > 0) {
+      const imagePromises = currentCards.map(card => {
+        return new Promise((resolve, reject) => {
+          const img = new window.Image();
+          img.src = card.path;
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+      });
+
+      Promise.all(imagePromises).then(() => {
+        setImagesLoaded(true);
+      }).catch(err => {
+        console.log('Erro ao carregar imagens:', err);
+        setImagesLoaded(true); // Continua mesmo com erro
+      });
+    }
+  }, [currentCards, level]);
 
   // Criar explosão de pontos
   const createPointsExplosion = useCallback((points: number, x: number, y: number) => {
@@ -279,14 +352,12 @@ export default function FacialExpressions() {
     const cards: any[] = [];
     let availableCards: any[] = [];
     
-    if (level.category === 'mix') {
-      // Mix de todas as categorias
-      Object.values(CARD_CATEGORIES).forEach(category => {
-        availableCards = [...availableCards, ...category];
-      });
-    } else {
-      availableCards = [...CARD_CATEGORIES[level.category as keyof typeof CARD_CATEGORIES]];
-    }
+    // Pegar cards das categorias do nível
+    level.categories.forEach(category => {
+      if (CARD_CATEGORIES[category as keyof typeof CARD_CATEGORIES]) {
+        availableCards = [...availableCards, ...CARD_CATEGORIES[category as keyof typeof CARD_CATEGORIES]];
+      }
+    });
     
     // Embaralhar e selecionar cards
     const shuffled = availableCards.sort(() => Math.random() - 0.5);
@@ -295,6 +366,7 @@ export default function FacialExpressions() {
     }
     
     setCurrentCards(cards);
+    setImagesLoaded(false);
     nextQuestion(cards);
   }, [level]);
 
@@ -319,7 +391,7 @@ export default function FacialExpressions() {
     setCurrentQuestion(0);
     setLiberatedEmotions([]);
     setGameState('playing');
-    prepareLevel();
+    setTimeout(prepareLevel, 100);
   };
 
   // Selecionar card
@@ -336,8 +408,8 @@ export default function FacialExpressions() {
       // Calcular pontos com base nas tentativas e combo
       let points = level.pointsPerCorrect;
       if (attempts === 0) points *= 2; // Primeira tentativa vale mais
-      if (combo >= 3) points *= 1.5;
-      if (combo >= 5) points *= 2;
+      if (combo >= 3) points = Math.floor(points * 1.5);
+      if (combo >= 5) points = Math.floor(points * 2);
       
       setScore(prev => prev + points);
       setTotalScore(prev => prev + points);
@@ -409,7 +481,7 @@ export default function FacialExpressions() {
               <ChevronLeft className="h-5 w-5" />
             </Link>
             <h1 className="text-base sm:text-xl font-bold text-gray-800 flex items-center gap-2">
-              😊 Liberte as Emoções
+              😊 Expressões Faciais
             </h1>
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
@@ -437,12 +509,14 @@ export default function FacialExpressions() {
               Identifique corretamente para libertá-las!
             </p>
             <div className="bg-yellow-100 rounded-lg p-4 mb-6">
-              <p className="text-sm font-bold text-gray-800">Marcos de Libertação:</p>
+              <p className="text-sm font-bold text-gray-800">100 Níveis de Aventura!</p>
               <div className="text-xs text-gray-600 mt-2 space-y-1">
-                <div>1.000 pontos - Liberta ALEGRIA 😊</div>
-                <div>2.500 pontos - Liberta CORAGEM 💪</div>
-                <div>5.000 pontos - Liberta AMOR ❤️</div>
-                <div>10.000 pontos - TODAS AS EMOÇÕES! 🌈</div>
+                <div>Mundo 1: Emoções (15 níveis)</div>
+                <div>Mundo 2: Ações (15 níveis)</div>
+                <div>Mundo 3: Emoções + Ações (15 níveis)</div>
+                <div>Mundo 4: Necessidades + Pessoas (15 níveis)</div>
+                <div>Mundo 5: Escola + Rotina (15 níveis)</div>
+                <div>Mundo 6: Desafio Final (25 níveis)</div>
               </div>
             </div>
             <button
@@ -487,11 +561,10 @@ export default function FacialExpressions() {
               <h2 className="text-2xl font-bold text-center text-gray-800">
                 Encontre: {targetCard?.label}
               </h2>
-              <div className="text-4xl text-center mt-2">{targetCard?.emoji}</div>
             </motion.div>
 
             {/* Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-w-2xl">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-w-4xl">
               {currentCards.map((card) => (
                 <motion.div
                   key={card.id}
@@ -507,16 +580,31 @@ export default function FacialExpressions() {
                     ${feedback === 'wrong' && card.id === targetCard.id ? styles.cardCorrect : ''}
                   `}
                 >
-                  <div className="text-5xl mb-2">{card.emoji}</div>
+                  <Image 
+                    src={card.path}
+                    alt={card.label}
+                    width={80}
+                    height={80}
+                    className="object-contain"
+                    onError={(e: any) => {
+                      e.target.src = '/cards/placeholder.webp'; // Fallback
+                    }}
+                  />
                   <div className={styles.emotionLabel}>{card.label}</div>
                 </motion.div>
               ))}
             </div>
 
             {/* Info do Nível */}
-            <div className="mt-8 flex gap-4 text-sm text-white">
+            <div className="mt-8 flex flex-wrap gap-2 justify-center text-sm text-white">
               <div className="bg-white/20 px-3 py-1 rounded">
-                Nível {level.id}
+                Mundo {level.world}
+              </div>
+              <div className="bg-white/20 px-3 py-1 rounded">
+                Nível {level.id}/100
+              </div>
+              <div className="bg-white/20 px-3 py-1 rounded">
+                {level.description}
               </div>
               <div className="bg-white/20 px-3 py-1 rounded">
                 Pergunta {currentQuestion + 1}/{level.questionsPerLevel}
@@ -544,6 +632,9 @@ export default function FacialExpressions() {
               <p className="text-lg">Pontos do Nível: {score}</p>
               <p className="text-xl font-bold text-purple-600">
                 Total: {totalScore} pontos
+              </p>
+              <p className="text-sm text-gray-600">
+                Mundo {level?.world}: {level?.description}
               </p>
             </div>
             
@@ -584,7 +675,7 @@ export default function FacialExpressions() {
             </h2>
             <div className="text-6xl mb-4">🌈</div>
             <p className="text-xl mb-4 text-gray-800">
-              Você libertou TODAS as emoções do mundo!
+              Você completou todos os 100 níveis!
             </p>
             <p className="text-2xl font-bold text-purple-600 mb-6">
               Pontuação Final: {totalScore}
