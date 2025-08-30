@@ -93,37 +93,31 @@ const NPCS = [
 
 // Função para criar labirinto 8x8 básico
 const createMaze8x8 = (complexity: number = 1): number[][] => {
-  // Cria um labirinto 8x8 com bordas
   const maze = Array(8).fill(null).map(() => Array(8).fill(1));
   
-  // Define caminhos baseado na complexidade
   if (complexity === 1) {
-    // Labirinto muito simples
+    // Labirinto muito simples - caminho direto
     for (let i = 1; i < 7; i++) {
-      maze[1][i] = 0;
-      maze[6][i] = 0;
+      for (let j = 1; j < 7; j++) {
+        maze[i][j] = 0;
+      }
     }
-    for (let i = 1; i <= 6; i++) {
-      maze[i][1] = 0;
-      maze[i][6] = 0;
-    }
-    maze[3][3] = 0;
-    maze[3][4] = 0;
-    maze[4][3] = 0;
-    maze[4][4] = 0;
+    // Adiciona algumas paredes internas
+    maze[3][3] = 1;
+    maze[3][4] = 1;
+    maze[4][3] = 1;
   } else if (complexity === 2) {
     // Labirinto médio
     for (let i = 1; i < 7; i++) {
       for (let j = 1; j < 7; j++) {
-        if (i === 1 || i === 6 || j === 1 || j === 6) {
-          maze[i][j] = 0;
-        }
+        maze[i][j] = 0;
       }
     }
     maze[2][3] = 1;
     maze[3][3] = 1;
     maze[4][4] = 1;
     maze[5][4] = 1;
+    maze[3][5] = 1;
   } else {
     // Labirinto complexo
     for (let i = 1; i < 7; i++) {
@@ -142,20 +136,20 @@ const createMaze8x8 = (complexity: number = 1): number[][] => {
   return maze;
 };
 
-// CONFIGURAÇÃO DOS 30 NÍVEIS - SIMPLIFICADO
+// CONFIGURAÇÃO DOS 30 NÍVEIS - PROGRESSÃO CORRIGIDA
 const LEVELS = [
-  // MUNDO 1 - INTRODUÇÃO (Níveis 1-10)
+  // MUNDO 1 - INTRODUÇÃO PROGRESSIVA (Níveis 1-10)
   {
     id: 1,
-    name: 'Primeira Aventura',
-    story: 'Ajude o Coelhinho a encontrar sua primeira gema!',
+    name: 'Primeiro Passo',
+    story: 'Apenas chegue ao final! Sem pressão!',
     emotion: 'joy',
     size: 8,
     grid: createMaze8x8(1),
     start: { x: 1, y: 1 },
     end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[0], x: 3, y: 3 }],
-    gems: [{ x: 5, y: 5, type: 'normal' }],
+    npcs: [],
+    gems: [], // SEM ITENS!
     specialGems: [],
     megaGems: [],
     powerups: [],
@@ -165,18 +159,37 @@ const LEVELS = [
   },
   {
     id: 2,
-    name: 'Descobrindo Tesouros',
-    story: 'Mais gemas apareceram! Colete todas!',
+    name: 'Primeira Gema',
+    story: 'Pegue sua primeira gema!',
     emotion: 'joy',
     size: 8,
     grid: createMaze8x8(1),
     start: { x: 1, y: 1 },
     end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[0], x: 4, y: 4 }],
+    npcs: [],
+    gems: [{ x: 4, y: 4, type: 'normal' }], // APENAS 1 GEMA
+    specialGems: [],
+    megaGems: [],
+    powerups: [],
+    keys: [],
+    doors: [],
+    perfectTime: 35
+  },
+  {
+    id: 3,
+    name: 'Três Tesouros',
+    story: 'Agora são 3 gemas para coletar!',
+    emotion: 'joy',
+    size: 8,
+    grid: createMaze8x8(1),
+    start: { x: 1, y: 1 },
+    end: { x: 6, y: 6 },
+    npcs: [],
     gems: [
       { x: 2, y: 2, type: 'normal' },
-      { x: 5, y: 5, type: 'normal' }
-    ],
+      { x: 5, y: 3, type: 'normal' },
+      { x: 3, y: 5, type: 'normal' }
+    ], // 3 GEMAS
     specialGems: [],
     megaGems: [],
     powerups: [],
@@ -185,426 +198,151 @@ const LEVELS = [
     perfectTime: 40
   },
   {
-    id: 3,
-    name: 'Poder Mágico',
-    story: 'Descubra o poder da visão mágica!',
+    id: 4,
+    name: 'Conhecendo Amigos',
+    story: 'O Coelhinho precisa de ajuda!',
     emotion: 'joy',
     size: 8,
     grid: createMaze8x8(1),
     start: { x: 1, y: 1 },
     end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[1], x: 3, y: 4 }],
-    gems: [
-      { x: 2, y: 3, type: 'normal' },
-      { x: 5, y: 2, type: 'normal' }
-    ],
-    specialGems: [],
-    megaGems: [],
-    powerups: [{ x: 4, y: 3, type: 'reveal' }],
-    keys: [],
-    doors: [],
-    perfectTime: 45
-  },
-  {
-    id: 4,
-    name: 'Tesouro Especial',
-    story: 'Uma gema especial apareceu!',
-    emotion: 'calm',
-    size: 8,
-    grid: createMaze8x8(2),
-    start: { x: 1, y: 1 },
-    end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[2], x: 5, y: 3 }],
-    gems: [
-      { x: 2, y: 2, type: 'normal' },
-      { x: 4, y: 5, type: 'normal' }
-    ],
-    specialGems: [{ x: 3, y: 3, type: 'special' }],
-    megaGems: [],
-    powerups: [{ x: 5, y: 1, type: 'doublePoints' }],
-    keys: [],
-    doors: [],
-    perfectTime: 50
-  },
-  {
-    id: 5,
-    name: 'MEGA DESCOBERTA!',
-    story: 'Uma MEGA GEMA foi encontrada! Vale 1000 pontos!',
-    emotion: 'calm',
-    size: 8,
-    grid: createMaze8x8(2),
-    start: { x: 1, y: 1 },
-    end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[3], x: 2, y: 5 }],
-    gems: [
-      { x: 3, y: 2, type: 'normal' },
-      { x: 5, y: 4, type: 'normal' }
-    ],
-    specialGems: [{ x: 4, y: 1, type: 'special' }],
-    megaGems: [{ x: 1, y: 6, type: 'mega' }],
-    powerups: [
-      { x: 6, y: 2, type: 'reveal' },
-      { x: 2, y: 4, type: 'wallPass' }
-    ],
-    keys: [],
-    doors: [],
-    perfectTime: 60
-  },
-  {
-    id: 6,
-    name: 'Mais Desafios',
-    story: 'O labirinto está ficando mais complexo!',
-    emotion: 'courage',
-    size: 8,
-    grid: createMaze8x8(2),
-    start: { x: 1, y: 1 },
-    end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[4], x: 4, y: 4 }],
-    gems: [
-      { x: 2, y: 3, type: 'normal' },
-      { x: 3, y: 5, type: 'normal' },
-      { x: 5, y: 2, type: 'normal' }
-    ],
-    specialGems: [
-      { x: 1, y: 5, type: 'special' },
-      { x: 6, y: 1, type: 'special' }
-    ],
-    megaGems: [],
-    powerups: [
-      { x: 3, y: 1, type: 'reveal' },
-      { x: 5, y: 5, type: 'doublePoints' }
-    ],
-    keys: [],
-    doors: [],
-    perfectTime: 70
-  },
-  {
-    id: 7,
-    name: 'Tesouros Múltiplos',
-    story: 'Colete todos os tesouros!',
-    emotion: 'courage',
-    size: 8,
-    grid: createMaze8x8(3),
-    start: { x: 1, y: 1 },
-    end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[5], x: 3, y: 3 }],
-    gems: [
-      { x: 2, y: 2, type: 'normal' },
-      { x: 4, y: 4, type: 'normal' },
-      { x: 6, y: 2, type: 'normal' }
-    ],
-    specialGems: [{ x: 5, y: 5, type: 'special' }],
-    megaGems: [{ x: 1, y: 4, type: 'mega' }],
-    powerups: [
-      { x: 3, y: 5, type: 'doublePoints' },
-      { x: 4, y: 1, type: 'reveal' }
-    ],
-    keys: [],
-    doors: [],
-    perfectTime: 65
-  },
-  {
-    id: 8,
-    name: 'Tesouros Escondidos',
-    story: 'Muitos tesouros para encontrar!',
-    emotion: 'sadness',
-    size: 8,
-    grid: createMaze8x8(3),
-    start: { x: 1, y: 1 },
-    end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[6], x: 5, y: 4 }],
-    gems: [
-      { x: 2, y: 1, type: 'normal' },
-      { x: 3, y: 3, type: 'normal' },
-      { x: 4, y: 5, type: 'normal' },
-      { x: 6, y: 3, type: 'normal' }
-    ],
-    specialGems: [
-      { x: 1, y: 3, type: 'special' },
-      { x: 5, y: 1, type: 'special' }
-    ],
-    megaGems: [],
-    powerups: [
-      { x: 2, y: 5, type: 'wallPass' },
-      { x: 4, y: 2, type: 'doublePoints' },
-      { x: 6, y: 5, type: 'reveal' }
-    ],
-    keys: [],
-    doors: [],
-    perfectTime: 75
-  },
-  {
-    id: 9,
-    name: 'Dupla Mega!',
-    story: 'Duas MEGA GEMAS em um só lugar!',
-    emotion: 'fear',
-    size: 8,
-    grid: createMaze8x8(3),
-    start: { x: 1, y: 1 },
-    end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[7], x: 3, y: 4 }],
-    gems: [
-      { x: 2, y: 2, type: 'normal' },
-      { x: 4, y: 3, type: 'normal' },
-      { x: 5, y: 5, type: 'normal' }
-    ],
-    specialGems: [
-      { x: 3, y: 1, type: 'special' },
-      { x: 1, y: 5, type: 'special' },
-      { x: 6, y: 2, type: 'special' }
-    ],
-    megaGems: [
-      { x: 1, y: 2, type: 'mega' },
-      { x: 6, y: 5, type: 'mega' }
-    ],
-    powerups: [
-      { x: 3, y: 5, type: 'doublePoints' },
-      { x: 5, y: 3, type: 'wallPass' }
-    ],
-    keys: [],
-    doors: [],
-    perfectTime: 80
-  },
-  {
-    id: 10,
-    name: 'Teste Final do Mundo 1',
-    story: 'Complete o desafio final!',
-    emotion: 'fear',
-    size: 8,
-    grid: createMaze8x8(3),
-    start: { x: 1, y: 1 },
-    end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[8], x: 4, y: 4 }],
-    gems: [
-      { x: 2, y: 3, type: 'normal' },
-      { x: 3, y: 2, type: 'normal' },
-      { x: 4, y: 5, type: 'normal' },
-      { x: 5, y: 3, type: 'normal' }
-    ],
-    specialGems: [
-      { x: 1, y: 4, type: 'special' },
-      { x: 3, y: 6, type: 'special' },
-      { x: 6, y: 1, type: 'special' }
-    ],
-    megaGems: [{ x: 3, y: 3, type: 'mega' }],
-    powerups: [
-      { x: 2, y: 5, type: 'reveal' },
-      { x: 4, y: 1, type: 'doublePoints' },
-      { x: 1, y: 6, type: 'wallPass' }
-    ],
-    keys: [],
-    doors: [],
-    perfectTime: 90
-  },
-
-  // MUNDO 2 - PORTAS E CHAVES (Níveis 11-20)
-  {
-    id: 11,
-    name: 'Portas e Chaves',
-    story: 'Pegue a chave 🗝️ para abrir a porta 🚪!',
-    emotion: 'joy',
-    size: 8,
-    grid: (() => {
-      const maze = createMaze8x8(2);
-      maze[3][2] = 1;
-      maze[3][4] = 1;
-      return maze;
-    })(),
-    start: { x: 1, y: 1 },
-    end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[0], x: 5, y: 5 }],
-    gems: [
-      { x: 2, y: 2, type: 'normal' },
-      { x: 4, y: 4, type: 'normal' }
-    ],
-    specialGems: [{ x: 3, y: 5, type: 'special' }],
-    megaGems: [],
-    powerups: [{ x: 5, y: 2, type: 'reveal' }],
-    keys: [{ x: 1, y: 5, id: 'key1' }],
-    doors: [{ x: 3, y: 3, keyId: 'key1' }],
-    perfectTime: 70
-  },
-  {
-    id: 12,
-    name: 'Duas Portas',
-    story: 'Cada chave abre uma porta diferente!',
-    emotion: 'calm',
-    size: 8,
-    grid: (() => {
-      const maze = createMaze8x8(2);
-      maze[2][3] = 1;
-      maze[5][3] = 1;
-      return maze;
-    })(),
-    start: { x: 1, y: 1 },
-    end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[1], x: 4, y: 3 }],
+    npcs: [{ type: NPCS[0], x: 4, y: 2 }], // Primeiro NPC
     gems: [
       { x: 2, y: 3, type: 'normal' },
       { x: 5, y: 4, type: 'normal' },
       { x: 3, y: 1, type: 'normal' }
     ],
-    specialGems: [
-      { x: 6, y: 2, type: 'special' },
-      { x: 1, y: 4, type: 'special' }
-    ],
-    megaGems: [{ x: 3, y: 5, type: 'mega' }],
-    powerups: [
-      { x: 4, y: 2, type: 'doublePoints' },
-      { x: 2, y: 5, type: 'doublePoints' }
-    ],
-    keys: [
-      { x: 6, y: 1, id: 'key1' },
-      { x: 1, y: 6, id: 'key2' }
-    ],
-    doors: [
-      { x: 2, y: 2, keyId: 'key1' },
-      { x: 5, y: 5, keyId: 'key2' }
-    ],
-    perfectTime: 75
+    specialGems: [],
+    megaGems: [],
+    powerups: [],
+    keys: [],
+    doors: [],
+    perfectTime: 45
   },
   {
-    id: 13,
-    name: 'Labirinto com Segredos',
-    story: 'Encontre todas as chaves para avançar!',
-    emotion: 'courage',
+    id: 5,
+    name: 'Poder Mágico',
+    story: 'Use o poder para atravessar paredes!',
+    emotion: 'calm',
     size: 8,
-    grid: createMaze8x8(3),
+    grid: createMaze8x8(2),
     start: { x: 1, y: 1 },
     end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[2], x: 3, y: 4 }],
+    npcs: [{ type: NPCS[1], x: 5, y: 5 }],
     gems: [
-      { x: 2, y: 1, type: 'normal' },
-      { x: 4, y: 3, type: 'normal' },
-      { x: 5, y: 5, type: 'normal' }
+      { x: 2, y: 2, type: 'normal' },
+      { x: 4, y: 1, type: 'normal' },
+      { x: 3, y: 3, type: 'normal' } // Dentro da parede!
     ],
-    specialGems: [
-      { x: 1, y: 3, type: 'special' },
-      { x: 6, y: 4, type: 'special' }
-    ],
+    specialGems: [],
     megaGems: [],
-    powerups: [
-      { x: 3, y: 2, type: 'reveal' },
-      { x: 5, y: 1, type: 'wallPass' }
-    ],
-    keys: [{ x: 2, y: 4, id: 'key1' }],
-    doors: [{ x: 4, y: 4, keyId: 'key1' }],
-    perfectTime: 80
+    powerups: [{ x: 1, y: 5, type: 'wallPass' }], // Power-up para pegar gema na parede
+    keys: [],
+    doors: [],
+    perfectTime: 50
   },
   {
-    id: 14,
-    name: 'Mega Tesouro Protegido',
-    story: 'A mega gema está atrás da porta!',
-    emotion: 'sadness',
+    id: 6,
+    name: 'Gema Especial',
+    story: 'Uma gema especial vale 500 pontos!',
+    emotion: 'calm',
+    size: 8,
+    grid: createMaze8x8(2),
+    start: { x: 1, y: 1 },
+    end: { x: 6, y: 6 },
+    npcs: [{ type: NPCS[2], x: 3, y: 2 }],
+    gems: [
+      { x: 2, y: 4, type: 'normal' },
+      { x: 5, y: 2, type: 'normal' }
+    ],
+    specialGems: [{ x: 4, y: 5, type: 'special' }], // Primeira gema especial
+    megaGems: [],
+    powerups: [{ x: 1, y: 3, type: 'doublePoints' }],
+    keys: [],
+    doors: [],
+    perfectTime: 55
+  },
+  {
+    id: 7,
+    name: 'MEGA GEMA!',
+    story: 'A MEGA GEMA vale 1000 pontos!',
+    emotion: 'courage',
+    size: 8,
+    grid: createMaze8x8(2),
+    start: { x: 1, y: 1 },
+    end: { x: 6, y: 6 },
+    npcs: [{ type: NPCS[3], x: 4, y: 4 }],
+    gems: [
+      { x: 2, y: 2, type: 'normal' },
+      { x: 5, y: 3, type: 'normal' },
+      { x: 1, y: 4, type: 'normal' }
+    ],
+    specialGems: [{ x: 6, y: 1, type: 'special' }],
+    megaGems: [{ x: 3, y: 6, type: 'mega' }], // Primeira MEGA GEMA!
+    powerups: [],
+    keys: [],
+    doors: [],
+    perfectTime: 60
+  },
+  {
+    id: 8,
+    name: 'Porta e Chave',
+    story: 'Pegue a chave para abrir a porta!',
+    emotion: 'courage',
     size: 8,
     grid: (() => {
       const maze = createMaze8x8(2);
-      maze[4][5] = 1;
+      // Cria um caminho bloqueado
+      maze[4][2] = 0;
+      maze[4][3] = 0;
+      maze[4][4] = 0;
+      maze[4][5] = 0;
       return maze;
     })(),
     start: { x: 1, y: 1 },
     end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[3], x: 5, y: 3 }],
+    npcs: [{ type: NPCS[4], x: 5, y: 5 }],
     gems: [
       { x: 2, y: 2, type: 'normal' },
-      { x: 3, y: 4, type: 'normal' },
-      { x: 5, y: 1, type: 'normal' },
-      { x: 1, y: 5, type: 'normal' }
-    ],
-    specialGems: [
-      { x: 4, y: 5, type: 'special' },
-      { x: 6, y: 3, type: 'special' }
-    ],
-    megaGems: [
-      { x: 2, y: 6, type: 'mega' },
-      { x: 6, y: 1, type: 'mega' }
-    ],
-    powerups: [
-      { x: 3, y: 1, type: 'reveal' },
-      { x: 4, y: 3, type: 'doublePoints' }
-    ],
-    keys: [{ x: 1, y: 3, id: 'key1' }],
-    doors: [{ x: 3, y: 6, keyId: 'key1' }],
-    perfectTime: 85
-  },
-  {
-    id: 15,
-    name: 'Labirinto das Portas',
-    story: 'Muitas portas para abrir!',
-    emotion: 'fear',
-    size: 8,
-    grid: createMaze8x8(3),
-    start: { x: 1, y: 1 },
-    end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[4], x: 4, y: 4 }],
-    gems: [
-      { x: 2, y: 3, type: 'normal' },
-      { x: 3, y: 2, type: 'normal' },
       { x: 5, y: 4, type: 'normal' }
     ],
-    specialGems: [
-      { x: 1, y: 4, type: 'special' },
-      { x: 3, y: 6, type: 'special' },
-      { x: 6, y: 2, type: 'special' }
-    ],
-    megaGems: [{ x: 4, y: 1, type: 'mega' }],
-    powerups: [
-      { x: 2, y: 5, type: 'doublePoints' },
-      { x: 5, y: 3, type: 'wallPass' },
-      { x: 1, y: 2, type: 'reveal' }
-    ],
-    keys: [
-      { x: 6, y: 5, id: 'key1' },
-      { x: 1, y: 6, id: 'key2' }
-    ],
-    doors: [
-      { x: 3, y: 3, keyId: 'key1' },
-      { x: 5, y: 5, keyId: 'key2' }
-    ],
-    perfectTime: 95
+    specialGems: [],
+    megaGems: [],
+    powerups: [],
+    keys: [{ x: 1, y: 5, id: 'key1' }], // Chave acessível
+    doors: [{ x: 4, y: 3, keyId: 'key1' }], // Porta no caminho
+    perfectTime: 65
   },
   {
-    id: 16,
-    name: 'Três Chaves Mágicas',
-    story: 'Encontre as três chaves na ordem certa!',
-    emotion: 'joy',
+    id: 9,
+    name: 'Desafio Completo',
+    story: 'Use tudo que aprendeu!',
+    emotion: 'sadness',
     size: 8,
     grid: createMaze8x8(3),
     start: { x: 1, y: 1 },
     end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[5], x: 3, y: 3 }],
+    npcs: [{ type: NPCS[5], x: 3, y: 4 }],
     gems: [
       { x: 2, y: 1, type: 'normal' },
       { x: 4, y: 2, type: 'normal' },
-      { x: 5, y: 5, type: 'normal' },
-      { x: 1, y: 3, type: 'normal' }
+      { x: 5, y: 5, type: 'normal' }
     ],
-    specialGems: [
-      { x: 3, y: 5, type: 'special' },
-      { x: 6, y: 1, type: 'special' }
-    ],
-    megaGems: [{ x: 1, y: 5, type: 'mega' }],
+    specialGems: [{ x: 1, y: 3, type: 'special' }],
+    megaGems: [{ x: 6, y: 2, type: 'mega' }],
     powerups: [
-      { x: 4, y: 4, type: 'doublePoints' },
-      { x: 2, y: 2, type: 'reveal' }
+      { x: 3, y: 1, type: 'doublePoints' },
+      { x: 5, y: 3, type: 'wallPass' }
     ],
-    keys: [
-      { x: 6, y: 3, id: 'key1' },
-      { x: 2, y: 6, id: 'key2' },
-      { x: 5, y: 1, id: 'key3' }
-    ],
-    doors: [
-      { x: 3, y: 2, keyId: 'key1' },
-      { x: 4, y: 5, keyId: 'key2' },
-      { x: 2, y: 4, keyId: 'key3' }
-    ],
-    perfectTime: 100
+    keys: [],
+    doors: [],
+    perfectTime: 70
   },
   {
-    id: 17,
-    name: 'Super Desafio',
-    story: 'O maior desafio até agora!',
-    emotion: 'calm',
+    id: 10,
+    name: 'Teste Final',
+    story: 'Complete o primeiro mundo!',
+    emotion: 'fear',
     size: 8,
     grid: createMaze8x8(3),
     start: { x: 1, y: 1 },
@@ -612,100 +350,317 @@ const LEVELS = [
     npcs: [{ type: NPCS[6], x: 4, y: 3 }],
     gems: [
       { x: 2, y: 2, type: 'normal' },
-      { x: 3, y: 1, type: 'normal' },
-      { x: 4, y: 5, type: 'normal' },
-      { x: 5, y: 3, type: 'normal' },
-      { x: 1, y: 4, type: 'normal' }
+      { x: 3, y: 5, type: 'normal' },
+      { x: 5, y: 1, type: 'normal' },
+      { x: 6, y: 4, type: 'normal' }
     ],
     specialGems: [
-      { x: 3, y: 4, type: 'special' },
-      { x: 6, y: 2, type: 'special' },
-      { x: 1, y: 6, type: 'special' }
+      { x: 1, y: 4, type: 'special' },
+      { x: 4, y: 6, type: 'special' }
     ],
-    megaGems: [
-      { x: 2, y: 5, type: 'mega' },
-      { x: 5, y: 1, type: 'mega' }
-    ],
+    megaGems: [{ x: 3, y: 3, type: 'mega' }], // Dentro da parede!
     powerups: [
-      { x: 3, y: 2, type: 'reveal' },
-      { x: 4, y: 4, type: 'wallPass' },
-      { x: 1, y: 2, type: 'doublePoints' }
+      { x: 1, y: 2, type: 'wallPass' }, // Para pegar a mega gema
+      { x: 6, y: 5, type: 'doublePoints' }
     ],
-    keys: [{ x: 6, y: 4, id: 'key1' }],
-    doors: [{ x: 3, y: 3, keyId: 'key1' }],
-    perfectTime: 110
+    keys: [{ x: 2, y: 6, id: 'key1' }],
+    doors: [{ x: 5, y: 4, keyId: 'key1' }],
+    perfectTime: 80
+  },
+
+  // MUNDO 2 - DESAFIOS (Níveis 11-20)
+  {
+    id: 11,
+    name: 'Novo Desafio',
+    story: 'O segundo mundo começa!',
+    emotion: 'joy',
+    size: 8,
+    grid: createMaze8x8(2),
+    start: { x: 1, y: 1 },
+    end: { x: 6, y: 6 },
+    npcs: [{ type: NPCS[7], x: 3, y: 3 }],
+    gems: [
+      { x: 2, y: 3, type: 'normal' },
+      { x: 4, y: 2, type: 'normal' },
+      { x: 5, y: 5, type: 'normal' }
+    ],
+    specialGems: [{ x: 1, y: 5, type: 'special' }],
+    megaGems: [],
+    powerups: [{ x: 6, y: 1, type: 'reveal' }],
+    keys: [],
+    doors: [],
+    perfectTime: 70
   },
   {
-    id: 18,
-    name: 'Tesouros Infinitos',
-    story: 'Tantas gemas para coletar!',
+    id: 12,
+    name: 'Dupla Porta',
+    story: 'Duas portas, duas chaves!',
+    emotion: 'calm',
+    size: 8,
+    grid: (() => {
+      const maze = createMaze8x8(2);
+      maze[3][1] = 0;
+      maze[3][2] = 0;
+      maze[3][4] = 0;
+      maze[3][5] = 0;
+      maze[3][6] = 0;
+      return maze;
+    })(),
+    start: { x: 1, y: 1 },
+    end: { x: 6, y: 6 },
+    npcs: [{ type: NPCS[8], x: 4, y: 4 }],
+    gems: [
+      { x: 2, y: 2, type: 'normal' },
+      { x: 5, y: 3, type: 'normal' },
+      { x: 3, y: 5, type: 'normal' }
+    ],
+    specialGems: [
+      { x: 6, y: 2, type: 'special' }
+    ],
+    megaGems: [{ x: 1, y: 6, type: 'mega' }],
+    powerups: [{ x: 4, y: 1, type: 'doublePoints' }],
+    keys: [
+      { x: 1, y: 2, id: 'key1' },
+      { x: 6, y: 5, id: 'key2' }
+    ],
+    doors: [
+      { x: 3, y: 2, keyId: 'key1' },
+      { x: 3, y: 5, keyId: 'key2' }
+    ],
+    perfectTime: 80
+  },
+  {
+    id: 13,
+    name: 'Labirinto Secreto',
+    story: 'Descubra os segredos escondidos!',
     emotion: 'courage',
     size: 8,
     grid: createMaze8x8(3),
     start: { x: 1, y: 1 },
     end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[7], x: 3, y: 4 }],
+    npcs: [{ type: NPCS[9], x: 5, y: 4 }],
     gems: [
-      { x: 1, y: 2, type: 'normal' },
-      { x: 2, y: 3, type: 'normal' },
-      { x: 3, y: 1, type: 'normal' },
-      { x: 4, y: 4, type: 'normal' },
+      { x: 2, y: 1, type: 'normal' },
+      { x: 3, y: 4, type: 'normal' },
       { x: 5, y: 2, type: 'normal' },
-      { x: 6, y: 5, type: 'normal' }
+      { x: 4, y: 5, type: 'normal' }
     ],
     specialGems: [
-      { x: 2, y: 5, type: 'special' },
-      { x: 4, y: 1, type: 'special' },
-      { x: 5, y: 4, type: 'special' },
-      { x: 1, y: 3, type: 'special' }
+      { x: 1, y: 3, type: 'special' },
+      { x: 6, y: 3, type: 'special' }
     ],
-    megaGems: [
-      { x: 3, y: 6, type: 'mega' },
-      { x: 6, y: 1, type: 'mega' },
-      { x: 1, y: 5, type: 'mega' }
-    ],
+    megaGems: [],
     powerups: [
-      { x: 2, y: 1, type: 'doublePoints' },
-      { x: 4, y: 3, type: 'reveal' },
-      { x: 3, y: 2, type: 'wallPass' }
+      { x: 2, y: 5, type: 'wallPass' },
+      { x: 5, y: 1, type: 'reveal' }
     ],
     keys: [],
     doors: [],
+    perfectTime: 85
+  },
+  {
+    id: 14,
+    name: 'Tesouro Protegido',
+    story: 'A mega gema está protegida!',
+    emotion: 'sadness',
+    size: 8,
+    grid: (() => {
+      const maze = createMaze8x8(3);
+      // Área protegida para mega gema
+      maze[5][5] = 0;
+      maze[5][6] = 0;
+      maze[6][5] = 0;
+      return maze;
+    })(),
+    start: { x: 1, y: 1 },
+    end: { x: 6, y: 6 },
+    npcs: [{ type: NPCS[0], x: 3, y: 2 }],
+    gems: [
+      { x: 2, y: 3, type: 'normal' },
+      { x: 4, y: 1, type: 'normal' },
+      { x: 3, y: 5, type: 'normal' }
+    ],
+    specialGems: [
+      { x: 1, y: 4, type: 'special' },
+      { x: 5, y: 3, type: 'special' }
+    ],
+    megaGems: [
+      { x: 5, y: 5, type: 'mega' } // Atrás da porta!
+    ],
+    powerups: [
+      { x: 2, y: 1, type: 'doublePoints' },
+      { x: 4, y: 4, type: 'wallPass' }
+    ],
+    keys: [{ x: 1, y: 6, id: 'key1' }],
+    doors: [{ x: 4, y: 5, keyId: 'key1' }],
+    perfectTime: 90
+  },
+  {
+    id: 15,
+    name: 'Três Chaves',
+    story: 'Três chaves, três portas!',
+    emotion: 'fear',
+    size: 8,
+    grid: createMaze8x8(3),
+    start: { x: 1, y: 1 },
+    end: { x: 6, y: 6 },
+    npcs: [{ type: NPCS[1], x: 4, y: 3 }],
+    gems: [
+      { x: 2, y: 2, type: 'normal' },
+      { x: 3, y: 1, type: 'normal' },
+      { x: 5, y: 4, type: 'normal' }
+    ],
+    specialGems: [
+      { x: 1, y: 5, type: 'special' },
+      { x: 6, y: 2, type: 'special' }
+    ],
+    megaGems: [{ x: 3, y: 6, type: 'mega' }],
+    powerups: [
+      { x: 2, y: 4, type: 'reveal' },
+      { x: 5, y: 1, type: 'doublePoints' }
+    ],
+    keys: [
+      { x: 1, y: 2, id: 'key1' },
+      { x: 6, y: 1, id: 'key2' },
+      { x: 1, y: 6, id: 'key3' }
+    ],
+    doors: [
+      { x: 2, y: 3, keyId: 'key1' },
+      { x: 4, y: 2, keyId: 'key2' },
+      { x: 3, y: 5, keyId: 'key3' }
+    ],
+    perfectTime: 95
+  },
+  {
+    id: 16,
+    name: 'Gemas Escondidas',
+    story: 'Use o poder para encontrar tudo!',
+    emotion: 'joy',
+    size: 8,
+    grid: createMaze8x8(3),
+    start: { x: 1, y: 1 },
+    end: { x: 6, y: 6 },
+    npcs: [{ type: NPCS[2], x: 3, y: 4 }],
+    gems: [
+      { x: 2, y: 1, type: 'normal' },
+      { x: 4, y: 2, type: 'normal' },
+      { x: 5, y: 5, type: 'normal' },
+      { x: 3, y: 3, type: 'normal' }, // Dentro da parede
+      { x: 4, y: 3, type: 'normal' }  // Dentro da parede
+    ],
+    specialGems: [
+      { x: 1, y: 3, type: 'special' },
+      { x: 6, y: 4, type: 'special' }
+    ],
+    megaGems: [],
+    powerups: [
+      { x: 1, y: 5, type: 'wallPass' }, // Essencial para gemas nas paredes
+      { x: 6, y: 1, type: 'doublePoints' }
+    ],
+    keys: [],
+    doors: [],
+    perfectTime: 100
+  },
+  {
+    id: 17,
+    name: 'Dupla Mega',
+    story: 'Duas mega gemas em um nível!',
+    emotion: 'calm',
+    size: 8,
+    grid: createMaze8x8(3),
+    start: { x: 1, y: 1 },
+    end: { x: 6, y: 6 },
+    npcs: [{ type: NPCS[3], x: 4, y: 4 }],
+    gems: [
+      { x: 2, y: 3, type: 'normal' },
+      { x: 3, y: 1, type: 'normal' },
+      { x: 5, y: 3, type: 'normal' }
+    ],
+    specialGems: [
+      { x: 1, y: 4, type: 'special' },
+      { x: 6, y: 1, type: 'special' },
+      { x: 3, y: 5, type: 'special' }
+    ],
+    megaGems: [
+      { x: 2, y: 2, type: 'mega' }, // Dentro da parede
+      { x: 5, y: 5, type: 'mega' }  // Dentro da parede
+    ],
+    powerups: [
+      { x: 1, y: 2, type: 'wallPass' },
+      { x: 4, y: 1, type: 'doublePoints' },
+      { x: 6, y: 3, type: 'reveal' }
+    ],
+    keys: [],
+    doors: [],
+    perfectTime: 110
+  },
+  {
+    id: 18,
+    name: 'Labirinto Complexo',
+    story: 'O desafio aumenta!',
+    emotion: 'courage',
+    size: 8,
+    grid: createMaze8x8(3),
+    start: { x: 1, y: 1 },
+    end: { x: 6, y: 6 },
+    npcs: [{ type: NPCS[4], x: 3, y: 3 }],
+    gems: [
+      { x: 1, y: 2, type: 'normal' },
+      { x: 2, y: 4, type: 'normal' },
+      { x: 4, y: 1, type: 'normal' },
+      { x: 5, y: 3, type: 'normal' },
+      { x: 6, y: 5, type: 'normal' }
+    ],
+    specialGems: [
+      { x: 2, y: 6, type: 'special' },
+      { x: 4, y: 5, type: 'special' },
+      { x: 5, y: 2, type: 'special' }
+    ],
+    megaGems: [
+      { x: 3, y: 6, type: 'mega' },
+      { x: 6, y: 1, type: 'mega' }
+    ],
+    powerups: [
+      { x: 1, y: 3, type: 'wallPass' },
+      { x: 3, y: 1, type: 'doublePoints' }
+    ],
+    keys: [{ x: 2, y: 5, id: 'key1' }],
+    doors: [{ x: 4, y: 4, keyId: 'key1' }],
     perfectTime: 120
   },
   {
     id: 19,
-    name: 'Labirinto Complexo',
-    story: 'Use todas suas habilidades!',
+    name: 'Penúltimo Desafio',
+    story: 'Quase no final do segundo mundo!',
     emotion: 'sadness',
     size: 8,
     grid: createMaze8x8(3),
     start: { x: 1, y: 1 },
     end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[8], x: 5, y: 4 }],
+    npcs: [{ type: NPCS[5], x: 5, y: 4 }],
     gems: [
       { x: 2, y: 1, type: 'normal' },
-      { x: 3, y: 3, type: 'normal' },
-      { x: 4, y: 2, type: 'normal' },
+      { x: 3, y: 2, type: 'normal' },
+      { x: 4, y: 4, type: 'normal' },
       { x: 5, y: 5, type: 'normal' }
     ],
     specialGems: [
-      { x: 1, y: 4, type: 'special' },
+      { x: 1, y: 3, type: 'special' },
       { x: 3, y: 5, type: 'special' },
-      { x: 6, y: 3, type: 'special' }
+      { x: 6, y: 2, type: 'special' }
     ],
     megaGems: [
-      { x: 2, y: 6, type: 'mega' },
+      { x: 2, y: 5, type: 'mega' }, // Dentro da parede
       { x: 5, y: 1, type: 'mega' }
     ],
     powerups: [
+      { x: 1, y: 5, type: 'wallPass' },
       { x: 3, y: 1, type: 'doublePoints' },
-      { x: 4, y: 5, type: 'wallPass' },
-      { x: 1, y: 3, type: 'doublePoints' }
+      { x: 6, y: 4, type: 'reveal' }
     ],
     keys: [
-      { x: 6, y: 2, id: 'key1' },
-      { x: 1, y: 6, id: 'key2' }
+      { x: 1, y: 6, id: 'key1' },
+      { x: 6, y: 1, id: 'key2' }
     ],
     doors: [
       { x: 3, y: 4, keyId: 'key1' },
@@ -715,48 +670,47 @@ const LEVELS = [
   },
   {
     id: 20,
-    name: 'Teste Final do Mundo 2',
-    story: 'O desafio supremo antes do mundo espelhado!',
+    name: 'Grande Final',
+    story: 'O último desafio antes do mundo espelhado!',
     emotion: 'fear',
     size: 8,
     grid: createMaze8x8(3),
     start: { x: 1, y: 1 },
     end: { x: 6, y: 6 },
-    npcs: [{ type: NPCS[9], x: 3, y: 3 }],
+    npcs: [{ type: NPCS[6], x: 4, y: 3 }],
     gems: [
       { x: 1, y: 2, type: 'normal' },
       { x: 2, y: 4, type: 'normal' },
       { x: 3, y: 1, type: 'normal' },
-      { x: 4, y: 3, type: 'normal' },
-      { x: 5, y: 5, type: 'normal' },
-      { x: 6, y: 2, type: 'normal' }
+      { x: 4, y: 5, type: 'normal' },
+      { x: 5, y: 3, type: 'normal' },
+      { x: 6, y: 4, type: 'normal' }
     ],
     specialGems: [
       { x: 2, y: 6, type: 'special' },
-      { x: 4, y: 1, type: 'special' },
-      { x: 5, y: 4, type: 'special' },
-      { x: 1, y: 3, type: 'special' },
+      { x: 3, y: 2, type: 'special' },
+      { x: 5, y: 1, type: 'special' },
       { x: 6, y: 5, type: 'special' }
     ],
     megaGems: [
-      { x: 3, y: 5, type: 'mega' },
-      { x: 5, y: 2, type: 'mega' },
-      { x: 1, y: 5, type: 'mega' }
+      { x: 2, y: 2, type: 'mega' }, // Dentro da parede
+      { x: 3, y: 3, type: 'mega' }, // Dentro da parede
+      { x: 5, y: 5, type: 'mega' }  // Dentro da parede
     ],
     powerups: [
-      { x: 2, y: 1, type: 'reveal' },
-      { x: 3, y: 4, type: 'doublePoints' },
-      { x: 5, y: 3, type: 'wallPass' }
+      { x: 1, y: 3, type: 'wallPass' },
+      { x: 2, y: 5, type: 'doublePoints' },
+      { x: 6, y: 2, type: 'reveal' }
     ],
     keys: [
-      { x: 6, y: 1, id: 'key1' },
-      { x: 1, y: 6, id: 'key2' },
-      { x: 4, y: 6, id: 'key3' }
+      { x: 1, y: 5, id: 'key1' },
+      { x: 6, y: 1, id: 'key2' },
+      { x: 1, y: 6, id: 'key3' }
     ],
     doors: [
-      { x: 2, y: 2, keyId: 'key1' },
-      { x: 4, y: 4, keyId: 'key2' },
-      { x: 5, y: 1, keyId: 'key3' }
+      { x: 2, y: 3, keyId: 'key1' },
+      { x: 4, y: 2, keyId: 'key2' },
+      { x: 5, y: 4, keyId: 'key3' }
     ],
     perfectTime: 150
   }
@@ -987,7 +941,7 @@ export default function EmotionMaze() {
     });
   };
 
-  // Mover jogador - SIMPLIFICADO
+  // Mover jogador - CORRIGIDO
   const movePlayer = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
     if (gameState !== 'playing') return;
 
@@ -1015,15 +969,22 @@ export default function EmotionMaze() {
       return;
     }
 
-    // Verifica portas
+    // Verifica portas CORRIGIDO
     const door = level.doors?.find(d => d.x === newPos.x && d.y === newPos.y);
-    if (door && !openedDoors.has(door.keyId)) {
-      if (collectedItems.keys.has(door.keyId)) {
-        setOpenedDoors(prev => new Set(prev).add(door.keyId));
-        if (soundEnabled) playSound('door');
-      } else {
-        return;
+    if (door) {
+      if (!openedDoors.has(door.keyId)) {
+        // Porta fechada
+        if (collectedItems.keys.has(door.keyId)) {
+          // Tem a chave - abre a porta
+          setOpenedDoors(prev => new Set(prev).add(door.keyId));
+          if (soundEnabled) playSound('door');
+          // Agora pode passar
+        } else {
+          // Não tem a chave - não pode passar
+          return;
+        }
       }
+      // Porta já aberta - pode passar normalmente
     }
 
     // Move o jogador
@@ -1228,6 +1189,7 @@ export default function EmotionMaze() {
       className += ` ${styles.cellPath}`;
     }
     
+    // Destacar porta fechada
     if (door && !doorIsOpen) {
       className += ` ${styles.door}`;
     }
@@ -1247,7 +1209,8 @@ export default function EmotionMaze() {
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          backgroundColor: door && !doorIsOpen ? '#8B4513' : undefined
+          backgroundColor: door && !doorIsOpen ? '#8B4513' : undefined,
+          opacity: door && doorIsOpen ? 0.5 : 1
         }}
       >
         {isPlayer && <span className={styles.player} style={{ fontSize }}>🧑</span>}
@@ -1258,7 +1221,9 @@ export default function EmotionMaze() {
         {megaGem && !isPlayer && <span className={styles.megaGem} style={{ fontSize }}>🌟</span>}
         {powerup && !isPlayer && <span style={{ fontSize }}>{POWERUPS[powerup.type as keyof typeof POWERUPS].icon}</span>}
         {key && !isPlayer && <span className={styles.key} style={{ fontSize }}>🗝️</span>}
-        {door && !doorIsOpen && !isPlayer && <span style={{ fontSize, filter: 'brightness(1.5)' }}>🚪</span>}
+        {door && !doorIsOpen && !isPlayer && (
+          <span style={{ fontSize, filter: 'brightness(1.5)' }}>🚪</span>
+        )}
       </div>
     );
   };
@@ -1358,7 +1323,16 @@ export default function EmotionMaze() {
               <p className="text-sm text-gray-700 mb-4 text-center">{cutsceneContent.text}</p>
               {level.keys && level.keys.length > 0 && (
                 <div className="bg-yellow-100 rounded p-2 mb-3">
-                  <p className="text-xs font-bold">🗝️ Pegue chaves para abrir 🚪 portas!</p>
+                  <p className="text-xs font-bold text-center">
+                    🗝️ Pegue as chaves para abrir as 🚪 portas!
+                  </p>
+                </div>
+              )}
+              {level.powerups?.some(p => p.type === 'wallPass') && (
+                <div className="bg-purple-100 rounded p-2 mb-3">
+                  <p className="text-xs font-bold text-center">
+                    🕐 Use o poder para atravessar paredes!
+                  </p>
                 </div>
               )}
               <button
@@ -1382,9 +1356,11 @@ export default function EmotionMaze() {
                 💎 {collectedItems.gems.size + collectedItems.specialGems.size + collectedItems.megaGems.size}/
                 {(level.gems?.length || 0) + (level.specialGems?.length || 0) + (level.megaGems?.length || 0)}
               </div>
-              <div className="bg-white/90 px-2 py-1 rounded text-xs text-gray-800">
-                🐾 {collectedItems.npcs.size}/{level.npcs?.length || 0}
-              </div>
+              {level.npcs && level.npcs.length > 0 && (
+                <div className="bg-white/90 px-2 py-1 rounded text-xs text-gray-800">
+                  🐾 {collectedItems.npcs.size}/{level.npcs.length}
+                </div>
+              )}
               {level.keys && level.keys.length > 0 && (
                 <div className="bg-white/90 px-2 py-1 rounded text-xs text-gray-800">
                   🗝️ {collectedItems.keys.size}/{level.keys.length}
