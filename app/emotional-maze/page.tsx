@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import styles from './emotionmaze.module.css';
 
-// Sistema de Power-ups ATUALIZADO (removido speedBoost)
+// Sistema de Power-ups ATUALIZADO
 const POWERUPS = {
   wallPass: {
     name: 'Atravessador de Paredes',
@@ -33,14 +33,14 @@ const POWERUPS = {
   }
 };
 
-// Configuração de sons (SEM o levelComplete repetitivo)
+// Configuração de sons
 const SOUNDS = {
   footstep: '/sounds/footstep.wav',
   checkpoint: '/sounds/coin.wav',
   powerup: '/sounds/magic.wav',
   gem: '/sounds/coin.wav',
   wallPass: '/sounds/magic.wav',
-  gameComplete: '/sounds/sucess.wav' // Só toca no FINAL DE TUDO
+  gameComplete: '/sounds/sucess.wav'
 };
 
 // Função para tocar som
@@ -116,12 +116,12 @@ const NPCS = [
   { id: 'turtle', name: 'Tartaruga', emoji: '🐢', dialogue: 'Devagar e sempre! Obrigado!' }
 ];
 
-// Função para espelhar/inverter labirinto
+// Função para espelhar labirinto
 const mirrorMaze = (originalGrid: number[][]): number[][] => {
   return originalGrid.map(row => [...row].reverse());
 };
 
-// Configuração dos níveis ATUALIZADA
+// Configuração dos níveis
 const LEVELS = [
   {
     id: 1,
@@ -133,7 +133,7 @@ const LEVELS = [
     npcPosition: { x: 3, y: 3 },
     checkpoints: [{ x: 3, y: 1 }],
     powerups: [{ x: 5, y: 2, type: 'wallPass' }, { x: 1, y: 4, type: 'reveal' }],
-    gems: [{ x: 2, y: 2 }, { x: 4, y: 4 }], // GEMAS ESCONDIDAS
+    gems: [{ x: 2, y: 2 }, { x: 4, y: 4 }],
     perfectTime: 60,
     dialogues: {
       start: 'Vamos espalhar alegria e resgatar nosso amigo!',
@@ -307,7 +307,7 @@ const LEVELS = [
   }
 ];
 
-// NÍVEIS ESPELHADOS (mais simples e desafiadores)
+// NÍVEIS ESPELHADOS
 const MIRROR_LEVELS = [
   {
     id: 6,
@@ -336,15 +336,15 @@ const MIRROR_LEVELS = [
       npcRescue: 'A Tartaruga entendeu o espelho!',
       complete: 'Você dominou o mundo espelhado!'
     },
-    grid: [], // Será gerado como espelho do nível 3
-    start: { x: 9, y: 1 }, // Invertido
-    end: { x: 1, y: 9 } // Invertido
+    grid: [],
+    start: { x: 9, y: 1 },
+    end: { x: 1, y: 9 }
   },
   {
     id: 7,
     emotion: 'mirror',
     size: 13,
-    name: 'Mundo Espelhado 2',
+    name: 'Mundo Espelhado Final',
     story: 'O desafio final! Todos os amigos estão presos no mundo invertido!',
     npc: null,
     npcPosition: { x: 6, y: 6 },
@@ -368,7 +368,7 @@ const MIRROR_LEVELS = [
       npcRescue: 'Todos salvos!',
       complete: 'VOCÊ É O MESTRE DOS ESPELHOS!'
     },
-    grid: [], // Será gerado como espelho do nível 5
+    grid: [],
     start: { x: 11, y: 1 },
     end: { x: 1, y: 11 }
   }
@@ -433,14 +433,11 @@ export default function EmotionMaze() {
     return () => clearInterval(interval);
   }, [activePowerup, powerupTimeLeft]);
 
-  // Gerar níveis espelhados
   const generateMirrorLevel = useCallback((levelIndex: number) => {
-    if (levelIndex === 6) {
-      // Espelhar nível 3
+    if (levelIndex === 5) {
       const mirroredGrid = mirrorMaze(LEVELS[2].grid);
       return { ...MIRROR_LEVELS[0], grid: mirroredGrid };
-    } else if (levelIndex === 7) {
-      // Espelhar nível 5
+    } else if (levelIndex === 6) {
       const mirroredGrid = mirrorMaze(LEVELS[4].grid);
       return { ...MIRROR_LEVELS[1], grid: mirroredGrid };
     }
@@ -509,7 +506,6 @@ export default function EmotionMaze() {
 
     const newPos = { ...playerPosition };
     
-    // Movimento normal (sem super velocidade)
     switch(direction) {
       case 'up': newPos.y = Math.max(0, newPos.y - 1); break;
       case 'down': newPos.y = Math.min(level.size - 1, newPos.y + 1); break;
@@ -534,7 +530,6 @@ export default function EmotionMaze() {
       if (soundEnabled) playSound('wallPass', 0.2);
     }
 
-    // Verificar gema
     const gemKey = `${newPos.x},${newPos.y}`;
     const gem = level.gems?.find(g => g.x === newPos.x && g.y === newPos.y);
     if (gem && !collectedGems.has(gemKey)) {
@@ -545,7 +540,6 @@ export default function EmotionMaze() {
       if (soundEnabled) playSound('gem');
     }
 
-    // Verificar checkpoint
     const checkpointKey = `${newPos.x},${newPos.y}`;
     const checkpoint = level.checkpoints?.find(cp => cp.x === newPos.x && cp.y === newPos.y);
     if (checkpoint && !visitedCheckpoints.has(checkpointKey)) {
@@ -556,7 +550,6 @@ export default function EmotionMaze() {
       if (soundEnabled) playSound('checkpoint');
     }
 
-    // Verificar power-up
     const powerupKey = `${newPos.x},${newPos.y}`;
     const powerup = level.powerups?.find(p => p.x === newPos.x && p.y === newPos.y);
     if (powerup && !collectedPowerups.has(powerupKey)) {
@@ -578,7 +571,6 @@ export default function EmotionMaze() {
       }
     }
 
-    // Verificar NPC
     if (!npcFollowing && level.npc && newPos.x === level.npcPosition.x && newPos.y === level.npcPosition.y) {
       setNpcFollowing(true);
       setRescuedNpcs(prev => [...prev, level.npc.id]);
@@ -592,7 +584,6 @@ export default function EmotionMaze() {
       }, 2000);
     }
 
-    // Verificar fim do nível
     if (newPos.x === level.end.x && newPos.y === level.end.y) {
       completeLevel();
     }
@@ -614,7 +605,6 @@ export default function EmotionMaze() {
     
     setStars(earnedStars);
     
-    // SEM som aqui, só confete
     confetti({
       particleCount: 100,
       spread: 70,
@@ -623,7 +613,6 @@ export default function EmotionMaze() {
     
     showGameDialogue(level.dialogues.complete);
     
-    // Verificar se desbloqueou níveis espelhados
     if (currentLevel === 4 && !mirrorLevelsUnlocked) {
       setMirrorLevelsUnlocked(true);
       setTimeout(() => {
@@ -649,7 +638,6 @@ export default function EmotionMaze() {
       });
       setShowCutscene(true);
     } else {
-      // SÓ AQUI toca o som de sucesso final!
       if (soundEnabled) playSound('gameComplete', 0.5);
       setGameState('gameComplete');
     }
@@ -718,11 +706,337 @@ export default function EmotionMaze() {
 
   const emotionTheme = EMOTIONS[currentEmotion];
 
-  // JSX continua igual, apenas com pequenos ajustes de texto...
-  // (vou pular o JSX pois é muito longo e quase idêntico)
-  
+  // JSX COMPLETO
   return (
-    // ... todo o JSX anterior com pequenos ajustes de texto para níveis espelhados
-    <div>Código completo disponível</div>
+    <div className={`${styles.gameContainer} ${styles[`theme${currentEmotion.charAt(0).toUpperCase() + currentEmotion.slice(1)}`]}`}>
+      <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/dashboard" className="flex items-center text-teal-600 hover:text-teal-700">
+              <ChevronLeft className="h-6 w-6" />
+              <span className="ml-1 font-medium">Voltar</span>
+            </Link>
+            <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <Heart className="text-red-500" />
+              <span>Labirinto das Emoções</span>
+            </h1>
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className="p-2 rounded-lg bg-white/50"
+            >
+              {soundEnabled ? <Volume2 /> : <VolumeX />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {gameState === 'playing' && (
+        <>
+          <div className={styles.emotionIndicator}>
+            <div className={styles.emotionTitle}>Emoção Atual</div>
+            <div className={styles.emotionCurrent}>
+              <span className={styles.emotionIcon}>{emotionTheme.icon}</span>
+              <span>{emotionTheme.name}</span>
+            </div>
+          </div>
+          
+          {activePowerup && (
+            <div className={styles.powerupIndicator} style={{ backgroundColor: POWERUPS[activePowerup as keyof typeof POWERUPS].color }}>
+              <div className="text-white font-bold">
+                {POWERUPS[activePowerup as keyof typeof POWERUPS].icon} {POWERUPS[activePowerup as keyof typeof POWERUPS].name}
+              </div>
+              <div className="text-white text-2xl font-bold">
+                {powerupTimeLeft}s
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      <main className="p-6 max-w-7xl mx-auto">
+        {gameState === 'intro' && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center space-y-6"
+          >
+            <div className="bg-white/90 backdrop-blur rounded-2xl p-8 shadow-xl max-w-3xl mx-auto">
+              <h1 className="text-4xl font-bold mb-4 text-gray-800">
+                O Labirinto das Emoções
+              </h1>
+              
+              <div className="flex justify-center gap-4 mb-6">
+                <div className="text-6xl animate-bounce">🦁</div>
+                <div className="text-6xl animate-bounce" style={{ animationDelay: '0.1s' }}>🦄</div>
+              </div>
+              
+              <p className="text-lg text-gray-600 mb-6">
+                Ajude Leo e Mila a resgatar amigos perdidos em labirintos emocionais!
+                Complete os 5 níveis para desbloquear os MUNDOS ESPELHADOS!
+              </p>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                {Object.entries(EMOTIONS).map(([key, emotion]) => (
+                  <div key={key} className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-3xl mb-2">{emotion.icon}</div>
+                    <div className="font-semibold">{emotion.name}</div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="bg-purple-100 rounded-lg p-4 mb-6">
+                <h3 className="font-bold text-purple-800 mb-2">🎮 Power-ups e Tesouros!</h3>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div>🕐 Atravessar Paredes</div>
+                  <div>👁️ Revelar Segredos</div>
+                  <div>💎 Gemas Escondidas</div>
+                </div>
+              </div>
+              
+              <button
+                onClick={startGame}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-xl text-xl font-bold hover:scale-105 transition-transform"
+              >
+                <Play className="inline mr-2" />
+                Começar Aventura
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {showCutscene && (
+          <div className={styles.cutscene}>
+            <motion.div 
+              className={styles.cutsceneContent}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+            >
+              <div className="text-6xl mb-4">{cutsceneContent.image}</div>
+              <h2 className="text-2xl font-bold mb-4">{cutsceneContent.title}</h2>
+              <p className="text-lg mb-6">{cutsceneContent.text}</p>
+              {currentLevel >= 5 && (
+                <div className="bg-yellow-100 p-3 rounded-lg mb-4">
+                  <p className="text-sm font-bold">⚠️ MUNDO ESPELHADO - Tudo está invertido!</p>
+                </div>
+              )}
+              <button
+                onClick={startLevel}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-bold"
+              >
+                Vamos lá!
+              </button>
+            </motion.div>
+          </div>
+        )}
+
+        {gameState === 'playing' && (
+          <div className="flex flex-col lg:flex-row gap-6 items-center justify-center">
+            <div 
+              className={styles.mazeGrid} 
+              style={{ 
+                gridTemplateColumns: `repeat(${level.size}, 1fr)`
+              }}
+            >
+              {level.grid.map((row, y) =>
+                row.map((_, x) => renderCell(x, y))
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-white/90 backdrop-blur rounded-xl p-4 space-y-2">
+                <div className="text-lg font-bold">Nível {currentLevel + 1} de {allLevels.length}</div>
+                <div className="flex items-center gap-2">
+                  <Users className="text-blue-500" />
+                  <span>NPCs: {npcFollowing ? '1/1' : '0/1'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Gem className="text-purple-500" />
+                  <span>Gemas: {collectedGems.size}/{level.gems?.length || 0}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Compass className="text-green-500" />
+                  <span>Movimentos: {moves}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="text-orange-500" />
+                  <span>Tempo: {Math.floor(timeElapsed / 60)}:{(timeElapsed % 60).toString().padStart(2, '0')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Star className="text-yellow-500" />
+                  <span>Pontos: {score}</span>
+                </div>
+              </div>
+
+              <div className="bg-white/90 backdrop-blur rounded-xl p-4">
+                <div className="grid grid-cols-3 gap-2 w-36 mx-auto">
+                  <div></div>
+                  <button
+                    onClick={() => movePlayer('up')}
+                    className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg"
+                  >
+                    ↑
+                  </button>
+                  <div></div>
+                  <button
+                    onClick={() => movePlayer('left')}
+                    className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg"
+                  >
+                    ←
+                  </button>
+                  <button
+                    onClick={() => movePlayer('down')}
+                    className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    onClick={() => movePlayer('right')}
+                    className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg"
+                  >
+                    →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {gameState === 'mirrorUnlocked' && (
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white/90 backdrop-blur rounded-2xl p-8 max-w-2xl mx-auto text-center"
+          >
+            <Sparkles className="w-20 h-20 text-yellow-500 mx-auto mb-4" />
+            <h2 className="text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+              MUNDOS ESPELHADOS DESBLOQUEADOS!
+            </h2>
+            <p className="text-xl mb-6">
+              Você completou todos os níveis normais! Agora enfrente os MUNDOS ESPELHADOS!
+            </p>
+            <div className="bg-yellow-100 rounded-lg p-4 mb-6">
+              <p className="font-bold text-lg mb-2">🪞 Como funciona:</p>
+              <p>Tudo está invertido! Esquerda é direita, direita é esquerda!</p>
+              <p>Você precisa pensar de forma diferente!</p>
+            </div>
+            <button
+              onClick={() => setGameState('levelComplete')}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-xl text-xl font-bold hover:scale-105 transition-transform"
+            >
+              Aceitar o Desafio!
+            </button>
+          </motion.div>
+        )}
+
+        {gameState === 'levelComplete' && (
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white/90 backdrop-blur rounded-2xl p-8 max-w-2xl mx-auto text-center"
+          >
+            <h2 className="text-3xl font-bold mb-4">Nível Completo!</h2>
+            
+            <div className="flex justify-center gap-2 mb-4">
+              {[1, 2, 3].map(i => (
+                <Star
+                  key={i}
+                  className={`w-12 h-12 ${i <= stars ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+                />
+              ))}
+            </div>
+            
+            <div className="space-y-2 mb-6">
+              <p>Tempo: {Math.floor(timeElapsed / 60)}:{(timeElapsed % 60).toString().padStart(2, '0')}</p>
+              <p>Movimentos: {moves}</p>
+              <p>NPCs Resgatados: {npcFollowing ? '✅' : '❌'}</p>
+              <p>Gemas Coletadas: {collectedGems.size}/{level.gems?.length || 0}</p>
+              <p>Power-ups: {collectedPowerups.size}</p>
+              <p className="text-2xl font-bold">Pontuação: {score}</p>
+            </div>
+            
+            {currentLevel < allLevels.length - 1 ? (
+              <button
+                onClick={nextLevel}
+                className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg font-bold hover:scale-105 transition-transform"
+              >
+                {currentLevel === 4 ? 'Ir para Mundos Espelhados!' : 'Próximo Nível'}
+              </button>
+            ) : (
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-lg font-bold hover:scale-105 transition-transform"
+              >
+                Jogar Novamente
+              </button>
+            )}
+          </motion.div>
+        )}
+
+        {gameState === 'gameComplete' && (
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white/90 backdrop-blur rounded-2xl p-8 max-w-3xl mx-auto text-center"
+          >
+            <Sparkles className="w-20 h-20 text-yellow-500 mx-auto mb-4 animate-spin" />
+            <h2 className="text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+              VOCÊ É O MESTRE DOS LABIRINTOS!
+            </h2>
+            <p className="text-2xl mb-6">
+              Completou TODOS os labirintos, incluindo os ESPELHADOS!
+            </p>
+            
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              {rescuedNpcs.map(npcId => {
+                const npc = NPCS.find(n => n.id === npcId);
+                return npc ? (
+                  <div key={npcId} className="text-4xl">
+                    {npc.emoji}
+                  </div>
+                ) : null;
+              })}
+            </div>
+            
+            <p className="text-4xl font-bold mb-6 animate-pulse">
+              Pontuação Final: {score}
+            </p>
+            
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-xl text-xl font-bold hover:scale-105 transition-transform"
+            >
+              Jogar Novamente
+            </button>
+          </motion.div>
+        )}
+
+        <AnimatePresence>
+          {showDialogue && (
+            <motion.div
+              className={styles.dialogueBox}
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+            >
+              <div className={styles.dialogueCharacter}>
+                <div className={styles.dialogueAvatar}>
+                  {currentSpeaker === 'leo' ? '🦁' : '🦄'}
+                </div>
+                <div className={styles.dialogueName}>
+                  {currentSpeaker === 'leo' ? 'Leo' : 'Mila'}
+                </div>
+              </div>
+              <div className={styles.dialogueText}>{currentDialogue}</div>
+              <button
+                onClick={() => setShowDialogue(false)}
+                className={styles.dialogueButton}
+              >
+                Continuar
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+    </div>
   );
 }
