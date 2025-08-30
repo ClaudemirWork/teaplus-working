@@ -1,1 +1,361 @@
+/* app/components/activities/emotion-maze/EmotionMaze.module.css */
 
+/* Container principal com transição suave entre temas */
+.gameContainer {
+  min-height: 100vh;
+  transition: background 1.5s ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Temas de Emoções */
+.themeJoy {
+  background: linear-gradient(135deg, #FFE066 0%, #FF6B6B 50%, #4ECDC4 100%);
+  animation: joyPulse 4s ease-in-out infinite;
+}
+
+.themeCalm {
+  background: linear-gradient(135deg, #E8F5E9 0%, #B2DFDB 50%, #80CBC4 100%);
+  animation: calmWave 6s ease-in-out infinite;
+}
+
+.themeCourage {
+  background: linear-gradient(135deg, #5E35B1 0%, #7E57C2 50%, #9575CD 100%);
+  animation: courageGlow 3s ease-in-out infinite;
+}
+
+.themeSadness {
+  background: linear-gradient(135deg, #90CAF9 0%, #64B5F6 50%, #42A5F5 100%);
+  animation: sadnessRain 5s ease-in-out infinite;
+}
+
+.themeFear {
+  background: linear-gradient(135deg, #424242 0%, #616161 50%, #757575 100%);
+  animation: fearShake 4s ease-in-out infinite;
+}
+
+/* Animações dos temas */
+@keyframes joyPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+@keyframes calmWave {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes courageGlow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.1); }
+}
+
+@keyframes sadnessRain {
+  0%, 100% { opacity: 0.95; }
+  50% { opacity: 1; }
+}
+
+@keyframes fearShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-1px); }
+  75% { transform: translateX(1px); }
+}
+
+/* Grid do labirinto com tema */
+.mazeGrid {
+  display: inline-grid;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  transition: all 0.5s ease;
+}
+
+/* Células do labirinto */
+.cell {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.cellWall {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.cellPath {
+  background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
+}
+
+.cellCheckpoint {
+  background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+  animation: checkpointGlow 2s ease-in-out infinite;
+}
+
+@keyframes checkpointGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(241, 196, 15, 0.8); }
+}
+
+/* Jogador e NPCs */
+.player {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  transition: all 0.2s ease;
+  z-index: 10;
+  animation: playerBounce 0.5s ease-in-out infinite;
+}
+
+@keyframes playerBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+.npc {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  transition: all 0.3s ease;
+  z-index: 9;
+  opacity: 0.7;
+}
+
+.npcFollowing {
+  opacity: 1;
+  animation: npcFollow 0.3s ease-in-out infinite;
+}
+
+@keyframes npcFollow {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Sistema de Diálogos */
+.dialogueBox {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 600px;
+  width: 90%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateX(-50%) translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+.dialogueCharacter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dialogueAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.dialogueName {
+  font-weight: bold;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+.dialogueText {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #34495e;
+  margin-bottom: 12px;
+}
+
+.dialogueButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.dialogueButton:hover {
+  transform: scale(1.05);
+}
+
+/* Indicadores de Emoção */
+.emotionIndicator {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+}
+
+.emotionTitle {
+  font-size: 14px;
+  font-weight: bold;
+  color: #7f8c8d;
+  margin-bottom: 8px;
+}
+
+.emotionCurrent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.emotionIcon {
+  font-size: 32px;
+  animation: emotionPulse 2s ease-in-out infinite;
+}
+
+@keyframes emotionPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Efeitos visuais por emoção */
+.particlesJoy {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.particlesJoy::before {
+  content: '✨';
+  position: absolute;
+  animation: floatParticle 4s linear infinite;
+}
+
+@keyframes floatParticle {
+  from {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Modo História - Cutscenes */
+.cutscene {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cutsceneContent {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 600px;
+  width: 90%;
+  text-align: center;
+  animation: zoomIn 0.5s ease-out;
+}
+
+@keyframes zoomIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cell {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .dialogueBox {
+    bottom: 10px;
+    padding: 16px;
+  }
+  
+  .emotionIndicator {
+    top: 70px;
+    right: 10px;
+    min-width: 160px;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cell {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .player {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .npc {
+    width: 18px;
+    height: 18px;
+  }
+}
