@@ -1,0 +1,231 @@
+/* Animações e Efeitos Visuais */
+@keyframes castleBuild {
+  0% { transform: scale(0) rotate(0deg); opacity: 0; }
+  50% { transform: scale(1.2) rotate(180deg); opacity: 1; }
+  100% { transform: scale(1) rotate(360deg); opacity: 1; }
+}
+
+@keyframes territoryConquer {
+  0% { background: linear-gradient(45deg, #ddd, #eee); }
+  50% { background: linear-gradient(45deg, #ffd700, #ffed4e); }
+  100% { background: linear-gradient(45deg, var(--player-color), var(--player-color-light)); }
+}
+
+@keyframes thinking {
+  0%, 100% { transform: translateY(0px); }
+  25% { transform: translateY(-5px); }
+  75% { transform: translateY(5px); }
+}
+
+@keyframes coinCollect {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+}
+
+/* Tabuleiro Medieval */
+.game-board {
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23f4e4bc" width="100" height="100"/><path d="M0 0L50 50L0 100M50 0L100 50L50 100" stroke="%23d4a574" stroke-width="0.5" fill="none"/></svg>');
+  background-size: 100px 100px;
+  border: 8px solid #8b4513;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  padding: 12px;
+  position: relative;
+}
+
+.territory-cell {
+  background: linear-gradient(135deg, #f5f5dc, #e8d7c3);
+  border: 3px solid #8b6914;
+  border-radius: 8px;
+  position: relative;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.territory-cell:hover:not(.conquered) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  background: linear-gradient(135deg, #fff8dc, #ffe4b5);
+}
+
+.territory-cell.conquered-X {
+  --player-color: #4169e1;
+  --player-color-light: #6495ed;
+  background: linear-gradient(135deg, var(--player-color), var(--player-color-light));
+  animation: territoryConquer 0.5s ease;
+}
+
+.territory-cell.conquered-O {
+  --player-color: #dc143c;
+  --player-color-light: #ff6b6b;
+  background: linear-gradient(135deg, var(--player-color), var(--player-color-light));
+  animation: territoryConquer 0.5s ease;
+}
+
+.castle-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3rem;
+  animation: castleBuild 0.6s ease;
+  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+}
+
+/* Avatar da IA */
+.ia-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff9800, #ffc107);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+.ia-avatar.thinking {
+  animation: thinking 1s ease-in-out infinite;
+}
+
+.ia-avatar.celebrating::after {
+  content: '🎉';
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  font-size: 1.5rem;
+  animation: coinCollect 1s ease;
+}
+
+.thought-bubble {
+  position: absolute;
+  top: -40px;
+  right: -60px;
+  background: white;
+  padding: 8px 12px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  font-size: 0.9rem;
+  min-width: 100px;
+}
+
+.thought-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 20px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  transform: rotate(45deg);
+}
+
+/* Sistema de Pontos e Moedas */
+.coin-display {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(255,215,0,0.4);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.coin-animation {
+  animation: coinCollect 0.8s ease forwards;
+  position: fixed;
+  z-index: 1000;
+  font-size: 2rem;
+  pointer-events: none;
+}
+
+/* Badges e Conquistas */
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #9c27b0, #ba68c8);
+  color: white;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin: 2px;
+  box-shadow: 0 2px 8px rgba(156,39,176,0.3);
+}
+
+/* Mapa do Reino */
+.kingdom-map {
+  background: linear-gradient(135deg, #8bc34a, #aed581);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  min-height: 200px;
+}
+
+.kingdom-progress {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.kingdom-level {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.kingdom-level.completed {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: white;
+}
+
+.kingdom-level.current {
+  animation: pulse 2s infinite;
+  border: 3px solid #ff9800;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Mensagens de Feedback */
+.feedback-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  font-size: 1.5rem;
+  font-weight: bold;
+  z-index: 1000;
+  animation: bounceIn 0.5s ease;
+}
+
+@keyframes bounceIn {
+  0% { transform: translate(-50%, -50%) scale(0); }
+  60% { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.feedback-message.success {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: white;
+}
+
+.feedback-message.error {
+  background: linear-gradient(135deg, #f44336, #ef5350);
+  color: white;
+}
