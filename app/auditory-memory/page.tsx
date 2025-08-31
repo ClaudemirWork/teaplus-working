@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Volume2, VolumeX, Brain, ArrowLeft, Trophy, Play, Star, Heart } from 'lucide-react';
 
