@@ -107,38 +107,46 @@ export default function AuditoryMemoryGame() {
 
     const [sequence, setSequence] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [activeTone, setActiveTone] = useState(null); // Index do tom ativo
+    const [activeTone, setActiveTone] = useState(null); 
     const [isPlayerTurn, setIsPlayerTurn] = useState(false);
     
-    // **CORREÇÃO 1:** Trocamos 'audio: new Audio(...)' por 'audioSrc: "..."'
-    // Isto evita que o servidor tente criar um objeto 'Audio'.
+    // **ÁUDIO CORRIGIDO:** Usando caminhos locais para os sons.
+    // Crie a pasta 'public/sounds/xylophone/' e coloque os ficheiros de áudio lá.
     const tones = useMemo(() => [
-        { name: 'Dó', audioSrc: 'https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/C5.mp3', colorClass: 'bg-red-500', glowColor: '#ef4444', height: '200px' },
-        { name: 'Ré', audioSrc: 'https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/D5.mp3', colorClass: 'bg-blue-500', glowColor: '#3b82f6', height: '190px' },
-        { name: 'Mi', audioSrc: 'https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/E5.mp3', colorClass: 'bg-green-500', glowColor: '#22c55e', height: '180px' },
-        { name: 'Fá', audioSrc: 'https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/F5.mp3', colorClass: 'bg-yellow-400', glowColor: '#facc15', height: '170px' },
-        { name: 'Sol', audioSrc: 'https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/G5.mp3', colorClass: 'bg-purple-500', glowColor: '#a855f7', height: '160px' },
-        { name: 'Lá', audioSrc: 'https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/A5.mp3', colorClass: 'bg-pink-500', glowColor: '#ec4899', height: '150px' },
+        { name: 'Dó', audioSrc: '/sounds/xylophone/C5.mp3', colorClass: 'bg-red-500', glowColor: '#ef4444', height: '200px' },
+        { name: 'Ré', audioSrc: '/sounds/xylophone/D5.mp3', colorClass: 'bg-blue-500', glowColor: '#3b82f6', height: '190px' },
+        { name: 'Mi', audioSrc: '/sounds/xylophone/E5.mp3', colorClass: 'bg-green-500', glowColor: '#22c55e', height: '180px' },
+        { name: 'Fá', audioSrc: '/sounds/xylophone/F5.mp3', colorClass: 'bg-yellow-400', glowColor: '#facc15', height: '170px' },
+        { name: 'Sol', audioSrc: '/sounds/xylophone/G5.mp3', colorClass: 'bg-purple-500', glowColor: '#a855f7', height: '160px' },
+        { name: 'Lá', audioSrc: '/sounds/xylophone/A5.mp3', colorClass: 'bg-pink-500', glowColor: '#ec4899', height: '150px' },
     ], []);
 
+    const audioRefs = useRef({});
     const gameSpeed = useMemo(() => Math.max(300, 1000 - (score / 20)), [score]);
     
-    // **CORREÇÃO 2:** Criamos o objeto 'new Audio()' aqui dentro,
-    // que só é executado no browser.
+    // Efeito para pré-carregar os áudios no cliente
+    useEffect(() => {
+      if (typeof window !== 'undefined') {
+        tones.forEach((tone) => {
+          const audio = new Audio(tone.audioSrc);
+          audio.preload = 'auto';
+          audioRefs.current[tone.audioSrc] = audio;
+        });
+      }
+    }, [tones]);
+
     const playTone = useCallback((index) => {
-        if (!soundEnabled || typeof window === 'undefined') return;
-        try {
-            const tone = tones[index];
-            const audio = new Audio(tone.audioSrc);
-            audio.play().catch(e => console.error("Erro ao tocar áudio:", e));
-        } catch (e) {
-            console.error("Não foi possível tocar o som.");
+        if (!soundEnabled) return;
+        const audio = audioRefs.current[tones[index].audioSrc];
+        if (audio) {
+          audio.currentTime = 0;
+          audio.play().catch(e => console.error("Erro ao tocar áudio:", e));
         }
     }, [soundEnabled, tones]);
 
     const playSequence = useCallback(async () => {
         setIsPlayerTurn(false);
-        await new Promise(res => setTimeout(res, 700)); // Pequena pausa antes de começar
+        await new Promise(res => setTimeout(res, 700)); 
         for (let i = 0; i < sequence.length; i++) {
             const toneIndex = sequence[i];
             setActiveTone(toneIndex);
@@ -183,25 +191,20 @@ export default function AuditoryMemoryGame() {
         if (chosenIndex === sequence[currentIndex]) {
             const newIndex = currentIndex + 1;
             if (newIndex >= sequence.length) {
-                // Acertou a sequência toda
                 setScore(prev => prev + (10 * combo * sequence.length));
                 setCombo(prev => prev + 1);
                 setCurrentIndex(0);
                 setIsPlayerTurn(false);
-                // Adiciona nova nota e toca a nova sequência
                 const nextTone = Math.floor(Math.random() * tones.length);
                 setSequence(prev => [...prev, nextTone]);
             } else {
-                // Acertou a nota, espera a próxima
                 setCurrentIndex(newIndex);
             }
         } else {
-            // Errou
             setLives(prev => prev - 1);
             setCombo(1);
             setCurrentIndex(0);
             setIsPlayerTurn(false);
-            // Toca a mesma sequência novamente após um erro
             setTimeout(() => {
                 if(lives - 1 > 0) playSequence();
             }, 1000);
@@ -212,7 +215,6 @@ export default function AuditoryMemoryGame() {
         :root { --main-bg: #1a237e; --secondary-bg: #283593; }
         .game-container { font-family: 'Nunito', sans-serif; min-height: 100vh; background-color: var(--main-bg); background-image: linear-gradient(160deg, var(--main-bg) 0%, #3f51b5 100%); color: white; display: flex; flex-direction: column; }
         
-        /* --- TELA DE INTRO E FIM DE JOGO --- */
         .screen-center { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
         .intro-container { background: radial-gradient(circle, var(--secondary-bg) 0%, var(--main-bg) 100%); position: relative; overflow: hidden; }
         .intro-mascot { width: 90%; max-width: 350px; height: auto; margin-bottom: -2rem; filter: drop-shadow(0 15px 25px rgba(0,0,0,0.3)); z-index: 1; }
@@ -223,12 +225,10 @@ export default function AuditoryMemoryGame() {
         .final-score { font-size: 1.2rem; color: #c5cae9; }
         .final-score-number { font-size: 4rem; font-weight: 900; color: #ffeb3b; margin-bottom: 2rem; }
 
-        /* Fundo de Notas Musicais */
         .musical-notes-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0; }
         .musical-notes-bg span { position: absolute; color: rgba(255, 255, 255, 0.1); animation: float-notes 15s linear infinite; bottom: -50px; }
         @keyframes float-notes { from { transform: translateY(0) rotate(0deg); opacity: 1; } to { transform: translateY(-100vh) rotate(360deg); opacity: 0; } }
 
-        /* --- UI DO JOGO --- */
         .game-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 900px; margin: 0 auto; z-index: 10; }
         .header-title { font-weight: 900; font-size: 1.8rem; }
         .header-item { background: rgba(0,0,0,0.2); padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
@@ -241,19 +241,25 @@ export default function AuditoryMemoryGame() {
         .combo-number { font-size: 3rem; font-weight: 900; color: #ffeb3b; line-height: 1; text-shadow: 0 0 15px #ffeb3b; }
         
         .game-board { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .xylophone-container { display: flex; justify-content: center; align-items: flex-end; gap: 10px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 20px; box-shadow: inset 0 4px 10px rgba(0,0,0,0.4); height: 250px; }
+        .xylophone-container { display: flex; justify-content: center; align-items: flex-end; gap: 1.5vw; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 20px; box-shadow: inset 0 4px 10px rgba(0,0,0,0.4); height: 280px; width: 100%; max-width: 600px; }
 
-        .tone-button { width: 60px; border-radius: 10px; border: none; cursor: pointer; position: relative; overflow: hidden; transition: transform 0.1s; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px; }
+        .tone-button { width: 100%; border-radius: 10px; border: none; cursor: pointer; position: relative; overflow: hidden; transition: transform 0.1s; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px; }
         .button-shine { position: absolute; top: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent); }
         .button-label { font-size: 1.2rem; font-weight: 700; color: white; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         
-        /* Cores dos Botões */
         .bg-red-500 { background-color: #f44336; }
         .bg-blue-500 { background-color: #2196f3; }
         .bg-green-500 { background-color: #4caf50; }
         .bg-yellow-400 { background-color: #facc15; }
         .bg-purple-500 { background-color: #9c27b0; }
         .bg-pink-500 { background-color: #e91e63; }
+
+        @media (max-width: 600px) {
+            .header-title { font-size: 1.2rem; }
+            .header-item { padding: 6px 10px; font-size: 1rem; }
+            .xylophone-container { height: 220px; }
+            .button-label { font-size: 1rem; }
+        }
     `;
 
     return (
