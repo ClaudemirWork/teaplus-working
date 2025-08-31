@@ -1,0 +1,53 @@
+.musical-game-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.game-title {
+  text-align: center;
+  color: white;
+  font-size: 2.5rem;
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.loading {
+  text-align: center;
+  color: white;
+  font-size: 1.5rem;
+  margin-top: 100px;
+}
+
+.game-area {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.start-button {
+  display: block;
+  margin: 50px auto;
+  padding: 20px 40px;
+  font-size: 1.5rem;
+  background: #4ECDC4;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.start-button:hover {
+  transform: scale(1.05);
+}
+
+.game-content {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #333;
+}
