@@ -1,11 +1,59 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronLeft, Save, Trophy, RotateCcw, Calculator, Crown, Coins, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import './multiplication-game.css';
+
+// --- SISTEMA DE SONS ---
+class SoundManager {
+  private sounds: { [key: string]: HTMLAudioElement } = {};
+  
+  constructor() {
+    // Criar sons usando Web Audio API
+    this.createSound('click', 440, 0.1);
+    this.createSound('correct', 523, 0.2);
+    this.createSound('wrong', 196, 0.2);
+    this.createSound('victory', 784, 0.3);
+    this.createSound('coin', 659, 0.15);
+  }
+  
+  createSound(name: string, frequency: number, duration: number) {
+    // Usar oscilador para criar sons simples
+    const audioContext = typeof window !== 'undefined' && window.AudioContext 
+      ? new (window.AudioContext || (window as any).webkitAudioContext)()
+      : null;
+      
+    if (!audioContext) return;
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = frequency;
+    gainNode.gain.value = 0.3;
+    
+    // Criar um data URL para o som
+    const audio = new Audio();
+    audio.volume = 0.5;
+    
+    // Simular som com data URL (beep simples)
+    const beep = `data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZijgJGGm98OScTgwOUKzn47VgGAU7k9zyw3UpBSyAzvDaiTYIGWu+8OabTQ0OT6vm4bVfGAU8lN/ywHIiBi6F0fDYhjIJHm/A8OaZTQ0OTqzl4rVfGAU9md/yvnEmBSyE0fDYhDEJHnDB8OaXTQ0PT6/k4bVfGQU9md/yu3ElBi+G0fDYgjAJIHPC8OaVTQ0PT6/k4bVfGQU9md/yu3ElBi+G0fDYgjAJIHPC8OaVTQ0PT6/k4bVfGQU9md/yu3ElBi+G0fDYgjAJIHPC8OWVTQ0PT6/k4bVfGQU9md/yu3ElBi+G0fDYgjAJIHPC8OWVTg0OTqzm4bVeGQU9mt/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWm98OicTgwOUKzl47RfGAU8mN/yxnkiBySA0fDaiTcIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIGWm+8OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIGWm+8OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIGWm+8OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIGWm+8OmcTQ0NUKzl47RfGAU8mN/yxnkiBw==`;
+    
+    this.sounds[name] = new Audio(beep);
+  }
+  
+  play(soundName: string) {
+    if (this.sounds[soundName]) {
+      const sound = this.sounds[soundName].cloneNode() as HTMLAudioElement;
+      sound.play().catch(() => {});
+    }
+  }
+}
 
 // --- SISTEMA DE IA ---
 class IAPlayer {
@@ -18,15 +66,15 @@ class IAPlayer {
     
     switch(difficulty) {
       case 'facil':
-        this.thinkingTime = { min: 2000, max: 5000 };
+        this.thinkingTime = { min: 1500, max: 3000 };
         this.accuracy = 0.6;
         break;
       case 'medio':
-        this.thinkingTime = { min: 1500, max: 3500 };
+        this.thinkingTime = { min: 1000, max: 2000 };
         this.accuracy = 0.75;
         break;
       case 'dificil':
-        this.thinkingTime = { min: 1000, max: 2500 };
+        this.thinkingTime = { min: 800, max: 1500 };
         this.accuracy = 0.9;
         break;
     }
@@ -34,7 +82,7 @@ class IAPlayer {
   
   async makeMove(problem: { answer: number }) {
     const thinkTime = Math.random() * (this.thinkingTime.max - this.thinkingTime.min) + this.thinkingTime.min;
-    const complexityBonus = problem.answer > 50 ? 1000 : 0;
+    const complexityBonus = problem.answer > 50 ? 500 : 0;
     
     await new Promise(resolve => setTimeout(resolve, thinkTime + complexityBonus));
     
@@ -84,7 +132,7 @@ class IAPlayer {
   }
 }
 
-// --- TIPAGEM E CONSTANTES ---
+// --- COMPONENTE PRINCIPAL ---
 interface GameState {
   board: ('X' | 'O' | null)[];
   currentPlayer: 'X' | 'O';
@@ -101,6 +149,12 @@ interface GameState {
 
 export default function MultiplicationGame() {
   const router = useRouter();
+  const soundManager = useRef<SoundManager | null>(null);
+  
+  // Inicializar sons
+  useEffect(() => {
+    soundManager.current = new SoundManager();
+  }, []);
   
   const [gameState, setGameState] = useState<GameState>({
     board: Array(9).fill(null),
@@ -126,6 +180,8 @@ export default function MultiplicationGame() {
   const [iaDifficulty, setIaDifficulty] = useState<'facil' | 'medio' | 'dificil'>('facil');
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
   const [coinPosition, setCoinPosition] = useState({ x: 0, y: 0 });
+  const [showIaFeedback, setShowIaFeedback] = useState<{ show: boolean; correct: boolean; answer: string }>({ show: false, correct: false, answer: '' });
+  const [showVictoryEffects, setShowVictoryEffects] = useState(false);
   
   const niveis = [
     { id: 1, nome: "Reino do 1", dificuldade: "Tabuada do 1", icone: "🏰", color: "#4caf50" },
@@ -167,13 +223,35 @@ export default function MultiplicationGame() {
       currentProblem: generateProblem(nivelSelecionado),
     }));
     setMessage('');
+    soundManager.current?.play('click');
   };
   
   const addCoins = (amount: number, x: number, y: number) => {
     setCoinPosition({ x, y });
     setShowCoinAnimation(true);
     setGameState(prev => ({ ...prev, coins: prev.coins + amount }));
+    soundManager.current?.play('coin');
     setTimeout(() => setShowCoinAnimation(false), 800);
+  };
+  
+  const createConfetti = () => {
+    setShowVictoryEffects(true);
+    const container = document.getElementById('game-container');
+    
+    for (let i = 0; i < 100; i++) {
+      setTimeout(() => {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti-piece';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.animationDelay = Math.random() * 0.5 + 's';
+        confetti.style.backgroundColor = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a8e6cf', '#ff8cc8'][Math.floor(Math.random() * 5)];
+        container?.appendChild(confetti);
+        
+        setTimeout(() => confetti.remove(), 3000);
+      }, i * 20);
+    }
+    
+    setTimeout(() => setShowVictoryEffects(false), 4000);
   };
   
   const addBadge = (badge: string) => {
@@ -205,6 +283,7 @@ export default function MultiplicationGame() {
     if (gameState.status !== 'playing' || gameState.board[index]) return;
     if (gameState.mode === 'pve' && gameState.currentPlayer === 'O') return;
     
+    soundManager.current?.play('click');
     setShowAnswerInput(true);
     setCurrentCellIndex(index);
     setMessage(`Qual o resultado de ${gameState.currentProblem?.question}?`);
@@ -217,6 +296,7 @@ export default function MultiplicationGame() {
     const rect = document.querySelector('.game-board')?.getBoundingClientRect();
     
     if (isCorrect) {
+      soundManager.current?.play('correct');
       if (rect) addCoins(10 * nivelSelecionado, rect.left + rect.width/2, rect.top);
       
       const newBoard = [...gameState.board];
@@ -246,6 +326,7 @@ export default function MultiplicationGame() {
         }
       }
     } else {
+      soundManager.current?.play('wrong');
       setMessage('❌ Resposta incorreta! Vez do próximo jogador.');
       setGameState(prev => ({
         ...prev,
@@ -263,37 +344,59 @@ export default function MultiplicationGame() {
     
     setIaThinking(true);
     const cellIndex = iaPlayer.chooseBestCell(currentBoard, 'O');
-    
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
     const problem = generateProblem(nivelSelecionado);
+    
+    // Mostrar a multiplicação que a IA está resolvendo
+    setMessage(`🤖 IA resolvendo: ${problem.question} = ?`);
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     const iaAnswer = await iaPlayer.makeMove(problem);
+    const isCorrect = iaAnswer === problem.answer;
+    
+    // Mostrar feedback da resposta da IA
+    setShowIaFeedback({ 
+      show: true, 
+      correct: isCorrect, 
+      answer: `${problem.question} = ${iaAnswer}` 
+    });
     
     setIaThinking(false);
     
-    if (iaAnswer === problem.answer) {
+    if (isCorrect) {
+      soundManager.current?.play('correct');
       const newBoard = [...currentBoard];
       newBoard[cellIndex] = 'O';
+      
+      // Mostrar mensagem de acerto
+      setMessage(`✅ IA acertou! ${problem.question} = ${iaAnswer}`);
       
       const winner = checkWinner(newBoard);
       
       if (winner) {
         handleGameEnd(winner, newBoard);
       } else {
+        setTimeout(() => {
+          setGameState(prev => ({
+            ...prev,
+            board: newBoard,
+            currentPlayer: 'X',
+            currentProblem: generateProblem(nivelSelecionado),
+          }));
+          setShowIaFeedback({ show: false, correct: false, answer: '' });
+        }, 2000);
+      }
+    } else {
+      soundManager.current?.play('wrong');
+      setMessage(`❌ IA errou! ${problem.question} ≠ ${iaAnswer}`);
+      setTimeout(() => {
         setGameState(prev => ({
           ...prev,
-          board: newBoard,
           currentPlayer: 'X',
           currentProblem: generateProblem(nivelSelecionado),
         }));
-      }
-    } else {
-      setMessage('🤖 A IA errou! Sua vez!');
-      setGameState(prev => ({
-        ...prev,
-        currentPlayer: 'X',
-        currentProblem: generateProblem(nivelSelecionado),
-      }));
+        setShowIaFeedback({ show: false, correct: false, answer: '' });
+      }, 2000);
     }
   };
   
@@ -307,6 +410,8 @@ export default function MultiplicationGame() {
     } else if (winner === 'X') {
       endMessage = '👑 Você conquistou o reino!';
       coinsEarned = 50 * nivelSelecionado;
+      soundManager.current?.play('victory');
+      createConfetti();
       
       if (nivelSelecionado === 1) addBadge('Conquistador Iniciante');
       if (nivelSelecionado === 2) addBadge('Mestre dos Números');
@@ -380,7 +485,10 @@ export default function MultiplicationGame() {
           
           {/* Botão Iniciar */}
           <button
-            onClick={() => setGameState(prev => ({ ...prev, status: 'welcome' }))}
+            onClick={() => {
+              soundManager.current?.play('click');
+              setGameState(prev => ({ ...prev, status: 'welcome' }));
+            }}
             className="px-8 py-4 sm:px-12 sm:py-6 bg-gradient-to-r from-yellow-400 to-yellow-600 text-purple-900 rounded-full text-xl sm:text-2xl font-bold hover:scale-110 transition-transform shadow-2xl animate-pulse"
           >
             🎮 COMEÇAR AVENTURA
@@ -418,6 +526,7 @@ export default function MultiplicationGame() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   onClick={() => {
+                    soundManager.current?.play('click');
                     setGameState(prev => ({ ...prev, mode: 'pvp', status: 'initial' }));
                   }}
                   className="p-4 sm:p-6 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all transform hover:scale-105"
@@ -429,6 +538,7 @@ export default function MultiplicationGame() {
                 
                 <button
                   onClick={() => {
+                    soundManager.current?.play('click');
                     setGameState(prev => ({ ...prev, mode: 'pve', status: 'initial' }));
                   }}
                   className="p-4 sm:p-6 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition-all transform hover:scale-105"
@@ -466,7 +576,10 @@ export default function MultiplicationGame() {
         <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-3 sm:p-4">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             <button
-              onClick={() => setGameState(prev => ({ ...prev, status: 'welcome' }))}
+              onClick={() => {
+                soundManager.current?.play('click');
+                setGameState(prev => ({ ...prev, status: 'welcome' }));
+              }}
               className="flex items-center text-purple-600 hover:text-purple-700"
             >
               <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -494,7 +607,7 @@ export default function MultiplicationGame() {
                     gameState.consecutiveWins >= (nivel.id - 1) * 3 ? 'completed' : ''
                   } ${nivelSelecionado === nivel.id ? 'current' : ''}`}
                 >
-                  {nivel.icone}
+                  <span className="text-2xl">{nivel.icone}</span>
                 </div>
               ))}
             </div>
@@ -503,36 +616,45 @@ export default function MultiplicationGame() {
           {/* Seleção de Dificuldade da IA */}
           {gameState.mode === 'pve' && (
             <div className="bg-white rounded-xl p-4 sm:p-6 mb-6">
-              <h3 className="text-base sm:text-lg font-bold mb-4">Escolha a Dificuldade da IA:</h3>
+              <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4">Escolha a Dificuldade da IA:</h3>
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <button
-                  onClick={() => setIaDifficulty('facil')}
+                  onClick={() => {
+                    soundManager.current?.play('click');
+                    setIaDifficulty('facil');
+                  }}
                   className={`p-3 sm:p-4 rounded-lg font-medium transition-colors ${
                     iaDifficulty === 'facil'
                       ? 'bg-green-500 text-white'
-                      : 'bg-gray-100 hover:bg-gray-200'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                   }`}
                 >
                   <div className="text-xl sm:text-2xl mb-1">😊</div>
                   <div className="text-xs sm:text-sm">Iniciante Leo</div>
                 </button>
                 <button
-                  onClick={() => setIaDifficulty('medio')}
+                  onClick={() => {
+                    soundManager.current?.play('click');
+                    setIaDifficulty('medio');
+                  }}
                   className={`p-3 sm:p-4 rounded-lg font-medium transition-colors ${
                     iaDifficulty === 'medio'
                       ? 'bg-yellow-500 text-white'
-                      : 'bg-gray-100 hover:bg-gray-200'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                   }`}
                 >
                   <div className="text-xl sm:text-2xl mb-1">🤓</div>
                   <div className="text-xs sm:text-sm">Leo Estudioso</div>
                 </button>
                 <button
-                  onClick={() => setIaDifficulty('dificil')}
+                  onClick={() => {
+                    soundManager.current?.play('click');
+                    setIaDifficulty('dificil');
+                  }}
                   className={`p-3 sm:p-4 rounded-lg font-medium transition-colors ${
                     iaDifficulty === 'dificil'
                       ? 'bg-red-500 text-white'
-                      : 'bg-gray-100 hover:bg-gray-200'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                   }`}
                 >
                   <div className="text-xl sm:text-2xl mb-1">🧙‍♂️</div>
@@ -544,16 +666,19 @@ export default function MultiplicationGame() {
           
           {/* Seleção de Reino/Nível */}
           <div className="bg-white rounded-xl p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-bold mb-4">Selecione o Reino:</h3>
+            <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4">Selecione o Reino:</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
               {niveis.map((nivel) => (
                 <button
                   key={nivel.id}
-                  onClick={() => setNivelSelecionado(nivel.id)}
+                  onClick={() => {
+                    soundManager.current?.play('click');
+                    setNivelSelecionado(nivel.id);
+                  }}
                   className={`p-4 sm:p-6 rounded-xl font-medium transition-all transform hover:scale-105 ${
                     nivelSelecionado === nivel.id
                       ? 'bg-gradient-to-br from-purple-500 to-blue-500 text-white scale-105'
-                      : 'bg-gray-100 hover:bg-gray-200'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                   }`}
                   style={{
                     backgroundColor: nivelSelecionado === nivel.id ? nivel.color : undefined
@@ -585,7 +710,7 @@ export default function MultiplicationGame() {
   
   // Tela do Jogo
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
+    <div id="game-container" className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
       <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-3 sm:p-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link
@@ -612,7 +737,10 @@ export default function MultiplicationGame() {
           </div>
           
           <button
-            onClick={() => setGameState(prev => ({ ...prev, status: 'initial' }))}
+            onClick={() => {
+              soundManager.current?.play('click');
+              setGameState(prev => ({ ...prev, status: 'initial' }));
+            }}
             className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-4 sm:py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs sm:text-base"
           >
             <RotateCcw size={16} className="sm:w-[18px] sm:h-[18px]" />
@@ -627,11 +755,11 @@ export default function MultiplicationGame() {
           <div className="text-center mb-4 sm:mb-6">
             {gameState.status === 'playing' && (
               <>
-                <div className="text-lg sm:text-2xl font-bold mb-2">
+                <div className="text-lg sm:text-2xl font-bold mb-2 text-gray-800">
                   {iaThinking ? (
                     <div className="flex items-center justify-center gap-3">
                       <div className="ia-avatar thinking scale-75 sm:scale-100">🤖</div>
-                      <div className="thought-bubble text-sm sm:text-base">Hmm... 🤔</div>
+                      <div className="thought-bubble text-sm sm:text-base text-gray-700">Hmm... 🤔</div>
                     </div>
                   ) : (
                     <>
@@ -645,6 +773,15 @@ export default function MultiplicationGame() {
                 {gameState.currentProblem && !iaThinking && (
                   <div className="text-2xl sm:text-3xl font-bold text-purple-600">
                     {gameState.currentProblem.question} = ?
+                  </div>
+                )}
+                
+                {/* Feedback da IA */}
+                {showIaFeedback.show && (
+                  <div className={`mt-4 p-3 rounded-lg font-bold text-lg ${
+                    showIaFeedback.correct ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {showIaFeedback.correct ? '✅' : '❌'} IA: {showIaFeedback.answer}
                   </div>
                 )}
               </>
@@ -684,18 +821,18 @@ export default function MultiplicationGame() {
           <div className="mt-4 sm:mt-6 flex justify-center gap-4 sm:gap-6">
             <div className="text-center">
               <Shield className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-purple-600 mb-1" />
-              <div className="text-xs sm:text-sm text-gray-600">Territórios</div>
-              <div className="text-base sm:text-xl font-bold">{gameState.conqueredTerritories}</div>
+              <div className="text-xs sm:text-sm text-gray-700 font-medium">Territórios</div>
+              <div className="text-base sm:text-xl font-bold text-gray-800">{gameState.conqueredTerritories}</div>
             </div>
             <div className="text-center">
               <Trophy className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-yellow-500 mb-1" />
-              <div className="text-xs sm:text-sm text-gray-600">Vitórias</div>
-              <div className="text-base sm:text-xl font-bold">{gameState.consecutiveWins}</div>
+              <div className="text-xs sm:text-sm text-gray-700 font-medium">Vitórias</div>
+              <div className="text-base sm:text-xl font-bold text-gray-800">{gameState.consecutiveWins}</div>
             </div>
             <div className="text-center">
               <Crown className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-purple-600 mb-1" />
-              <div className="text-xs sm:text-sm text-gray-600">Nível</div>
-              <div className="text-base sm:text-xl font-bold">{nivelSelecionado}</div>
+              <div className="text-xs sm:text-sm text-gray-700 font-medium">Nível</div>
+              <div className="text-base sm:text-xl font-bold text-gray-800">{nivelSelecionado}</div>
             </div>
           </div>
         </div>
@@ -710,7 +847,7 @@ export default function MultiplicationGame() {
             </h3>
             <input
               type="number"
-              className="w-full text-center p-3 sm:p-4 border-2 border-purple-300 rounded-xl text-2xl sm:text-3xl font-bold"
+              className="w-full text-center p-3 sm:p-4 border-2 border-purple-300 rounded-xl text-2xl sm:text-3xl font-bold text-gray-800"
               placeholder="?"
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
@@ -734,6 +871,15 @@ export default function MultiplicationGame() {
           style={{ left: coinPosition.x, top: coinPosition.y }}
         >
           🪙 +{10 * nivelSelecionado}
+        </div>
+      )}
+      
+      {/* Efeitos de Vitória */}
+      {showVictoryEffects && (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          <div className="victory-message">
+            🎉 PARABÉNS! 🎉
+          </div>
         </div>
       )}
     </div>
