@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ChevronLeft, Save, Trophy, RotateCcw, Calculator, Crown, Coins, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import './multiplication-game.css';
@@ -32,21 +33,16 @@ class IAPlayer {
   }
   
   async makeMove(problem: { answer: number }) {
-    // Simula tempo de pensamento
     const thinkTime = Math.random() * (this.thinkingTime.max - this.thinkingTime.min) + this.thinkingTime.min;
-    
-    // Adiciona tempo extra para números maiores
     const complexityBonus = problem.answer > 50 ? 1000 : 0;
     
     await new Promise(resolve => setTimeout(resolve, thinkTime + complexityBonus));
     
-    // Decide se acerta ou erra
     const shouldHit = Math.random() < this.accuracy;
     
     if (shouldHit) {
       return problem.answer;
     } else {
-      // Erros realistas
       const errors = [
         problem.answer + 1,
         problem.answer - 1,
@@ -58,14 +54,12 @@ class IAPlayer {
   }
   
   chooseBestCell(board: any[], currentPlayer: string) {
-    // Estratégia: tentar ganhar, bloquear oponente, ou escolher centro/cantos
     const lines = [
       [0, 1, 2], [3, 4, 5], [6, 7, 8],
       [0, 3, 6], [1, 4, 7], [2, 5, 8],
       [0, 4, 8], [2, 4, 6]
     ];
     
-    // Tentar ganhar
     for (const line of lines) {
       const [a, b, c] = line;
       if (board[a] === currentPlayer && board[b] === currentPlayer && !board[c]) return c;
@@ -73,7 +67,6 @@ class IAPlayer {
       if (board[b] === currentPlayer && board[c] === currentPlayer && !board[a]) return a;
     }
     
-    // Bloquear oponente
     const opponent = currentPlayer === 'X' ? 'O' : 'X';
     for (const line of lines) {
       const [a, b, c] = line;
@@ -82,7 +75,6 @@ class IAPlayer {
       if (board[b] === opponent && board[c] === opponent && !board[a]) return a;
     }
     
-    // Preferir centro, depois cantos, depois laterais
     const preferences = [4, 0, 2, 6, 8, 1, 3, 5, 7];
     for (const pos of preferences) {
       if (!board[pos]) return pos;
@@ -96,7 +88,7 @@ class IAPlayer {
 interface GameState {
   board: ('X' | 'O' | null)[];
   currentPlayer: 'X' | 'O';
-  status: 'welcome' | 'initial' | 'playing' | 'finished';
+  status: 'splash' | 'welcome' | 'initial' | 'playing' | 'finished';
   currentProblem: { a: number; b: number; question: string; answer: number } | null;
   scoreX: number;
   scoreO: number;
@@ -113,7 +105,7 @@ export default function MultiplicationGame() {
   const [gameState, setGameState] = useState<GameState>({
     board: Array(9).fill(null),
     currentPlayer: 'X',
-    status: 'welcome',
+    status: 'splash',
     currentProblem: null,
     scoreX: 0,
     scoreO: 0,
@@ -225,7 +217,6 @@ export default function MultiplicationGame() {
     const rect = document.querySelector('.game-board')?.getBoundingClientRect();
     
     if (isCorrect) {
-      // Adicionar moedas com animação
       if (rect) addCoins(10 * nivelSelecionado, rect.left + rect.width/2, rect.top);
       
       const newBoard = [...gameState.board];
@@ -250,7 +241,6 @@ export default function MultiplicationGame() {
           currentProblem: generateProblem(nivelSelecionado),
         }));
         
-        // Se modo PvE e vez da IA
         if (gameState.mode === 'pve' && gameState.currentPlayer === 'X') {
           setTimeout(() => iaPlay(newBoard), 1000);
         }
@@ -274,7 +264,6 @@ export default function MultiplicationGame() {
     setIaThinking(true);
     const cellIndex = iaPlayer.chooseBestCell(currentBoard, 'O');
     
-    // Simular pensamento
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     const problem = generateProblem(nivelSelecionado);
@@ -319,7 +308,6 @@ export default function MultiplicationGame() {
       endMessage = '👑 Você conquistou o reino!';
       coinsEarned = 50 * nivelSelecionado;
       
-      // Adicionar badges
       if (nivelSelecionado === 1) addBadge('Conquistador Iniciante');
       if (nivelSelecionado === 2) addBadge('Mestre dos Números');
       if (nivelSelecionado === 3) addBadge('Rei da Matemática');
@@ -348,7 +336,6 @@ export default function MultiplicationGame() {
       status: 'finished'
     }));
     
-    // Progressão automática
     if (gameState.consecutiveWins >= 2 && nivelSelecionado < 3) {
       setTimeout(() => {
         setNivelSelecionado(prev => prev + 1);
@@ -356,61 +343,112 @@ export default function MultiplicationGame() {
       }, 2000);
     }
   };
+
+  // Tela Splash com Leo Mago
+  if (gameState.status === 'splash') {
+    return (
+      <div className="min-h-screen relative overflow-hidden">
+        {/* Fundo Medieval Animado */}
+        <div className="absolute inset-0 medieval-background">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-indigo-800 to-blue-900 opacity-90"></div>
+          <div className="castle-silhouette castle-1">🏰</div>
+          <div className="castle-silhouette castle-2">🏯</div>
+          <div className="castle-silhouette castle-3">🏛️</div>
+        </div>
+        
+        {/* Conteúdo Principal */}
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
+          {/* Título do Jogo */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 text-center drop-shadow-2xl">
+            <span className="text-yellow-400">⚔️</span> Conquista Matemática <span className="text-yellow-400">⚔️</span>
+          </h1>
+          
+          {/* Leo Mago */}
+          <div className="relative mb-8" style={{ width: '60vw', maxWidth: '400px' }}>
+            <Image 
+              src="/images/mascotes/leo/leo_mago_resultado.webp"
+              alt="Leo Mago"
+              width={400}
+              height={400}
+              className="drop-shadow-2xl"
+              style={{ width: '100%', height: 'auto' }}
+              priority
+            />
+            {/* Brilho mágico ao redor do Leo */}
+            <div className="absolute inset-0 magic-glow"></div>
+          </div>
+          
+          {/* Botão Iniciar */}
+          <button
+            onClick={() => setGameState(prev => ({ ...prev, status: 'welcome' }))}
+            className="px-8 py-4 sm:px-12 sm:py-6 bg-gradient-to-r from-yellow-400 to-yellow-600 text-purple-900 rounded-full text-xl sm:text-2xl font-bold hover:scale-110 transition-transform shadow-2xl animate-pulse"
+          >
+            🎮 COMEÇAR AVENTURA
+          </button>
+          
+          {/* Texto Motivacional */}
+          <p className="text-white/80 text-center mt-6 text-sm sm:text-base max-w-md">
+            Prepare-se para uma jornada épica pelos reinos matemáticos!
+          </p>
+        </div>
+      </div>
+    );
+  }
   
-  // Tela de Boas-Vindas
+  // Tela de Escolha de Modo
   if (gameState.status === 'welcome') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-green-600">
         <div className="flex items-center justify-center min-h-screen p-4">
-          <div className="bg-white/95 rounded-2xl shadow-2xl p-8 max-w-2xl w-full text-center">
-            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+          <div className="bg-white/95 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-2xl w-full text-center">
+            <h1 className="text-2xl sm:text-4xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               ⚔️ Conquista Matemática ⚔️
             </h1>
             
-            <div className="text-6xl mb-6">🏰</div>
+            <div className="text-4xl sm:text-6xl mb-6">🏰</div>
             
-            <p className="text-lg text-gray-700 mb-8">
+            <p className="text-base sm:text-lg text-gray-700 mb-8">
               Conquiste territórios resolvendo multiplicações!<br/>
               Construa seu reino e torne-se o Rei da Matemática!
             </p>
             
             <div className="space-y-4">
-              <h3 className="text-xl font-semibold">Escolha o Modo de Jogo:</h3>
+              <h3 className="text-lg sm:text-xl font-semibold">Escolha o Modo de Jogo:</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   onClick={() => {
                     setGameState(prev => ({ ...prev, mode: 'pvp', status: 'initial' }));
                   }}
-                  className="p-6 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all transform hover:scale-105"
+                  className="p-4 sm:p-6 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all transform hover:scale-105"
                 >
-                  <div className="text-3xl mb-2">👥</div>
-                  <div className="font-bold text-xl">2 Jogadores</div>
-                  <div className="text-sm opacity-90">Desafie um amigo!</div>
+                  <div className="text-2xl sm:text-3xl mb-2">👥</div>
+                  <div className="font-bold text-lg sm:text-xl">2 Jogadores</div>
+                  <div className="text-xs sm:text-sm opacity-90">Desafie um amigo!</div>
                 </button>
                 
                 <button
                   onClick={() => {
                     setGameState(prev => ({ ...prev, mode: 'pve', status: 'initial' }));
                   }}
-                  className="p-6 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition-all transform hover:scale-105"
+                  className="p-4 sm:p-6 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition-all transform hover:scale-105"
                 >
-                  <div className="text-3xl mb-2">🤖</div>
-                  <div className="font-bold text-xl">Contra IA</div>
-                  <div className="text-sm opacity-90">Desafie o computador!</div>
+                  <div className="text-2xl sm:text-3xl mb-2">🤖</div>
+                  <div className="font-bold text-lg sm:text-xl">Contra IA</div>
+                  <div className="text-xs sm:text-sm opacity-90">Desafie o computador!</div>
                 </button>
               </div>
             </div>
             
-            <div className="mt-8 flex justify-center gap-4">
-              <div className="coin-display">
+            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+              <div className="coin-display mx-auto">
                 <Coins size={20} />
                 <span>{gameState.coins} Moedas</span>
               </div>
               {gameState.badges.length > 0 && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 justify-center flex-wrap">
                   {gameState.badges.map((badge, i) => (
-                    <span key={i} className="badge">{badge}</span>
+                    <span key={i} className="badge text-xs">{badge}</span>
                   ))}
                 </div>
               )}
@@ -425,27 +463,27 @@ export default function MultiplicationGame() {
   if (gameState.status === 'initial') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600">
-        <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-4">
+        <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-3 sm:p-4">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             <button
               onClick={() => setGameState(prev => ({ ...prev, status: 'welcome' }))}
               className="flex items-center text-purple-600 hover:text-purple-700"
             >
-              <ChevronLeft className="h-6 w-6" />
-              <span className="ml-1 font-medium">Voltar</span>
+              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
             </button>
-            <h1 className="text-xl font-bold">Escolha seu Reino</h1>
-            <div className="coin-display">
+            <h1 className="text-base sm:text-xl font-bold">Escolha seu Reino</h1>
+            <div className="coin-display scale-75 sm:scale-100">
               <Coins size={20} />
               <span>{gameState.coins}</span>
             </div>
           </div>
         </header>
         
-        <main className="p-6 max-w-4xl mx-auto">
+        <main className="p-4 sm:p-6 max-w-4xl mx-auto">
           {/* Mapa do Reino */}
-          <div className="kingdom-map mb-8">
-            <h2 className="text-2xl font-bold text-white mb-4 text-center">
+          <div className="kingdom-map mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 text-center">
               🗺️ Mapa dos Reinos Matemáticos
             </h2>
             <div className="kingdom-progress">
@@ -464,55 +502,55 @@ export default function MultiplicationGame() {
           
           {/* Seleção de Dificuldade da IA */}
           {gameState.mode === 'pve' && (
-            <div className="bg-white rounded-xl p-6 mb-6">
-              <h3 className="text-lg font-bold mb-4">Escolha a Dificuldade da IA:</h3>
-              <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white rounded-xl p-4 sm:p-6 mb-6">
+              <h3 className="text-base sm:text-lg font-bold mb-4">Escolha a Dificuldade da IA:</h3>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <button
                   onClick={() => setIaDifficulty('facil')}
-                  className={`p-4 rounded-lg font-medium transition-colors ${
+                  className={`p-3 sm:p-4 rounded-lg font-medium transition-colors ${
                     iaDifficulty === 'facil'
                       ? 'bg-green-500 text-white'
                       : 'bg-gray-100 hover:bg-gray-200'
                   }`}
                 >
-                  <div className="text-2xl mb-1">😊</div>
-                  <div>Iniciante Leo</div>
+                  <div className="text-xl sm:text-2xl mb-1">😊</div>
+                  <div className="text-xs sm:text-sm">Iniciante Leo</div>
                 </button>
                 <button
                   onClick={() => setIaDifficulty('medio')}
-                  className={`p-4 rounded-lg font-medium transition-colors ${
+                  className={`p-3 sm:p-4 rounded-lg font-medium transition-colors ${
                     iaDifficulty === 'medio'
                       ? 'bg-yellow-500 text-white'
                       : 'bg-gray-100 hover:bg-gray-200'
                   }`}
                 >
-                  <div className="text-2xl mb-1">🤓</div>
-                  <div>Leo Estudioso</div>
+                  <div className="text-xl sm:text-2xl mb-1">🤓</div>
+                  <div className="text-xs sm:text-sm">Leo Estudioso</div>
                 </button>
                 <button
                   onClick={() => setIaDifficulty('dificil')}
-                  className={`p-4 rounded-lg font-medium transition-colors ${
+                  className={`p-3 sm:p-4 rounded-lg font-medium transition-colors ${
                     iaDifficulty === 'dificil'
                       ? 'bg-red-500 text-white'
                       : 'bg-gray-100 hover:bg-gray-200'
                   }`}
                 >
-                  <div className="text-2xl mb-1">🧙‍♂️</div>
-                  <div>Professor Leo</div>
+                  <div className="text-xl sm:text-2xl mb-1">🧙‍♂️</div>
+                  <div className="text-xs sm:text-sm">Professor Leo</div>
                 </button>
               </div>
             </div>
           )}
           
           {/* Seleção de Reino/Nível */}
-          <div className="bg-white rounded-xl p-6">
-            <h3 className="text-lg font-bold mb-4">Selecione o Reino:</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-xl p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-bold mb-4">Selecione o Reino:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
               {niveis.map((nivel) => (
                 <button
                   key={nivel.id}
                   onClick={() => setNivelSelecionado(nivel.id)}
-                  className={`p-6 rounded-xl font-medium transition-all transform hover:scale-105 ${
+                  className={`p-4 sm:p-6 rounded-xl font-medium transition-all transform hover:scale-105 ${
                     nivelSelecionado === nivel.id
                       ? 'bg-gradient-to-br from-purple-500 to-blue-500 text-white scale-105'
                       : 'bg-gray-100 hover:bg-gray-200'
@@ -521,9 +559,9 @@ export default function MultiplicationGame() {
                     backgroundColor: nivelSelecionado === nivel.id ? nivel.color : undefined
                   }}
                 >
-                  <div className="text-4xl mb-2">{nivel.icone}</div>
-                  <div className="text-lg font-bold">{nivel.nome}</div>
-                  <div className="text-sm opacity-80">{nivel.dificuldade}</div>
+                  <div className="text-3xl sm:text-4xl mb-2">{nivel.icone}</div>
+                  <div className="text-base sm:text-lg font-bold">{nivel.nome}</div>
+                  <div className="text-xs sm:text-sm opacity-80">{nivel.dificuldade}</div>
                   <div className="mt-2 text-xs">
                     🪙 {nivel.id * 10} moedas por acerto
                   </div>
@@ -532,10 +570,10 @@ export default function MultiplicationGame() {
             </div>
           </div>
           
-          <div className="text-center mt-8">
+          <div className="text-center mt-6 sm:mt-8">
             <button
               onClick={startGame}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-4 px-12 rounded-xl text-xl hover:from-purple-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-3 px-8 sm:py-4 sm:px-12 rounded-xl text-lg sm:text-xl hover:from-purple-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg"
             >
               ⚔️ Iniciar Conquista!
             </button>
@@ -548,26 +586,26 @@ export default function MultiplicationGame() {
   // Tela do Jogo
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
-      <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-4">
+      <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-3 sm:p-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link
             href="/dashboard"
             className="flex items-center text-purple-600 hover:text-purple-700"
           >
-            <ChevronLeft className="h-6 w-6" />
-            <span className="ml-1 font-medium">Sair</span>
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="ml-1 font-medium text-xs sm:text-base">Sair</span>
           </Link>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold">
+              <div className="text-base sm:text-2xl font-bold">
                 <span className="text-blue-600">🏰 {gameState.scoreX}</span>
                 {' vs '}
                 <span className="text-red-600">{gameState.scoreO} 🏰</span>
               </div>
             </div>
             
-            <div className="coin-display">
+            <div className="coin-display scale-75 sm:scale-100">
               <Coins size={20} />
               <span>{gameState.coins}</span>
             </div>
@@ -575,25 +613,25 @@ export default function MultiplicationGame() {
           
           <button
             onClick={() => setGameState(prev => ({ ...prev, status: 'initial' }))}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
+            className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-4 sm:py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs sm:text-base"
           >
-            <RotateCcw size={18} />
-            <span>Reiniciar</span>
+            <RotateCcw size={16} className="sm:w-[18px] sm:h-[18px]" />
+            <span className="hidden sm:inline">Reiniciar</span>
           </button>
         </div>
       </header>
       
-      <main className="p-6 max-w-4xl mx-auto">
-        <div className="bg-white/95 rounded-2xl shadow-2xl p-6">
+      <main className="p-4 sm:p-6 max-w-4xl mx-auto">
+        <div className="bg-white/95 rounded-2xl shadow-2xl p-4 sm:p-6">
           {/* Status do Jogo */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-4 sm:mb-6">
             {gameState.status === 'playing' && (
               <>
-                <div className="text-2xl font-bold mb-2">
+                <div className="text-lg sm:text-2xl font-bold mb-2">
                   {iaThinking ? (
                     <div className="flex items-center justify-center gap-3">
-                      <div className="ia-avatar thinking">🤖</div>
-                      <div className="thought-bubble">Hmm... 🤔</div>
+                      <div className="ia-avatar thinking scale-75 sm:scale-100">🤖</div>
+                      <div className="thought-bubble text-sm sm:text-base">Hmm... 🤔</div>
                     </div>
                   ) : (
                     <>
@@ -605,7 +643,7 @@ export default function MultiplicationGame() {
                   )}
                 </div>
                 {gameState.currentProblem && !iaThinking && (
-                  <div className="text-3xl font-bold text-purple-600">
+                  <div className="text-2xl sm:text-3xl font-bold text-purple-600">
                     {gameState.currentProblem.question} = ?
                   </div>
                 )}
@@ -613,15 +651,15 @@ export default function MultiplicationGame() {
             )}
             
             {gameState.status === 'finished' && (
-              <div className="text-3xl font-bold text-green-600 mb-4">
+              <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-4">
                 {message}
               </div>
             )}
           </div>
           
           {/* Tabuleiro */}
-          <div className="game-board mx-auto" style={{ maxWidth: '400px' }}>
-            <div className="grid grid-cols-3 gap-2">
+          <div className="game-board mx-auto" style={{ maxWidth: '350px' }}>
+            <div className="grid grid-cols-3 gap-1 sm:gap-2">
               {gameState.board.map((cell, index) => (
                 <button
                   key={index}
@@ -630,9 +668,10 @@ export default function MultiplicationGame() {
                   }`}
                   onClick={() => handleCellClick(index)}
                   disabled={!!cell || gameState.status !== 'playing' || iaThinking}
+                  style={{ minHeight: '80px' }}
                 >
                   {cell && (
-                    <div className="castle-icon">
+                    <div className="castle-icon text-2xl sm:text-3xl">
                       {cell === 'X' ? '🏰' : '🏯'}
                     </div>
                   )}
@@ -642,21 +681,21 @@ export default function MultiplicationGame() {
           </div>
           
           {/* Estatísticas */}
-          <div className="mt-6 flex justify-center gap-6">
+          <div className="mt-4 sm:mt-6 flex justify-center gap-4 sm:gap-6">
             <div className="text-center">
-              <Shield className="h-8 w-8 mx-auto text-purple-600 mb-1" />
-              <div className="text-sm text-gray-600">Territórios</div>
-              <div className="text-xl font-bold">{gameState.conqueredTerritories}</div>
+              <Shield className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-purple-600 mb-1" />
+              <div className="text-xs sm:text-sm text-gray-600">Territórios</div>
+              <div className="text-base sm:text-xl font-bold">{gameState.conqueredTerritories}</div>
             </div>
             <div className="text-center">
-              <Trophy className="h-8 w-8 mx-auto text-yellow-500 mb-1" />
-              <div className="text-sm text-gray-600">Vitórias</div>
-              <div className="text-xl font-bold">{gameState.consecutiveWins}</div>
+              <Trophy className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-yellow-500 mb-1" />
+              <div className="text-xs sm:text-sm text-gray-600">Vitórias</div>
+              <div className="text-base sm:text-xl font-bold">{gameState.consecutiveWins}</div>
             </div>
             <div className="text-center">
-              <Crown className="h-8 w-8 mx-auto text-purple-600 mb-1" />
-              <div className="text-sm text-gray-600">Nível</div>
-              <div className="text-xl font-bold">{nivelSelecionado}</div>
+              <Crown className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-purple-600 mb-1" />
+              <div className="text-xs sm:text-sm text-gray-600">Nível</div>
+              <div className="text-base sm:text-xl font-bold">{nivelSelecionado}</div>
             </div>
           </div>
         </div>
@@ -665,13 +704,13 @@ export default function MultiplicationGame() {
       {/* Modal de Resposta */}
       {showAnswerInput && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full">
-            <h3 className="text-2xl font-bold text-center mb-4 text-purple-600">
+          <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 max-w-sm w-full">
+            <h3 className="text-xl sm:text-2xl font-bold text-center mb-4 text-purple-600">
               {message}
             </h3>
             <input
               type="number"
-              className="w-full text-center p-4 border-2 border-purple-300 rounded-xl text-3xl font-bold"
+              className="w-full text-center p-3 sm:p-4 border-2 border-purple-300 rounded-xl text-2xl sm:text-3xl font-bold"
               placeholder="?"
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
@@ -680,7 +719,7 @@ export default function MultiplicationGame() {
             />
             <button
               onClick={handleAnswerSubmit}
-              className="w-full mt-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-3 rounded-xl text-lg hover:from-purple-700 hover:to-blue-700 transition-all"
+              className="w-full mt-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-3 rounded-xl text-base sm:text-lg hover:from-purple-700 hover:to-blue-700 transition-all"
             >
               ⚔️ Conquistar!
             </button>
