@@ -84,7 +84,9 @@ const confetti = (opts) => {
         if (particles.length > 0) {
             requestAnimationFrame(animate);
         } else {
-            document.body.removeChild(canvas);
+            if (document.body.contains(canvas)) {
+                document.body.removeChild(canvas);
+            }
         }
     };
 
@@ -191,7 +193,7 @@ const playSound = (soundName, volume = 0.3) => {
 };
 
 // Define um caminho base para as imagens para facilitar a manutenção
-const IMAGE_BASE_PATH = 'https://raw.githubusercontent.com/Ludi-TEA/LudiTEA/main/public/cards/emocoes/';
+const IMAGE_BASE_PATH = 'https://raw.githubusercontent.com/Ludi-TEA/LudiTEA/main/public/images/cards/emocoes/';
 
 const EMOTION_IMAGES = {
     homem_feliz: `${IMAGE_BASE_PATH}homem_feliz.webp`,
@@ -385,9 +387,10 @@ export default function FacialExpressionsGame() {
             transition={{ duration: 0.5 }}
             className="screen-center"
         >
+            <div className="stars-bg"></div>
             <motion.div className="animate-float">
                 <img
-                    src="https://raw.githubusercontent.com/Ludi-TEA/LudiTEA/main/public/images/mascotes/leo/leo_boas_vindas_resultado.webp"
+                    src="https://raw.githubusercontent.com/Ludi-TEA/LudiTEA/main/public/images/mascotes/leo/Leo_apoio.webp"
                     alt="Mascote Leo"
                     width={280}
                     height={280}
@@ -553,7 +556,30 @@ export default function FacialExpressionsGame() {
         }
         .game-container.intro-mode .screen-center {
             min-height: 100vh;
+            position: relative;
+            z-index: 10;
         }
+        
+        /* EFEITO DE ESTRELAS */
+        .stars-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                radial-gradient(1px 1px at 20% 30%, white, transparent),
+                radial-gradient(1px 1px at 80% 10%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent),
+                radial-gradient(2px 2px at 90% 70%, white, transparent),
+                radial-gradient(2px 2px at 30% 90%, white, transparent),
+                radial-gradient(1px 1px at 10% 80%, white, transparent);
+            background-repeat: repeat;
+            background-size: 300px 300px;
+            opacity: 0.8;
+            animation: zoom 40s infinite;
+        }
+        @keyframes zoom { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
         .intro-mascot {
             width: 250px;
