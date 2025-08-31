@@ -26,7 +26,6 @@ const confetti = (opts) => {
     const COLORS = ['#FFC107', '#FF9800', '#FF5722', '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B'];
     const particles = [];
     const particleCount = opts.particleCount || 150;
-    // ... (resto da lógica do confete) ...
     const origin = opts.origin || { x: 0.5, y: 0.5 };
     const spread = opts.spread || 90;
     const startVelocity = opts.startVelocity || 45;
@@ -41,17 +40,13 @@ const confetti = (opts) => {
             this.y = H * origin.y;
             this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
             this.size = randomRange(5, 12);
-            this.velocity = {
-                x: randomRange(-spread / 2, spread / 2),
-                y: randomRange(-startVelocity, -startVelocity / 2)
-            };
+            this.velocity = { x: randomRange(-spread / 2, spread / 2), y: randomRange(-startVelocity, -startVelocity / 2) };
             this.gravity = gravity;
             this.friction = decay;
             this.rotation = Math.random() * 360;
             this.rotationSpeed = randomRange(-5, 5);
             this.opacity = 1;
         }
-
         update() {
             this.velocity.y += this.gravity;
             this.velocity.x *= this.friction;
@@ -61,7 +56,6 @@ const confetti = (opts) => {
             this.rotation += this.rotationSpeed;
             this.opacity -= 0.01;
         }
-
         draw() {
             ctx.save();
             ctx.translate(this.x, this.y);
@@ -76,40 +70,26 @@ const confetti = (opts) => {
     const animate = () => {
         ctx.clearRect(0, 0, W, H);
         particles.forEach((particle, i) => {
-            if (particle.opacity > 0) {
-                particle.update();
-                particle.draw();
-            } else {
-                particles.splice(i, 1);
-            }
+            if (particle.opacity > 0) { particle.update(); particle.draw(); } 
+            else { particles.splice(i, 1); }
         });
-        if (particles.length > 0) {
-            requestAnimationFrame(animate);
-        } else {
-             if (document.body.contains(canvas)) {
-                document.body.removeChild(canvas);
-            }
-        }
+        if (particles.length > 0) { requestAnimationFrame(animate); } 
+        else { if (document.body.contains(canvas)) { document.body.removeChild(canvas); } }
     };
 
-    for (let i = 0; i < particleCount; i++) {
-        particles.push(new Particle());
-    }
+    for (let i = 0; i < particleCount; i++) { particles.push(new Particle()); }
     animate();
 };
 
 const ConfettiEffect = () => {
     useEffect(() => {
-        const fire = (particleRatio, opts) => {
-            confetti({ particleCount: Math.floor(200 * particleRatio), ...opts });
-        };
+        const fire = (p, o) => confetti({ particleCount: Math.floor(200*p), ...o });
         fire(0.25, { spread: 30, startVelocity: 60, origin: { x: 0, y: 0.7 } });
         fire(0.2, { spread: 60, origin: { x: 0.5, y: 0.6 } });
         fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8, origin: { x: 1, y: 0.7 } });
     }, []);
     return null;
 };
-
 
 // --- COMPONENTES DE UI ---
 const Card = ({ emotion, onClick, isCorrect, isWrong, isDisabled }) => (
@@ -123,44 +103,19 @@ const Card = ({ emotion, onClick, isCorrect, isWrong, isDisabled }) => (
         transition={{ duration: 0.4 }}
         layout
     >
-        <img src={emotion.path} alt={emotion.label} onError={(e) => e.currentTarget.src = 'https://placehold.co/150x150/EBF4FA/333?text=?'} />
+        <div className="card-image-wrapper">
+            <img src={emotion.path} alt={emotion.label} onError={(e) => e.currentTarget.src = 'https://placehold.co/150x150/EBF4FA/333?text=?'} />
+        </div>
         <span className="card-label">{emotion.label}</span>
     </motion.button>
 );
 
-// ... (outros componentes de UI como ProgressBar, ComboCounter, PointsExplosion) ...
 const ProgressBar = ({ current, total }) => {
     const progress = total > 0 ? (current / total) * 100 : 0;
     return (
-        <div className="progressBar">
-            <div className="progressFill" style={{ width: `${progress}%` }}>
-                {Math.round(progress)}%
-            </div>
-        </div>
+        <div className="progressBar"><div className="progressFill" style={{ width: `${progress}%` }}>{Math.round(progress)}%</div></div>
     );
 };
-
-const ComboCounter = ({ count }) => {
-    if (count < 2) return null;
-    return (
-        <AnimatePresence>
-            <motion.div className="comboCounter" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}>
-                <span className="comboText">COMBO</span>
-                <span className="comboNumber">x{count}</span>
-            </motion.div>
-        </AnimatePresence>
-    );
-};
-
-const PointsExplosion = ({ points, position }) => {
-    if (!points || !position) return null;
-    return (
-        <motion.div className="pointsExplosion" style={{ top: position.y, left: position.x }} initial={{ opacity: 1, y: 0, scale: 0 }} animate={{ opacity: 0, y: -100, scale: 1.5 }} transition={{ duration: 1.5, ease: "easeOut" }}>
-            +{points}
-        </motion.div>
-    );
-};
-
 
 // --- CONFIGURAÇÕES E DADOS DO JOGO ---
 const SOUNDS = {
@@ -169,65 +124,33 @@ const SOUNDS = {
     levelComplete: 'https://cdn.pixabay.com/audio/2022/10/18/audio_22ac8b3558.mp3'
 };
 
-const playSound = (soundName, volume = 0.3) => {
-    try {
-        new Audio(SOUNDS[soundName]).play().catch(() => {});
-    } catch (error) {
-        console.error('Falha ao tocar som:', error);
-    }
+const playSound = (soundName) => {
+    try { new Audio(SOUNDS[soundName]).play().catch(() => {}); } 
+    catch (error) { console.error('Falha ao tocar som:', error); }
 };
 
-// **CORREÇÃO APLICADA:** Usando caminhos relativos à pasta /public
 const IMAGE_BASE_PATH = '/images/cards/emocoes/';
+const EMOTION_CARDS = [
+    { id: 'homem_feliz', label: 'Feliz', path: `${IMAGE_BASE_PATH}homem_feliz.webp` },
+    { id: 'homem_triste', label: 'Triste', path: `${IMAGE_BASE_PATH}homem_triste.webp` },
+    { id: 'homem_medo', label: 'Medo', path: `${IMAGE_BASE_PATH}homem_medo.webp` },
+    { id: 'homem_surpreso', label: 'Surpreso', path: `${IMAGE_BASE_PATH}homem_surpreso.webp` },
+    { id: 'homem_furioso', label: 'Furioso', path: `${IMAGE_BASE_PATH}homem_furioso.webp` },
+    { id: 'mulher_animada', label: 'Animada', path: `${IMAGE_BASE_PATH}mulher_animada.webp` },
+    { id: 'mulher_calma', label: 'Calma', path: `${IMAGE_BASE_PATH}mulher_calma.webp` },
+    { id: 'homem_confuso', label: 'Confuso', path: `${IMAGE_BASE_PATH}homem_confuso.webp` },
+    { id: 'mulher_preocupada', label: 'Preocupada', path: `${IMAGE_BASE_PATH}mulher_preocupada.webp` },
+    { id: 'homem_focado', label: 'Focado', path: `${IMAGE_BASE_PATH}homem_focado.webp` },
+];
 
-const EMOTION_IMAGES = {
-    homem_feliz: `${IMAGE_BASE_PATH}homem_feliz.webp`,
-    // ... (restante das imagens com o caminho corrigido)
-    homem_triste: `${IMAGE_BASE_PATH}homem_triste.webp`,
-    homem_medo: `${IMAGE_BASE_PATH}homem_medo.webp`,
-    homem_surpreso: `${IMAGE_BASE_PATH}homem_surpreso.webp`,
-    homem_furioso: `${IMAGE_BASE_PATH}homem_furioso.webp`,
-    homem_animado: `${IMAGE_BASE_PATH}homem_animado.webp`,
-    homem_calmo: `${IMAGE_BASE_PATH}homem_calmo.webp`,
-    homem_confuso: `${IMAGE_BASE_PATH}homem_confuso.webp`,
-    homem_preocupado: `${IMAGE_BASE_PATH}homem_preocupado.webp`,
-    homem_focado: `${IMAGE_BASE_PATH}homem_focado.webp`,
-    homem_gargalhando: `${IMAGE_BASE_PATH}homem_gargalhando.webp`,
-    homem_ciumento: `${IMAGE_BASE_PATH}homem_ciumento.webp`,
-    homem_desgostoso: `${IMAGE_BASE_PATH}homem_desgostoso.webp`,
-    mulher_feliz: `${IMAGE_BASE_PATH}mulher_feliz.webp`,
-    mulher_triste: `${IMAGE_BASE_PATH}mulher_triste.webp`,
-    mulher_medo: `${IMAGE_BASE_PATH}mulher_medo.webp`,
-    mulher_surpresa: `${IMAGE_BASE_PATH}mulher_surpresa.webp`,
-    mulher_furiosa: `${IMAGE_BASE_PATH}mulher_furiosa.webp`,
-    mulher_animada: `${IMAGE_BASE_PATH}mulher_animada.webp`,
-    mulher_calma: `${IMAGE_BASE_PATH}mulher_calma.webp`,
-    mulher_confusa: `${IMAGE_BASE_PATH}mulher_confusa.webp`,
-    mulher_preocupada: `${IMAGE_BASE_PATH}mulher_preocupada.webp`,
-    mulher_focada: `${IMAGE_BASE_PATH}mulher_focada.webp`,
-    mulher_gargalhando: `${IMAGE_BASE_PATH}mulher_gargalhando.webp`,
-    mulher_ciumenta: `${IMAGE_BASE_PATH}mulher_ciumenta.webp`,
-    mulher_risada_engracada: `${IMAGE_BASE_PATH}mulher_risada_engracada.webp`,
-    assustado: `${IMAGE_BASE_PATH}assustado.webp`
-};
-
-const EMOTION_CARDS = Object.keys(EMOTION_IMAGES).map(key => {
-    const label = key.replace(/_/g, ' ').replace('homem ', '').replace('mulher ', '');
-    return {
-        id: key,
-        label: label.charAt(0).toUpperCase() + label.slice(1),
-        path: EMOTION_IMAGES[key]
-    }
-});
-
-const getNextLevelConfig = (currentLevel) => {
-    return {
-        levelNumber: currentLevel + 1,
-        numCards: Math.min(2 + Math.floor(currentLevel / 4), 8),
-        questionsPerLevel: 4 + Math.floor(currentLevel / 5),
-        pointsPerCorrect: 100 + (currentLevel * 10),
-    };
-};
+const GAME_PHASES = [
+    { phase: 1, numCards: 2, numRounds: 2, points: 100 },
+    { phase: 2, numCards: 3, numRounds: 3, points: 120 },
+    { phase: 3, numCards: 4, numRounds: 3, points: 140 },
+    { phase: 4, numCards: 5, numRounds: 5, points: 160 },
+    { phase: 5, numCards: 6, numRounds: 5, points: 180 },
+    { phase: 6, numCards: 8, numRounds: 6, points: 200 },
+];
 
 const shuffleArray = (array) => [...array].sort(() => Math.random() - 0.5);
 
@@ -236,27 +159,24 @@ export default function FacialExpressionsGame() {
     const [gameState, setGameState] = useState('titleScreen');
     const [introStep, setIntroStep] = useState(0);
     const [leoMessage, setLeoMessage] = useState('');
-    const [currentLevel, setCurrentLevel] = useState(0);
-    // ... (restante do estado) ...
-    const [currentQuestion, setCurrentQuestion] = useState(0);
-    const [score, setScore] = useState(0);
+    const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
     const [totalScore, setTotalScore] = useState(0);
-    const [combo, setCombo] = useState(0);
     const [soundEnabled, setSoundEnabled] = useState(true);
-    const [currentCards, setCurrentCards] = useState([]);
-    const [targetCard, setTargetCard] = useState(null);
-    const [selectedCard, setSelectedCard] = useState(null);
+    
+    // State da rodada
+    const [cardsForPhase, setCardsForPhase] = useState([]);
+    const [targetSequence, setTargetSequence] = useState([]);
+    const [currentTargetIndex, setCurrentTargetIndex] = useState(0);
+    
+    const [selectedCardId, setSelectedCardId] = useState(null);
     const [feedback, setFeedback] = useState(null);
     const [isDisabled, setIsDisabled] = useState(false);
-    const [pointsEffect, setPointsEffect] = useState(null);
 
-    const levelConfig = useMemo(() => getNextLevelConfig(currentLevel), [currentLevel]);
-    // ...
     const introMessages = [
         "Olá! Eu sou o Leo. Vamos aprender sobre as emoções juntos?",
-        "É bem fácil! Eu vou pedir para você encontrar uma emoção, como 'Feliz' ou 'Triste'.",
-        "Você só precisa clicar na imagem que representa a emoção que eu pedi.",
-        "Se acertar, você ganha pontos e passa para a próxima! Vamos começar?"
+        "É bem fácil! Eu vou falar uma emoção, como 'Feliz' ou 'Triste'.",
+        "Você só precisa clicar na imagem certa que aparece na tela.",
+        "A cada fase, mais emoções aparecem! Vamos começar a diversão?"
     ];
 
     const leoSpeak = useCallback((message) => {
@@ -284,101 +204,87 @@ export default function FacialExpressionsGame() {
             startGame();
         }
     };
-
-    const prepareLevel = useCallback(() => {
-        // ... (lógica de preparar nível) ...
-        const uniqueLabels = [...new Set(EMOTION_CARDS.map(c => c.label))];
-        const shuffledLabels = shuffleArray(uniqueLabels);
-        const targetLabel = shuffledLabels[0];
-
-        const targetOptions = EMOTION_CARDS.filter(c => c.label === targetLabel);
-        const newTargetCard = shuffleArray(targetOptions)[0];
-
-        const otherCards = EMOTION_CARDS.filter(c => c.label !== targetLabel);
-        const shuffledOthers = shuffleArray(otherCards);
-
-        const cardsForLevel = shuffleArray([newTargetCard, ...shuffledOthers.slice(0, levelConfig.numCards - 1)]);
-
-        setCurrentCards(cardsForLevel);
-        setTargetCard(newTargetCard);
+    
+    const preparePhase = useCallback((phaseIndex) => {
+        const phaseConfig = GAME_PHASES[phaseIndex];
+        const shuffledAllCards = shuffleArray(EMOTION_CARDS);
+        const cardsToDisplay = shuffledAllCards.slice(0, phaseConfig.numCards);
+        
+        let sequence = [];
+        for (let i = 0; i < phaseConfig.numRounds; i++) {
+            sequence.push(cardsToDisplay[Math.floor(Math.random() * cardsToDisplay.length)]);
+        }
+        
+        setCardsForPhase(cardsToDisplay);
+        setTargetSequence(sequence);
+        setCurrentTargetIndex(0);
         setFeedback(null);
-        setSelectedCard(null);
+        setSelectedCardId(null);
         setIsDisabled(false);
-        leoSpeak(`Encontre: ${targetLabel}`);
-    }, [levelConfig.numCards, leoSpeak]);
+        leoSpeak(sequence[0].label);
+    }, [leoSpeak]);
 
-    // ... (resto da lógica do jogo: startGame, nextLevel, selectCard) ...
     const startGame = () => {
-        setCurrentLevel(0);
-        setScore(0);
+        setCurrentPhaseIndex(0);
         setTotalScore(0);
-        setCombo(0);
-        setCurrentQuestion(0);
         setGameState('playing');
+        preparePhase(0);
     };
     
     useEffect(() => {
         if (gameState === 'playing') {
-            prepareLevel();
+            preparePhase(currentPhaseIndex);
         }
-    }, [gameState, currentLevel]);
+    }, [gameState, currentPhaseIndex, preparePhase]);
 
-    const nextLevel = () => {
-        if (currentLevel < 29) {
-            setCurrentLevel(prev => prev + 1);
-            setCurrentQuestion(0);
-            setScore(0);
+    const selectCard = (card) => {
+        if (isDisabled) return;
+        setIsDisabled(true);
+        setSelectedCardId(card.id);
+
+        const currentTarget = targetSequence[currentTargetIndex];
+        const isCorrect = card.id === currentTarget.id;
+
+        if (isCorrect) {
+            setFeedback('correct');
+            setTotalScore(prev => prev + GAME_PHASES[currentPhaseIndex].points);
+            if (soundEnabled) playSound('correct');
+
+            setTimeout(() => {
+                const nextTargetIndex = currentTargetIndex + 1;
+                if (nextTargetIndex < targetSequence.length) {
+                    setCurrentTargetIndex(nextTargetIndex);
+                    setFeedback(null);
+                    setSelectedCardId(null);
+                    setIsDisabled(false);
+                    leoSpeak(targetSequence[nextTargetIndex].label);
+                } else {
+                    if (soundEnabled) playSound('levelComplete');
+                    setGameState('phaseComplete');
+                }
+            }, 1200);
+        } else {
+            setFeedback('wrong');
+            if (soundEnabled) playSound('wrong');
+            setTimeout(() => {
+                setFeedback(null);
+                setSelectedCardId(null);
+                setIsDisabled(false);
+            }, 1000);
+        }
+    };
+    
+    const nextPhase = () => {
+        const nextPhaseIndex = currentPhaseIndex + 1;
+        if (nextPhaseIndex < GAME_PHASES.length) {
+            setCurrentPhaseIndex(nextPhaseIndex);
             setGameState('playing');
         } else {
             setGameState('gameComplete');
         }
     };
 
-    const selectCard = (card, event) => {
-        if (isDisabled) return;
-        setIsDisabled(true);
-        setSelectedCard(card.id);
-
-        const isCorrect = card.label === targetCard.label;
-        if (isCorrect) {
-            // Lógica de acerto
-            setFeedback('correct');
-            const newCombo = combo + 1;
-            let points = levelConfig.pointsPerCorrect;
-            if (newCombo >= 3) points = Math.round(points * (1 + (newCombo * 0.1)));
-
-            setScore(prev => prev + points);
-            setTotalScore(prev => prev + points);
-            setCombo(newCombo);
-            if (soundEnabled) playSound('correct');
-
-            const rect = event.currentTarget.getBoundingClientRect();
-            setPointsEffect({ points, position: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } });
-            setTimeout(() => setPointsEffect(null), 1500);
-
-            setTimeout(() => {
-                if (currentQuestion < levelConfig.questionsPerLevel - 1) {
-                    setCurrentQuestion(prev => prev + 1);
-                    prepareLevel();
-                } else {
-                    if (soundEnabled) playSound('levelComplete');
-                    setGameState('levelComplete');
-                }
-            }, 1500);
-        } else {
-            // Lógica de erro
-            setFeedback('wrong');
-            setCombo(0);
-            if (soundEnabled) playSound('wrong');
-            setTimeout(() => {
-                setFeedback(null);
-                setSelectedCard(null);
-                setIsDisabled(false);
-            }, 1000);
-        }
-    };
-
-    // --- RENDERIZAÇÃO DAS TELAS ---
+    // --- RENDERIZAÇÃO ---
     const renderTitleScreen = () => (
         <div className="screen-center">
             <div className="stars-bg"></div>
@@ -399,9 +305,7 @@ export default function FacialExpressionsGame() {
                 <div className="intro-mascot-container">
                      <img src="/images/mascotes/leo/Leo_apoio.webp" alt="Leo" className="intro-mascot" />
                 </div>
-                <div className="speech-bubble">
-                    <p>{leoMessage}</p>
-                </div>
+                <div className="speech-bubble"><p>{leoMessage}</p></div>
             </div>
             <button onClick={handleIntroNext} className="intro-next-button">
                  {introStep < introMessages.length - 1 ? 'Próximo →' : 'Vamos Começar!'}
@@ -411,26 +315,20 @@ export default function FacialExpressionsGame() {
 
     const renderGameScreen = () => (
         <>
-            <div className="game-hud">
-                 <div className="hud-item">Nível: <strong>{levelConfig.levelNumber}</strong></div>
-                 <div className="hud-item">Pontos: <strong>{score}</strong></div>
-                 <div className="hud-item">Total: <strong>{totalScore}</strong></div>
-            </div>
-            <ProgressBar current={currentQuestion + 1} total={levelConfig.questionsPerLevel} />
-            <ComboCounter count={combo} />
-            <PointsExplosion {...pointsEffect} />
-
+            <ProgressBar current={currentTargetIndex + 1} total={targetSequence.length} />
             <div className="game-area">
                 <div className="instruction-container">
                     <img src="/images/mascotes/leo/leo_rosto_resultado.webp" alt="Leo" className="instruction-mascot"/>
-                    <div className="instruction-box">
-                        <h2>{leoMessage}</h2>
-                    </div>
+                    <div className="instruction-box"><h2>{leoMessage}</h2></div>
                 </div>
-                <div className={`cards-grid cols-${Math.min(levelConfig.numCards, 4)}`}>
+                <div className={`cards-grid cols-${Math.ceil(cardsForPhase.length / 2)}`}>
                     <AnimatePresence>
-                        {currentCards.map((card) => (
-                            <Card key={card.id} emotion={card} onClick={(e) => selectCard(card, e)} isCorrect={feedback === 'correct' && card.id === selectedCard} isWrong={feedback === 'wrong' && card.id === selectedCard} isDisabled={isDisabled} />
+                        {cardsForPhase.map((card) => (
+                            <Card key={card.id} emotion={card} onClick={() => selectCard(card)} 
+                                isCorrect={feedback === 'correct' && card.id === selectedCardId} 
+                                isWrong={feedback === 'wrong' && card.id === selectedCardId} 
+                                isDisabled={isDisabled} 
+                            />
                         ))}
                     </AnimatePresence>
                 </div>
@@ -438,14 +336,14 @@ export default function FacialExpressionsGame() {
         </>
     );
     
-    const renderLevelCompleteScreen = () => (
+    const renderPhaseCompleteScreen = () => (
         <div className="screen-center">
             <ConfettiEffect />
             <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className="modal-container">
-                <h2 className="modal-title">Nível {levelConfig.levelNumber} Completo!</h2>
+                <h2 className="modal-title">Fase {GAME_PHASES[currentPhaseIndex].phase} Completa!</h2>
                 <div className="modal-icon">🎉</div>
-                <p>Pontuação Total: <span className="total-score-highlight">{totalScore}</span></p>
-                <button onClick={nextLevel} className="modal-button next-level">Próximo Nível</button>
+                <p>Pontuação: <span className="total-score-highlight">{totalScore}</span></p>
+                <button onClick={nextPhase} className="modal-button next-level">Próxima Fase</button>
             </motion.div>
         </div>
     );
@@ -467,67 +365,70 @@ export default function FacialExpressionsGame() {
             case 'titleScreen': return renderTitleScreen();
             case 'intro': return renderIntroScreen();
             case 'playing': return renderGameScreen();
-            case 'levelComplete': return renderLevelCompleteScreen();
+            case 'phaseComplete': return renderPhaseCompleteScreen();
             case 'gameComplete': return renderGameCompleteScreen();
             default: return renderTitleScreen();
         }
     };
     
-    // ... (CSS e JSX principal) ...
     const cssStyles = `
-        /* ... (CSS existente com as novas adições) ... */
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
-        .game-container { font-family: 'Nunito', sans-serif; min-height: 100vh; background: linear-gradient(135deg, #a8e0ff 0%, #c4f5c7 100%); position: relative; overflow: hidden; color: #333; transition: background 0.7s ease-in-out; }
-        .game-header { position: sticky; top: 10px; left: 50%; transform: translateX(-50%); z-index: 50; padding: 10px 20px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 20px; display: flex; justify-content: space-between; align-items: center; max-width: 95%; width: 500px; margin: 0 auto; }
-        .game-title { font-size: 1.5rem; font-weight: 900; color: #00796B; }
+        .game-container { font-family: 'Nunito', sans-serif; min-height: 100vh; background: linear-gradient(135deg, #a8e0ff 0%, #c4f5c7 100%); position: relative; overflow: hidden; color: #333; }
+        .game-header { position: sticky; top: 10px; left: 50%; transform: translateX(-50%); z-index: 50; padding: 10px 20px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 20px; display: flex; justify-content: space-between; align-items: center; max-width: 95%; width: 600px; margin: 0 auto; }
         .header-button { background: none; border: none; padding: 8px; border-radius: 50%; cursor: pointer; transition: background-color 0.2s; color: #555; }
         .header-button:hover { background-color: rgba(0,0,0,0.1); }
+        .game-title { font-size: 1.5rem; font-weight: 900; color: #00796B; display:flex; align-items:center; gap: 8px; }
+        .header-score { font-size: 1.2rem; font-weight: 900; color: #004D40; }
         
         /* ESTILOS DA TELA DE TÍTULO E INTRO */
         .game-container.intro-mode { background: linear-gradient(160deg, #1d2b64 0%, #3f51b5 100%); }
         .game-container.intro-mode .game-header { display: none; }
-        .game-container.intro-mode .screen-center { min-height: 100vh; position: relative; z-index: 10; }
-        
         .stars-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(1px 1px at 20% 30%, white, transparent), radial-gradient(1px 1px at 80% 10%, white, transparent), radial-gradient(1px 1px at 50% 50%, white, transparent), radial-gradient(2px 2px at 90% 70%, white, transparent), radial-gradient(2px 2px at 30% 90%, white, transparent); background-repeat: repeat; background-size: 300px 300px; opacity: 0.8; animation: zoom 40s infinite; }
         @keyframes zoom { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-
         .intro-mascot { max-width: 60vw; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3)); }
         .title-mascot { width: 300px; margin-bottom: -20px; }
         .intro-main-title { font-size: clamp(2.5rem, 10vw, 4.5rem); font-weight: 900; color: #ffeb3b; text-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4); margin-bottom: 0.5rem; }
         .intro-main-subtitle { font-size: clamp(1rem, 4vw, 1.25rem); color: #e3f2fd; margin-bottom: 2.5rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
         .intro-start-button { background-image: linear-gradient(45deg, #ffeb3b, #fbc02d); color: #3f2a14; font-size: 1.5rem; font-weight: 700; padding: 15px 40px; border-radius: 50px; border: none; box-shadow: 0 5px 20px rgba(251, 192, 45, 0.4); cursor: pointer; transition: all 0.3s ease; animation: introPulse 2.5s infinite; }
-        
         .intro-explanation { background: linear-gradient(135deg, #a8e0ff 0%, #c4f5c7 100%); }
         .intro-content-wrapper { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
         .intro-mascot-container { width: 180px; }
         .speech-bubble { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; max-width: 400px; text-align: center; font-size: 1.2rem; color: #333; }
         .speech-bubble::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 15px; border-style: solid; border-color: white transparent transparent transparent; }
         .intro-next-button { margin-top: 2rem; background: #4CAF50; color: white; padding: 12px 30px; border-radius: 30px; font-size: 1.2rem; font-weight: 700; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
         @keyframes introPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         .animate-float { animation: float 4s ease-in-out infinite; }
-        .screen-center { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 80px); text-align: center; padding: 20px; }
+        .screen-center { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; }
         
         /* ESTILOS DO JOGO */
+        .progressBar { position: sticky; top: 85px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 500px; height: 25px; background: rgba(255,255,255,0.8); border-radius: 15px; overflow: hidden; z-index: 40; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 2px solid white; margin-bottom: 1rem; }
+        .progressFill { height: 100%; background: linear-gradient(90deg, #81C784, #4CAF50); transition: width 0.5s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; }
         .instruction-container { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 2rem; }
         .instruction-mascot { width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .instruction-box { background: rgba(255, 255, 255, 0.8); border-radius: 20px; padding: 15px 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .instruction-box h2 { font-size: 1.8rem; font-weight: 900; color: #00796B; }
-
-        /* CARDS */
-        .emotionCard { width: 150px; height: 180px; border-radius: 25px; background: white; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 4px solid transparent; display: flex; flex-direction: column; padding: 8px; }
-        .emotionCard:not([disabled]):hover { transform: translateY(-8px) scale(1.05); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
-        .emotionCard img { width: 100%; height: 120px; object-fit: contain; border-radius: 15px; }
-        .card-label { margin-top: 8px; font-weight: 700; color: #333; font-size: 1rem; text-transform: capitalize; }
+        .instruction-box { background: rgba(255, 255, 255, 0.9); border-radius: 20px; padding: 15px 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .instruction-box h2 { font-size: 2rem; font-weight: 900; color: #00796B; text-transform: capitalize; }
+        .game-area { padding: 10px; max-width: 900px; margin: auto; }
+        .cards-grid { display: grid; gap: 15px; justify-content: center; }
+        .cols-1 { grid-template-columns: repeat(2, 1fr); }
+        .cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .cols-4 { grid-template-columns: repeat(4, 1fr); }
+        @media (max-width: 600px) { .cols-3, .cols-4 { grid-template-columns: repeat(2, 1fr); } }
         
+        /* CARDS */
+        .emotionCard { border-radius: 20px; background: white; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 4px solid transparent; display: flex; flex-direction: column; padding: 8px; align-items: center; justify-content: center; aspect-ratio: 1 / 1; }
+        .emotionCard:not([disabled]):hover { transform: translateY(-8px) scale(1.05); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        .card-image-wrapper { width: 70%; height: 70%; }
+        .emotionCard img { width: 100%; height: 100%; object-fit: contain; }
+        .card-label { margin-top: 8px; font-weight: 700; color: #333; font-size: 1rem; text-transform: capitalize; }
         .cardCorrect { animation: correctPulse 0.5s ease; border-color: #4CAF50; background: #C8E6C9; }
         .cardWrong { animation: wrongShake 0.5s ease; border-color: #F44336; background: #FFCDD2; }
         @keyframes correctPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        @keyframes wrongShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-8px); } 80% { transform: translateX(8px); } }
+        @keyframes wrongShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-8px); } 80% { translateX(8px); } }
 
-        /* ... (resto do CSS) ... */
-        .modal-container { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(15px); border-radius: 30px; padding: 30px 40px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); border: 3px solid white; text-align: center;}
+        /* MODAIS */
+        .modal-container { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(15px); border-radius: 30px; padding: 30px 40px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); border: 3px solid white; text-align: center;}
         .modal-title { font-size: 2.5rem; font-weight: 900; margin-bottom: 1rem; color: #004D40; }
         .modal-title.congrats { color: #FFA000; }
         .modal-icon { font-size: 5rem; margin-bottom: 1rem; }
@@ -538,18 +439,6 @@ export default function FacialExpressionsGame() {
         .modal-button.next-level { background-image: linear-gradient(45deg, #66BB6A, #4CAF50); }
         .modal-button.play-again { background-image: linear-gradient(45deg, #26C6DA, #00ACC1); }
         @keyframes trophyBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-        .game-hud { display: flex; justify-content: center; gap: 15px; margin: 15px auto; flex-wrap: wrap; }
-        .hud-item { background: rgba(255,255,255,0.7); padding: 8px 16px; border-radius: 20px; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .game-area { padding: 20px; }
-        .cards-grid { display: grid; gap: 20px; justify-content: center; max-width: 800px; margin: 0 auto; }
-        .cols-2 { grid-template-columns: repeat(2, 1fr); } .cols-3 { grid-template-columns: repeat(3, 1fr); } .cols-4 { grid-template-columns: repeat(4, 1fr); }
-        @media (max-width: 600px) { .cols-3, .cols-4 { grid-template-columns: repeat(2, 1fr); } }
-        .pointsExplosion { position: fixed; font-size: 2.5rem; font-weight: 900; color: #4CAF50; z-index: 9999; pointer-events: none; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
-        .progressBar { position: sticky; top: 85px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 400px; height: 25px; background: rgba(255,255,255,0.8); border-radius: 15px; overflow: hidden; z-index: 40; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 2px solid white; }
-        .progressFill { height: 100%; background: linear-gradient(90deg, #81C784, #4CAF50); transition: width 0.5s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; }
-        .comboCounter { position: fixed; top: 120px; right: 20px; background: white; padding: 10px 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 100; text-align: center; border: 3px solid #FFA000; }
-        .comboText { display: block; font-size: 0.8rem; font-weight: 700; color: #EF6C00; }
-        .comboNumber { font-size: 2rem; font-weight: 900; color: #F57C00; line-height: 1; }
     `;
 
     return (
@@ -557,7 +446,8 @@ export default function FacialExpressionsGame() {
             <style>{cssStyles}</style>
             <header className="game-header">
                 <a href="/dashboard" className="header-button"><ArrowLeft size={24} /></a>
-                <h1 className="game-title">😊 Expressões Faciais</h1>
+                <h1 className="game-title">😊 Expressões</h1>
+                <div className="header-score">🏆 {totalScore}</div>
                 <button onClick={() => setSoundEnabled(!soundEnabled)} className="header-button">
                     {soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
                 </button>
