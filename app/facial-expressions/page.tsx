@@ -119,9 +119,10 @@ const ProgressBar = ({ current, total }) => {
 
 // --- CONFIGURAÇÕES E DADOS DO JOGO ---
 const SOUNDS = {
-    correct: 'https://cdn.pixabay.com/audio/2021/08/04/audio_34d1b84964.mp3',
-    wrong: 'https://cdn.pixabay.com/audio/2022/03/10/audio_f507b98d36.mp3',
-    levelComplete: 'https://cdn.pixabay.com/audio/2022/10/18/audio_22ac8b3558.mp3'
+    // **CORREÇÃO APLICADA:** Links de áudio trocados por fontes que permitem acesso direto.
+    correct: 'https://freesound.org/data/previews/391/391715_5674468-lq.mp3',
+    wrong: 'https://freesound.org/data/previews/174/174414_3229994-lq.mp3',
+    levelComplete: 'https://freesound.org/data/previews/270/270333_5123851-lq.mp3'
 };
 
 const playSound = (soundName) => {
@@ -175,7 +176,7 @@ export default function FacialExpressionsGame() {
     const introMessages = [
         "Olá! Eu sou o Leo. Vamos aprender sobre as emoções juntos?",
         "É bem fácil! Eu vou falar uma emoção, como 'Feliz' ou 'Triste'.",
-        "Você só precisa clicar na imagem certa que aparece na tela.",
+        "Você só precisa de clicar na imagem certa que aparece no ecrã.",
         "A cada fase, mais emoções aparecem! Vamos começar a diversão?"
     ];
 
@@ -289,7 +290,7 @@ export default function FacialExpressionsGame() {
         <div className="screen-center">
             <div className="stars-bg"></div>
              <motion.div className="animate-float" style={{zIndex: 10}}>
-                <img src="/images/mascotes/leo/leo_mago_resultado.webp" alt="Leo Mago" className="intro-mascot title-mascot" />
+                <img src="/images/mascotes/leo/leo_boas_vindas_resultado.webp" alt="Leo Mago" className="intro-mascot title-mascot" />
             </motion.div>
             <h1 className="intro-main-title">Expressões Faciais</h1>
             <p className="intro-main-subtitle">Aprenda e divirta-se com as emoções!</p>
@@ -460,4 +461,5 @@ export default function FacialExpressionsGame() {
         </div>
     );
 }
+
 
