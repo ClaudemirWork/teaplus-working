@@ -44,6 +44,40 @@ const MusicalNotesBackground = () => (
     </div>
 );
 
+const SplashScreen = ({ onContinue }) => {
+    const [isHovered, setIsHovered] = React.useState(false);
+    
+    return (
+        <div className="screen-center splash-container">
+            <MusicalNotesBackground />
+            <div className="splash-content">
+                <h1 className="splash-title">🎵 Eco Sonoro 🎵</h1>
+                
+                <div 
+                    className="mascot-container"
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                >
+                    <img 
+                        src="/images/mascotes/mila/mila_sinal_positivo_resultado.webp" 
+                        alt="Mila - Mascote TeaPlus"
+                        className="mascot-image"
+                        style={{
+                            transform: isHovered ? 'scale(1.1) rotate(5deg)' : 'scale(1) rotate(0deg)',
+                            transition: 'transform 0.3s ease'
+                        }}
+                    />
+                    <p className="mascot-message">Olá! Vamos testar sua memória musical?</p>
+                </div>
+                
+                <button onClick={onContinue} className="splash-button">
+                    <span style={{position: 'relative', zIndex: 1}}>Começar</span>
+                </button>
+            </div>
+        </div>
+    );
+};
+
 const IntroScreen = ({ onStart }) => (
     <div className="screen-center intro-container">
         <MusicalNotesBackground />
@@ -69,7 +103,7 @@ const IntroScreen = ({ onStart }) => (
     </div>
 );
 
-const GameOverScreen = ({ score, highScore, level, onRestart }) => (
+const GameOverScreen = ({ score, highScore, level, onRestart, onHome }) => (
     <div className="screen-center game-over-container">
         <MusicalNotesBackground />
         <div className="game-over-content">
@@ -91,9 +125,14 @@ const GameOverScreen = ({ score, highScore, level, onRestart }) => (
                 </div>
             </div>
             
-            <button onClick={onRestart} className="restart-button">
-                Jogar Novamente
-            </button>
+            <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
+                <button onClick={onRestart} className="restart-button">
+                    Jogar Novamente
+                </button>
+                <button onClick={onHome} className="restart-button secondary">
+                    Voltar ao Início
+                </button>
+            </div>
         </div>
     </div>
 );
@@ -115,7 +154,7 @@ const StatusIndicator = ({ isPlayerTurn, isPlaying }) => {
 // --- LÓGICA DO JOGO ---
 
 export default function AuditoryMemoryGame() {
-    const [gameState, setGameState] = useState('intro');
+    const [gameState, setGameState] = useState('splash');
     const [score, setScore] = useState(0);
     const [highScore, setHighScore] = useState(0);
     const [level, setLevel] = useState(1);
@@ -239,6 +278,11 @@ export default function AuditoryMemoryGame() {
         setTimeout(() => setShowMessage(''), 2000);
     }, [sequence, gameState, playTone, level]);
 
+    // Navega da splash para as instruções
+    const goToIntro = useCallback(() => {
+        setGameState('intro');
+    }, []);
+
     // Inicia um novo jogo
     const startGame = useCallback(() => {
         setScore(0);
@@ -252,7 +296,16 @@ export default function AuditoryMemoryGame() {
         setSequence([firstTone]);
         
         setGameState('playing');
-    }, [tones.length]);
+    // Reinicia o jogo voltando para a splash
+    const restartToSplash = useCallback(() => {
+        setGameState('splash');
+        setScore(0);
+        setLevel(1);
+        setCombo(1);
+        setLives(3);
+        setPlayerSequence([]);
+        setSequence([]);
+    }, []);
 
     // Efeito para tocar a sequência quando o jogo inicia ou nova sequência é criada
     useEffect(() => {
@@ -371,6 +424,114 @@ export default function AuditoryMemoryGame() {
             to { transform: translateY(0); opacity: 1; }
         }
         
+        /* --- TELA SPLASH --- */
+        .splash-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .splash-content {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(15px);
+            padding: 3rem 2rem;
+            border-radius: 40px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.6);
+            position: relative;
+            z-index: 2;
+            animation: slideIn 0.8s ease;
+        }
+        
+        .splash-title {
+            font-size: clamp(3rem, 7vw, 5rem);
+            font-weight: 900;
+            margin-bottom: 2rem;
+            background: linear-gradient(45deg, #fff, var(--accent), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 6px 15px rgba(0,0,0,0.4));
+            animation: slideIn 0.6s ease;
+        }
+        
+        .mascot-container {
+            margin: 2rem 0;
+            animation: fadeInUp 1s ease forwards, float 3s ease-in-out infinite 1s;
+        }
+        
+        .mascot-image {
+            width: 100%;
+            max-width: 350px;
+            height: auto;
+            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5));
+        }
+        
+        .mascot-message {
+            font-size: 1.3rem;
+            color: #e0e0e0;
+            margin-top: 1.5rem;
+            font-weight: 600;
+            animation: fadeInUp 1.5s ease 0.8s backwards;
+        }
+        
+        .splash-button {
+            background: linear-gradient(135deg, var(--accent), #ffc107);
+            color: var(--main-bg);
+            font-size: 1.8rem;
+            font-weight: 900;
+            padding: 20px 60px;
+            border-radius: 60px;
+            border: none;
+            box-shadow: 0 15px 40px rgba(255, 235, 59, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 1.2s ease 0.5s backwards;
+        }
+        
+        .splash-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .splash-button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .splash-button:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 20px 50px rgba(255, 235, 59, 0.6);
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         /* --- TELAS DE INTRO E FIM --- */
         .screen-center { 
             flex-grow: 1; 
@@ -460,6 +621,15 @@ export default function AuditoryMemoryGame() {
             transform: translateY(-3px);
             box-shadow: 0 15px 40px rgba(0,0,0,0.4);
             background: var(--accent);
+        }
+        
+        .restart-button.secondary {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .restart-button.secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
         
         .trophy-icon {
@@ -736,6 +906,31 @@ export default function AuditoryMemoryGame() {
         
         /* --- LAYOUT MOBILE --- */
         @media (max-width: 768px) {
+            .splash-content {
+                padding: 2rem 1.5rem;
+            }
+            
+            .splash-title {
+                font-size: 2.5rem;
+            }
+            
+            .mascot-image {
+                max-width: 280px;
+            }
+            
+            .mascot-message {
+                font-size: 1.1rem;
+            }
+            
+            .mascot-message {
+                font-size: 1rem;
+            }
+            
+            .splash-button {
+                font-size: 1.4rem;
+                padding: 16px 40px;
+            }
+            
             .game-header {
                 flex-wrap: wrap;
                 gap: 10px;
@@ -818,6 +1013,23 @@ export default function AuditoryMemoryGame() {
         }
         
         @media (max-width: 480px) {
+            .splash-title {
+                font-size: 2rem;
+            }
+            
+            .mascot-image {
+                max-width: 220px;
+            }
+            
+            .mascot-message {
+                font-size: 1rem;
+            }
+            
+            .splash-button {
+                font-size: 1.2rem;
+                padding: 14px 35px;
+            }
+            
             .xylophone-container {
                 grid-template-columns: repeat(2, 1fr);
                 grid-template-rows: repeat(3, 1fr);
@@ -844,6 +1056,10 @@ export default function AuditoryMemoryGame() {
     return (
         <div className="game-container">
             <style>{cssStyles}</style>
+            
+            {gameState === 'splash' && (
+                <SplashScreen onContinue={goToIntro} />
+            )}
             
             {gameState === 'intro' && (
                 <IntroScreen onStart={startGame} />
@@ -918,7 +1134,8 @@ export default function AuditoryMemoryGame() {
                     score={score} 
                     highScore={highScore}
                     level={level}
-                    onRestart={startGame} 
+                    onRestart={startGame}
+                    onHome={restartToSplash}
                 />
             )}
         </div>
