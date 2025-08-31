@@ -1,72 +1,38 @@
-/* Tela Splash Medieval */
-.medieval-background {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+/* Efeitos de Vitória */
+.victory-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3rem;
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 0 0 20px rgba(255,215,0,0.8);
+  animation: victoryPulse 2s ease-in-out;
+  z-index: 1000;
 }
 
-.castle-silhouette {
-  position: absolute;
-  font-size: 8rem;
-  opacity: 0.1;
-  animation: float 20s infinite ease-in-out;
+@keyframes victoryPulse {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
 }
 
-.castle-1 {
-  top: 10%;
-  left: 10%;
-  animation-delay: 0s;
+.confetti-piece {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  animation: fall 3s linear forwards;
+  z-index: 999;
 }
 
-.castle-2 {
-  top: 60%;
-  right: 15%;
-  animation-delay: 7s;
-}
-
-.castle-3 {
-  bottom: 10%;
-  left: 20%;
-  animation-delay: 14s;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-}
-
-.magic-glow {
-  background: radial-gradient(circle, rgba(255,215,0,0.2) 0%, transparent 70%);
-  animation: glow 3s infinite ease-in-out;
-  pointer-events: none;
-}
-
-@keyframes glow {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
-/* Ajustes Mobile */
-@media (max-width: 640px) {
-  .territory-cell {
-    border-width: 2px;
+@keyframes fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
   }
-  
-  .castle-icon {
-    font-size: 2rem;
-  }
-  
-  .game-board {
-    padding: 8px;
-    border-width: 4px;
-  }
-  
-  .badge {
-    font-size: 0.7rem;
-    padding: 2px 8px;
-  }
-  
-  .kingdom-level {
-    width: 50px;
-    height: 50px;
-    font-size: 1.2rem;
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
   }
 }
