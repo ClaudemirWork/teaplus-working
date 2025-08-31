@@ -1,67 +1,63 @@
 /* emotionrecognition.module.css */
 
-/* Container Principal */
+/* Container Principal - COR SUAVE PASTEL */
 .gameContainer {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #E3F2FD 0%, #E8F5E9 100%); /* Azul e verde suaves */
   position: relative;
   overflow: hidden;
 }
 
-/* Cards de Emoção */
+/* Cards de Emoção - SEM TEXTO */
 .emotionCard {
-  width: 120px;
-  height: 150px;
+  width: 140px;
+  height: 140px;
   border-radius: 15px;
   background: white;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   position: relative;
+  padding: 10px;
 }
 
 .emotionCard:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
 
 .emotionCard img {
-  width: 80px;
-  height: 80px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-}
-
-.emotionLabel {
-  margin-top: 10px;
-  font-weight: bold;
-  color: #333;
 }
 
 /* Feedback de Acerto/Erro */
 .cardCorrect {
   animation: correctPulse 0.5s ease;
-  background: linear-gradient(145deg, #4CAF50, #8BC34A) !important;
+  background: #C8E6C9 !important; /* Verde suave */
+  border: 3px solid #4CAF50;
 }
 
 .cardWrong {
   animation: wrongShake 0.5s ease;
-  background: linear-gradient(145deg, #ffcdd2, #ef9a9a) !important;
+  background: #FFCDD2 !important; /* Vermelho suave */
+  border: 3px solid #F44336;
 }
 
 @keyframes correctPulse {
   0% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+  50% { transform: scale(1.1); }
   100% { transform: scale(1); }
 }
 
 @keyframes wrongShake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-10px); }
-  75% { transform: translateX(10px); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
 
 /* EXPLOSÃO DE PONTOS */
@@ -69,10 +65,11 @@
   position: fixed !important;
   font-size: 48px !important;
   font-weight: bold !important;
-  color: gold !important;
+  color: #4CAF50 !important;
   z-index: 9999 !important;
   pointer-events: none;
   animation: explodePoints 1.5s ease-out forwards !important;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
 }
 
 @keyframes explodePoints {
@@ -90,35 +87,94 @@
   }
 }
 
-/* MEGA EXPLOSÃO */
-.megaExplosion {
+/* Barra de Progresso */
+.progressBar {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 400px;
+  height: 30px;
+  background: rgba(255,255,255,0.8);
+  border-radius: 15px;
+  overflow: hidden;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #81C784, #4CAF50);
+  transition: width 0.5s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* Combo Counter */
+.comboCounter {
+  position: fixed;
+  top: 110px;
+  right: 20px;
+  background: white;
+  padding: 15px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+
+.comboNumber {
+  font-size: 36px;
+  font-weight: bold;
+  color: #4CAF50;
+  animation: comboPulse 0.5s ease;
+}
+
+/* Mensagem de Libertação */
+.liberationMessage {
   position: fixed !important;
   top: 50% !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
-  z-index: 9998 !important;
-  width: 500px;
-  height: 500px;
+  z-index: 10001 !important;
+  font-size: 36px !important;
+  font-weight: bold !important;
+  text-align: center;
+  color: #2E7D32 !important;
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  animation: liberationPop 3s ease-out !important;
+}
+
+/* Chuva de Emoções */
+.emotionRain {
+  position: fixed;
+  font-size: 40px;
+  z-index: 10000;
   pointer-events: none;
-  animation: megaExplode 2s ease-out forwards !important;
+  animation: rainFall 4s linear forwards;
 }
 
-@keyframes megaExplode {
-  0% {
-    transform: translate(-50%, -50%) scale(0) rotate(0deg);
-    opacity: 1;
+/* Mobile */
+@media (max-width: 768px) {
+  .emotionCard {
+    width: 100px;
+    height: 100px;
   }
-  50% {
-    transform: translate(-50%, -50%) scale(3) rotate(180deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(5) rotate(360deg);
-    opacity: 0;
+  
+  .liberationMessage {
+    font-size: 24px !important;
+    padding: 20px;
   }
 }
 
-/* Partículas de Estrelas */
+/* Partículas */
 .starParticle {
   position: fixed;
   width: 20px;
@@ -141,15 +197,6 @@
   }
 }
 
-/* CHUVA DE EMOÇÕES FINAL */
-.emotionRain {
-  position: fixed;
-  font-size: 40px;
-  z-index: 10000;
-  pointer-events: none;
-  animation: rainFall 4s linear forwards;
-}
-
 @keyframes rainFall {
   0% {
     transform: translateY(-100px) rotate(0deg);
@@ -161,20 +208,10 @@
   }
 }
 
-/* Mensagem de Libertação */
-.liberationMessage {
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  z-index: 10001 !important;
-  font-size: 48px !important;
-  font-weight: bold !important;
-  text-align: center;
-  color: white !important;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.5) !important;
-  animation: liberationPop 3s ease-out !important;
-  pointer-events: none;
+@keyframes comboPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
 }
 
 @keyframes liberationPop {
@@ -183,128 +220,11 @@
     opacity: 0;
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.5) rotate(10deg);
-    opacity: 1;
-  }
-  70% {
-    transform: translate(-50%, -50%) scale(1.3) rotate(-5deg);
+    transform: translate(-50%, -50%) scale(1.2) rotate(10deg);
     opacity: 1;
   }
   100% {
     transform: translate(-50%, -50%) scale(1) rotate(0deg);
     opacity: 0;
-  }
-}
-
-/* Barra de Progresso */
-.progressBar {
-  position: fixed;
-  top: 60px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  max-width: 400px;
-  height: 30px;
-  background: rgba(255,255,255,0.3);
-  border-radius: 15px;
-  overflow: hidden;
-  z-index: 100;
-}
-
-.progressFill {
-  height: 100%;
-  background: linear-gradient(90deg, #FFD700, #FFA500);
-  transition: width 0.5s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: bold;
-  font-size: 14px;
-}
-
-/* Combo Counter */
-.comboCounter {
-  position: fixed;
-  top: 100px;
-  right: 20px;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 15px;
-  border-radius: 15px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  z-index: 100;
-}
-
-.comboNumber {
-  font-size: 36px;
-  font-weight: bold;
-  color: #ff6b6b;
-  animation: comboPulse 0.5s ease;
-}
-
-@keyframes comboPulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.3); }
-  100% { transform: scale(1); }
-}
-
-/* Emoção Libertada */
-.emotionFreed {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 100px;
-  z-index: 10002;
-  animation: freedAnimation 3s ease-out forwards;
-}
-
-@keyframes freedAnimation {
-  0% {
-    transform: translate(-50%, -50%) scale(0) rotate(0deg);
-    opacity: 0;
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.5) rotate(360deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -200%) scale(1) rotate(720deg);
-    opacity: 0;
-  }
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .emotionCard {
-    width: 90px;
-    height: 120px;
-  }
-  
-  .emotionCard img {
-    width: 60px;
-    height: 60px;
-  }
-  
-  .liberationMessage {
-    font-size: 32px !important;
-  }
-  
-  .emotionRain {
-    font-size: 30px;
-  }
-}
-
-/* Botão de Power-Up */
-.powerUpButton {
-  animation: powerUpGlow 2s ease-in-out infinite;
-}
-
-@keyframes powerUpGlow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(255, 215, 0, 0.9);
   }
 }
