@@ -664,18 +664,21 @@ const AuditoryMemoryGame: React.FC = () => {
                   musical-button ${button.color} 
                   h-24 md:h-28 rounded-2xl font-bold text-white text-2xl md:text-3xl
                   transition-all duration-200 transform
-                  ${gameState === 'playing' && !isPlaying ? 'hover:scale-105 opacity-100' : 'opacity-60'}
-                  ${gameState === 'listening' && currentNote === index ? 'scale-110 ring-4 ring-white animate-pulse opacity-100' : ''}
-                  ${gameState === 'playing' && currentNote === index ? 'scale-110 ring-4 ring-yellow-400 opacity-100' : ''}
+                  ${gameState === 'playing' && !isPlaying ? 'hover:scale-105' : ''}
+                  ${gameState === 'listening' && currentNote === index ? 'scale-110 ring-4 ring-white animate-pulse' : ''}
+                  ${gameState === 'playing' && currentNote === index ? 'scale-110 ring-4 ring-yellow-400' : ''}
                   ${userSequence.includes(index) && gameState === 'playing' ? 'ring-2 ring-green-400' : ''}
                   disabled:cursor-not-allowed
                   flex flex-col items-center justify-center gap-1
                   shadow-lg
                 `}
                 style={{
-                  filter: gameState === 'playing' && !isPlaying ? 'brightness(1.2)' : 
-                          gameState === 'listening' && currentNote === index ? 'brightness(1.5)' : 
-                          'brightness(0.8)'
+                  opacity: gameState === 'listening' && currentNote === index ? '1' : 
+                           gameState === 'playing' && currentNote === index ? '1' : 
+                           '0.5',
+                  filter: gameState === 'listening' && currentNote === index ? 'brightness(1.5) saturate(1.5)' : 
+                          gameState === 'playing' && currentNote === index ? 'brightness(1.5) saturate(1.5)' : 
+                          'brightness(0.7) saturate(0.8)'
                 }}
               >
                 <span className="text-3xl">{button.emoji}</span>
