@@ -2,30 +2,22 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import { Volume2, VolumeX, Play, RotateCcw, Trophy, Brain, Target, Zap, Music, Sparkles, ArrowRight } from 'lucide-react';
+import { Volume2, VolumeX, Play, RotateCcw, Trophy, Star, Sparkles, Heart, Zap, Gift } from 'lucide-react';
+import './auditory-memory.css';
 
 interface GameStats {
   level: number;
   score: number;
   highScore: number;
-  correctSequences: number;
-  totalAttempts: number;
-}
-
-interface GameConfig {
-  sequenceLength: number;
-  playbackSpeed: number;
-  noteDuration: number;
-  minFreq: number;
-  maxFreq: number;
+  coins: number;
+  combo: number;
+  lives: number;
 }
 
 const AuditoryMemoryGame: React.FC = () => {
-  // Screen state
+  // Estados do jogo
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'game'>('welcome');
-  
-  // Game state
-  const [gameState, setGameState] = useState<'idle' | 'demo' | 'input' | 'success' | 'fail'>('idle');
+  const [gameState, setGameState] = useState<'idle' | 'playing' | 'listening' | 'success' | 'fail'>('idle');
   const [sequence, setSequence] = useState<number[]>([]);
   const [userSequence, setUserSequence] = useState<number[]>([]);
   const [currentNote, setCurrentNote] = useState<number | null>(null);
@@ -33,53 +25,52 @@ const AuditoryMemoryGame: React.FC = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [showCombo, setShowCombo] = useState(false);
+  const [showTreasure, setShowTreasure] = useState(false);
+  const [confettiActive, setConfettiActive] = useState(false);
+  const [coinsRaining, setCoinsRaining] = useState(false);
   
-  // Game statistics
+  // Estatísticas
   const [stats, setStats] = useState<GameStats>({
     level: 1,
     score: 0,
     highScore: 0,
-    correctSequences: 0,
-    totalAttempts: 0
+    coins: 0,
+    combo: 0,
+    lives: 3
   });
 
-  // Game configuration based on level
-  const [config, setConfig] = useState<GameConfig>({
-    sequenceLength: 3,
-    playbackSpeed: 600,
-    noteDuration: 400,
-    minFreq: 200,
-    maxFreq: 800
-  });
-
-  // Audio context and oscillator refs
+  // Configuração do jogo
+  const [sequenceLength, setSequenceLength] = useState(3);
+  const [playbackSpeed, setPlaybackSpeed] = useState(800);
+  
+  // Referências de áudio
   const audioContextRef = useRef<AudioContext | null>(null);
-  const oscillatorRef = useRef<OscillatorNode | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
-
-  // Note frequencies (pentatonic scale for pleasant sounds)
-  const frequencies = [
-    261.63, // C4
-    293.66, // D4
-    329.63, // E4
-    392.00, // G4
-    440.00, // A4
-    523.25, // C5
-    587.33, // D5
-    659.25  // E5
+  
+  // Cores e frequências dos botões
+  const buttons = [
+    { color: 'btn-red', emoji: '🎵', freq: 261.63, name: 'DÓ' },
+    { color: 'btn-orange', emoji: '🎶', freq: 293.66, name: 'RÉ' },
+    { color: 'btn-yellow', emoji: '🎼', freq: 329.63, name: 'MI' },
+    { color: 'btn-green', emoji: '🎹', freq: 392.00, name: 'FÁ' },
+    { color: 'btn-blue', emoji: '🎸', freq: 440.00, name: 'SOL' },
+    { color: 'btn-purple', emoji: '🎺', freq: 523.25, name: 'LÁ' }
   ];
 
-  // Initialize audio context
+  // Inicializar áudio
   useEffect(() => {
     if (typeof window !== 'undefined') {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      gainNodeRef.current = audioContextRef.current.createGain();
-      gainNodeRef.current.connect(audioContextRef.current.destination);
       
-      // Load high score from localStorage
-      const savedHighScore = localStorage.getItem('auditoryMemoryHighScore');
+      // Carregar dados salvos
+      const savedHighScore = localStorage.getItem('memoriaSonoraHighScore');
+      const savedCoins = localStorage.getItem('memoriaSonoraCoins');
+      
       if (savedHighScore) {
         setStats(prev => ({ ...prev, highScore: parseInt(savedHighScore) }));
+      }
+      if (savedCoins) {
+        setStats(prev => ({ ...prev, coins: parseInt(savedCoins) }));
       }
     }
 
@@ -90,54 +81,46 @@ const AuditoryMemoryGame: React.FC = () => {
     };
   }, []);
 
-  // Play a single note
+  // Tocar nota musical
   const playNote = useCallback((frequency: number, duration: number = 400) => {
-    if (!soundEnabled || !audioContextRef.current || !gainNodeRef.current) return;
-
-    // Stop any existing oscillator
-    if (oscillatorRef.current) {
-      oscillatorRef.current.stop();
-      oscillatorRef.current.disconnect();
-    }
+    if (!soundEnabled || !audioContextRef.current) return;
 
     const oscillator = audioContextRef.current.createOscillator();
+    const gainNode = audioContextRef.current.createGain();
+    
     oscillator.type = 'sine';
     oscillator.frequency.setValueAtTime(frequency, audioContextRef.current.currentTime);
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContextRef.current.destination);
     
-    oscillator.connect(gainNodeRef.current);
-    
-    // Envelope for smoother sound
-    gainNodeRef.current.gain.cancelScheduledValues(audioContextRef.current.currentTime);
-    gainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current.currentTime);
-    gainNodeRef.current.gain.linearRampToValueAtTime(0.3, audioContextRef.current.currentTime + 0.01);
-    gainNodeRef.current.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration / 1000);
+    gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.3, audioContextRef.current.currentTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration / 1000);
     
     oscillator.start(audioContextRef.current.currentTime);
     oscillator.stop(audioContextRef.current.currentTime + duration / 1000);
-    
-    oscillatorRef.current = oscillator;
   }, [soundEnabled]);
 
-  // Generate new sequence
+  // Gerar nova sequência
   const generateSequence = useCallback(() => {
     const newSequence = [];
-    for (let i = 0; i < config.sequenceLength; i++) {
-      newSequence.push(Math.floor(Math.random() * 8));
+    for (let i = 0; i < sequenceLength; i++) {
+      newSequence.push(Math.floor(Math.random() * 6));
     }
     setSequence(newSequence);
     return newSequence;
-  }, [config.sequenceLength]);
+  }, [sequenceLength]);
 
-  // Play the sequence
+  // Tocar sequência
   const playSequence = useCallback(async (seq: number[]) => {
     setIsPlaying(true);
-    setGameState('demo');
+    setGameState('listening');
     
     for (let i = 0; i < seq.length; i++) {
       setCurrentNote(seq[i]);
-      playNote(frequencies[seq[i]], config.noteDuration);
+      playNote(buttons[seq[i]].freq, 400);
       
-      await new Promise(resolve => setTimeout(resolve, config.playbackSpeed));
+      await new Promise(resolve => setTimeout(resolve, playbackSpeed));
       
       if (i < seq.length - 1) {
         setCurrentNote(null);
@@ -147,11 +130,11 @@ const AuditoryMemoryGame: React.FC = () => {
     
     setCurrentNote(null);
     setIsPlaying(false);
-    setGameState('input');
+    setGameState('playing');
     setUserSequence([]);
-  }, [playNote, config.noteDuration, config.playbackSpeed, frequencies]);
+  }, [playNote, buttons, playbackSpeed]);
 
-  // Start new game
+  // Iniciar jogo
   const startGame = useCallback(() => {
     const newSequence = generateSequence();
     setUserSequence([]);
@@ -160,26 +143,135 @@ const AuditoryMemoryGame: React.FC = () => {
     playSequence(newSequence);
   }, [generateSequence, playSequence]);
 
-  // Handle note button click
-  const handleNoteClick = useCallback((noteIndex: number) => {
-    if (gameState !== 'input' || isPlaying) return;
+  // Criar confete
+  const createConfetti = () => {
+    setConfettiActive(true);
+    const container = document.getElementById('game-container');
     
-    playNote(frequencies[noteIndex], 300);
+    for (let i = 0; i < 50; i++) {
+      setTimeout(() => {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti-piece';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.animationDelay = Math.random() * 0.5 + 's';
+        confetti.style.backgroundColor = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a8e6cf'][Math.floor(Math.random() * 4)];
+        container?.appendChild(confetti);
+        
+        setTimeout(() => confetti.remove(), 3000);
+      }, i * 30);
+    }
+    
+    setTimeout(() => setConfettiActive(false), 3000);
+  };
+
+  // Criar chuva de moedas
+  const createCoinRain = () => {
+    setCoinsRaining(true);
+    const container = document.getElementById('game-container');
+    
+    for (let i = 0; i < 20; i++) {
+      setTimeout(() => {
+        const coin = document.createElement('div');
+        coin.className = 'coin';
+        coin.style.left = Math.random() * 100 + '%';
+        coin.style.animationDelay = Math.random() * 0.5 + 's';
+        
+        coin.onclick = () => {
+          setStats(prev => ({ ...prev, coins: prev.coins + 5 }));
+          coin.remove();
+          
+          // Mostrar +5 pontos
+          const points = document.createElement('div');
+          points.className = 'score-popup';
+          points.textContent = '+5';
+          points.style.left = coin.style.left;
+          points.style.top = coin.getBoundingClientRect().top + 'px';
+          container?.appendChild(points);
+          setTimeout(() => points.remove(), 2000);
+        };
+        
+        container?.appendChild(coin);
+        setTimeout(() => coin.remove(), 2000);
+      }, i * 100);
+    }
+    
+    setTimeout(() => setCoinsRaining(false), 3000);
+  };
+
+  // Criar baú surpresa
+  const createTreasureChest = () => {
+    if (showTreasure) return;
+    
+    setShowTreasure(true);
+    const container = document.getElementById('game-container');
+    const chest = document.createElement('div');
+    chest.className = 'treasure-chest';
+    chest.style.right = '20px';
+    chest.style.bottom = '100px';
+    chest.innerHTML = '🎁';
+    chest.style.fontSize = '40px';
+    chest.style.display = 'flex';
+    chest.style.alignItems = 'center';
+    chest.style.justifyContent = 'center';
+    
+    chest.onclick = () => {
+      const rewards = [
+        { type: 'coins', value: 100, text: '+100 Moedas!' },
+        { type: 'life', value: 1, text: '+1 Vida!' },
+        { type: 'score', value: 500, text: '+500 Pontos!' }
+      ];
+      
+      const reward = rewards[Math.floor(Math.random() * rewards.length)];
+      
+      if (reward.type === 'coins') {
+        setStats(prev => ({ ...prev, coins: prev.coins + reward.value }));
+      } else if (reward.type === 'life') {
+        setStats(prev => ({ ...prev, lives: Math.min(prev.lives + 1, 5) }));
+      } else if (reward.type === 'score') {
+        setStats(prev => ({ ...prev, score: prev.score + reward.value }));
+      }
+      
+      // Mostrar recompensa
+      const rewardText = document.createElement('div');
+      rewardText.className = 'score-popup';
+      rewardText.textContent = reward.text;
+      rewardText.style.right = '20px';
+      rewardText.style.bottom = '150px';
+      container?.appendChild(rewardText);
+      
+      createConfetti();
+      chest.remove();
+      setTimeout(() => rewardText.remove(), 2000);
+      setShowTreasure(false);
+    };
+    
+    container?.appendChild(chest);
+    setTimeout(() => {
+      chest.remove();
+      setShowTreasure(false);
+    }, 10000);
+  };
+
+  // Verificar clique do usuário
+  const handleNoteClick = useCallback((noteIndex: number) => {
+    if (gameState !== 'playing' || isPlaying) return;
+    
+    playNote(buttons[noteIndex].freq, 300);
     const newUserSequence = [...userSequence, noteIndex];
     setUserSequence(newUserSequence);
     setCurrentNote(noteIndex);
     
-    setTimeout(() => setCurrentNote(null), 300);
+    // Animação do botão
+    const button = document.getElementById(`btn-${noteIndex}`);
+    button?.classList.add('btn-active');
+    setTimeout(() => {
+      button?.classList.remove('btn-active');
+      setCurrentNote(null);
+    }, 300);
     
-    // Check if sequence is complete
+    // Verificar se completou a sequência
     if (newUserSequence.length === sequence.length) {
       const isCorrect = newUserSequence.every((note, index) => note === sequence[index]);
-      
-      setStats(prev => ({
-        ...prev,
-        totalAttempts: prev.totalAttempts + 1,
-        correctSequences: isCorrect ? prev.correctSequences + 1 : prev.correctSequences
-      }));
       
       if (isCorrect) {
         handleSuccess();
@@ -187,77 +279,111 @@ const AuditoryMemoryGame: React.FC = () => {
         handleFailure();
       }
     }
-  }, [gameState, isPlaying, userSequence, sequence, playNote, frequencies]);
+  }, [gameState, isPlaying, userSequence, sequence, playNote, buttons]);
 
-  // Handle successful sequence
+  // Sucesso
   const handleSuccess = useCallback(() => {
     setGameState('success');
     setShowSuccess(true);
     
-    const pointsEarned = config.sequenceLength * 10 * stats.level;
-    const newScore = stats.score + pointsEarned;
+    // Calcular pontos
+    const basePoints = sequenceLength * 10;
+    const comboBonus = stats.combo * 5;
+    const totalPoints = (basePoints + comboBonus) * stats.level;
+    
+    // Atualizar estatísticas
+    const newCombo = stats.combo + 1;
+    const newScore = stats.score + totalPoints;
     const newHighScore = Math.max(newScore, stats.highScore);
     
     setStats(prev => ({
       ...prev,
       score: newScore,
-      highScore: newHighScore
+      highScore: newHighScore,
+      combo: newCombo,
+      coins: prev.coins + 10
     }));
     
-    // Save high score
-    localStorage.setItem('auditoryMemoryHighScore', newHighScore.toString());
+    // Salvar dados
+    localStorage.setItem('memoriaSonoraHighScore', newHighScore.toString());
+    localStorage.setItem('memoriaSonoraCoins', (stats.coins + 10).toString());
     
-    // Success sound
-    if (soundEnabled && audioContextRef.current && gainNodeRef.current) {
-      setTimeout(() => playNote(523.25, 150), 100);
-      setTimeout(() => playNote(659.25, 150), 250);
-      setTimeout(() => playNote(783.99, 300), 400);
+    // Efeitos visuais baseados no combo
+    if (newCombo >= 10) {
+      createCoinRain();
+      document.getElementById('game-container')?.classList.add('combo-mode');
+    } else if (newCombo >= 5) {
+      createConfetti();
+      document.getElementById('game-container')?.classList.add('shake-screen');
+      setTimeout(() => {
+        document.getElementById('game-container')?.classList.remove('shake-screen');
+      }, 500);
+    } else if (newCombo >= 3) {
+      createConfetti();
     }
     
-    // Progress to next level
+    // Mostrar combo
+    if (newCombo >= 3) {
+      setShowCombo(true);
+      setTimeout(() => setShowCombo(false), 2000);
+    }
+    
+    // Baú surpresa aleatório
+    if (Math.random() < 0.3) {
+      setTimeout(createTreasureChest, 1000);
+    }
+    
+    // Próximo nível
     setTimeout(() => {
       setShowSuccess(false);
-      const newLevel = stats.level + 1;
+      document.getElementById('game-container')?.classList.remove('combo-mode');
       
+      const newLevel = stats.level + 1;
       setStats(prev => ({ ...prev, level: newLevel }));
       
-      // Increase difficulty
+      // Aumentar dificuldade
       if (newLevel % 3 === 0) {
-        setConfig(prev => ({
-          ...prev,
-          sequenceLength: Math.min(prev.sequenceLength + 1, 12)
-        }));
+        setSequenceLength(prev => Math.min(prev + 1, 12));
       }
-      
       if (newLevel % 5 === 0) {
-        setConfig(prev => ({
-          ...prev,
-          playbackSpeed: Math.max(prev.playbackSpeed - 50, 300)
-        }));
+        setPlaybackSpeed(prev => Math.max(prev - 50, 400));
       }
       
       startGame();
-    }, 2000);
-  }, [config.sequenceLength, stats.level, stats.score, stats.highScore, soundEnabled, playNote, startGame]);
+    }, 2500);
+  }, [sequenceLength, stats, startGame]);
 
-  // Handle failed sequence
+  // Falha
   const handleFailure = useCallback(() => {
     setGameState('fail');
     setShowError(true);
     
-    // Error sound
-    if (soundEnabled && audioContextRef.current) {
-      playNote(185, 500);
-    }
+    // Perder vida
+    const newLives = stats.lives - 1;
+    setStats(prev => ({ 
+      ...prev, 
+      lives: newLives,
+      combo: 0 
+    }));
     
-    setTimeout(() => {
-      setShowError(false);
-      playSequence(sequence);
-    }, 2000);
-  }, [soundEnabled, playNote, playSequence, sequence]);
+    if (newLives <= 0) {
+      // Game Over
+      setTimeout(() => {
+        alert(`Game Over! 🎮\n\nPontuação Final: ${stats.score}\nMoedas Ganhas: ${stats.coins}`);
+        resetGame();
+      }, 1000);
+    } else {
+      // Tentar novamente
+      setTimeout(() => {
+        setShowError(false);
+        playSequence(sequence);
+      }, 2000);
+    }
+  }, [stats, playSequence, sequence]);
 
-  // Reset game
+  // Resetar jogo
   const resetGame = () => {
+    setCurrentScreen('welcome');
     setGameState('idle');
     setSequence([]);
     setUserSequence([]);
@@ -265,293 +391,327 @@ const AuditoryMemoryGame: React.FC = () => {
     setIsPlaying(false);
     setShowSuccess(false);
     setShowError(false);
+    setShowCombo(false);
     setStats(prev => ({
       level: 1,
       score: 0,
       highScore: prev.highScore,
-      correctSequences: 0,
-      totalAttempts: 0
+      coins: prev.coins,
+      combo: 0,
+      lives: 3
     }));
-    setConfig({
-      sequenceLength: 3,
-      playbackSpeed: 600,
-      noteDuration: 400,
-      minFreq: 200,
-      maxFreq: 800
-    });
+    setSequenceLength(3);
+    setPlaybackSpeed(800);
   };
 
-  // Replay sequence
+  // Repetir sequência
   const replaySequence = () => {
-    if (!isPlaying && gameState === 'input' && sequence.length > 0) {
+    if (!isPlaying && gameState === 'playing' && sequence.length > 0) {
       setUserSequence([]);
       playSequence(sequence);
     }
   };
 
-  // Calculate accuracy
-  const accuracy = stats.totalAttempts > 0 
-    ? Math.round((stats.correctSequences / stats.totalAttempts) * 100) 
-    : 0;
-
-  // Welcome Screen Component
+  // Tela de Boas-Vindas
   const WelcomeScreen = () => (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 p-4 flex items-center justify-center">
       <div className="max-w-2xl w-full">
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
-          {/* Mila Avatar - Using actual image */}
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="relative w-40 h-40 animate-bounce">
-                <Image 
-                  src="/images/mascotes/mila/mila_sinal_positivo_resultado.webp"
-                  alt="Mila - Assistente Musical"
-                  width={160}
-                  height={160}
-                  className="object-contain"
-                  priority
-                />
-              </div>
-              <Sparkles className="absolute -top-2 -right-2 w-8 h-8 text-yellow-400 animate-pulse" />
-              <Sparkles className="absolute -bottom-2 -left-2 w-6 h-6 text-blue-400 animate-pulse" />
-              <Music className="absolute bottom-0 right-0 w-8 h-8 text-purple-400 animate-pulse" />
-            </div>
-          </div>
-
-          {/* Title */}
-          <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-4">
-            Memória Auditiva
-          </h1>
+        <div className="bg-white/95 backdrop-blur rounded-3xl p-8 shadow-2xl">
           
-          {/* Mila's Introduction */}
-          <div className="bg-white/10 rounded-2xl p-6 mb-6">
-            <p className="text-blue-200 text-lg leading-relaxed mb-4">
-              Olá! Eu sou a <span className="text-purple-300 font-bold">Mila</span>, sua assistente musical! 🎵
+          {/* Título Animado */}
+          <div className="text-center mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent animate-pulse">
+              MEMÓRIA SONORA
+            </h1>
+            <p className="text-2xl text-orange-500 font-bold mt-2">Desafio Musical Épico!</p>
+          </div>
+
+          {/* Mascotes */}
+          <div className="flex justify-center gap-8 mb-6">
+            <div className="relative">
+              <Image 
+                src="/images/mascotes/leo/leo_feliz_resultado.webp"
+                alt="Leo"
+                width={120}
+                height={120}
+                className="object-contain animate-bounce"
+              />
+              <Sparkles className="absolute -top-2 -right-2 w-6 h-6 text-yellow-400 animate-pulse" />
+            </div>
+            <div className="relative">
+              <Image 
+                src="/images/mascotes/mila/mila_sinal_positivo_resultado.webp"
+                alt="Mila"
+                width={120}
+                height={120}
+                className="object-contain animate-bounce"
+                style={{ animationDelay: '0.5s' }}
+              />
+              <Star className="absolute -top-2 -left-2 w-6 h-6 text-pink-400 animate-pulse" />
+            </div>
+          </div>
+
+          {/* Mensagem dos Mascotes */}
+          <div className="bg-gradient-to-r from-blue-100 to-purple-100 rounded-2xl p-6 mb-6">
+            <p className="text-lg text-center text-gray-800">
+              <span className="font-bold text-blue-600">Leo</span> e <span className="font-bold text-purple-600">Mila</span> te desafiam para o jogo mais divertido de memória musical! 
             </p>
-            <p className="text-blue-200 text-lg leading-relaxed mb-4">
-              Preparei um desafio incrível para treinar sua memória auditiva! Você vai ouvir sequências de notas musicais e precisará repeti-las na ordem correta.
-            </p>
-            <p className="text-blue-200 text-lg leading-relaxed">
-              Quanto mais sequências você acertar, mais difícil fica o desafio! Vamos ver até onde sua memória musical pode chegar? 🌟
+            <p className="text-lg text-center text-gray-700 mt-2">
+              🎵 Memorize as sequências de sons e ganhe muitas recompensas! 🎁
             </p>
           </div>
 
-          {/* Benefits */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl p-4 text-center">
-              <Brain className="w-8 h-8 text-green-400 mx-auto mb-2" />
-              <p className="text-green-300 font-semibold">Memória</p>
-              <p className="text-green-200 text-sm">Fortaleça sua capacidade de memorização</p>
+          {/* Estatísticas */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-gradient-to-r from-yellow-400 to-orange-400 rounded-xl p-4 text-center">
+              <Trophy className="w-8 h-8 text-white mx-auto mb-1" />
+              <p className="text-white font-bold text-2xl">{stats.highScore}</p>
+              <p className="text-white/90 text-sm">Recorde</p>
             </div>
-            <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl p-4 text-center">
-              <Target className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-              <p className="text-blue-300 font-semibold">Concentração</p>
-              <p className="text-blue-200 text-sm">Melhore seu foco e atenção</p>
-            </div>
-            <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl p-4 text-center">
-              <Trophy className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-              <p className="text-purple-300 font-semibold">Desafio</p>
-              <p className="text-purple-200 text-sm">Supere seus limites a cada nível</p>
+            <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-xl p-4 text-center">
+              <div className="text-3xl mb-1">💰</div>
+              <p className="text-white font-bold text-2xl">{stats.coins}</p>
+              <p className="text-white/90 text-sm">Moedas</p>
             </div>
           </div>
 
-          {/* Start Button */}
+          {/* Botão Jogar */}
           <button
-            onClick={() => setCurrentScreen('game')}
-            className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-4 rounded-2xl font-bold text-xl hover:scale-105 transition-all duration-300 shadow-xl flex items-center justify-center gap-3"
+            onClick={() => {
+              setCurrentScreen('game');
+              setTimeout(startGame, 500);
+            }}
+            className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-5 rounded-2xl font-bold text-2xl hover:scale-105 transition-all duration-300 shadow-xl flex items-center justify-center gap-3 animate-pulse"
           >
-            Começar Aventura
-            <ArrowRight className="w-6 h-6" />
+            <Play className="w-8 h-8" />
+            VAMOS JOGAR!
+            <Zap className="w-8 h-8" />
           </button>
 
-          {/* High Score Preview */}
-          {stats.highScore > 0 && (
-            <div className="mt-4 text-center">
-              <p className="text-yellow-400 text-sm">
-                Seu recorde: <span className="font-bold text-lg">{stats.highScore}</span> pontos
-              </p>
-            </div>
-          )}
+          {/* Instruções Rápidas */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600 text-sm">
+              🎮 Escute a sequência → 🎹 Repita os sons → 🏆 Ganhe prêmios!
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
 
-  // Game Screen Component
+  // Tela do Jogo
   const GameScreen = () => (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
+    <div id="game-container" className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 game-container">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8 pt-8">
-          <h1 className="text-5xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-            <Brain className="w-12 h-12 text-yellow-400" />
-            Auditory Memory
-          </h1>
-          <p className="text-blue-200 text-lg">Train your musical memory and pattern recognition</p>
-        </div>
-
-        {/* Stats Bar */}
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 mb-6">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="text-center">
-              <div className="text-yellow-400 text-sm font-semibold">Level</div>
+        
+        {/* Header com Status */}
+        <div className="bg-white/20 backdrop-blur rounded-2xl p-4 mb-4">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-center">
+            <div>
+              <div className="text-yellow-300 text-xs font-bold">NÍVEL</div>
               <div className="text-white text-2xl font-bold">{stats.level}</div>
             </div>
-            <div className="text-center">
-              <div className="text-green-400 text-sm font-semibold">Score</div>
+            <div>
+              <div className="text-green-300 text-xs font-bold">PONTOS</div>
               <div className="text-white text-2xl font-bold">{stats.score}</div>
             </div>
-            <div className="text-center">
-              <div className="text-purple-400 text-sm font-semibold">High Score</div>
-              <div className="text-white text-2xl font-bold">{stats.highScore}</div>
+            <div>
+              <div className="text-orange-300 text-xs font-bold">COMBO</div>
+              <div className="text-white text-2xl font-bold">{stats.combo}x</div>
             </div>
-            <div className="text-center">
-              <div className="text-blue-400 text-sm font-semibold">Accuracy</div>
-              <div className="text-white text-2xl font-bold">{accuracy}%</div>
+            <div>
+              <div className="text-red-300 text-xs font-bold">VIDAS</div>
+              <div className="text-white text-2xl">
+                {Array.from({ length: stats.lives }, (_, i) => (
+                  <Heart key={i} className="inline w-5 h-5 text-red-500 fill-red-500" />
+                ))}
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-pink-400 text-sm font-semibold">Sequence</div>
-              <div className="text-white text-2xl font-bold">{config.sequenceLength}</div>
+            <div>
+              <div className="text-yellow-300 text-xs font-bold">MOEDAS</div>
+              <div className="text-white text-2xl font-bold">💰 {stats.coins}</div>
+            </div>
+            <div>
+              <div className="text-purple-300 text-xs font-bold">SEQUÊNCIA</div>
+              <div className="text-white text-2xl font-bold">{sequenceLength}</div>
             </div>
           </div>
         </div>
 
-        {/* Game Board */}
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 mb-6">
-          {/* Note Buttons */}
-          <div className="grid grid-cols-4 gap-4 mb-8">
-            {frequencies.map((freq, index) => (
+        {/* Área Principal do Jogo */}
+        <div className="bg-white/10 backdrop-blur rounded-3xl p-6 mb-4">
+          
+          {/* Status do Jogo com Mascotes */}
+          <div className="text-center mb-6">
+            {gameState === 'idle' && (
+              <div className="flex flex-col items-center">
+                <Image 
+                  src="/images/mascotes/leo/leo_boas_vindas_resultado.webp"
+                  alt="Leo"
+                  width={100}
+                  height={100}
+                  className="object-contain mb-2"
+                />
+                <p className="text-white text-xl font-bold">Clique em COMEÇAR para jogar!</p>
+              </div>
+            )}
+            
+            {gameState === 'listening' && (
+              <div className="flex flex-col items-center">
+                <Image 
+                  src="/images/mascotes/mila/mila_apoio.webp"
+                  alt="Mila"
+                  width={100}
+                  height={100}
+                  className="object-contain mb-2 animate-pulse"
+                />
+                <p className="text-yellow-300 text-2xl font-bold animate-pulse">🎧 ESCUTE COM ATENÇÃO!</p>
+              </div>
+            )}
+            
+            {gameState === 'playing' && !showSuccess && !showError && (
+              <div className="flex flex-col items-center">
+                <Image 
+                  src="/images/mascotes/leo/leo_apontando_resultado.webp"
+                  alt="Leo"
+                  width={100}
+                  height={100}
+                  className="object-contain mb-2"
+                />
+                <p className="text-green-300 text-2xl font-bold">SUA VEZ! REPITA A SEQUÊNCIA!</p>
+                <div className="mt-2 bg-white/20 rounded-full px-4 py-1">
+                  <span className="text-white">{userSequence.length} / {sequence.length}</span>
+                </div>
+              </div>
+            )}
+            
+            {showSuccess && (
+              <div className="flex flex-col items-center animate-bounce">
+                <Image 
+                  src="/images/mascotes/leo/leo_joinha_resultado.webp"
+                  alt="Leo"
+                  width={120}
+                  height={120}
+                  className="object-contain mb-2"
+                />
+                <p className="text-green-400 text-3xl font-bold">PERFEITO! 🎉</p>
+                <p className="text-yellow-300 text-xl">+{sequenceLength * 10 * stats.level} pontos!</p>
+              </div>
+            )}
+            
+            {showError && (
+              <div className="flex flex-col items-center">
+                <Image 
+                  src="/images/mascotes/leo/leo_surpreso_resultado.webp"
+                  alt="Leo"
+                  width={100}
+                  height={100}
+                  className="object-contain mb-2"
+                />
+                <p className="text-red-400 text-2xl font-bold">OPS! TENTE NOVAMENTE!</p>
+              </div>
+            )}
+            
+            {showCombo && stats.combo >= 3 && (
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+                <div className="text-6xl font-bold text-yellow-400 animate-pulse neon-glow">
+                  COMBO x{stats.combo}!
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Botões Musicais Coloridos */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            {buttons.map((button, index) => (
               <button
                 key={index}
+                id={`btn-${index}`}
                 onClick={() => handleNoteClick(index)}
-                disabled={gameState !== 'input' || isPlaying}
+                disabled={gameState !== 'playing' || isPlaying}
                 className={`
-                  h-24 rounded-xl font-bold text-xl transition-all duration-200 transform
-                  ${currentNote === index 
-                    ? 'bg-yellow-400 text-gray-900 scale-110 shadow-2xl' 
-                    : gameState === 'input' && !isPlaying
-                      ? 'bg-white/20 hover:bg-white/30 text-white hover:scale-105'
-                      : 'bg-white/10 text-white/50 cursor-not-allowed'
-                  }
-                  ${userSequence.includes(index) && gameState === 'input' ? 'ring-2 ring-green-400' : ''}
+                  musical-button ${button.color} 
+                  h-24 md:h-28 rounded-2xl font-bold text-white text-2xl md:text-3xl
+                  transition-all duration-200 transform hover:scale-105
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  ${currentNote === index ? 'scale-110 ring-4 ring-white' : ''}
+                  ${userSequence.includes(index) && gameState === 'playing' ? 'ring-2 ring-green-400' : ''}
+                  flex flex-col items-center justify-center gap-1
                 `}
               >
-                {index + 1}
+                <span className="text-3xl">{button.emoji}</span>
+                <span className="text-lg">{button.name}</span>
               </button>
             ))}
           </div>
 
-          {/* Progress Indicator */}
-          {gameState === 'input' && (
-            <div className="bg-white/10 rounded-xl p-4 mb-6">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-white/70 text-sm">Progress</span>
-                <span className="text-white text-sm font-semibold">
-                  {userSequence.length} / {sequence.length}
-                </span>
-              </div>
-              <div className="w-full bg-white/20 rounded-full h-2">
+          {/* Barra de Progresso */}
+          {gameState === 'playing' && sequence.length > 0 && (
+            <div className="bg-white/20 rounded-xl p-3 mb-4">
+              <div className="w-full bg-white/30 rounded-full h-3">
                 <div 
-                  className="bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-green-400 to-blue-400 h-3 rounded-full transition-all duration-300"
                   style={{ width: `${(userSequence.length / sequence.length) * 100}%` }}
                 />
               </div>
             </div>
           )}
-
-          {/* Status Messages */}
-          {showSuccess && (
-            <div className="bg-green-500/20 border-2 border-green-400 rounded-xl p-4 mb-6 text-center animate-pulse">
-              <Trophy className="w-12 h-12 text-yellow-400 mx-auto mb-2" />
-              <p className="text-green-400 text-xl font-bold">Perfect! +{config.sequenceLength * 10 * (stats.level - 1)} points</p>
-            </div>
-          )}
-
-          {showError && (
-            <div className="bg-red-500/20 border-2 border-red-400 rounded-xl p-4 mb-6 text-center">
-              <p className="text-red-400 text-xl font-bold">Try Again! Listen carefully...</p>
-            </div>
-          )}
-
-          {gameState === 'idle' && (
-            <div className="text-center text-white/70">
-              <p className="text-lg mb-2">Press Start to begin your training!</p>
-              <p className="text-sm">Listen to the sequence, then repeat it back.</p>
-            </div>
-          )}
-
-          {gameState === 'demo' && (
-            <div className="text-center text-yellow-400">
-              <Zap className="w-12 h-12 mx-auto mb-2 animate-pulse" />
-              <p className="text-xl font-semibold">Listen carefully...</p>
-            </div>
-          )}
-
-          {gameState === 'input' && !showSuccess && !showError && (
-            <div className="text-center text-blue-400">
-              <Target className="w-12 h-12 mx-auto mb-2" />
-              <p className="text-xl font-semibold">Your turn! Repeat the sequence.</p>
-            </div>
-          )}
         </div>
 
-        {/* Control Buttons */}
-        <div className="flex justify-center gap-4 flex-wrap">
+        {/* Botões de Controle */}
+        <div className="flex justify-center gap-3 flex-wrap">
           {gameState === 'idle' && (
             <button
               onClick={startGame}
-              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-xl font-bold text-lg hover:scale-105 transition-transform shadow-lg flex items-center gap-2"
+              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-bold text-lg hover:scale-105 transition-transform shadow-lg flex items-center gap-2"
             >
               <Play className="w-5 h-5" />
-              Start Game
+              COMEÇAR
             </button>
           )}
 
-          {gameState === 'input' && (
+          {gameState === 'playing' && (
             <button
               onClick={replaySequence}
               disabled={isPlaying}
-              className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg flex items-center gap-2 disabled:opacity-50"
             >
               <RotateCcw className="w-5 h-5" />
-              Replay
+              OUVIR NOVAMENTE
             </button>
           )}
 
-          {gameState !== 'idle' && (
-            <button
-              onClick={resetGame}
-              className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg"
-            >
-              Reset Game
-            </button>
-          )}
+          <button
+            onClick={resetGame}
+            className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg"
+          >
+            MENU
+          </button>
 
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             className="bg-white/20 text-white px-6 py-3 rounded-xl font-bold hover:bg-white/30 transition-colors shadow-lg flex items-center gap-2"
           >
             {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-            {soundEnabled ? 'Sound On' : 'Sound Off'}
           </button>
         </div>
 
-        {/* Instructions */}
-        <div className="mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-6">
-          <h2 className="text-white text-xl font-bold mb-3">How to Play:</h2>
-          <ul className="text-blue-200 space-y-2">
-            <li>• Listen carefully to the sequence of notes</li>
-            <li>• Click the numbered buttons in the same order</li>
-            <li>• Each successful round increases your score</li>
-            <li>• The sequence gets longer as you progress</li>
-            <li>• Challenge yourself to beat your high score!</li>
-          </ul>
-        </div>
+        {/* Mascote de Apoio */}
+        {stats.combo >= 5 && (
+          <div className="fixed bottom-4 right-4 animate-bounce">
+            <Image 
+              src="/images/mascotes/leo/leo_forca_resultado.webp"
+              alt="Leo Força"
+              width={100}
+              height={100}
+              className="object-contain"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
 
-  // Main render
   return currentScreen === 'welcome' ? <WelcomeScreen /> : <GameScreen />;
 };
 
