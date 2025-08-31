@@ -110,23 +110,27 @@ export default function AuditoryMemoryGame() {
     const [activeTone, setActiveTone] = useState(null); // Index do tom ativo
     const [isPlayerTurn, setIsPlayerTurn] = useState(false);
     
+    // **CORREÇÃO 1:** Trocamos 'audio: new Audio(...)' por 'audioSrc: "..."'
+    // Isto evita que o servidor tente criar um objeto 'Audio'.
     const tones = useMemo(() => [
-        { name: 'Dó', audio: new Audio('https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/C5.mp3'), colorClass: 'bg-red-500', glowColor: '#ef4444', height: '200px' },
-        { name: 'Ré', audio: new Audio('https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/D5.mp3'), colorClass: 'bg-blue-500', glowColor: '#3b82f6', height: '190px' },
-        { name: 'Mi', audio: new Audio('https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/E5.mp3'), colorClass: 'bg-green-500', glowColor: '#22c55e', height: '180px' },
-        { name: 'Fá', audio: new Audio('https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/F5.mp3'), colorClass: 'bg-yellow-400', glowColor: '#facc15', height: '170px' },
-        { name: 'Sol', audio: new Audio('https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/G5.mp3'), colorClass: 'bg-purple-500', glowColor: '#a855f7', height: '160px' },
-        { name: 'Lá', audio: new Audio('https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/A5.mp3'), colorClass: 'bg-pink-500', glowColor: '#ec4899', height: '150px' },
+        { name: 'Dó', audioSrc: 'https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/C5.mp3', colorClass: 'bg-red-500', glowColor: '#ef4444', height: '200px' },
+        { name: 'Ré', audioSrc: 'https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/D5.mp3', colorClass: 'bg-blue-500', glowColor: '#3b82f6', height: '190px' },
+        { name: 'Mi', audioSrc: 'https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/E5.mp3', colorClass: 'bg-green-500', glowColor: '#22c55e', height: '180px' },
+        { name: 'Fá', audioSrc: 'https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/F5.mp3', colorClass: 'bg-yellow-400', glowColor: '#facc15', height: '170px' },
+        { name: 'Sol', audioSrc: 'https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/G5.mp3', colorClass: 'bg-purple-500', glowColor: '#a855f7', height: '160px' },
+        { name: 'Lá', audioSrc: 'https://cdn.jsdelivr.net/gh/dev-rafael-antonio/assets-teaplus/assets/sounds/xylophone/A5.mp3', colorClass: 'bg-pink-500', glowColor: '#ec4899', height: '150px' },
     ], []);
 
     const gameSpeed = useMemo(() => Math.max(300, 1000 - (score / 20)), [score]);
     
+    // **CORREÇÃO 2:** Criamos o objeto 'new Audio()' aqui dentro,
+    // que só é executado no browser.
     const playTone = useCallback((index) => {
-        if (!soundEnabled) return;
+        if (!soundEnabled || typeof window === 'undefined') return;
         try {
             const tone = tones[index];
-            tone.audio.currentTime = 0;
-            tone.audio.play().catch(e => console.error("Erro ao tocar áudio:", e));
+            const audio = new Audio(tone.audioSrc);
+            audio.play().catch(e => console.error("Erro ao tocar áudio:", e));
         } catch (e) {
             console.error("Não foi possível tocar o som.");
         }
@@ -147,10 +151,10 @@ export default function AuditoryMemoryGame() {
     }, [sequence, playTone, gameSpeed]);
 
     useEffect(() => {
-        if (gameState === 'playing' && sequence.length > 0) {
+        if (gameState === 'playing' && sequence.length > 0 && !isPlayerTurn) {
             playSequence();
         }
-    }, [gameState, sequence, playSequence]);
+    }, [gameState, sequence, isPlayerTurn, playSequence]);
 
     const startGame = useCallback(() => {
         setScore(0);
@@ -183,6 +187,7 @@ export default function AuditoryMemoryGame() {
                 setScore(prev => prev + (10 * combo * sequence.length));
                 setCombo(prev => prev + 1);
                 setCurrentIndex(0);
+                setIsPlayerTurn(false);
                 // Adiciona nova nota e toca a nova sequência
                 const nextTone = Math.floor(Math.random() * tones.length);
                 setSequence(prev => [...prev, nextTone]);
@@ -236,7 +241,7 @@ export default function AuditoryMemoryGame() {
         .combo-number { font-size: 3rem; font-weight: 900; color: #ffeb3b; line-height: 1; text-shadow: 0 0 15px #ffeb3b; }
         
         .game-board { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .xylophone-container { display: flex; justify-content: center; align-items: center; gap: 10px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 20px; box-shadow: inset 0 4px 10px rgba(0,0,0,0.4); }
+        .xylophone-container { display: flex; justify-content: center; align-items: flex-end; gap: 10px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 20px; box-shadow: inset 0 4px 10px rgba(0,0,0,0.4); height: 250px; }
 
         .tone-button { width: 60px; border-radius: 10px; border: none; cursor: pointer; position: relative; overflow: hidden; transition: transform 0.1s; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px; }
         .button-shine { position: absolute; top: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent); }
