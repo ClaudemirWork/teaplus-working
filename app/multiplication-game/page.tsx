@@ -3,51 +3,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronLeft, Save, Trophy, RotateCcw, Calculator, Crown, Coins, Shield } from 'lucide-react';
+import { ChevronLeft, Trophy, RotateCcw, Crown, Coins, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import './multiplication-game.css';
 
-// --- SISTEMA DE SONS ---
+// --- SISTEMA DE SONS SIMPLIFICADO ---
 class SoundManager {
-  private sounds: { [key: string]: HTMLAudioElement } = {};
-  
-  constructor() {
-    this.createSound('click', 440, 0.1);
-    this.createSound('correct', 523, 0.2);
-    this.createSound('wrong', 196, 0.2);
-    this.createSound('victory', 784, 0.3);
-    this.createSound('coin', 659, 0.15);
-  }
-  
-  createSound(name: string, frequency: number, duration: number) {
-    const audioContext = typeof window !== 'undefined' && window.AudioContext 
-      ? new (window.AudioContext || (window as any).webkitAudioContext)()
-      : null;
-      
-    if (!audioContext) return;
-    
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.value = frequency;
-    gainNode.gain.value = 0.3;
-    
-    const audio = new Audio();
-    audio.volume = 0.5;
-    
-    const beep = `data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZijgJGGm98OScTgwOUKzn47VgGAU7k9zyw3UpBSyAzvDaiTYIGWu+8OabTQ0OT6vm4bVfGAU8lN/ywHIiBi6F0fDYhjIJHm/A8OaZTQ0OTqzl4rVfGAU9md/yvnEmBSyE0fDYhDEJHnDB8OaXTQ0PT6/k4bVfGQU9md/yu3ElBi+G0fDYgjAJIHPC8OaVTQ0PT6/k4bVfGQU9md/yu3ElBi+G0fDYgjAJIHPC8OaVTQ0PT6/k4bVfGQU9md/yu3ElBi+G0fDYgjAJIHPC8OWVTQ0PT6/k4bVfGQU9md/yu3ElBi+G0fDYgjAJIHPC8OWVTg0OTqzm4bVeGQU9mt/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWq+8OmeTgwNT6vl4bVfGAU9mN/yxnkiBySA0fDaiTcIGWm98OicTgwOUKzl47RfGAU8mN/yxnkiBySA0fDaiTcIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIG2m98OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIGWm+8OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIGWm+8OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIGWm+8OmcTQ0NUKzl47RfGAU8mN/yxnkiBySA0fDaiTYIGWm+8OmcTQ0NUKzl47RfGAU8mN/yxnkiBw==`;
-    
-    this.sounds[name] = new Audio(beep);
-  }
-  
   play(soundName: string) {
-    if (this.sounds[soundName]) {
-      const sound = this.sounds[soundName].cloneNode() as HTMLAudioElement;
-      sound.play().catch(() => {});
-    }
+    // Som simples usando Audio API
+    try {
+      const audio = new Audio();
+      audio.volume = 0.3;
+      audio.play().catch(() => {});
+    } catch (e) {}
   }
 }
 
@@ -104,6 +72,7 @@ class IAPlayer {
       [0, 4, 8], [2, 4, 6]
     ];
     
+    // Tentar ganhar
     for (const line of lines) {
       const [a, b, c] = line;
       if (board[a] === currentPlayer && board[b] === currentPlayer && !board[c]) return c;
@@ -111,6 +80,7 @@ class IAPlayer {
       if (board[b] === currentPlayer && board[c] === currentPlayer && !board[a]) return a;
     }
     
+    // Bloquear oponente
     const opponent = currentPlayer === 'X' ? 'O' : 'X';
     for (const line of lines) {
       const [a, b, c] = line;
@@ -119,6 +89,7 @@ class IAPlayer {
       if (board[b] === opponent && board[c] === opponent && !board[a]) return a;
     }
     
+    // Escolher melhor posição
     const preferences = [4, 0, 2, 6, 8, 1, 3, 5, 7];
     for (const pos of preferences) {
       if (!board[pos]) return pos;
@@ -128,7 +99,7 @@ class IAPlayer {
   }
 }
 
-// --- COMPONENTE PRINCIPAL ---
+// --- TIPAGEM ---
 interface GameState {
   board: ('X' | 'O' | null)[];
   currentPlayer: 'X' | 'O';
@@ -143,6 +114,7 @@ interface GameState {
   consecutiveWins: number;
 }
 
+// --- COMPONENTE PRINCIPAL ---
 export default function MultiplicationGame() {
   const router = useRouter();
   const soundManager = useRef<SoundManager | null>(null);
@@ -441,206 +413,419 @@ export default function MultiplicationGame() {
     }
   };
 
-  // [TELAS SPLASH, WELCOME E INITIAL PERMANECEM IGUAIS]
-  // ... código das telas anteriores ...
-
-  // Tela do Jogo CORRIGIDA
-  if (gameState.status === 'playing' || gameState.status === 'finished') {
+  // Tela Splash
+  if (gameState.status === 'splash') {
     return (
-      <div id="game-container" className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
-        <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-3 sm:p-4">
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <Link
-              href="/dashboard"
-              className="flex items-center text-purple-600 hover:text-purple-700"
-            >
-              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="ml-1 font-medium text-xs sm:text-base">Sair</span>
-            </Link>
+      <div className="min-h-screen relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-indigo-800 to-blue-900">
+          <div className="absolute top-10 left-10 text-8xl opacity-10">🏰</div>
+          <div className="absolute bottom-20 right-20 text-8xl opacity-10">🏯</div>
+          <div className="absolute top-1/2 left-20 text-8xl opacity-10">🏛️</div>
+        </div>
+        
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 text-center drop-shadow-2xl">
+            <span className="text-yellow-400">⚔️</span> Conquista Matemática <span className="text-yellow-400">⚔️</span>
+          </h1>
+          
+          <div className="relative mb-8" style={{ width: '60vw', maxWidth: '400px' }}>
+            <Image 
+              src="/images/mascotes/leo/leo_mago_resultado.webp"
+              alt="Leo Mago"
+              width={400}
+              height={400}
+              className="drop-shadow-2xl"
+              style={{ width: '100%', height: 'auto' }}
+              priority
+            />
+          </div>
+          
+          <button
+            onClick={() => {
+              soundManager.current?.play('click');
+              setGameState(prev => ({ ...prev, status: 'welcome' }));
+            }}
+            className="px-8 py-4 sm:px-12 sm:py-6 bg-gradient-to-r from-yellow-400 to-yellow-600 text-purple-900 rounded-full text-xl sm:text-2xl font-bold hover:scale-110 transition-transform shadow-2xl animate-pulse"
+          >
+            🎮 COMEÇAR AVENTURA
+          </button>
+          
+          <p className="text-white/80 text-center mt-6 text-sm sm:text-base max-w-md">
+            Prepare-se para uma jornada épica pelos reinos matemáticos!
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Tela de Escolha de Modo
+  if (gameState.status === 'welcome') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-green-600">
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <div className="bg-white/95 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-2xl w-full text-center">
+            <h1 className="text-2xl sm:text-4xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              ⚔️ Conquista Matemática ⚔️
+            </h1>
             
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="text-center">
-                <div className="text-base sm:text-2xl font-bold">
-                  <span className="text-blue-600">🏰 {gameState.scoreX}</span>
-                  {' vs '}
-                  <span className="text-red-600">{gameState.scoreO} 🏰</span>
-                </div>
-              </div>
+            <div className="text-4xl sm:text-6xl mb-6">🏰</div>
+            
+            <p className="text-base sm:text-lg text-gray-700 mb-8">
+              Conquiste territórios resolvendo multiplicações!<br/>
+              Construa seu reino e torne-se o Rei da Matemática!
+            </p>
+            
+            <div className="space-y-4">
+              <h3 className="text-lg sm:text-xl font-semibold">Escolha o Modo de Jogo:</h3>
               
-              <div className="coin-display scale-75 sm:scale-100">
-                <Coins size={20} />
-                <span>{gameState.coins}</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  onClick={() => {
+                    soundManager.current?.play('click');
+                    setGameState(prev => ({ ...prev, mode: 'pvp', status: 'initial' }));
+                  }}
+                  className="p-4 sm:p-6 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all transform hover:scale-105"
+                >
+                  <div className="text-2xl sm:text-3xl mb-2">👥</div>
+                  <div className="font-bold text-lg sm:text-xl">2 Jogadores</div>
+                  <div className="text-xs sm:text-sm opacity-90">Desafie um amigo!</div>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    soundManager.current?.play('click');
+                    setGameState(prev => ({ ...prev, mode: 'pve', status: 'initial' }));
+                  }}
+                  className="p-4 sm:p-6 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition-all transform hover:scale-105"
+                >
+                  <div className="text-2xl sm:text-3xl mb-2">🤖</div>
+                  <div className="font-bold text-lg sm:text-xl">Contra IA</div>
+                  <div className="text-xs sm:text-sm opacity-90">Desafie o computador!</div>
+                </button>
               </div>
             </div>
             
+            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+              <div className="inline-flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-full mx-auto">
+                <Coins size={20} className="text-yellow-600" />
+                <span className="font-bold text-yellow-800">{gameState.coins} Moedas</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Tela de Seleção de Nível
+  if (gameState.status === 'initial') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600">
+        <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-3 sm:p-4">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
             <button
               onClick={() => {
                 soundManager.current?.play('click');
-                setGameState(prev => ({ ...prev, status: 'initial' }));
+                setGameState(prev => ({ ...prev, status: 'welcome' }));
               }}
-              className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-4 sm:py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs sm:text-base"
+              className="flex items-center text-purple-600 hover:text-purple-700"
             >
-              <RotateCcw size={16} className="sm:w-[18px] sm:h-[18px]" />
-              <span className="hidden sm:inline">Reiniciar</span>
+              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
             </button>
+            <h1 className="text-base sm:text-xl font-bold">Escolha seu Reino</h1>
+            <div className="inline-flex items-center gap-2 bg-yellow-100 px-3 py-1 rounded-full">
+              <Coins size={16} className="text-yellow-600" />
+              <span className="text-sm font-bold text-yellow-800">{gameState.coins}</span>
+            </div>
           </div>
         </header>
         
         <main className="p-4 sm:p-6 max-w-4xl mx-auto">
-          <div className="bg-white/95 rounded-2xl shadow-2xl p-4 sm:p-6">
-            {/* Status do Jogo */}
-            <div className="text-center mb-4 sm:mb-6">
-              {gameState.status === 'playing' && (
-                <>
-                  <div className="text-lg sm:text-2xl font-bold mb-2 text-gray-800">
-                    {iaThinking ? (
-                      <div className="flex items-center justify-center gap-3">
-                        <div className="ia-avatar thinking scale-75 sm:scale-100">🤖</div>
-                        <div className="thought-bubble text-sm sm:text-base text-gray-700">Hmm... 🤔</div>
-                      </div>
-                    ) : (
-                      <>
-                        Vez de: 
-                        <span className={gameState.currentPlayer === 'X' ? ' text-blue-600' : ' text-red-600'}>
-                          {' '}{gameState.currentPlayer === 'X' ? '⚔️ Você' : gameState.mode === 'pve' ? '🤖 IA' : '🛡️ Jogador O'}
-                        </span>
-                      </>
-                    )}
+          {gameState.mode === 'pve' && (
+            <div className="bg-white rounded-xl p-4 sm:p-6 mb-6">
+              <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4">Escolha a Dificuldade da IA:</h3>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <button
+                  onClick={() => {
+                    soundManager.current?.play('click');
+                    setIaDifficulty('facil');
+                  }}
+                  className={`p-3 sm:p-4 rounded-lg font-medium transition-colors ${
+                    iaDifficulty === 'facil'
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
+                >
+                  <div className="text-xl sm:text-2xl mb-1">😊</div>
+                  <div className="text-xs sm:text-sm">Iniciante Leo</div>
+                </button>
+                <button
+                  onClick={() => {
+                    soundManager.current?.play('click');
+                    setIaDifficulty('medio');
+                  }}
+                  className={`p-3 sm:p-4 rounded-lg font-medium transition-colors ${
+                    iaDifficulty === 'medio'
+                      ? 'bg-yellow-500 text-white'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
+                >
+                  <div className="text-xl sm:text-2xl mb-1">🤓</div>
+                  <div className="text-xs sm:text-sm">Leo Estudioso</div>
+                </button>
+                <button
+                  onClick={() => {
+                    soundManager.current?.play('click');
+                    setIaDifficulty('dificil');
+                  }}
+                  className={`p-3 sm:p-4 rounded-lg font-medium transition-colors ${
+                    iaDifficulty === 'dificil'
+                      ? 'bg-red-500 text-white'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
+                >
+                  <div className="text-xl sm:text-2xl mb-1">🧙‍♂️</div>
+                  <div className="text-xs sm:text-sm">Professor Leo</div>
+                </button>
+              </div>
+            </div>
+          )}
+          
+          <div className="bg-white rounded-xl p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-4">Selecione o Reino:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+              {niveis.map((nivel) => (
+                <button
+                  key={nivel.id}
+                  onClick={() => {
+                    soundManager.current?.play('click');
+                    setNivelSelecionado(nivel.id);
+                  }}
+                  className={`p-4 sm:p-6 rounded-xl font-medium transition-all transform hover:scale-105 ${
+                    nivelSelecionado === nivel.id
+                      ? 'bg-gradient-to-br from-purple-500 to-blue-500 text-white scale-105'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
+                >
+                  <div className="text-3xl sm:text-4xl mb-2">{nivel.icone}</div>
+                  <div className="text-base sm:text-lg font-bold">{nivel.nome}</div>
+                  <div className="text-xs sm:text-sm opacity-80">{nivel.dificuldade}</div>
+                  <div className="mt-2 text-xs">
+                    🪙 {nivel.id * 10} moedas por acerto
                   </div>
-                  {gameState.currentProblem && !iaThinking && (
-                    <div className="text-2xl sm:text-3xl font-bold text-purple-600">
-                      {gameState.currentProblem.question} = ?
-                    </div>
-                  )}
-                  
-                  {showIaFeedback.show && (
-                    <div className={`mt-4 p-3 rounded-lg font-bold text-lg ${
-                      showIaFeedback.correct ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {showIaFeedback.correct ? '✅' : '❌'} IA: {showIaFeedback.answer}
-                    </div>
-                  )}
-                </>
-              )}
-              
-              {gameState.status === 'finished' && (
-                <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-4">
-                  {message}
-                </div>
-              )}
+                </button>
+              ))}
             </div>
-            
-            {/* TABULEIRO CORRIGIDO */}
-            <div className="game-board-container mx-auto max-w-sm">
-              <div 
-                className="grid grid-cols-3 gap-2 p-4 rounded-xl"
-                style={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
-                }}
-              >
-                {gameState.board.map((cell, index) => (
-                  <button
-                    key={index}
-                    className={`
-                      aspect-square rounded-lg transition-all transform hover:scale-105
-                      ${cell === 'X' ? 'bg-blue-500' : ''}
-                      ${cell === 'O' ? 'bg-red-500' : ''}
-                      ${!cell ? 'bg-white/90 hover:bg-white' : ''}
-                      shadow-lg border-2 border-gray-800/20
-                      flex items-center justify-center
-                      text-4xl sm:text-5xl font-bold
-                      ${!cell && gameState.status === 'playing' && !iaThinking ? 'cursor-pointer' : 'cursor-not-allowed'}
-                    `}
-                    onClick={() => handleCellClick(index)}
-                    disabled={!!cell || gameState.status !== 'playing' || iaThinking}
-                    style={{ minHeight: '80px' }}
-                  >
-                    {cell === 'X' && (
-                      <span className="text-white drop-shadow-lg">🏰</span>
-                    )}
-                    {cell === 'O' && (
-                      <span className="text-white drop-shadow-lg">🏯</span>
-                    )}
-                    {!cell && (
-                      <span className="text-gray-400 text-2xl opacity-50">?</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Estatísticas */}
-            <div className="mt-4 sm:mt-6 flex justify-center gap-4 sm:gap-6">
-              <div className="text-center">
-                <Shield className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-purple-600 mb-1" />
-                <div className="text-xs sm:text-sm text-gray-700 font-medium">Territórios</div>
-                <div className="text-base sm:text-xl font-bold text-gray-800">{gameState.conqueredTerritories}</div>
-              </div>
-              <div className="text-center">
-                <Trophy className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-yellow-500 mb-1" />
-                <div className="text-xs sm:text-sm text-gray-700 font-medium">Vitórias</div>
-                <div className="text-base sm:text-xl font-bold text-gray-800">{gameState.consecutiveWins}</div>
-              </div>
-              <div className="text-center">
-                <Crown className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-purple-600 mb-1" />
-                <div className="text-xs sm:text-sm text-gray-700 font-medium">Nível</div>
-                <div className="text-base sm:text-xl font-bold text-gray-800">{nivelSelecionado}</div>
-              </div>
-            </div>
+          </div>
+          
+          <div className="text-center mt-6 sm:mt-8">
+            <button
+              onClick={startGame}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-3 px-8 sm:py-4 sm:px-12 rounded-xl text-lg sm:text-xl hover:from-purple-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg"
+            >
+              ⚔️ Iniciar Conquista!
+            </button>
           </div>
         </main>
-        
-        {/* Modal de Resposta */}
-        {showAnswerInput && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 max-w-sm w-full">
-              <h3 className="text-xl sm:text-2xl font-bold text-center mb-4 text-purple-600">
-                {message}
-              </h3>
-              <input
-                type="number"
-                className="w-full text-center p-3 sm:p-4 border-2 border-purple-300 rounded-xl text-2xl sm:text-3xl font-bold text-gray-800"
-                placeholder="?"
-                value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAnswerSubmit()}
-                autoFocus
-              />
-              <button
-                onClick={handleAnswerSubmit}
-                className="w-full mt-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-3 rounded-xl text-base sm:text-lg hover:from-purple-700 hover:to-blue-700 transition-all"
-              >
-                ⚔️ Conquistar!
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {/* Animação de Moedas */}
-        {showCoinAnimation && (
-          <div 
-            className="coin-animation"
-            style={{ left: coinPosition.x, top: coinPosition.y }}
-          >
-            🪙 +{10 * nivelSelecionado}
-          </div>
-        )}
-        
-        {/* Efeitos de Vitória */}
-        {showVictoryEffects && (
-          <div className="fixed inset-0 pointer-events-none z-50">
-            <div className="victory-message">
-              🎉 PARABÉNS! 🎉
-            </div>
-          </div>
-        )}
       </div>
     );
   }
-
-  // Copiar as outras telas (splash, welcome, initial) do código anterior...
-  // [RESTO DO CÓDIGO PERMANECE IGUAL]
   
-  return null;
+  // Tela do Jogo
+  return (
+    <div id="game-container" className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
+      <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 p-3 sm:p-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <Link
+            href="/dashboard"
+            className="flex items-center text-purple-600 hover:text-purple-700"
+          >
+            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="ml-1 font-medium text-xs sm:text-base">Sair</span>
+          </Link>
+          
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="text-center">
+              <div className="text-base sm:text-2xl font-bold">
+                <span className="text-blue-600">🏰 {gameState.scoreX}</span>
+                {' vs '}
+                <span className="text-red-600">{gameState.scoreO} 🏰</span>
+              </div>
+            </div>
+            
+            <div className="inline-flex items-center gap-2 bg-yellow-100 px-3 py-1 rounded-full">
+              <Coins size={16} className="text-yellow-600" />
+              <span className="text-sm font-bold text-yellow-800">{gameState.coins}</span>
+            </div>
+          </div>
+          
+          <button
+            onClick={() => {
+              soundManager.current?.play('click');
+              setGameState(prev => ({ ...prev, status: 'initial' }));
+            }}
+            className="flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-4 sm:py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs sm:text-base"
+          >
+            <RotateCcw size={16} className="sm:w-[18px] sm:h-[18px]" />
+            <span className="hidden sm:inline">Reiniciar</span>
+          </button>
+        </div>
+      </header>
+      
+      <main className="p-4 sm:p-6 max-w-4xl mx-auto">
+        <div className="bg-white/95 rounded-2xl shadow-2xl p-4 sm:p-6">
+          <div className="text-center mb-4 sm:mb-6">
+            {gameState.status === 'playing' && (
+              <>
+                <div className="text-lg sm:text-2xl font-bold mb-2 text-gray-800">
+                  {iaThinking ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="text-4xl">🤖</div>
+                      <div className="text-sm sm:text-base text-gray-700">Pensando... 🤔</div>
+                    </div>
+                  ) : (
+                    <>
+                      Vez de: 
+                      <span className={gameState.currentPlayer === 'X' ? ' text-blue-600' : ' text-red-600'}>
+                        {' '}{gameState.currentPlayer === 'X' ? '⚔️ Você' : gameState.mode === 'pve' ? '🤖 IA' : '🛡️ Jogador O'}
+                      </span>
+                    </>
+                  )}
+                </div>
+                {gameState.currentProblem && !iaThinking && (
+                  <div className="text-2xl sm:text-3xl font-bold text-purple-600">
+                    {gameState.currentProblem.question} = ?
+                  </div>
+                )}
+                
+                {showIaFeedback.show && (
+                  <div className={`mt-4 p-3 rounded-lg font-bold text-lg ${
+                    showIaFeedback.correct ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {showIaFeedback.correct ? '✅' : '❌'} IA: {showIaFeedback.answer}
+                  </div>
+                )}
+              </>
+            )}
+            
+            {gameState.status === 'finished' && (
+              <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-4">
+                {message}
+                <button
+                  onClick={startGame}
+                  className="mt-4 block mx-auto px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                >
+                  Jogar Novamente
+                </button>
+              </div>
+            )}
+          </div>
+          
+          <div className="game-board-container mx-auto max-w-sm">
+            <div 
+              className="grid grid-cols-3 gap-2 p-4 rounded-xl"
+              style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+              }}
+            >
+              {gameState.board.map((cell, index) => (
+                <button
+                  key={index}
+                  className={`
+                    aspect-square rounded-lg transition-all transform hover:scale-105
+                    ${cell === 'X' ? 'bg-blue-500' : ''}
+                    ${cell === 'O' ? 'bg-red-500' : ''}
+                    ${!cell ? 'bg-white/90 hover:bg-white' : ''}
+                    shadow-lg border-2 border-gray-800/20
+                    flex items-center justify-center
+                    text-4xl sm:text-5xl font-bold
+                    ${!cell && gameState.status === 'playing' && !iaThinking ? 'cursor-pointer' : 'cursor-not-allowed'}
+                  `}
+                  onClick={() => handleCellClick(index)}
+                  disabled={!!cell || gameState.status !== 'playing' || iaThinking}
+                  style={{ minHeight: '80px' }}
+                >
+                  {cell === 'X' && (
+                    <span className="text-white drop-shadow-lg">🏰</span>
+                  )}
+                  {cell === 'O' && (
+                    <span className="text-white drop-shadow-lg">🏯</span>
+                  )}
+                  {!cell && (
+                    <span className="text-gray-400 text-2xl opacity-50">?</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="mt-4 sm:mt-6 flex justify-center gap-4 sm:gap-6">
+            <div className="text-center">
+              <Shield className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-purple-600 mb-1" />
+              <div className="text-xs sm:text-sm text-gray-700 font-medium">Territórios</div>
+              <div className="text-base sm:text-xl font-bold text-gray-800">{gameState.conqueredTerritories}</div>
+            </div>
+            <div className="text-center">
+              <Trophy className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-yellow-500 mb-1" />
+              <div className="text-xs sm:text-sm text-gray-700 font-medium">Vitórias</div>
+              <div className="text-base sm:text-xl font-bold text-gray-800">{gameState.consecutiveWins}</div>
+            </div>
+            <div className="text-center">
+              <Crown className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-purple-600 mb-1" />
+              <div className="text-xs sm:text-sm text-gray-700 font-medium">Nível</div>
+              <div className="text-base sm:text-xl font-bold text-gray-800">{nivelSelecionado}</div>
+            </div>
+          </div>
+        </div>
+      </main>
+      
+      {showAnswerInput && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 max-w-sm w-full">
+            <h3 className="text-xl sm:text-2xl font-bold text-center mb-4 text-purple-600">
+              {message}
+            </h3>
+            <input
+              type="number"
+              className="w-full text-center p-3 sm:p-4 border-2 border-purple-300 rounded-xl text-2xl sm:text-3xl font-bold text-gray-800"
+              placeholder="?"
+              value={userAnswer}
+              onChange={(e) => setUserAnswer(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleAnswerSubmit()}
+              autoFocus
+            />
+            <button
+              onClick={handleAnswerSubmit}
+              className="w-full mt-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-3 rounded-xl text-base sm:text-lg hover:from-purple-700 hover:to-blue-700 transition-all"
+            >
+              ⚔️ Conquistar!
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {showCoinAnimation && (
+        <div 
+          className="fixed z-50 text-2xl font-bold text-yellow-400"
+          style={{ 
+            left: coinPosition.x, 
+            top: coinPosition.y,
+            animation: 'coinFloat 1s ease-out forwards'
+          }}
+        >
+          🪙 +{10 * nivelSelecionado}
+        </div>
+      )}
+      
+      {showVictoryEffects && (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-4xl font-bold text-yellow-400 animate-bounce">
+            🎉 PARABÉNS! 🎉
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
