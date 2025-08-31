@@ -27,7 +27,7 @@ interface GameStats {
 }
 
 const PuzzleGame: React.FC = () => {
-  // CAMINHO CORRIGIDO: /images/puzzle/ (sem 's')
+  // Imagens com suporte a WebP para melhor performance
   const puzzleImages: PuzzleImage[] = [
     { id: 'cachorrinho', name: '🐶 Cachorrinho', url: '/images/puzzle/cachorrinho.png', difficulty: 'easy', points: 100 },
     { id: 'gatinho', name: '🐱 Gatinho', url: '/images/puzzle/gatinho.png', difficulty: 'easy', points: 100 },
@@ -53,10 +53,11 @@ const PuzzleGame: React.FC = () => {
   const [isComplete, setIsComplete] = useState(false);
   const [showGuide, setShowGuide] = useState(true);
   const [draggedPiece, setDraggedPiece] = useState<PuzzlePiece | null>(null);
+  const [draggedFromAvailable, setDraggedFromAvailable] = useState(false);
   const [moves, setMoves] = useState(0);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Estatísticas do jogo
   const [gameStats, setGameStats] = useState<GameStats>({
@@ -102,13 +103,16 @@ const PuzzleGame: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Processar imagem selecionada
+  // Processar imagem selecionada com otimização
   const processImage = (image: PuzzleImage) => {
+    setIsLoading(true);
     const img = new window.Image();
     
+    // Reduzir qualidade para melhor performance
     img.onerror = () => {
       console.error('Erro ao carregar imagem:', image.url);
       alert('Erro ao carregar a imagem. Verifique se o arquivo existe.');
+      setIsLoading(false);
     };
     
     img.onload = () => {
@@ -116,6 +120,7 @@ const PuzzleGame: React.FC = () => {
       imageRef.current = img;
       cutImageIntoPieces(img);
       setIsTimerRunning(true);
+      setIsLoading(false);
     };
     
     img.src = image.url;
@@ -125,18 +130,19 @@ const PuzzleGame: React.FC = () => {
     setTimeElapsed(0);
   };
 
-  // Cortar imagem em peças com fundo automático
+  // Cortar imagem em peças otimizado
   const cutImageIntoPieces = (img: HTMLImageElement) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const size = 600;
+    // Reduzir tamanho para melhor performance
+    const size = 450; // Reduzido de 600
     canvas.width = size;
     canvas.height = size;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
-    // Cores de fundo suaves para imagens sem fundo
+    // Cores de fundo suaves
     const backgrounds = [
       '#FFE5E5', // rosa claro
       '#E5F3FF', // azul claro
@@ -145,7 +151,7 @@ const PuzzleGame: React.FC = () => {
       '#F3E5FF'  // lilás claro
     ];
     
-    // Adicionar fundo aleatório
+    // Adicionar fundo
     ctx.fillStyle = backgrounds[Math.floor(Math.random() * backgrounds.length)];
     ctx.fillRect(0, 0, size, size);
 
@@ -156,6 +162,9 @@ const PuzzleGame: React.FC = () => {
     const x = (size - width) / 2;
     const y = (size - height) / 2;
 
+    // Melhorar qualidade de renderização
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, x, y, width, height);
 
     // Criar peças
@@ -186,7 +195,7 @@ const PuzzleGame: React.FC = () => {
             id: row * gridSize + col,
             correctPosition: row * gridSize + col,
             currentPosition: null,
-            imageUrl: pieceCanvas.toDataURL()
+            imageUrl: pieceCanvas.toDataURL('image/jpeg', 0.8) // Compressão JPEG
           };
           newPieces.push(piece);
         }
@@ -210,32 +219,41 @@ const PuzzleGame: React.FC = () => {
 
   // Criar confete
   const createConfetti = () => {
-    setShowConfetti(true);
     const container = document.getElementById('game-container');
     
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 50; i++) { // Reduzido de 100 para 50
       setTimeout(() => {
         const confetti = document.createElement('div');
         confetti.className = 'confetti-piece';
         confetti.style.left = Math.random() * 100 + '%';
-        confetti.style.animationDelay = Math.random() * 0.5 + 's';
+        confetti.style.animationDelay = Math.random() * 0.3 + 's';
         confetti.style.backgroundColor = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a8e6cf', '#ff8cc8'][Math.floor(Math.random() * 5)];
         container?.appendChild(confetti);
         
-        setTimeout(() => confetti.remove(), 3000);
-      }, i * 20);
+        setTimeout(() => confetti.remove(), 2000);
+      }, i * 30);
     }
-    
-    setTimeout(() => setShowConfetti(false), 4000);
   };
 
-  // Drag and Drop
-  const handleDragStart = (piece: PuzzlePiece) => {
+  // Drag and Drop MELHORADO
+  const handleDragStart = (e: React.DragEvent, piece: PuzzlePiece, fromAvailable: boolean) => {
+    e.dataTransfer.effectAllowed = 'move';
     setDraggedPiece(piece);
+    setDraggedFromAvailable(fromAvailable);
+    
+    // Adicionar feedback visual
+    const target = e.target as HTMLElement;
+    target.style.opacity = '0.5';
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    const target = e.target as HTMLElement;
+    target.style.opacity = '1';
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
   };
 
   const handleDrop = (e: React.DragEvent, position: number) => {
@@ -245,33 +263,95 @@ const PuzzleGame: React.FC = () => {
     const newPieces = [...pieces];
     const newAvailable = [...availablePieces];
 
-    const existingPiece = newPieces[position];
-    if (existingPiece && !existingPiece.isEmpty) {
-      newAvailable.push(existingPiece);
-    }
+    // Se está arrastando de volta para as peças disponíveis
+    if (position === -1) {
+      // Encontrar de onde veio a peça
+      const gridIndex = newPieces.findIndex(p => p.id === draggedPiece.id);
+      if (gridIndex !== -1) {
+        // Remover do grid
+        newPieces[gridIndex] = {
+          id: -1,
+          correctPosition: gridIndex,
+          currentPosition: gridIndex,
+          imageUrl: '',
+          isEmpty: true
+        };
+        // Adicionar às disponíveis
+        newAvailable.push(draggedPiece);
+      }
+    } else {
+      // Colocando no grid
+      const existingPiece = newPieces[position];
+      
+      // Se já tem uma peça nessa posição, volta para disponíveis
+      if (existingPiece && !existingPiece.isEmpty) {
+        newAvailable.push(existingPiece);
+      }
 
-    newPieces[position] = {
-      ...draggedPiece,
-      currentPosition: position
-    };
+      // Se a peça estava em outra posição do grid, limpar aquela posição
+      if (!draggedFromAvailable) {
+        const oldPosition = newPieces.findIndex(p => p.id === draggedPiece.id);
+        if (oldPosition !== -1 && oldPosition !== position) {
+          newPieces[oldPosition] = {
+            id: -1,
+            correctPosition: oldPosition,
+            currentPosition: oldPosition,
+            imageUrl: '',
+            isEmpty: true
+          };
+        }
+      } else {
+        // Remover das disponíveis
+        const availableIndex = newAvailable.findIndex(p => p.id === draggedPiece.id);
+        if (availableIndex > -1) {
+          newAvailable.splice(availableIndex, 1);
+        }
+      }
 
-    const availableIndex = newAvailable.findIndex(p => p.id === draggedPiece.id);
-    if (availableIndex > -1) {
-      newAvailable.splice(availableIndex, 1);
+      // Colocar nova peça
+      newPieces[position] = {
+        ...draggedPiece,
+        currentPosition: position
+      };
     }
 
     setPieces(newPieces);
     setAvailablePieces(newAvailable);
     setDraggedPiece(null);
+    setDraggedFromAvailable(false);
     setMoves(moves + 1);
 
     checkCompletion(newPieces);
   };
 
-  // Touch support para mobile
-  const handleTouchStart = (e: React.TouchEvent, piece: PuzzlePiece) => {
+  // Click para remover peça (alternativa ao drag)
+  const handlePieceClick = (piece: PuzzlePiece, position: number) => {
+    if (piece.isEmpty) return;
+    
+    const newPieces = [...pieces];
+    const newAvailable = [...availablePieces];
+    
+    // Remover do grid
+    newPieces[position] = {
+      id: -1,
+      correctPosition: position,
+      currentPosition: position,
+      imageUrl: '',
+      isEmpty: true
+    };
+    
+    // Adicionar às disponíveis
+    newAvailable.push(piece);
+    
+    setPieces(newPieces);
+    setAvailablePieces(newAvailable);
+  };
+
+  // Touch support melhorado
+  const handleTouchStart = (e: React.TouchEvent, piece: PuzzlePiece, fromAvailable: boolean) => {
     e.preventDefault();
     setDraggedPiece(piece);
+    setDraggedFromAvailable(fromAvailable);
   };
 
   const handleTouchEnd = (e: React.TouchEvent, position: number) => {
@@ -323,7 +403,7 @@ const PuzzleGame: React.FC = () => {
     setMoves(0);
   };
 
-  // Tela de Boas-Vindas (SEM ANIMATE-BOUNCE)
+  // Tela de Boas-Vindas
   const WelcomeScreen = () => (
     <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-yellow-400 flex items-center justify-center p-4">
       <div className="text-center">
@@ -339,6 +419,7 @@ const PuzzleGame: React.FC = () => {
             height={400}
             className="mx-auto drop-shadow-2xl"
             style={{ maxWidth: '60vw', height: 'auto' }}
+            priority
           />
         </div>
         
@@ -437,12 +518,12 @@ const PuzzleGame: React.FC = () => {
     </div>
   );
 
-  // Tela do Jogo (CORRIGIDA PARA MOBILE)
+  // Tela do Jogo
   const GameScreen = () => (
     <div id="game-container" className="min-h-screen bg-gradient-to-br from-blue-100 to-purple-100 p-2 sm:p-4">
       <div className="max-w-6xl mx-auto">
         
-        {/* Header com Status - RESPONSIVO */}
+        {/* Header com Status */}
         <div className="bg-white rounded-xl sm:rounded-2xl p-2 sm:p-4 mb-2 sm:mb-4 shadow-lg">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
             <div className="text-sm sm:text-lg font-bold text-center sm:text-left">
@@ -456,9 +537,17 @@ const PuzzleGame: React.FC = () => {
           </div>
         </div>
 
+        {/* Loading */}
+        {isLoading && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Carregando imagem...</p>
+          </div>
+        )}
+
         <div className="flex flex-col gap-4 sm:gap-6 items-center">
           
-          {/* Grid do Quebra-Cabeça - RESPONSIVO */}
+          {/* Grid do Quebra-Cabeça */}
           <div className="bg-white p-3 sm:p-6 rounded-xl sm:rounded-2xl shadow-xl w-full max-w-sm">
             <div className="flex justify-between mb-2 sm:mb-4">
               <button
@@ -494,10 +583,11 @@ const PuzzleGame: React.FC = () => {
               {pieces.map((piece, index) => (
                 <div
                   key={index}
-                  className="puzzle-cell bg-white border border-dashed border-gray-300 relative"
+                  className={`puzzle-cell bg-white border-2 ${piece.isEmpty ? 'border-dashed' : 'border-solid'} border-gray-300 relative cursor-pointer hover:border-purple-500 transition-colors`}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, index)}
                   onTouchEnd={(e) => handleTouchEnd(e, index)}
+                  onClick={() => handlePieceClick(piece, index)}
                   style={{
                     width: `${266/gridSize}px`,
                     height: `${266/gridSize}px`
@@ -507,27 +597,36 @@ const PuzzleGame: React.FC = () => {
                     <img
                       src={piece.imageUrl}
                       alt={`Peça ${piece.id}`}
-                      className="absolute inset-0 w-full h-full cursor-move"
+                      className="absolute inset-0 w-full h-full cursor-move hover:brightness-110 transition-all"
                       draggable
-                      onDragStart={() => handleDragStart(piece)}
-                      onTouchStart={(e) => handleTouchStart(e, piece)}
+                      onDragStart={(e) => handleDragStart(e, piece, false)}
+                      onDragEnd={handleDragEnd}
+                      onTouchStart={(e) => handleTouchStart(e, piece, false)}
                     />
                   )}
                 </div>
               ))}
             </div>
+            
+            <p className="text-center text-xs text-gray-500 mt-2">
+              Clique na peça para remover ou arraste para posicionar
+            </p>
           </div>
 
-          {/* Peças Disponíveis - RESPONSIVO */}
-          <div className="bg-white p-3 sm:p-6 rounded-xl sm:rounded-2xl shadow-xl w-full max-w-sm">
+          {/* Peças Disponíveis */}
+          <div 
+            className="bg-white p-3 sm:p-6 rounded-xl sm:rounded-2xl shadow-xl w-full max-w-sm"
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, -1)}
+          >
             <h3 className="text-sm sm:text-lg font-bold text-gray-700 mb-2 sm:mb-4">
               Peças ({availablePieces.length} restantes):
             </h3>
-            <div className="flex flex-wrap gap-1 sm:gap-2 justify-center">
+            <div className="flex flex-wrap gap-1 sm:gap-2 justify-center min-h-[80px] border-2 border-dashed border-gray-300 rounded-lg p-2">
               {availablePieces.map((piece) => (
                 <div
                   key={piece.id}
-                  className="cursor-move hover:scale-110 transition-transform border border-purple-300 rounded shadow-md"
+                  className="cursor-move hover:scale-110 transition-transform border-2 border-purple-300 rounded shadow-md"
                   style={{
                     width: `${240/gridSize}px`,
                     height: `${240/gridSize}px`
@@ -538,16 +637,20 @@ const PuzzleGame: React.FC = () => {
                     alt={`Peça ${piece.id}`}
                     className="w-full h-full"
                     draggable
-                    onDragStart={() => handleDragStart(piece)}
-                    onTouchStart={(e) => handleTouchStart(e, piece)}
+                    onDragStart={(e) => handleDragStart(e, piece, true)}
+                    onDragEnd={handleDragEnd}
+                    onTouchStart={(e) => handleTouchStart(e, piece, true)}
                   />
                 </div>
               ))}
+              {availablePieces.length === 0 && (
+                <p className="text-gray-400 text-sm">Arraste peças aqui para remover</p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Mensagem de Sucesso - RESPONSIVA */}
+        {/* Mensagem de Sucesso */}
         {isComplete && selectedImage && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white p-6 sm:p-8 rounded-2xl text-center max-w-sm sm:max-w-md w-full">
