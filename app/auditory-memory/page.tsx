@@ -99,18 +99,17 @@ const GameOverScreen = ({ score, onRestart }) => (
 // --- LÓGICA DO JOGO ---
 
 export default function AuditoryMemoryGame() {
-    const [gameState, setGameState] = useState('intro'); // intro, playing, gameOver
+    const [gameState, setGameState] = useState('intro');
     const [score, setScore] = useState(0);
     const [combo, setCombo] = useState(1);
     const [lives, setLives] = useState(3);
     const [soundEnabled, setSoundEnabled] = useState(true);
 
     const [sequence, setSequence] = useState([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
+    const [playerIndex, setPlayerIndex] = useState(0);
     const [activeTone, setActiveTone] = useState(null); 
     const [isPlayerTurn, setIsPlayerTurn] = useState(false);
     
-    // **ÁUDIO CORRIGIDO:** Usando caminhos para os ficheiros .wav locais
     const tones = useMemo(() => [
         { name: 'Dó', audioSrc: '/sounds/xylophone/C5.wav', colorClass: 'bg-red-500', glowColor: '#ef4444', height: '200px' },
         { name: 'Ré', audioSrc: '/sounds/xylophone/D5.wav', colorClass: 'bg-blue-500', glowColor: '#3b82f6', height: '190px' },
@@ -121,7 +120,7 @@ export default function AuditoryMemoryGame() {
     ], []);
 
     const audioRefs = useRef({});
-    const gameSpeed = useMemo(() => Math.max(300, 1000 - (score / 20)), [score]);
+    const gameSpeed = useMemo(() => Math.max(250, 800 - (score / 25)), [score]);
     
     useEffect(() => {
       if (typeof window !== 'undefined') {
@@ -138,11 +137,11 @@ export default function AuditoryMemoryGame() {
         const audio = audioRefs.current[tones[index].audioSrc];
         if (audio) {
           audio.currentTime = 0;
-          audio.play().catch(e => console.error("Erro ao tocar áudio:", e));
+          audio.play().catch(e => console.error("Error playing audio:", e));
         }
     }, [soundEnabled, tones]);
 
-    const playSequence = useCallback(async () => {
+    const runSequence = useCallback(async () => {
         setIsPlayerTurn(false);
         await new Promise(res => setTimeout(res, 700)); 
         for (let i = 0; i < sequence.length; i++) {
@@ -157,10 +156,10 @@ export default function AuditoryMemoryGame() {
     }, [sequence, playTone, gameSpeed]);
 
     useEffect(() => {
-        if (gameState === 'playing' && sequence.length > 0 && !isPlayerTurn) {
-            playSequence();
+        if (gameState === 'playing' && !isPlayerTurn) {
+            runSequence();
         }
-    }, [gameState, sequence, isPlayerTurn, playSequence]);
+    }, [gameState, isPlayerTurn, runSequence]);
 
     const startGame = useCallback(() => {
         setScore(0);
@@ -168,16 +167,39 @@ export default function AuditoryMemoryGame() {
         setLives(3);
         const firstTone = Math.floor(Math.random() * tones.length);
         setSequence([firstTone]);
-        setCurrentIndex(0);
-        setGameState('playing');
+        setPlayerIndex(0);
         setIsPlayerTurn(false);
+        setGameState('playing');
     }, [tones.length]);
     
-     useEffect(() => {
+    useEffect(() => {
         if (lives <= 0) {
             setGameState('gameOver');
         }
     }, [lives]);
+
+    const handleCorrectGuess = () => {
+        const newIndex = playerIndex + 1;
+        if (newIndex >= sequence.length) {
+            // Sequence complete, advance level
+            setScore(prev => prev + (10 * combo * sequence.length));
+            setCombo(prev => prev + 1);
+            setPlayerIndex(0);
+            const nextTone = Math.floor(Math.random() * tones.length);
+            setSequence(prev => [...prev, nextTone]);
+            setIsPlayerTurn(false); // Triggers useEffect to play new sequence
+        } else {
+            // Correct note, continue sequence
+            setPlayerIndex(newIndex);
+        }
+    };
+
+    const handleWrongGuess = () => {
+        setLives(prev => prev - 1);
+        setCombo(1);
+        setPlayerIndex(0);
+        setIsPlayerTurn(false); // Triggers useEffect to replay same sequence
+    };
 
     const handleUserChoice = (chosenIndex) => {
         if (!isPlayerTurn) return;
@@ -186,26 +208,10 @@ export default function AuditoryMemoryGame() {
         setActiveTone(chosenIndex);
         setTimeout(() => setActiveTone(null), 200);
 
-        if (chosenIndex === sequence[currentIndex]) {
-            const newIndex = currentIndex + 1;
-            if (newIndex >= sequence.length) {
-                setScore(prev => prev + (10 * combo * sequence.length));
-                setCombo(prev => prev + 1);
-                setCurrentIndex(0);
-                setIsPlayerTurn(false);
-                const nextTone = Math.floor(Math.random() * tones.length);
-                setSequence(prev => [...prev, nextTone]);
-            } else {
-                setCurrentIndex(newIndex);
-            }
+        if (chosenIndex === sequence[playerIndex]) {
+            handleCorrectGuess();
         } else {
-            setLives(prev => prev - 1);
-            setCombo(1);
-            setCurrentIndex(0);
-            setIsPlayerTurn(false);
-            setTimeout(() => {
-                if(lives - 1 > 0) playSequence();
-            }, 1000);
+            handleWrongGuess();
         }
     };
     
@@ -231,7 +237,8 @@ export default function AuditoryMemoryGame() {
 
         /* --- UI DO JOGO --- */
         .game-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 900px; margin: 0 auto; z-index: 10; }
-        .header-title { font-weight: 900; font-size: 1.8rem; }
+        .header-title-placeholder { width: 44px; } /* Para alinhar com o botão de voltar */
+        .header-title { font-weight: 900; font-size: 1.8rem; text-align: center; }
         .header-item { background: rgba(0,0,0,0.2); padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
         .header-item.score { color: #ffeb3b; }
         .header-item.lives { color: #ff8a80; }
@@ -255,11 +262,20 @@ export default function AuditoryMemoryGame() {
         .bg-purple-500 { background-color: #9c27b0; }
         .bg-pink-500 { background-color: #e91e63; }
 
+        .mobile-title { display: none; }
+
+        /* **MOBILE LAYOUT CORRIGIDO** */
         @media (max-width: 600px) {
-            .header-title { font-size: 1.2rem; }
+            .game-header { padding: 10px; }
+            .header-title-placeholder { display: none; } /* Esconde o placeholder */
+            .header-title { display: none; } /* Esconde o título do header */
             .header-item { padding: 6px 10px; font-size: 1rem; }
-            .xylophone-container { height: 220px; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 10px; width: 95%;}
-            .tone-button { width: calc(33.33% - 10px); height: 100px !important; }
+            
+            .game-board { flex-direction: column; justify-content: center; gap: 2rem; }
+            .mobile-title { display: block; font-size: 2.5rem; font-weight: 900; color: white; text-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+            
+            .xylophone-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; height: auto; width: 95%; padding: 15px; align-items: stretch; align-content: center; }
+            .tone-button { width: 100%; height: 100px; }
             .button-label { font-size: 1rem; }
         }
     `;
@@ -275,6 +291,7 @@ export default function AuditoryMemoryGame() {
                     <motion.div key="playing" className="flex flex-col h-full" initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}}>
                         <header className="game-header">
                            <a href="/dashboard" className="header-button"><ArrowLeft /></a>
+                           <div className="header-title-placeholder"></div>
                            <h2 className="header-title">Eco Sonoro</h2>
                            <div className="flex items-center gap-4">
                                 <div className="header-item lives">{'❤️'.repeat(lives)}</div>
@@ -285,6 +302,7 @@ export default function AuditoryMemoryGame() {
                            </div>
                         </header>
                          <main className="game-board">
+                            <h2 className="mobile-title">Eco Sonoro</h2>
                             <AnimatePresence>
                                 {combo > 2 && (
                                     <motion.div 
