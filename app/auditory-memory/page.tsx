@@ -149,7 +149,7 @@ const StatusIndicator = ({ isPlayerTurn, isPlaying }) => {
             )}
         </div>
     );
-};
+};;
 
 // --- LÓGICA DO JOGO ---
 
