@@ -1,292 +1,64 @@
-/* Reset e Base */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-.musical-game-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  padding: 10px;
-}
-
-/* TELA DE BOAS-VINDAS MOBILE */
-.welcome-screen-mobile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 20px;
-  text-align: center;
-}
-
-.title-mobile {
-  font-size: 2.5rem;
-  color: white;
-  margin-bottom: 30px;
-  text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
-}
-
-.mila-container-mobile {
-  background: white;
-  border-radius: 20px;
-  padding: 20px;
-  margin-bottom: 30px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-}
-
-.mila-image {
-  margin-bottom: 20px;
-  filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
-}
-
-.speech-bubble-mobile {
-  color: #2d3436;
-}
-
-.speech-bubble-mobile p {
-  margin: 10px 0;
-  font-size: 1rem;
-  line-height: 1.5;
-}
-
-.play-button-mobile {
-  background: linear-gradient(135deg, #ff6b6b, #feca57);
-  color: white;
-  border: none;
-  padding: 20px 60px;
-  border-radius: 50px;
-  font-size: 1.5rem;
-  font-weight: bold;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.play-button-mobile:active {
-  transform: scale(0.95);
-}
-
-/* HEADER DO JOGO */
-.game-header-mobile {
-  background: rgba(255,255,255,0.95);
-  padding: 15px;
-  border-radius: 15px;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.game-header-mobile h1 {
-  font-size: 1.5rem;
-  color: #2d3436;
-}
-
-/* ÁREA DO JOGO */
-.game-area-mobile {
-  background: rgba(255,255,255,0.95);
-  border-radius: 20px;
-  padding: 15px;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-/* GRADE DE PERSONAGENS - 2x3 no mobile */
-.characters-grid {
+/* Grade de instrumentos organizada */
+.instruments-grid-container {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
-  margin-bottom: 25px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 10px 0;
 }
 
+/* Ajuste para personagens vazios com cabeça azul */
 .character-card {
-  aspect-ratio: 1;
-  border-radius: 15px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-  background: #f0f0f0;
-}
-
-.character-card:active {
-  transform: scale(0.95);
+  background: #74b9ff !important;
 }
 
 .character-card.has-instrument {
   animation: pulse 2s infinite;
 }
 
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-.character-display {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-}
-
-.character-instrument,
 .character-empty {
-  font-size: 3rem;
+  font-size: 2.5rem;
+  filter: none;
 }
 
-.character-label {
-  font-size: 0.8rem;
-  color: #2d3436;
-  font-weight: 600;
-}
-
-.character-id {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(255,255,255,0.9);
-  width: 25px;
-  height: 25px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  color: #2d3436;
-  font-size: 0.9rem;
-}
-
-/* SEÇÃO DE INSTRUMENTOS */
-.instruments-section {
-  margin-bottom: 20px;
-}
-
-.instruction-text {
-  text-align: center;
-  color: #2d3436;
-  margin-bottom: 15px;
-  font-weight: 500;
-  padding: 10px;
-  background: #f8f9fa;
-  border-radius: 10px;
-}
-
-.instruments-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
+/* Instrumentos mais visíveis */
 .instrument-card {
-  padding: 15px 10px;
+  padding: 12px 8px;
   border-radius: 12px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 2px solid #e0e0e0;
+  background: white;
 }
 
 .instrument-card:active {
-  transform: scale(0.9);
-}
-
-.instrument-card.selected {
-  box-shadow: 0 0 0 3px #2d3436;
-  animation: glow 1s infinite;
-}
-
-@keyframes glow {
-  0%, 100% { box-shadow: 0 0 0 3px #2d3436; }
-  50% { box-shadow: 0 0 10px 3px #2d3436; }
+  transform: scale(0.95);
 }
 
 .instrument-emoji {
-  font-size: 2rem;
+  font-size: 1.8rem;
+  display: block;
+  margin-bottom: 4px;
 }
 
 .instrument-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: #2d3436;
 }
 
-/* CONTROLES */
-.controls-mobile {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-}
-
-.control-button {
-  flex: 1;
-  padding: 15px;
-  border: none;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: bold;
-  color: white;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.control-button:active {
-  transform: scale(0.95);
-}
-
-.control-button.play {
-  background: #00b894;
-}
-
-.control-button.reset {
-  background: #e17055;
-}
-
-/* TABLET E DESKTOP */
+/* Tablets */
 @media (min-width: 768px) {
-  .title-mobile {
-    font-size: 3.5rem;
-  }
-  
-  .characters-grid {
-    grid-template-columns: repeat(3, 1fr);
-    max-width: 500px;
-    margin: 0 auto 25px;
-  }
-  
-  .game-area-mobile {
-    max-width: 800px;
-    padding: 30px;
+  .instruments-grid-container {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
   }
   
   .instrument-emoji {
     font-size: 2.5rem;
   }
-}
-
-@media (min-width: 1024px) {
-  .characters-grid {
-    grid-template-columns: repeat(6, 1fr);
-    max-width: none;
-  }
   
-  .game-area-mobile {
-    max-width: 1200px;
+  .instrument-label {
+    font-size: 0.9rem;
   }
-}
-
-.loading {
-  text-align: center;
-  color: white;
-  font-size: 1.5rem;
-  padding: 50px;
 }
