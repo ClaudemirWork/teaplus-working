@@ -310,24 +310,167 @@
   padding: 50px;
 }
 
-/* RECOMPENSA SIMPLES */
-.simple-reward {
+/* SISTEMA DE CONFETES */
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: -10px;
+  animation: confettiFall 3s linear infinite;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* POPUP DE RECOMPENSA */
+.reward-popup {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0,0,0,0.8);
-  color: white;
-  padding: 20px 40px;
-  border-radius: 20px;
-  font-size: 1.5rem;
-  z-index: 9999;
-  animation: fadeInOut 2s;
+  z-index: 9998;
+  animation: popupAppear 0.5s ease-out;
 }
 
-@keyframes fadeInOut {
-  0%, 100% { opacity: 0; }
-  50% { opacity: 1; }
+.reward-message-animated {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 30px 50px;
+  border-radius: 25px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  animation: messageFloat 3s ease-in-out;
+}
+
+@keyframes popupAppear {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes messageFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* VIOLÃO DOURADO */
+.golden-guitar-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(30,30,30,0.95));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  animation: fadeIn 0.5s;
+}
+
+.golden-guitar {
+  font-size: 150px;
+  animation: guitarSpin 2s ease-in-out;
+  filter: drop-shadow(0 0 50px gold);
+  background: linear-gradient(135deg, #FFD700, #FFA500, #FFD700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.golden-message {
+  color: #FFD700;
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 30px;
+  text-shadow: 0 0 30px rgba(255,215,0,0.8);
+  animation: textGlow 1.5s ease-in-out infinite alternate;
+}
+
+.golden-subtitle {
+  font-size: 1.5rem;
+  color: #FFA500;
+}
+
+.stars-decoration {
+  font-size: 2rem;
+  margin-top: 20px;
+  animation: starsRotate 3s linear infinite;
+}
+
+@keyframes guitarSpin {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+    opacity: 1;
+  }
+}
+
+@keyframes textGlow {
+  from {
+    text-shadow: 0 0 30px rgba(255,215,0,0.8);
+  }
+  to {
+    text-shadow: 0 0 50px rgba(255,215,0,1), 0 0 70px rgba(255,140,0,0.8);
+  }
+}
+
+@keyframes starsRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* TABLETS */
@@ -352,6 +495,14 @@
   }
   
   .instrument-emoji {
+    font-size: 2.5rem;
+  }
+  
+  .golden-guitar {
+    font-size: 200px;
+  }
+  
+  .golden-message {
     font-size: 2.5rem;
   }
 }
