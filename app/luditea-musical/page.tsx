@@ -47,6 +47,7 @@ export default function LuditeaMusical() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [score, setScore] = useState(0);
   const [showReward, setShowReward] = useState(false);
+  const [showGoldenGuitar, setShowGoldenGuitar] = useState(false);
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -55,7 +56,6 @@ export default function LuditeaMusical() {
     setTimeout(() => setIsLoading(false), 500);
   }, []);
 
-  // Verificar conquistas simples
   const checkAchievement = () => {
     const activeInstruments = characters.filter(c => c.instrument).length;
     
@@ -69,8 +69,8 @@ export default function LuditeaMusical() {
       setTimeout(() => setShowReward(false), 2000);
     } else if (activeInstruments === 6 && score === 300) {
       setScore(600);
-      setShowReward(true);
-      setTimeout(() => setShowReward(false), 2000);
+      setShowGoldenGuitar(true);
+      setTimeout(() => setShowGoldenGuitar(false), 4000);
     }
   };
 
@@ -140,7 +140,6 @@ export default function LuditeaMusical() {
       
       setSelectedInstrument(null);
       
-      // Verificar conquista
       setTimeout(() => checkAchievement(), 500);
     }
   };
@@ -212,6 +211,17 @@ export default function LuditeaMusical() {
       {showReward && (
         <div className="simple-reward">
           ⭐ Parabéns! +{score} pontos! ⭐
+        </div>
+      )}
+      
+      {showGoldenGuitar && (
+        <div className="golden-guitar-container">
+          <div className="golden-guitar">🎸</div>
+          <div className="golden-message">
+            PARABÉNS! VOCÊ É UM MÚSICO! 
+            <br/>
+            Conquistou o Violão Dourado!
+          </div>
         </div>
       )}
       
