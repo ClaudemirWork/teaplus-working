@@ -27,6 +27,8 @@ const instruments: Instrument[] = [
   { id: 'cymbal', icon: '🔔', name: 'Prato', color: '#FDB863' },
   { id: 'tambourine', icon: '🪘', name: 'Pandeiro', color: '#B4E7CE' },
   { id: 'bass', icon: '🎵', name: 'Bumbo', color: '#957DAD' },
+  { id: 'sax', icon: '🎷', name: 'Saxofone', color: '#FFDAB9' },
+  { id: 'flute', icon: '🪈', name: 'Flauta', color: '#E6E6FA' },
 ];
 
 export default function LuditeaMusical() {
@@ -39,9 +41,15 @@ export default function LuditeaMusical() {
   const [availableInstruments, setAvailableInstruments] = useState<Instrument[]>(instruments);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   
   useEffect(() => {
     setTimeout(() => setIsLoading(false), 500);
+    // Inicializar AudioContext
+    if (typeof window !== 'undefined') {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      setAudioContext(ctx);
+    }
   }, []);
 
   const speakWelcomeText = () => {
@@ -66,9 +74,38 @@ export default function LuditeaMusical() {
     }
   };
 
+  const playFeedbackSound = (type: 'select' | 'place' | 'remove') => {
+    if (!audioContext) return;
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    switch(type) {
+      case 'select':
+        oscillator.frequency.value = 523.25;
+        gainNode.gain.value = 0.3;
+        break;
+      case 'place':
+        oscillator.frequency.value = 659.25;
+        gainNode.gain.value = 0.4;
+        break;
+      case 'remove':
+        oscillator.frequency.value = 392;
+        gainNode.gain.value = 0.2;
+        break;
+    }
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.1);
+  };
+
   const handleInstrumentClick = (instrument: Instrument) => {
     if (availableInstruments.find(i => i.id === instrument.id)) {
       setSelectedInstrument(instrument);
+      playFeedbackSound('select');
     }
   };
 
@@ -80,6 +117,7 @@ export default function LuditeaMusical() {
       setCharacters(characters.map(c => 
         c.id === characterId ? { ...c, instrument: null } : c
       ));
+      playFeedbackSound('remove');
       return;
     }
     
@@ -89,6 +127,7 @@ export default function LuditeaMusical() {
       ));
       setAvailableInstruments(availableInstruments.filter(i => i.id !== selectedInstrument.id));
       setSelectedInstrument(null);
+      playFeedbackSound('place');
     }
   };
 
@@ -171,7 +210,7 @@ export default function LuditeaMusical() {
                 className={`character-card ${character.instrument ? 'has-instrument' : ''} ${character.instrument && isPlaying ? 'playing' : ''}`}
                 onClick={() => handleCharacterClick(character.id)}
                 style={{
-                  backgroundColor: character.instrument ? character.instrument.color : '#f0f0f0'
+                  backgroundColor: character.instrument ? character.instrument.color : '#74b9ff'
                 }}
               >
                 <div className="character-display">
@@ -184,7 +223,7 @@ export default function LuditeaMusical() {
                     </>
                   ) : (
                     <>
-                      <span className="character-empty">🎭</span>
+                      <span className="character-empty">👤</span>
                       <span className="character-label">Vazio</span>
                     </>
                   )}
@@ -201,27 +240,25 @@ export default function LuditeaMusical() {
                 : '👇 Escolha um instrumento para começar'}
             </p>
             
-            <div className="instruments-scroll">
-              <div className="instruments-grid-expanded">
-                {availableInstruments.map((instrument) => (
-                  <div 
-                    key={instrument.id}
-                    className={`instrument-card ${
-                      selectedInstrument?.id === instrument.id ? 'selected glowing' : ''
-                    }`}
-                    onClick={() => handleInstrumentClick(instrument)}
-                    style={{
-                      opacity: selectedInstrument?.id === instrument.id ? 1 : 0.6,
-                      backgroundColor: selectedInstrument?.id === instrument.id 
-                        ? instrument.color 
-                        : '#f5f5f5'
-                    }}
-                  >
-                    <span className="instrument-emoji">{instrument.icon}</span>
-                    <span className="instrument-label">{instrument.name}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="instruments-grid-container">
+              {availableInstruments.map((instrument) => (
+                <div 
+                  key={instrument.id}
+                  className={`instrument-card ${
+                    selectedInstrument?.id === instrument.id ? 'selected glowing' : ''
+                  }`}
+                  onClick={() => handleInstrumentClick(instrument)}
+                  style={{
+                    opacity: selectedInstrument?.id === instrument.id ? 1 : 0.7,
+                    backgroundColor: selectedInstrument?.id === instrument.id 
+                      ? instrument.color 
+                      : '#ffffff'
+                  }}
+                >
+                  <span className="instrument-emoji">{instrument.icon}</span>
+                  <span className="instrument-label">{instrument.name}</span>
+                </div>
+              ))}
             </div>
           </div>
           
