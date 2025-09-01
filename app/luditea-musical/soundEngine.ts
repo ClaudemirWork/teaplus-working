@@ -13,32 +13,24 @@ export class SoundEngine {
   async loadAllSounds() {
     if (!this.audioContext) return;
     
-    // Mapeamento com os NOVOS sons
+    // MAPEAMENTO CORRIGIDO - IDs devem bater com o page.tsx
     const soundFiles = {
-      guitar: '/sounds/guitarra-rock-loop.wav',  // Novo rock
+      guitar: '/sounds/guitarra-rock-loop.wav',
       drums: '/sounds/bateria-loop.wav',
       piano: '/sounds/piano-loop.wav',
-      trumpet: '/sounds/saxofone-loop.wav',  // Usando saxofone
+      saxofone: '/sounds/saxofone-loop.wav',  // CORRIGIDO
       violin: '/sounds/violino-loop.wav',
       shaker: '/sounds/chocalho-loop.wav',
+      coral: '/sounds/coral-loop.wav',        // CORRIGIDO
+      flauta: '/sounds/flauta-loop.wav',      // CORRIGIDO
+      tambor: '/sounds/tambor-tribal-loop.wav', // CORRIGIDO
+      violao: '/sounds/violao-loop.wav',      // CORRIGIDO
       synth: '/sounds/sintetizador-loop.wav',
       cymbal: '/sounds/prato-loop.wav',
-      tambourine: '/sounds/tamborin-loop.wav',
-      bass: '/sounds/violao-loop.wav'  // Usando violão como baixo
+      tambourine: '/sounds/tamborin-loop.wav'
     };
     
-    // Carregar também os novos sons extras
-    const extraSounds = {
-      coral: '/sounds/coral-loop.wav',
-      flauta: '/sounds/flauta-loop.wav',
-      tambor: '/sounds/tambor-tribal-loop.wav',
-      guitarraAcustica: '/sounds/guitarra-loop.wav'
-    };
-    
-    // Carrega todos os sons
-    const allSounds = { ...soundFiles, ...extraSounds };
-    
-    for (const [name, url] of Object.entries(allSounds)) {
+    for (const [name, url] of Object.entries(soundFiles)) {
       try {
         const response = await fetch(url);
         const arrayBuffer = await response.arrayBuffer();
@@ -58,7 +50,7 @@ export class SoundEngine {
     
     const buffer = this.buffers.get(instrumentId);
     if (!buffer) {
-      console.log(`Som não encontrado: ${instrumentId}`);
+      console.log(`❌ Som não encontrado: ${instrumentId}`);
       return;
     }
     
