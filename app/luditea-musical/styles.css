@@ -1,53 +1,131 @@
 .musical-game-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 50%, #81ecec 100%);
   padding: 20px;
   font-family: 'Segoe UI', system-ui, sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Notas musicais animadas no fundo */
+.musical-game-container::before {
+  content: '♪ ♫ ♬ ♩ ♪ ♫ ♬';
+  position: absolute;
+  font-size: 3rem;
+  color: rgba(255, 255, 255, 0.1);
+  animation: float 20s linear infinite;
+  top: 10%;
+  left: -100px;
+}
+
+.musical-game-container::after {
+  content: '♬ ♩ ♪ ♫ ♬ ♪ ♫';
+  position: absolute;
+  font-size: 2.5rem;
+  color: rgba(255, 255, 255, 0.15);
+  animation: float 25s linear infinite reverse;
+  bottom: 20%;
+  right: -100px;
+}
+
+@keyframes float {
+  from {
+    transform: translateX(0) rotate(0deg);
+  }
+  to {
+    transform: translateX(calc(100vw + 200px)) rotate(360deg);
+  }
 }
 
 .game-title {
   text-align: center;
-  color: white;
-  font-size: 2.5rem;
+  color: #2d3436;
+  font-size: 3rem;
   margin-bottom: 30px;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  text-shadow: 2px 2px 4px rgba(255,255,255,0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
 .loading {
   text-align: center;
-  color: white;
+  color: #2d3436;
   font-size: 1.5rem;
   margin-top: 100px;
+  font-weight: 500;
 }
 
 .game-area {
   max-width: 1200px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 30px;
   padding: 40px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
 .start-button {
   display: block;
   margin: 50px auto;
-  padding: 20px 40px;
+  padding: 20px 50px;
   font-size: 1.5rem;
-  background: #4ECDC4;
+  background: linear-gradient(135deg, #74b9ff, #a29bfe);
   color: white;
   border: none;
   border-radius: 50px;
   cursor: pointer;
-  transition: transform 0.3s;
+  transition: all 0.3s;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  font-weight: bold;
 }
 
 .start-button:hover {
-  transform: scale(1.05);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  background: linear-gradient(135deg, #6c5ce7, #74b9ff);
 }
 
 .game-content {
   text-align: center;
   font-size: 1.2rem;
-  color: #333;
+  color: #2d3436;
+}
+
+/* Notas musicais extras flutuantes */
+.music-notes {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.note {
+  position: absolute;
+  font-size: 2rem;
+  color: rgba(255, 255, 255, 0.3);
+  animation: floatUp 8s linear infinite;
+}
+
+@keyframes floatUp {
+  from {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100px) rotate(360deg);
+    opacity: 0;
+  }
 }
