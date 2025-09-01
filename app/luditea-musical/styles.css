@@ -1,131 +1,114 @@
-.musical-game-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 50%, #81ecec 100%);
-  padding: 20px;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  position: relative;
-  overflow: hidden;
-}
+/* ... código anterior continua ... */
 
-/* Notas musicais animadas no fundo */
-.musical-game-container::before {
-  content: '♪ ♫ ♬ ♩ ♪ ♫ ♬';
-  position: absolute;
-  font-size: 3rem;
-  color: rgba(255, 255, 255, 0.1);
-  animation: float 20s linear infinite;
-  top: 10%;
-  left: -100px;
-}
-
-.musical-game-container::after {
-  content: '♬ ♩ ♪ ♫ ♬ ♪ ♫';
-  position: absolute;
-  font-size: 2.5rem;
-  color: rgba(255, 255, 255, 0.15);
-  animation: float 25s linear infinite reverse;
-  bottom: 20%;
-  right: -100px;
-}
-
-@keyframes float {
-  from {
-    transform: translateX(0) rotate(0deg);
-  }
-  to {
-    transform: translateX(calc(100vw + 200px)) rotate(360deg);
-  }
-}
-
-.game-title {
-  text-align: center;
-  color: #2d3436;
-  font-size: 3rem;
-  margin-bottom: 30px;
-  text-shadow: 2px 2px 4px rgba(255,255,255,0.5);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-.loading {
-  text-align: center;
-  color: #2d3436;
-  font-size: 1.5rem;
-  margin-top: 100px;
-  font-weight: 500;
-}
-
-.game-area {
-  max-width: 1200px;
+/* Tela de Boas-Vindas */
+.welcome-screen {
+  max-width: 800px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 30px;
-  padding: 40px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  text-align: center;
+  animation: fadeIn 0.5s ease-in;
 }
 
-.start-button {
-  display: block;
-  margin: 50px auto;
-  padding: 20px 50px;
-  font-size: 1.5rem;
-  background: linear-gradient(135deg, #74b9ff, #a29bfe);
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mascot-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  margin: 40px 0;
+  flex-wrap: wrap;
+}
+
+.mascot-image {
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.speech-bubble {
+  background: white;
+  border-radius: 20px;
+  padding: 25px;
+  max-width: 400px;
+  position: relative;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  border: 3px solid #74b9ff;
+}
+
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 15px 20px 15px 0;
+  border-color: transparent #74b9ff transparent transparent;
+}
+
+.speech-bubble p {
+  margin: 10px 0;
+  color: #2d3436;
+  font-size: 1.1rem;
+}
+
+.play-button {
+  padding: 20px 60px;
+  font-size: 1.8rem;
+  background: linear-gradient(135deg, #ff6b6b, #feca57);
   color: white;
   border: none;
   border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 5px 20px rgba(255,107,107,0.4);
   font-weight: bold;
+  margin-top: 30px;
 }
 
-.start-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-  background: linear-gradient(135deg, #6c5ce7, #74b9ff);
+.play-button:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 8px 30px rgba(255,107,107,0.6);
 }
 
-.game-content {
+/* Área do Jogo */
+.stage-area, .instruments-area {
+  margin: 30px 0;
+  padding: 20px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 20px;
+  border: 2px dashed #74b9ff;
+}
+
+.stage-area h3, .instruments-area h3 {
   text-align: center;
-  font-size: 1.2rem;
   color: #2d3436;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
 }
 
-/* Notas musicais extras flutuantes */
-.music-notes {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  overflow: hidden;
+.characters-container {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  min-height: 200px;
+  padding: 20px;
+  flex-wrap: wrap;
 }
 
-.note {
-  position: absolute;
-  font-size: 2rem;
-  color: rgba(255, 255, 255, 0.3);
-  animation: floatUp 8s linear infinite;
-}
-
-@keyframes floatUp {
-  from {
-    transform: translateY(100vh) rotate(0deg);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  to {
-    transform: translateY(-100px) rotate(360deg);
-    opacity: 0;
-  }
+.instruments-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 20px;
 }
