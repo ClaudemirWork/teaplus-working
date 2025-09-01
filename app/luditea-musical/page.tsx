@@ -47,7 +47,9 @@ export default function LuditeaMusical() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [score, setScore] = useState(0);
   const [showReward, setShowReward] = useState(false);
+  const [rewardMessage, setRewardMessage] = useState('');
   const [showGoldenGuitar, setShowGoldenGuitar] = useState(false);
+  const [confettiActive, setConfettiActive] = useState(false);
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -56,21 +58,46 @@ export default function LuditeaMusical() {
     setTimeout(() => setIsLoading(false), 500);
   }, []);
 
+  const launchConfetti = () => {
+    setConfettiActive(true);
+    setTimeout(() => setConfettiActive(false), 3000);
+  };
+
   const checkAchievement = () => {
     const activeInstruments = characters.filter(c => c.instrument).length;
     
     if (activeInstruments === 2 && score === 0) {
       setScore(100);
+      setRewardMessage('⭐ Primeira Banda! +100 pontos! ⭐');
       setShowReward(true);
-      setTimeout(() => setShowReward(false), 2000);
+      launchConfetti();
+      
+      // Tocar som de sucesso
+      const audio = new Audio('/sounds/sucess.wav');
+      audio.play();
+      
+      setTimeout(() => setShowReward(false), 3000);
+      
     } else if (activeInstruments === 4 && score === 100) {
       setScore(300);
+      setRewardMessage('⭐⭐ Banda Completa! +200 pontos! ⭐⭐');
       setShowReward(true);
-      setTimeout(() => setShowReward(false), 2000);
+      launchConfetti();
+      
+      const audio = new Audio('/sounds/sucess.wav');
+      audio.play();
+      
+      setTimeout(() => setShowReward(false), 3000);
+      
     } else if (activeInstruments === 6 && score === 300) {
       setScore(600);
       setShowGoldenGuitar(true);
-      setTimeout(() => setShowGoldenGuitar(false), 4000);
+      launchConfetti();
+      
+      const audio = new Audio('/sounds/sucess.wav');
+      audio.play();
+      
+      setTimeout(() => setShowGoldenGuitar(false), 5000);
     }
   };
 
@@ -208,19 +235,43 @@ export default function LuditeaMusical() {
 
   return (
     <div className="musical-game-container game-gradient">
-      {showReward && (
-        <div className="simple-reward">
-          ⭐ Parabéns! +{score} pontos! ⭐
+      {/* CONFETES */}
+      {confettiActive && (
+        <div className="confetti-container">
+          {[...Array(50)].map((_, i) => (
+            <div 
+              key={i} 
+              className="confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                backgroundColor: ['#ff6b6b', '#4ecdc4', '#ffd93d', '#95e77e', '#a8e6cf'][Math.floor(Math.random() * 5)]
+              }}
+            />
+          ))}
         </div>
       )}
       
+      {/* MENSAGEM DE RECOMPENSA */}
+      {showReward && (
+        <div className="reward-popup">
+          <div className="reward-message-animated">
+            {rewardMessage}
+          </div>
+        </div>
+      )}
+      
+      {/* VIOLÃO DOURADO */}
       {showGoldenGuitar && (
         <div className="golden-guitar-container">
           <div className="golden-guitar">🎸</div>
           <div className="golden-message">
-            PARABÉNS! VOCÊ É UM MÚSICO! 
+            🌟 PARABÉNS! VOCÊ É UM MÚSICO! 🌟
             <br/>
-            Conquistou o Violão Dourado!
+            <span className="golden-subtitle">Conquistou o Violão Dourado!</span>
+          </div>
+          <div className="stars-decoration">
+            ⭐ ⭐ ⭐ ⭐ ⭐
           </div>
         </div>
       )}
