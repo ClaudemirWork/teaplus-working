@@ -1,165 +1,368 @@
-/* CAIXA DE DESAFIOS */
-.challenge-box {
-  background: linear-gradient(135deg, #fff, #f0f0f0);
-  border-radius: 15px;
-  padding: 15px;
-  margin: 15px;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  border: 2px solid #ffd700;
+/* Reset e Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.challenge-box h3 {
-  color: #6c5ce7;
-  font-size: 1.2rem;
-  margin-bottom: 8px;
+.musical-game-container {
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 10px;
+  position: relative;
+  overflow: hidden;
 }
 
-.challenge-box p {
-  color: #2d3436;
-  font-size: 0.9rem;
-  margin-bottom: 10px;
+/* Gradientes */
+.welcome-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
 }
 
-.progress-bar {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 10px;
+.game-gradient {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 50%, #90dffe 100%);
 }
 
-.completed-star {
-  font-size: 1.5rem;
-  animation: starPulse 1s infinite;
-}
-
-@keyframes starPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-}
-
-/* EXPLOSÃO DE RECOMPENSA */
-.reward-explosion {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+/* TELA DE BOAS-VINDAS */
+.welcome-screen-mobile {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  background: rgba(0,0,0,0.8);
-  z-index: 9999;
-  animation: fadeInOut 3s ease-in-out;
-}
-
-.reward-message {
-  font-size: 2rem;
-  color: #fff;
-  text-align: center;
-  font-weight: bold;
-  text-shadow: 0 0 20px rgba(255,215,0,0.8);
-  animation: zoomBounce 1s ease-out;
+  justify-content: center;
+  min-height: 100vh;
   padding: 20px;
+  text-align: center;
 }
 
-.sparkles {
+.title-mobile {
+  font-size: 2.5rem;
+  color: white;
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+}
+
+.mila-container-mobile {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.mila-image {
+  margin-bottom: 20px;
+  filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
+}
+
+.animated-bounce {
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.speech-bubble-mobile {
+  color: #2d3436;
+}
+
+.speech-bubble-mobile p {
+  margin: 10px 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.welcome-text {
+  margin: 12px 0;
+  line-height: 1.6;
+  color: #2d3436;
+}
+
+.welcome-text strong {
+  color: #6c5ce7;
+  font-size: 1.1rem;
+}
+
+.golden-text {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: bold;
+}
+
+.audio-button {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  margin-top: 15px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: transform 0.2s;
+}
+
+.play-button-mobile {
+  background: linear-gradient(135deg, #ff6b6b, #feca57);
+  color: white;
+  border: none;
+  padding: 20px 60px;
+  border-radius: 50px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.animated-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* HEADER DO JOGO */
+.game-header-mobile {
+  background: rgba(255,255,255,0.95);
+  padding: 15px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.game-header-mobile h1 {
+  font-size: 1.5rem;
+  color: #2d3436;
+}
+
+.score-display {
+  font-size: 0.9rem;
+  color: #2d3436;
+  margin-top: 5px;
+  font-weight: 600;
+}
+
+/* ÁREA DO JOGO */
+.game-area-mobile {
+  background: rgba(255,255,255,0.95);
+  border-radius: 20px;
+  padding: 15px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* PERSONAGENS - Grade 2x4 */
+.characters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.character-card {
+  aspect-ratio: 1;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.character-card:active {
+  transform: scale(0.95);
+}
+
+.character-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.character-instrument,
+.character-empty {
   font-size: 3rem;
-  animation: sparkleRotate 2s linear infinite;
-  margin-top: 20px;
+}
+
+.character-label {
+  font-size: 0.8rem;
+  color: white;
+  font-weight: 600;
+}
+
+.character-id {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.9);
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #2d3436;
+  font-size: 0.9rem;
+}
+
+/* INSTRUMENTOS */
+.instruments-section {
+  margin-bottom: 20px;
+}
+
+.instruction-text {
+  text-align: center;
+  color: #2d3436;
+  margin-bottom: 15px;
+  font-weight: 500;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 10px;
+}
+
+.instruments-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.instrument-card {
+  padding: 15px 10px;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 2px solid transparent;
+}
+
+.instrument-card:active {
+  transform: scale(0.9);
+}
+
+.instrument-card.selected {
+  border: 2px solid #2d3436;
+  animation: glow 1s infinite;
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(102, 126, 234, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.8); }
+}
+
+.instrument-emoji {
+  font-size: 2rem;
+}
+
+.instrument-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #2d3436;
+}
+
+/* CONTROLES */
+.controls-mobile {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.control-button {
+  flex: 1;
+  padding: 15px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.control-button:active {
+  transform: scale(0.95);
+}
+
+.control-button.play {
+  background: #00b894;
+}
+
+.control-button.reset {
+  background: #e17055;
+}
+
+.loading {
+  text-align: center;
+  color: white;
+  font-size: 1.5rem;
+  padding: 50px;
+}
+
+/* RECOMPENSA SIMPLES */
+.simple-reward {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 20px 40px;
+  border-radius: 20px;
+  font-size: 1.5rem;
+  z-index: 9999;
+  animation: fadeInOut 2s;
 }
 
 @keyframes fadeInOut {
-  0% { opacity: 0; }
-  20% { opacity: 1; }
-  80% { opacity: 1; }
-  100% { opacity: 0; }
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
 }
 
-@keyframes zoomBounce {
-  0% { 
-    transform: scale(0) rotate(0deg);
-    opacity: 0;
-  }
-  50% { 
-    transform: scale(1.2) rotate(180deg);
-    opacity: 1;
-  }
-  100% { 
-    transform: scale(1) rotate(360deg);
-    opacity: 1;
-  }
-}
-
-@keyframes sparkleRotate {
-  0% { 
-    transform: rotate(0deg) scale(1);
-  }
-  25% { 
-    transform: rotate(90deg) scale(1.2);
-  }
-  50% { 
-    transform: rotate(180deg) scale(1);
-  }
-  75% { 
-    transform: rotate(270deg) scale(1.2);
-  }
-  100% { 
-    transform: rotate(360deg) scale(1);
-  }
-}
-
-/* Animação para instrumentos quando completar desafio */
-.character-card.has-instrument.celebrating {
-  animation: celebrateDance 0.5s ease-in-out 3;
-}
-
-@keyframes celebrateDance {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  25% { transform: rotate(-10deg) scale(1.1); }
-  75% { transform: rotate(10deg) scale(1.1); }
-}
-
-/* Efeito de partículas douradas */
-.gold-particles {
-  position: fixed;
-  pointer-events: none;
-  z-index: 9998;
-}
-
-.gold-particle {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background: gold;
-  border-radius: 50%;
-  animation: floatUp 3s ease-out forwards;
-}
-
-@keyframes floatUp {
-  0% {
-    transform: translateY(0) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-100vh) rotate(720deg);
-    opacity: 0;
-  }
-}
-
-/* Ajuste responsivo para tablets */
+/* TABLETS */
 @media (min-width: 768px) {
-  .challenge-box {
-    max-width: 600px;
-    margin: 20px auto;
+  .title-mobile {
+    font-size: 3.5rem;
   }
   
-  .reward-message {
-    font-size: 3rem;
+  .characters-grid {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 500px;
+    margin: 0 auto 25px;
   }
   
-  .sparkles {
-    font-size: 4rem;
+  .game-area-mobile {
+    max-width: 800px;
+    padding: 30px;
+  }
+  
+  .instruments-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .instrument-emoji {
+    font-size: 2.5rem;
+  }
+}
+
+/* DESKTOP */
+@media (min-width: 1024px) {
+  .game-area-mobile {
+    max-width: 1200px;
+  }
+  
+  .instruments-grid {
+    grid-template-columns: repeat(5, 1fr);
   }
 }
