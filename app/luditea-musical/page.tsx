@@ -46,7 +46,7 @@ export default function LuditeaMusical() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [score, setScore] = useState(0);
-  const [currentLevel, setCurrentLevel] = useState(1);
+  const [showReward, setShowReward] = useState(false);
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -54,6 +54,25 @@ export default function LuditeaMusical() {
     }
     setTimeout(() => setIsLoading(false), 500);
   }, []);
+
+  // Verificar conquistas simples
+  const checkAchievement = () => {
+    const activeInstruments = characters.filter(c => c.instrument).length;
+    
+    if (activeInstruments === 2 && score === 0) {
+      setScore(100);
+      setShowReward(true);
+      setTimeout(() => setShowReward(false), 2000);
+    } else if (activeInstruments === 4 && score === 100) {
+      setScore(300);
+      setShowReward(true);
+      setTimeout(() => setShowReward(false), 2000);
+    } else if (activeInstruments === 6 && score === 300) {
+      setScore(600);
+      setShowReward(true);
+      setTimeout(() => setShowReward(false), 2000);
+    }
+  };
 
   const speakWelcomeText = () => {
     if ('speechSynthesis' in window && !isSpeaking) {
@@ -120,6 +139,9 @@ export default function LuditeaMusical() {
       }
       
       setSelectedInstrument(null);
+      
+      // Verificar conquista
+      setTimeout(() => checkAchievement(), 500);
     }
   };
 
@@ -153,4 +175,147 @@ export default function LuditeaMusical() {
                 <strong>Bem-vindo ao desafio musical!</strong> 🎉
               </p>
               <p className="welcome-text">
-                Você pode criar músicas e avançar nas fases do jogo, se tornando músico e conquistar o
+                Você pode criar músicas e avançar nas fases do jogo, se tornando músico e conquistar o <span className="golden-text">violão dourado</span>! 🏆
+              </p>
+              <p className="welcome-text">
+                Basta clicar no instrumento que aparece abaixo dos personagens, e clicar em seguida em qualquer um deles - pronto!
+              </p>
+              <p className="welcome-text">
+                Ao final, terá uma música criada por você. Vamos lá? 🎸
+              </p>
+              
+              <button 
+                className="audio-button"
+                onClick={isSpeaking ? stopSpeaking : speakWelcomeText}
+              >
+                {isSpeaking ? '⏸️ Pausar' : '🔊 Ouvir Instruções'}
+              </button>
+            </div>
+          </div>
+          
+          <button 
+            className="play-button-mobile animated-pulse"
+            onClick={() => {
+              stopSpeaking();
+              setShowWelcome(false);
+            }}
+          >
+            🎮 COMEÇAR DESAFIO
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="musical-game-container game-gradient">
+      {showReward && (
+        <div className="simple-reward">
+          ⭐ Parabéns! +{score} pontos! ⭐
+        </div>
+      )}
+      
+      <header className="game-header-mobile">
+        <h1>🎵 Desafio Musical 🎵</h1>
+        <div className="score-display">
+          🏆 Pontos: {score}
+        </div>
+      </header>
+      
+      {isLoading ? (
+        <div className="loading">🎵 Afinando instrumentos...</div>
+      ) : (
+        <div className="game-area-mobile">
+          <div className="characters-grid">
+            {characters.map((character) => (
+              <div 
+                key={character.id}
+                className={`character-card ${character.instrument ? 'has-instrument' : ''}`}
+                onClick={() => handleCharacterClick(character.id)}
+                style={{
+                  backgroundColor: character.instrument ? character.instrument.color : '#74b9ff'
+                }}
+              >
+                <div className="character-display">
+                  {character.instrument ? (
+                    <>
+                      <span className="character-instrument">
+                        {character.instrument.icon}
+                      </span>
+                      <span className="character-label">{character.instrument.name}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="character-empty">👤</span>
+                      <span className="character-label">Vazio</span>
+                    </>
+                  )}
+                </div>
+                <span className="character-id">{character.id}</span>
+              </div>
+            ))}
+          </div>
+          
+          <div className="instruments-section">
+            <p className="instruction-text">
+              {selectedInstrument 
+                ? `✨ ${selectedInstrument.name} selecionado! Escolha um personagem.`
+                : '👇 Escolha um instrumento para começar'}
+            </p>
+            
+            <div className="instruments-grid">
+              {availableInstruments.map((instrument) => (
+                <div 
+                  key={instrument.id}
+                  className={`instrument-card ${
+                    selectedInstrument?.id === instrument.id ? 'selected' : ''
+                  }`}
+                  onClick={() => handleInstrumentClick(instrument)}
+                  style={{
+                    opacity: selectedInstrument?.id === instrument.id ? 1 : 0.6,
+                    backgroundColor: selectedInstrument?.id === instrument.id 
+                      ? instrument.color 
+                      : '#f5f5f5'
+                  }}
+                >
+                  <span className="instrument-emoji">{instrument.icon}</span>
+                  <span className="instrument-label">{instrument.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="controls-mobile">
+            <button 
+              className={`control-button play ${isPlaying ? 'playing' : ''}`}
+              onClick={() => {
+                const newIsPlaying = !isPlaying;
+                setIsPlaying(newIsPlaying);
+                
+                if (soundEngine) {
+                  if (newIsPlaying) {
+                    characters.forEach(char => {
+                      if (char.instrument) {
+                        soundEngine.startInstrumentLoop(char.instrument.id);
+                      }
+                    });
+                  } else {
+                    soundEngine.stopAll();
+                  }
+                }
+              }}
+            >
+              {isPlaying ? '⏸️ PAUSAR' : '▶️ TOCAR'}
+            </button>
+            <button 
+              className="control-button reset"
+              onClick={handleReset}
+            >
+              🔄 LIMPAR
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
