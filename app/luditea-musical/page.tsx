@@ -1,202 +1,152 @@
-'use client';
+/* ... código anterior continua ... */
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import './styles.css';
-
-interface Instrument {
-  id: string;
-  icon: string;
-  name: string;
-  color: string;
+/* Gradientes específicos */
+.welcome-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
 }
 
-interface Character {
-  id: number;
-  instrument: Instrument | null;
+.game-gradient {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 50%, #90dffe 100%);
 }
 
-const instruments: Instrument[] = [
-  { id: 'guitar', icon: '🎸', name: 'Guitarra', color: '#FF6B6B' },
-  { id: 'drums', icon: '🥁', name: 'Bateria', color: '#4ECDC4' },
-  { id: 'piano', icon: '🎹', name: 'Piano', color: '#95E77E' },
-  { id: 'trumpet', icon: '🎺', name: 'Trompete', color: '#FFD93D' },
-  { id: 'violin', icon: '🎻', name: 'Violino', color: '#A8E6CF' },
-  { id: 'mic', icon: '🎤', name: 'Microfone', color: '#C9B6FF' },
-];
+/* Animações */
+.animated-bounce {
+  animation: bounce 2s ease-in-out infinite;
+}
 
-export default function LuditeaMusical() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [showWelcome, setShowWelcome] = useState(true);
-  const [selectedInstrument, setSelectedInstrument] = useState<Instrument | null>(null);
-  const [characters, setCharacters] = useState<Character[]>(
-    Array.from({ length: 6 }, (_, i) => ({ id: i + 1, instrument: null }))
-  );
-  const [availableInstruments, setAvailableInstruments] = useState<Instrument[]>(instruments);
-  const [isPlaying, setIsPlaying] = useState(false);
-  
-  useEffect(() => {
-    setTimeout(() => setIsLoading(false), 500);
-  }, []);
+.animated-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
 
-  const handleInstrumentClick = (instrument: Instrument) => {
-    if (availableInstruments.find(i => i.id === instrument.id)) {
-      setSelectedInstrument(instrument);
-    }
-  };
+.animated-music {
+  animation: musicNote 1s ease-in-out infinite;
+}
 
-  const handleCharacterClick = (characterId: number) => {
-    const character = characters.find(c => c.id === characterId);
-    
-    // Se o personagem já tem instrumento, remove
-    if (character?.instrument) {
-      setAvailableInstruments([...availableInstruments, character.instrument]);
-      setCharacters(characters.map(c => 
-        c.id === characterId ? { ...c, instrument: null } : c
-      ));
-      return;
-    }
-    
-    // Se há instrumento selecionado, adiciona ao personagem
-    if (selectedInstrument) {
-      setCharacters(characters.map(c => 
-        c.id === characterId ? { ...c, instrument: selectedInstrument } : c
-      ));
-      setAvailableInstruments(availableInstruments.filter(i => i.id !== selectedInstrument.id));
-      setSelectedInstrument(null);
-      
-      // Aqui iniciaria o som do instrumento
-      console.log(`Personagem ${characterId} agora toca ${selectedInstrument.name}`);
-    }
-  };
+@keyframes musicNote {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-5px) rotate(5deg); }
+}
 
-  const handleReset = () => {
-    setCharacters(Array.from({ length: 6 }, (_, i) => ({ id: i + 1, instrument: null })));
-    setAvailableInstruments(instruments);
-    setSelectedInstrument(null);
-    setIsPlaying(false);
-  };
+/* Texto dourado */
+.golden-text {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: bold;
+}
 
-  // Tela de Boas-Vindas com Mila
-  if (showWelcome && !isLoading) {
-    return (
-      <div className="musical-game-container">
-        <div className="welcome-screen-mobile">
-          <h1 className="title-mobile">LudiTEA Musical</h1>
-          
-          <div className="mila-container-mobile">
-            <Image 
-              src="/images/mascotes/mila/mila_boas_vindas_resultado.webp"
-              alt="Mila"
-              width={200}
-              height={200}
-              className="mila-image"
-              priority
-            />
-            <div className="speech-bubble-mobile">
-              <p>Olá! Eu sou a Mila! 🎭</p>
-              <p>Toque nos instrumentos e depois nos personagens para criar sua banda!</p>
-            </div>
-          </div>
-          
-          <button 
-            className="play-button-mobile"
-            onClick={() => setShowWelcome(false)}
-          >
-            🎮 JOGAR
-          </button>
-        </div>
-      </div>
-    );
+/* Botão de áudio */
+.audio-button {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  margin-top: 15px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: transform 0.2s;
+}
+
+.audio-button:active {
+  transform: scale(0.95);
+}
+
+/* Score display */
+.score-display {
+  font-size: 0.9rem;
+  color: #2d3436;
+  margin-top: 5px;
+  font-weight: 600;
+}
+
+/* Grade ajustada para 8 personagens */
+.characters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* Instrumentos com scroll horizontal */
+.instruments-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 10px;
+}
+
+.instruments-grid-expanded {
+  display: flex;
+  gap: 10px;
+  padding: 5px;
+  min-width: min-content;
+}
+
+.instrument-card {
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+/* Efeito glowing para selecionado */
+.glowing {
+  animation: glowEffect 1s ease-in-out infinite;
+}
+
+@keyframes glowEffect {
+  0%, 100% { 
+    box-shadow: 0 0 5px rgba(102, 126, 234, 0.5),
+                0 0 10px rgba(102, 126, 234, 0.3);
   }
+  50% { 
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.8),
+                0 0 30px rgba(102, 126, 234, 0.5);
+  }
+}
 
-  // Tela Principal do Jogo
-  return (
-    <div className="musical-game-container">
-      <header className="game-header-mobile">
-        <h1>🎵 LudiTEA Musical 🎵</h1>
-      </header>
-      
-      {isLoading ? (
-        <div className="loading">Preparando...</div>
-      ) : (
-        <div className="game-area-mobile">
-          {/* Área dos Personagens - Grade 2x3 */}
-          <div className="characters-grid">
-            {characters.map((character) => (
-              <div 
-                key={character.id}
-                className={`character-card ${character.instrument ? 'has-instrument' : ''}`}
-                onClick={() => handleCharacterClick(character.id)}
-                style={{
-                  backgroundColor: character.instrument ? character.instrument.color : '#f0f0f0'
-                }}
-              >
-                <div className="character-display">
-                  {character.instrument ? (
-                    <>
-                      <span className="character-instrument">{character.instrument.icon}</span>
-                      <span className="character-label">{character.instrument.name}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="character-empty">👤</span>
-                      <span className="character-label">Vazio</span>
-                    </>
-                  )}
-                </div>
-                <span className="character-id">{character.id}</span>
-              </div>
-            ))}
-          </div>
-          
-          {/* Área dos Instrumentos */}
-          <div className="instruments-section">
-            <p className="instruction-text">
-              {selectedInstrument 
-                ? `📍 ${selectedInstrument.name} selecionado! Toque em um personagem.`
-                : '👇 Escolha um instrumento abaixo'}
-            </p>
-            
-            <div className="instruments-grid">
-              {availableInstruments.map((instrument) => (
-                <div 
-                  key={instrument.id}
-                  className={`instrument-card ${
-                    selectedInstrument?.id === instrument.id ? 'selected' : ''
-                  }`}
-                  onClick={() => handleInstrumentClick(instrument)}
-                  style={{
-                    opacity: selectedInstrument?.id === instrument.id ? 1 : 0.6,
-                    backgroundColor: selectedInstrument?.id === instrument.id 
-                      ? instrument.color 
-                      : '#f5f5f5'
-                  }}
-                >
-                  <span className="instrument-emoji">{instrument.icon}</span>
-                  <span className="instrument-label">{instrument.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Controles */}
-          <div className="controls-mobile">
-            <button 
-              className="control-button play"
-              onClick={() => setIsPlaying(!isPlaying)}
-            >
-              {isPlaying ? '⏸️ PAUSAR' : '▶️ TOCAR'}
-            </button>
-            <button 
-              className="control-button reset"
-              onClick={handleReset}
-            >
-              🔄 LIMPAR
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+/* Personagem tocando */
+.character-card.playing .character-instrument {
+  animation: bounce 0.5s ease-in-out infinite;
+}
+
+/* Botão de volume */
+.control-button.volume {
+  background: #6c5ce7;
+}
+
+/* Tablets e telas maiores */
+@media (min-width: 768px) {
+  .characters-grid {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 600px;
+    margin: 0 auto 25px;
+  }
+  
+  .instruments-grid-expanded {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+  }
+  
+  .instruments-scroll {
+    overflow: visible;
+  }
+}
+
+@media (min-width: 1024px) {
+  .characters-grid {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 800px;
+  }
+}
+
+/* Welcome text styling */
+.welcome-text {
+  margin: 12px 0;
+  line-height: 1.6;
+  color: #2d3436;
+}
+
+.welcome-text strong {
+  color: #6c5ce7;
+  font-size: 1.1rem;
 }
