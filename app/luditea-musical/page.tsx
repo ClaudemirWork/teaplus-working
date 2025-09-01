@@ -17,23 +17,24 @@ interface Character {
   instrument: Instrument | null;
 }
 
+// INSTRUMENTOS ATUALIZADOS COM OS NOVOS SONS!
 const instruments: Instrument[] = [
-  { id: 'guitar', icon: '🎸', name: 'Guitarra', color: '#FF6B6B' },
+  { id: 'guitar', icon: '🎸', name: 'Guitarra Rock', color: '#FF6B6B' },
   { id: 'drums', icon: '🥁', name: 'Bateria', color: '#4ECDC4' },
   { id: 'piano', icon: '🎹', name: 'Piano', color: '#95E77E' },
-  { id: 'trumpet', icon: '🎺', name: 'Trompete', color: '#FFD93D' },
+  { id: 'saxofone', icon: '🎷', name: 'Saxofone', color: '#FFD93D' },
   { id: 'violin', icon: '🎻', name: 'Violino', color: '#A8E6CF' },
   { id: 'shaker', icon: '🪇', name: 'Chocalho', color: '#FFB6C1' },
+  { id: 'coral', icon: '🎤', name: 'Coral', color: '#FF69B4' },
+  { id: 'flauta', icon: '🪈', name: 'Flauta', color: '#87CEEB' },
+  { id: 'tambor', icon: '🪘', name: 'Tambor Tribal', color: '#8B4513' },
+  { id: 'violao', icon: '🎸', name: 'Violão', color: '#D2691E' },
   { id: 'synth', icon: '🎛️', name: 'Sintetizador', color: '#E0BBE4' },
   { id: 'cymbal', icon: '🔔', name: 'Prato', color: '#FDB863' },
   { id: 'tambourine', icon: '🪘', name: 'Pandeiro', color: '#B4E7CE' },
-  { id: 'bass', icon: '🎵', name: 'Bumbo', color: '#957DAD' },
 ];
 
 let soundEngine: SoundEngine | null = null;
-if (typeof window !== 'undefined') {
-  soundEngine = new SoundEngine();
-}
 
 export default function LuditeaMusical() {
   const [isLoading, setIsLoading] = useState(true);
@@ -47,6 +48,9 @@ export default function LuditeaMusical() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      soundEngine = new SoundEngine();
+    }
     setTimeout(() => setIsLoading(false), 500);
   }, []);
 
