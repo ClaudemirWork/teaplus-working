@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Save, Clock, Calendar, Trophy, Star, Check, Gift, Volume2, VolumeX, ArrowRight, Award } from 'lucide-react';
+import { ChevronLeft, Save, Clock, Calendar, Trophy, Star, Check, Gift, Volume2, VolumeX, ArrowRight, Award, Trash2, Edit2, Filter } from 'lucide-react';
 import './styles.css';
 
-// MAPEAMENTO DOS CARDS PECS (mantém o mesmo)
+// MAPEAMENTO DOS CARDS PECS
 const PECS_CARDS = {
   rotina: [
     { id: 'acordar', name: 'Acordar', image: '/images/cards/rotina/hora_acordar.webp', time: '07:00' },
@@ -21,12 +21,34 @@ const PECS_CARDS = {
   acoes: [
     { id: 'escovar_dentes', name: 'Escovar Dentes', image: '/images/cards/acoes/escovar os dentes.webp', time: '07:15' },
     { id: 'lavar_maos', name: 'Lavar as Mãos', image: '/images/cards/acoes/lavar as maos.webp', time: '11:50' },
+    { id: 'vestir', name: 'Vestir Roupa', image: '/images/cards/acoes/vestindo_blusa.webp', time: '07:45' },
+    { id: 'abracar', name: 'Abraçar', image: '/images/cards/acoes/abraçar.webp', time: '20:00' },
+    { id: 'ler', name: 'Ler Livro', image: '/images/cards/acoes/ler_livro.webp', time: '19:30' },
   ],
   alimentos: [
     { id: 'suco', name: 'Suco', image: '/images/cards/alimentos/suco_laranja.webp', time: '07:30' },
     { id: 'fruta', name: 'Fruta', image: '/images/cards/alimentos/banana.webp', time: '10:00' },
+    { id: 'sanduiche', name: 'Sanduíche', image: '/images/cards/alimentos/sanduiche.webp', time: '16:00' },
+  ],
+  escola: [
+    { id: 'caderno', name: 'Caderno', image: '/images/cards/escola/caderno.webp', time: '09:00' },
+    { id: 'lapis', name: 'Lápis', image: '/images/cards/escola/lapis.webp', time: '09:00' },
+    { id: 'livro', name: 'Livro', image: '/images/cards/escola/livro.webp', time: '14:00' },
+  ],
+  necessidades: [
+    { id: 'beber_agua', name: 'Beber Água', image: '/images/cards/acoes/beber.webp', time: '10:30' },
+    { id: 'descansar', name: 'Descansar', image: '/images/cards/acoes/sentar.webp', time: '13:00' },
   ]
 };
+
+// Categorias
+const CATEGORIES = [
+  { id: 'rotina', name: 'Rotina Diária', icon: '📅', color: 'bg-blue-100 border-blue-400' },
+  { id: 'acoes', name: 'Ações', icon: '👋', color: 'bg-green-100 border-green-400' },
+  { id: 'alimentos', name: 'Alimentação', icon: '🍎', color: 'bg-orange-100 border-orange-400' },
+  { id: 'escola', name: 'Escola', icon: '🎒', color: 'bg-purple-100 border-purple-400' },
+  { id: 'necessidades', name: 'Necessidades', icon: '💙', color: 'bg-pink-100 border-pink-400' },
+];
 
 // Dias da Semana
 const WEEKDAYS = [
@@ -39,6 +61,16 @@ const WEEKDAYS = [
   { id: 'domingo', name: 'Domingo', short: 'DOM', color: 'bg-red-100 border-red-400' },
 ];
 
+// Horários disponíveis
+const TIME_OPTIONS = [];
+for (let h = 6; h <= 22; h++) {
+  for (let m = 0; m < 60; m += 15) {
+    TIME_OPTIONS.push(
+      `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
+    );
+  }
+}
+
 // Tipos
 interface RoutineItem {
   id: string;
@@ -47,32 +79,25 @@ interface RoutineItem {
   time: string;
   completed?: boolean;
   uniqueId: string;
+  category?: string;
 }
 
 interface WeeklyRoutine {
   [key: string]: RoutineItem[];
 }
 
-interface DailyProgress {
-  [key: string]: number; // percentual de conclusão por dia
-}
-
 export default function RoutineVisualPage() {
-  // Estados de Navegação
+  // Estados
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'instructions' | 'main'>('welcome');
   const [isSpeaking, setIsSpeaking] = useState(false);
-  
-  // Estados da Rotina
+  const [selectedCategory, setSelectedCategory] = useState('rotina');
   const [selectedDay, setSelectedDay] = useState('segunda');
   const [weeklyRoutine, setWeeklyRoutine] = useState<WeeklyRoutine>({});
   const [viewMode, setViewMode] = useState<'edit' | 'check'>('edit');
-  
-  // Estados de Gamificação
   const [totalPoints, setTotalPoints] = useState(0);
-  const [dailyProgress, setDailyProgress] = useState<DailyProgress>({});
+  const [dailyProgress, setDailyProgress] = useState<{ [key: string]: number }>({});
   const [showConfetti, setShowConfetti] = useState(false);
   const [showGoldenGem, setShowGoldenGem] = useState(false);
-  const [achievements, setAchievements] = useState<string[]>([]);
 
   // Função de Fala
   const speakText = (text: string) => {
@@ -89,21 +114,40 @@ export default function RoutineVisualPage() {
 
   // Adicionar atividade ao dia
   const addActivityToDay = (activity: any) => {
-    const newActivity: RoutineItem = {
+    const routineItem: RoutineItem = {
       ...activity,
       uniqueId: `${activity.id}_${Date.now()}`,
+      category: selectedCategory,
       completed: false
     };
     
     setWeeklyRoutine(prev => ({
       ...prev,
-      [selectedDay]: [...(prev[selectedDay] || []), newActivity].sort((a, b) => 
+      [selectedDay]: [...(prev[selectedDay] || []), routineItem].sort((a, b) => 
         a.time.localeCompare(b.time)
       )
     }));
   };
 
-  // Marcar atividade como completa
+  // Remover atividade
+  const removeActivity = (day: string, uniqueId: string) => {
+    setWeeklyRoutine(prev => ({
+      ...prev,
+      [day]: prev[day]?.filter(item => item.uniqueId !== uniqueId) || []
+    }));
+  };
+
+  // Atualizar horário
+  const updateActivityTime = (day: string, uniqueId: string, newTime: string) => {
+    setWeeklyRoutine(prev => ({
+      ...prev,
+      [day]: prev[day]?.map(item => 
+        item.uniqueId === uniqueId ? { ...item, time: newTime } : item
+      ).sort((a, b) => a.time.localeCompare(b.time)) || []
+    }));
+  };
+
+  // Marcar como completa
   const toggleActivityComplete = (day: string, uniqueId: string) => {
     setWeeklyRoutine(prev => ({
       ...prev,
@@ -114,11 +158,10 @@ export default function RoutineVisualPage() {
       ) || []
     }));
     
-    // Calcular progresso
     calculateDayProgress(day);
   };
 
-  // Calcular progresso do dia
+  // Calcular progresso
   const calculateDayProgress = (day: string) => {
     const activities = weeklyRoutine[day] || [];
     if (activities.length === 0) return;
@@ -131,7 +174,6 @@ export default function RoutineVisualPage() {
       [day]: progress
     }));
     
-    // Celebrações baseadas no progresso
     if (progress >= 80 && progress < 100) {
       launchConfetti();
       setTotalPoints(prev => prev + 50);
@@ -141,19 +183,18 @@ export default function RoutineVisualPage() {
     }
   };
 
-  // Lançar confetes
+  // Efeitos visuais
   const launchConfetti = () => {
     setShowConfetti(true);
     setTimeout(() => setShowConfetti(false), 3000);
   };
 
-  // Mostrar prêmio dourado
   const showGoldenReward = () => {
     setShowGoldenGem(true);
     setTimeout(() => setShowGoldenGem(false), 4000);
   };
 
-  // Copiar rotina para outros dias
+  // Copiar rotina
   const copyRoutineToDay = (fromDay: string, toDay: string) => {
     const routineToCopy = weeklyRoutine[fromDay] || [];
     const newRoutine = routineToCopy.map(item => ({
@@ -168,7 +209,7 @@ export default function RoutineVisualPage() {
     }));
   };
 
-  // TELA 1: Boas-vindas Simples
+  // TELA 1: Boas-vindas
   if (currentScreen === 'welcome') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center p-4">
@@ -196,7 +237,7 @@ export default function RoutineVisualPage() {
     );
   }
 
-  // TELA 2: Instruções e Prêmios
+  // TELA 2: Instruções
   if (currentScreen === 'instructions') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
@@ -207,7 +248,6 @@ export default function RoutineVisualPage() {
             </h2>
             
             <div className="grid md:grid-cols-2 gap-8">
-              {/* Instruções */}
               <div className="space-y-4">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">
                   Monte sua Rotina Semanal:
@@ -216,27 +256,31 @@ export default function RoutineVisualPage() {
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
                     <div className="bg-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
-                    <p>Escolha o dia da semana</p>
+                    <p>Escolha o dia da semana na aba superior</p>
                   </div>
                   
                   <div className="flex items-start gap-3">
                     <div className="bg-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
-                    <p>Adicione as atividades do dia</p>
+                    <p>Selecione a categoria no menu lateral</p>
                   </div>
                   
                   <div className="flex items-start gap-3">
                     <div className="bg-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
-                    <p>Organize os horários</p>
+                    <p><strong>CLIQUE</strong> na imagem para adicionar à rotina</p>
                   </div>
                   
                   <div className="flex items-start gap-3">
                     <div className="bg-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">4</div>
-                    <p>Marque as tarefas cumpridas</p>
+                    <p>Ajuste os horários e remova atividades se necessário</p>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="bg-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">5</div>
+                    <p>No modo CHECK, marque as tarefas cumpridas</p>
                   </div>
                 </div>
               </div>
               
-              {/* Sistema de Prêmios */}
               <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-6">
                 <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                   <Trophy className="w-6 h-6 text-yellow-500" />
@@ -268,18 +312,12 @@ export default function RoutineVisualPage() {
                     </div>
                   </div>
                 </div>
-                
-                <div className="mt-4 p-3 bg-white rounded-lg">
-                  <p className="text-sm text-gray-700">
-                    <strong>Dica:</strong> Peça ajuda aos pais para marcar as tarefas cumpridas e ganhar pontos!
-                  </p>
-                </div>
               </div>
             </div>
             
             <div className="mt-8 flex justify-center gap-4">
               <button
-                onClick={() => speakText("Monte sua rotina semanal e ganhe prêmios! Complete 80% das tarefas para ganhar confetes e 100% para ganhar a gema dourada!")}
+                onClick={() => speakText("Para montar sua rotina, escolha o dia da semana, selecione a categoria e clique nas imagens para adicionar. Você pode ajustar horários e remover atividades quando quiser.")}
                 className="px-6 py-3 bg-purple-100 text-purple-700 rounded-xl hover:bg-purple-200 flex items-center gap-2"
               >
                 <Volume2 className="w-5 h-5" />
@@ -313,7 +351,7 @@ export default function RoutineVisualPage() {
               style={{
                 left: `${Math.random() * 100}%`,
                 animationDelay: `${Math.random() * 3}s`,
-                backgroundColor: ['#FF6B6B', '#4ECDC4', '#FFD93D', '#95E77E', '#A8E6CF'][Math.floor(Math.random() * 5)]
+                backgroundColor: ['#FF6B6B', '#4ECDC4', '#FFD93D'][Math.floor(Math.random() * 3)]
               }}
             />
           ))}
@@ -366,7 +404,7 @@ export default function RoutineVisualPage() {
         </div>
       </header>
 
-      {/* Abas dos Dias da Semana */}
+      {/* Abas dos Dias */}
       <div className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex space-x-2 overflow-x-auto py-4">
@@ -400,32 +438,48 @@ export default function RoutineVisualPage() {
       {/* Área Principal */}
       <div className="max-w-7xl mx-auto p-4">
         <div className="grid md:grid-cols-3 gap-4">
-          {/* Painel de Atividades (apenas no modo editar) */}
+          {/* Painel Lateral - Modo Editar */}
           {viewMode === 'edit' && (
             <div className="md:col-span-1 bg-white rounded-xl shadow-lg p-4">
-              <h3 className="text-lg font-bold mb-4">Adicionar Atividades</h3>
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <Filter className="w-5 h-5" />
+                Adicionar Atividades
+              </h3>
               
-              <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                {Object.entries(PECS_CARDS).map(([category, cards]) => (
-                  <div key={category}>
-                    <h4 className="font-semibold text-gray-700 mb-2 capitalize">{category}</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {cards.map(card => (
-                        <button
-                          key={card.id}
-                          onClick={() => addActivityToDay(card)}
-                          className="p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-all"
-                        >
-                          <img
-                            src={card.image}
-                            alt={card.name}
-                            className="w-full h-16 object-contain mb-1"
-                          />
-                          <p className="text-xs">{card.name}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+              {/* Abas de Categorias */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                      selectedCategory === cat.id
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                  >
+                    {cat.icon} {cat.name}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Cards da Categoria Selecionada */}
+              <div className="grid grid-cols-2 gap-2 max-h-[500px] overflow-y-auto">
+                {PECS_CARDS[selectedCategory as keyof typeof PECS_CARDS]?.map(card => (
+                  <button
+                    key={card.id}
+                    onClick={() => addActivityToDay(card)}
+                    className="p-2 bg-gray-50 rounded-lg hover:bg-blue-50 hover:scale-105 transition-all cursor-pointer border-2 border-gray-200 hover:border-blue-300"
+                    title="Clique para adicionar"
+                  >
+                    <img
+                      src={card.image}
+                      alt={card.name}
+                      className="w-full h-16 object-contain mb-1"
+                    />
+                    <p className="text-xs font-medium">{card.name}</p>
+                    <p className="text-xs text-gray-500">{card.time}</p>
+                  </button>
                 ))}
               </div>
             </div>
@@ -443,6 +497,7 @@ export default function RoutineVisualPage() {
                   <select 
                     onChange={(e) => e.target.value && copyRoutineToDay(selectedDay, e.target.value)}
                     className="px-3 py-1 border rounded-lg text-sm"
+                    defaultValue=""
                   >
                     <option value="">Copiar para...</option>
                     {WEEKDAYS.filter(d => d.id !== selectedDay).map(day => (
@@ -456,7 +511,7 @@ export default function RoutineVisualPage() {
                 <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
                   <p className="text-gray-500">
                     {viewMode === 'edit' 
-                      ? 'Adicione atividades para este dia'
+                      ? 'Clique nas imagens ao lado para adicionar atividades'
                       : 'Nenhuma atividade programada'}
                   </p>
                 </div>
@@ -465,12 +520,13 @@ export default function RoutineVisualPage() {
                   {weeklyRoutine[selectedDay].map(item => (
                     <div 
                       key={item.uniqueId}
-                      className={`activity-card flex items-center gap-4 p-4 rounded-lg border-2 ${
+                      className={`flex items-center gap-4 p-4 rounded-lg border-2 ${
                         item.completed 
                           ? 'bg-green-50 border-green-300' 
                           : 'bg-gray-50 border-gray-200'
                       }`}
                     >
+                      {/* Checkbox - Modo Check */}
                       {viewMode === 'check' && (
                         <button
                           onClick={() => toggleActivityComplete(selectedDay, item.uniqueId)}
@@ -478,22 +534,52 @@ export default function RoutineVisualPage() {
                         />
                       )}
                       
-                      <div className="text-lg font-bold text-blue-600">
-                        {item.time}
+                      {/* Horário - Editável no modo Edit */}
+                      <div className="w-20">
+                        {viewMode === 'edit' ? (
+                          <select
+                            value={item.time}
+                            onChange={(e) => updateActivityTime(selectedDay, item.uniqueId, e.target.value)}
+                            className="text-sm font-bold text-blue-600 border rounded px-2 py-1 w-full"
+                          >
+                            {TIME_OPTIONS.map(time => (
+                              <option key={time} value={time}>{time}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-lg font-bold text-blue-600">{item.time}</span>
+                        )}
                       </div>
                       
+                      {/* Imagem */}
                       <img
                         src={item.image}
                         alt={item.name}
                         className="w-16 h-16 object-contain"
                       />
                       
+                      {/* Nome */}
                       <div className="flex-1">
                         <p className="font-semibold">{item.name}</p>
+                        <p className="text-sm text-gray-500">
+                          {CATEGORIES.find(c => c.id === item.category)?.name}
+                        </p>
                       </div>
                       
+                      {/* Estrela se completado */}
                       {item.completed && (
                         <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" />
+                      )}
+                      
+                      {/* Botão Remover - Modo Edit */}
+                      {viewMode === 'edit' && (
+                        <button
+                          onClick={() => removeActivity(selectedDay, item.uniqueId)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                          title="Remover atividade"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
                       )}
                     </div>
                   ))}
@@ -502,42 +588,6 @@ export default function RoutineVisualPage() {
             </div>
           </div>
         </div>
-
-        {/* Painel de Conquistas */}
-        {totalPoints >= 100 && (
-          <div className="mt-6 bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Award className="w-6 h-6 text-purple-500" />
-              Suas Conquistas
-            </h3>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {totalPoints >= 100 && (
-                <div className="achievement-badge text-center p-4 bg-yellow-50 rounded-lg">
-                  <div className="text-4xl mb-2">🏅</div>
-                  <p className="font-semibold">Iniciante</p>
-                  <p className="text-sm text-gray-600">100 pontos</p>
-                </div>
-              )}
-              
-              {totalPoints >= 500 && (
-                <div className="achievement-badge text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-4xl mb-2">🏆</div>
-                  <p className="font-semibold">Dedicado</p>
-                  <p className="text-sm text-gray-600">500 pontos</p>
-                </div>
-              )}
-              
-              {totalPoints >= 1000 && (
-                <div className="achievement-badge text-center p-4 bg-purple-50 rounded-lg">
-                  <div className="text-4xl mb-2">👑</div>
-                  <p className="font-semibold">Mestre da Rotina</p>
-                  <p className="text-sm text-gray-600">1000 pontos</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
