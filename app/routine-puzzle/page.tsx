@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Save, Clock, Calendar, Plus, Trash2, Eye, Edit2, Filter, Grid, List } from 'lucide-react';
+import { ChevronLeft, Save, Clock, Calendar, Plus, Trash2, Eye, Edit2, Filter, Grid, List, Volume2, VolumeX, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../utils/supabaseClient';
 
-// MAPEAMENTO DOS CARDS PECS
+// [MAPEAMENTO DOS CARDS PECS - mantém o mesmo]
 const PECS_CARDS = {
   rotina: [
     { id: 'acordar', name: 'Acordar', image: '/images/cards/rotina/hora_acordar.webp', time: '07:00' },
@@ -51,7 +51,6 @@ const PECS_CARDS = {
   ]
 };
 
-// Categorias
 const CATEGORIES = [
   { id: 'rotina', name: 'Rotina Diária', icon: '📅', color: 'bg-blue-100 border-blue-400' },
   { id: 'acoes', name: 'Ações', icon: '👋', color: 'bg-green-100 border-green-400' },
@@ -78,6 +77,8 @@ export default function RoutineVisualPage() {
   const supabase = createClient();
   
   // Estados
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('rotina');
   const [myRoutine, setMyRoutine] = useState<RoutineItem[]>([]);
   const [viewMode, setViewMode] = useState<'edit' | 'view'>('edit');
@@ -85,6 +86,27 @@ export default function RoutineVisualPage() {
   const [routineName, setRoutineName] = useState('Minha Rotina Visual');
   const [isSaving, setIsSaving] = useState(false);
   const [draggedCard, setDraggedCard] = useState<PECSCard | null>(null);
+
+  // Função para falar texto
+  const speakText = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'pt-BR';
+      utterance.rate = 0.9;
+      utterance.pitch = 1.1;
+      setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const stopSpeaking = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+  };
 
   // Adicionar card à rotina
   const addToRoutine = (card: PECSCard) => {
@@ -182,19 +204,167 @@ export default function RoutineVisualPage() {
     }
   }
 
+  // TELA DE BOAS-VINDAS
+  if (showWelcome) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-100 via-orange-50 to-red-50 flex items-center justify-center p-4">
+        <div className="max-w-4xl w-full">
+          {/* Card Principal */}
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-orange-400 to-red-400 p-8 text-center">
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
+                📅 Organizando Minha Rotina
+              </h1>
+              <p className="text-white/90 text-lg">
+                Com ajuda do Leo, vamos criar sua rotina visual!
+              </p>
+            </div>
+
+            {/* Conteúdo */}
+            <div className="p-8">
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                {/* Coluna Esquerda - Leo */}
+                <div className="text-center">
+                  <div className="relative inline-block">
+                    <img
+                      src="/images/mascotes/leo/leo_forca_resultado.webp"
+                      alt="Leo - Mascote"
+                      className="w-64 h-64 md:w-80 md:h-80 object-contain mx-auto drop-shadow-2xl"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const fallback = document.createElement('div');
+                        fallback.className = 'w-64 h-64 bg-gradient-to-br from-orange-400 to-red-400 rounded-full flex items-center justify-center mx-auto';
+                        fallback.innerHTML = '<span class="text-8xl">🦁</span>';
+                        e.currentTarget.parentElement?.appendChild(fallback);
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Balão de Fala do Leo */}
+                  <div className="mt-4 bg-orange-100 rounded-2xl p-4 relative">
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-b-[15px] border-b-orange-100"></div>
+                    <p className="text-gray-700 font-medium">
+                      "Oi! Eu sou o Leo! Vou te ajudar a organizar seu dia de forma divertida!"
+                    </p>
+                  </div>
+                </div>
+
+                {/* Coluna Direita - Instruções */}
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                      Como funciona? 🤔
+                    </h2>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-orange-200 text-orange-700 w-8 h-8 rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                          1
+                        </div>
+                        <p className="text-gray-700">
+                          <strong>Escolha as atividades</strong> - Selecione os cards com imagens das atividades do seu dia
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-start gap-3">
+                        <div className="bg-orange-200 text-orange-700 w-8 h-8 rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                          2
+                        </div>
+                        <p className="text-gray-700">
+                          <strong>Organize os horários</strong> - Defina que horas você faz cada atividade
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-start gap-3">
+                        <div className="bg-orange-200 text-orange-700 w-8 h-8 rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                          3
+                        </div>
+                        <p className="text-gray-700">
+                          <strong>Visualize sua rotina</strong> - Veja sua rotina completa em linha do tempo ou grade
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-start gap-3">
+                        <div className="bg-orange-200 text-orange-700 w-8 h-8 rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                          4
+                        </div>
+                        <p className="text-gray-700">
+                          <strong>Salve e use todo dia</strong> - Guarde sua rotina para consultar sempre que precisar
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Benefícios */}
+                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4">
+                    <h3 className="font-bold text-gray-800 mb-2">Por que usar rotina visual?</h3>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>✨ Ajuda a entender o que vai acontecer no dia</li>
+                      <li>✨ Reduz ansiedade com mudanças</li>
+                      <li>✨ Desenvolve autonomia e independência</li>
+                      <li>✨ Facilita transições entre atividades</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botões de Ação */}
+              <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={() => {
+                    const text = "Olá! Vamos organizar sua rotina? Primeiro, escolha as atividades do seu dia. Depois organize os horários. É fácil e divertido!";
+                    speakText(text);
+                  }}
+                  disabled={isSpeaking}
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-orange-100 text-orange-700 rounded-xl hover:bg-orange-200 transition-colors font-medium"
+                >
+                  {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                  {isSpeaking ? 'Parar Áudio' : 'Ouvir Instruções'}
+                </button>
+                
+                <button
+                  onClick={() => {
+                    stopSpeaking();
+                    setShowWelcome(false);
+                  }}
+                  className="flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 transition-all transform hover:scale-105 shadow-lg font-bold text-lg"
+                >
+                  Iniciar
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Link para voltar */}
+          <div className="text-center mt-6">
+            <Link
+              href="/dashboard"
+              className="text-gray-600 hover:text-gray-800 font-medium"
+            >
+              ← Voltar ao Menu Principal
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // TELA PRINCIPAL (seu código anterior continua aqui)
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
-            <Link
-              href="/dashboard"
+            <button
+              onClick={() => setShowWelcome(true)}
               className="flex items-center text-teal-600 hover:text-teal-700"
             >
               <ChevronLeft className="h-6 w-6" />
               <span className="ml-1 font-medium">Voltar</span>
-            </Link>
+            </button>
             
             <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
               <Calendar className="w-6 h-6" />
@@ -215,7 +385,9 @@ export default function RoutineVisualPage() {
         </div>
       </header>
 
+      {/* Resto do código continua igual... */}
       <main className="p-4 max-w-7xl mx-auto">
+        {/* [TODO O RESTO DO CÓDIGO PERMANECE IGUAL] */}
         {/* Controles */}
         <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -247,6 +419,7 @@ export default function RoutineVisualPage() {
           </div>
         </div>
 
+        {/* [RESTO DO CÓDIGO CONTINUA IGUAL - Grid com cards, timeline, etc] */}
         <div className="grid md:grid-cols-3 gap-4">
           {/* Painel de Cards Disponíveis */}
           {viewMode === 'edit' && (
