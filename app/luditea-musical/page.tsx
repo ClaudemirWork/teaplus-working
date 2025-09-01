@@ -17,7 +17,15 @@ interface Character {
   instrument: Instrument | null;
 }
 
-// INSTRUMENTOS ATUALIZADOS COM OS NOVOS SONS!
+interface Challenge {
+  level: number;
+  name: string;
+  description: string;
+  requiredInstruments: string[];
+  reward: string;
+  completed: boolean;
+}
+
 const instruments: Instrument[] = [
   { id: 'guitar', icon: '🎸', name: 'Guitarra Rock', color: '#FF6B6B' },
   { id: 'drums', icon: '🥁', name: 'Bateria', color: '#4ECDC4' },
@@ -34,6 +42,50 @@ const instruments: Instrument[] = [
   { id: 'tambourine', icon: '🪘', name: 'Pandeiro', color: '#B4E7CE' },
 ];
 
+// DESAFIOS DO JOGO
+const challenges: Challenge[] = [
+  {
+    level: 1,
+    name: "Primeira Banda",
+    description: "Monte uma banda com 2 instrumentos!",
+    requiredInstruments: ['any', 'any'],
+    reward: "⭐",
+    completed: false
+  },
+  {
+    level: 2,
+    name: "Trio Musical",
+    description: "Use Bateria + mais 2 instrumentos!",
+    requiredInstruments: ['drums', 'any', 'any'],
+    reward: "⭐⭐",
+    completed: false
+  },
+  {
+    level: 3,
+    name: "Banda de Rock",
+    description: "Monte: Bateria + Guitarra + Violão!",
+    requiredInstruments: ['drums', 'guitar', 'violao'],
+    reward: "🏆",
+    completed: false
+  },
+  {
+    level: 4,
+    name: "Orquestra",
+    description: "Use: Violino + Flauta + Piano + Coral!",
+    requiredInstruments: ['violin', 'flauta', 'piano', 'coral'],
+    reward: "💎",
+    completed: false
+  },
+  {
+    level: 5,
+    name: "Grande Maestro",
+    description: "Use 6 instrumentos diferentes!",
+    requiredInstruments: ['any', 'any', 'any', 'any', 'any', 'any'],
+    reward: "👑",
+    completed: false
+  }
+];
+
 let soundEngine: SoundEngine | null = null;
 
 export default function LuditeaMusical() {
@@ -47,12 +99,73 @@ export default function LuditeaMusical() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   
+  // ESTADOS DA GAMIFICAÇÃO
+  const [score, setScore] = useState(0);
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [showReward, setShowReward] = useState(false);
+  const [rewardMessage, setRewardMessage] = useState('');
+  const [completedChallenges, setCompletedChallenges] = useState<number[]>([]);
+  
   useEffect(() => {
     if (typeof window !== 'undefined') {
       soundEngine = new SoundEngine();
     }
     setTimeout(() => setIsLoading(false), 500);
   }, []);
+
+  // VERIFICAR DESAFIOS
+  const checkChallenges = () => {
+    const activeInstruments = characters
+      .filter(c => c.instrument)
+      .map(c => c.instrument!.id);
+    
+    if (activeInstruments.length === 0) return;
+    
+    challenges.forEach((challenge, index) => {
+      if (completedChallenges.includes(challenge.level)) return;
+      
+      let isCompleted = false;
+      
+      if (challenge.level === 1 && activeInstruments.length >= 2) {
+        isCompleted = true;
+      } else if (challenge.level === 2) {
+        isCompleted = activeInstruments.includes('drums') && activeInstruments.length >= 3;
+      } else if (challenge.level === 3) {
+        isCompleted = activeInstruments.includes('drums') && 
+                     activeInstruments.includes('guitar') && 
+                     activeInstruments.includes('violao');
+      } else if (challenge.level === 4) {
+        isCompleted = activeInstruments.includes('violin') && 
+                     activeInstruments.includes('flauta') && 
+                     activeInstruments.includes('piano') && 
+                     activeInstruments.includes('coral');
+      } else if (challenge.level === 5 && activeInstruments.length >= 6) {
+        isCompleted = true;
+      }
+      
+      if (isCompleted && !completedChallenges.includes(challenge.level)) {
+        celebrateSuccess(challenge);
+      }
+    });
+  };
+
+  // CELEBRAÇÃO!
+  const celebrateSuccess = (challenge: Challenge) => {
+    setCompletedChallenges([...completedChallenges, challenge.level]);
+    setScore(score + (challenge.level * 100));
+    setRewardMessage(`PARABÉNS! ${challenge.name} Completo! ${challenge.reward}`);
+    setShowReward(true);
+    
+    // Tocar som de sucesso
+    const audio = new Audio('/sounds/sucess.wav');
+    audio.play();
+    
+    setTimeout(() => setShowReward(false), 3000);
+    
+    if (challenge.level < 5) {
+      setCurrentLevel(challenge.level + 1);
+    }
+  };
 
   const speakWelcomeText = () => {
     if ('speechSynthesis' in window && !isSpeaking) {
@@ -105,9 +218,10 @@ export default function LuditeaMusical() {
     }
     
     if (selectedInstrument) {
-      setCharacters(characters.map(c => 
+      const newCharacters = characters.map(c => 
         c.id === characterId ? { ...c, instrument: selectedInstrument } : c
-      ));
+      );
+      setCharacters(newCharacters);
       setAvailableInstruments(availableInstruments.filter(i => i.id !== selectedInstrument.id));
       
       if (soundEngine && isPlaying) {
@@ -119,6 +233,9 @@ export default function LuditeaMusical() {
       }
       
       setSelectedInstrument(null);
+      
+      // Verificar desafios após adicionar instrumento
+      setTimeout(() => checkChallenges(), 500);
     }
   };
 
@@ -186,12 +303,31 @@ export default function LuditeaMusical() {
 
   return (
     <div className="musical-game-container game-gradient">
+      {/* EXPLOSÃO DE RECOMPENSA! */}
+      {showReward && (
+        <div className="reward-explosion">
+          <div className="reward-message">{rewardMessage}</div>
+          <div className="sparkles">✨💎⭐🎉🏆✨</div>
+        </div>
+      )}
+      
       <header className="game-header-mobile">
         <h1>🎵 Desafio Musical 🎵</h1>
         <div className="score-display">
-          🏆 Fase: 1 | 🎸 Pontos: 0
+          🏆 Nível: {currentLevel} | ⭐ Pontos: {score}
         </div>
       </header>
+      
+      {/* CAIXA DE DESAFIO ATUAL */}
+      <div className="challenge-box">
+        <h3>🎯 Desafio Atual: {challenges[currentLevel - 1]?.name}</h3>
+        <p>{challenges[currentLevel - 1]?.description}</p>
+        <div className="progress-bar">
+          {completedChallenges.map(level => (
+            <span key={level} className="completed-star">⭐</span>
+          ))}
+        </div>
+      </div>
       
       {isLoading ? (
         <div className="loading">🎵 Afinando instrumentos...</div>
