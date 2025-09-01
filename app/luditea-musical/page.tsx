@@ -11,33 +11,31 @@ export default function LuditeaMusical() {
   const [musicNotes, setMusicNotes] = useState<Array<{id: number, note: string, left: string, delay: number}>>([]);
   
   useEffect(() => {
-    // Carregamento inicial
     setTimeout(() => setIsLoading(false), 1000);
     
-    // Criar MUITAS notas musicais flutuantes
     const notes = ['♪', '♫', '♬', '♩', '🎵', '🎶', '🎼', '🎤', '🎸', '🥁', '🎹', '🎺'];
-    const newNotes = Array.from({length: 20}, (_, i) => ({
+    const newNotes = Array.from({length: 25}, (_, i) => ({
       id: i,
       note: notes[Math.floor(Math.random() * notes.length)],
       left: `${Math.random() * 100}%`,
-      delay: Math.random() * 10
+      delay: Math.random() * 15
     }));
     setMusicNotes(newNotes);
   }, []);
 
-  // Tela de Boas-Vindas com Mila
+  // Tela de Boas-Vindas Melhorada
   if (showWelcome && !isLoading) {
     return (
       <div className="musical-game-container">
-        <div className="music-notes">
+        <div className="music-notes-background">
           {musicNotes.map((note) => (
             <span 
               key={note.id} 
-              className="note" 
+              className="floating-note" 
               style={{
                 left: note.left,
                 animationDelay: `${note.delay}s`,
-                fontSize: `${1.5 + Math.random() * 2}rem`
+                fontSize: `${1 + Math.random() * 1.5}rem`
               }}
             >
               {note.note}
@@ -45,47 +43,60 @@ export default function LuditeaMusical() {
           ))}
         </div>
         
-        <div className="welcome-screen">
-          <h1 className="game-title">🎵 LudiTEA Musical 🎵</h1>
+        <div className="welcome-content">
+          <div className="title-section">
+            <h1 className="main-title">LudiTEA Musical</h1>
+            <div className="title-decoration">
+              <span>🎸</span>
+              <span>🎹</span>
+              <span>🥁</span>
+              <span>🎺</span>
+              <span>🎤</span>
+              <span>🎻</span>
+            </div>
+          </div>
           
-          <div className="mascot-container">
+          <div className="mila-section">
             <Image 
               src="/images/mascotes/mila/mila_boas_vindas_resultado.webp"
-              alt="Mila - Mascote do LudiTEA"
-              width={300}
-              height={300}
-              className="mascot-image"
+              alt="Mila"
+              width={250}
+              height={250}
+              className="mila-welcome"
               priority
             />
-            <div className="speech-bubble">
-              <p>Olá! Eu sou a Mila! 🎭</p>
-              <p>Vamos criar música juntos?</p>
-              <p>Arraste os instrumentos para os personagens e monte sua banda!</p>
+            <div className="mila-speech">
+              <h2>Olá, eu sou a Mila! 🎭</h2>
+              <p>Vamos criar músicas incríveis juntos!</p>
+              <p>Monte sua banda arrastando instrumentos!</p>
             </div>
           </div>
           
           <button 
-            className="play-button"
+            className="start-game-btn"
             onClick={() => setShowWelcome(false)}
           >
-            🎮 Vamos Tocar!
+            <span className="btn-icon">🎮</span>
+            <span className="btn-text">JOGAR AGORA</span>
           </button>
         </div>
       </div>
     );
   }
 
+  // Tela do Jogo Principal
   return (
     <div className="musical-game-container">
-      <div className="music-notes">
+      <div className="music-notes-background">
         {musicNotes.map((note) => (
           <span 
             key={note.id} 
-            className="note" 
+            className="floating-note" 
             style={{
               left: note.left,
               animationDelay: `${note.delay}s`,
-              fontSize: `${1.5 + Math.random() * 2}rem`
+              fontSize: `${0.8 + Math.random() * 1}rem`,
+              opacity: 0.1
             }}
           >
             {note.note}
@@ -93,49 +104,81 @@ export default function LuditeaMusical() {
         ))}
       </div>
       
-      <h1 className="game-title">🎵 LudiTEA Musical 🎵</h1>
+      <div className="game-header">
+        <h1 className="game-logo">🎵 LudiTEA Musical 🎵</h1>
+      </div>
       
       {isLoading ? (
         <div className="loading">
-          🎸 Carregando instrumentos... 🥁
+          🎸 Preparando o palco... 🥁
         </div>
       ) : (
-        <div className="game-area">
+        <>
           {!gameStarted ? (
-            <div>
-              <h2 style={{textAlign: 'center', color: '#2d3436', marginBottom: '20px'}}>
-                🎼 Bem-vindo ao mundo musical! 🎼
-              </h2>
-              <p style={{textAlign: 'center', color: '#636e72', marginBottom: '30px'}}>
-                Arraste instrumentos para os personagens e crie sua própria banda!
-              </p>
+            <div className="pre-game">
               <button 
-                className="start-button"
+                className="big-play-btn"
                 onClick={() => setGameStarted(true)}
               >
-                🎮 Começar Aventura Musical
+                ▶️ INICIAR
               </button>
             </div>
           ) : (
-            <div className="game-content">
-              <div className="stage-area">
-                {/* Aqui vamos adicionar os personagens */}
-                <h3>🎭 Palco dos Personagens 🎭</h3>
-                <div className="characters-container">
-                  {/* Personagens virão aqui */}
+            <div className="game-stage">
+              {/* Área dos Personagens */}
+              <div className="characters-row">
+                {[1, 2, 3, 4, 5, 6].map((num) => (
+                  <div key={num} className="character-slot">
+                    <div className="character-body">
+                      <div className="character-face">
+                        {/* Rosto simples */}
+                        <div className="eyes">
+                          <span>👀</span>
+                        </div>
+                        <div className="character-number">{num}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Área dos Instrumentos - ABAIXO dos personagens */}
+              <div className="instruments-row">
+                <div className="instrument-item" draggable="true">
+                  <span className="instrument-icon">🎸</span>
+                  <span className="instrument-name">Guitarra</span>
+                </div>
+                <div className="instrument-item" draggable="true">
+                  <span className="instrument-icon">🥁</span>
+                  <span className="instrument-name">Bateria</span>
+                </div>
+                <div className="instrument-item" draggable="true">
+                  <span className="instrument-icon">🎹</span>
+                  <span className="instrument-name">Piano</span>
+                </div>
+                <div className="instrument-item" draggable="true">
+                  <span className="instrument-icon">🎺</span>
+                  <span className="instrument-name">Trompete</span>
+                </div>
+                <div className="instrument-item" draggable="true">
+                  <span className="instrument-icon">🎻</span>
+                  <span className="instrument-name">Violino</span>
+                </div>
+                <div className="instrument-item" draggable="true">
+                  <span className="instrument-icon">🎤</span>
+                  <span className="instrument-name">Microfone</span>
                 </div>
               </div>
               
-              <div className="instruments-area">
-                {/* Aqui vamos adicionar os instrumentos */}
-                <h3>🎸 Instrumentos Disponíveis 🎸</h3>
-                <div className="instruments-container">
-                  {/* Instrumentos virão aqui */}
-                </div>
+              {/* Controles do Jogo */}
+              <div className="game-controls">
+                <button className="control-btn play-btn">▶️ TOCAR</button>
+                <button className="control-btn pause-btn">⏸️ PAUSAR</button>
+                <button className="control-btn reset-btn">🔄 LIMPAR</button>
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
