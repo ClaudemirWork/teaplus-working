@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import './styles.css';
+import { SoundEngine } from './soundEngine';
 
 interface Instrument {
   id: string;
@@ -28,6 +29,11 @@ const instruments: Instrument[] = [
   { id: 'tambourine', icon: '🪘', name: 'Pandeiro', color: '#B4E7CE' },
   { id: 'bass', icon: '🎵', name: 'Bumbo', color: '#957DAD' },
 ];
+
+let soundEngine: SoundEngine | null = null;
+if (typeof window !== 'undefined') {
+  soundEngine = new SoundEngine();
+}
 
 export default function LuditeaMusical() {
   const [isLoading, setIsLoading] = useState(true);
@@ -69,6 +75,9 @@ export default function LuditeaMusical() {
   const handleInstrumentClick = (instrument: Instrument) => {
     if (availableInstruments.find(i => i.id === instrument.id)) {
       setSelectedInstrument(instrument);
+      if (soundEngine) {
+        soundEngine.playFeedback('select');
+      }
     }
   };
 
@@ -80,6 +89,14 @@ export default function LuditeaMusical() {
       setCharacters(characters.map(c => 
         c.id === characterId ? { ...c, instrument: null } : c
       ));
+      
+      if (soundEngine && isPlaying) {
+        soundEngine.stopInstrumentLoop(character.instrument.id);
+      }
+      
+      if (soundEngine) {
+        soundEngine.playFeedback('remove');
+      }
       return;
     }
     
@@ -88,6 +105,15 @@ export default function LuditeaMusical() {
         c.id === characterId ? { ...c, instrument: selectedInstrument } : c
       ));
       setAvailableInstruments(availableInstruments.filter(i => i.id !== selectedInstrument.id));
+      
+      if (soundEngine && isPlaying) {
+        soundEngine.startInstrumentLoop(selectedInstrument.id);
+      }
+      
+      if (soundEngine) {
+        soundEngine.playFeedback('place');
+      }
+      
       setSelectedInstrument(null);
     }
   };
@@ -97,6 +123,9 @@ export default function LuditeaMusical() {
     setAvailableInstruments(instruments);
     setSelectedInstrument(null);
     setIsPlaying(false);
+    if (soundEngine) {
+      soundEngine.stopAll();
+    }
   };
 
   if (showWelcome && !isLoading) {
@@ -226,7 +255,22 @@ export default function LuditeaMusical() {
           <div className="controls-mobile">
             <button 
               className={`control-button play ${isPlaying ? 'playing' : ''}`}
-              onClick={() => setIsPlaying(!isPlaying)}
+              onClick={() => {
+                const newIsPlaying = !isPlaying;
+                setIsPlaying(newIsPlaying);
+                
+                if (soundEngine) {
+                  if (newIsPlaying) {
+                    characters.forEach(char => {
+                      if (char.instrument) {
+                        soundEngine.startInstrumentLoop(char.instrument.id);
+                      }
+                    });
+                  } else {
+                    soundEngine.stopAll();
+                  }
+                }
+              }}
             >
               {isPlaying ? '⏸️ PAUSAR' : '▶️ TOCAR'}
             </button>
