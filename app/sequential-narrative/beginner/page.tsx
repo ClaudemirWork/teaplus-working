@@ -83,7 +83,6 @@ const beginnerStories: Story[] = [
 export default function BeginnerLevel() {
   const router = useRouter();
   
-  // Estados para gerenciar o jogo
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [shuffledElements, setShuffledElements] = useState<StoryElement[]>([]);
   const [userSequence, setUserSequence] = useState<StoryElement[]>([]);
@@ -94,7 +93,6 @@ export default function BeginnerLevel() {
 
   const currentStory = beginnerStories[currentStoryIndex];
 
-  // Efeito para carregar uma nova história
   useEffect(() => {
     resetActivity();
   }, [currentStoryIndex]);
@@ -112,9 +110,7 @@ export default function BeginnerLevel() {
     }
   };
 
-  // Funções de controle do jogo
   const checkSequence = () => {
-    // Lógica para verificar a sequência...
   };
   const resetActivity = () => {
     setUserSequence([]);
@@ -133,7 +129,7 @@ export default function BeginnerLevel() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Layout do jogo */}
+        
       </div>
     </div>
   );
