@@ -104,6 +104,40 @@ export default function RoutineVisualPage() {
   const [routineName, setRoutineName] = useState('Minha Rotina Semanal');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
+  // Funções auxiliares para horários inteligentes
+  const addMinutesToTime = (time: string, minutes: number): string => {
+    const [hours, mins] = time.split(':').map(Number);
+    const totalMinutes = hours * 60 + mins + minutes;
+    const newHours = Math.floor(totalMinutes / 60) % 24;
+    const newMins = totalMinutes % 60;
+    return `${newHours.toString().padStart(2, '0')}:${newMins.toString().padStart(2, '0')}`;
+  };
+
+  const getNextAvailableTime = (day: string): string => {
+    const dayActivities = weeklyRoutine[day] || [];
+    
+    if (dayActivities.length === 0) {
+      // Se não há atividades, começa às 07:00
+      return '07:00';
+    }
+    
+    // Ordena as atividades por horário para pegar realmente a última
+    const sortedActivities = [...dayActivities].sort((a, b) => 
+      a.time.localeCompare(b.time)
+    );
+    
+    // Pega o último horário e adiciona 30 minutos
+    const lastActivity = sortedActivities[sortedActivities.length - 1];
+    const nextTime = addMinutesToTime(lastActivity.time, 30);
+    
+    // Se passar das 22:00, volta para 22:00 (horário limite)
+    if (nextTime > '22:00') {
+      return '22:00';
+    }
+    
+    return nextTime;
+  };
+
   const speakText = (text: string) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -162,12 +196,17 @@ export default function RoutineVisualPage() {
     }
   };
 
+  // Função ATUALIZADA com horário inteligente
   const addActivityToDay = (activity: any) => {
+    // Obtém o próximo horário disponível baseado nas atividades existentes
+    const smartTime = getNextAvailableTime(selectedDay);
+    
     const routineItem: RoutineItem = {
       ...activity,
       uniqueId: `${activity.id}_${Date.now()}`,
       category: selectedCategory,
-      completed: false
+      completed: false,
+      time: smartTime // Usa o horário inteligente
     };
     
     setWeeklyRoutine(prev => ({
@@ -255,6 +294,7 @@ export default function RoutineVisualPage() {
     }));
   };
 
+  // [RESTO DO CÓDIGO PERMANECE IGUAL - telas de welcome, instructions e main...]
   // TELA 1: Boas-vindas
   if (currentScreen === 'welcome') {
     return (
@@ -283,7 +323,7 @@ export default function RoutineVisualPage() {
     );
   }
 
-  // TELA 2: Instruções
+  // TELA 2: Instruções (adicionar info sobre o horário automático)
   if (currentScreen === 'instructions') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4 overflow-y-auto">
@@ -304,16 +344,25 @@ export default function RoutineVisualPage() {
                     'Escolha o dia da semana na aba superior',
                     'No mobile, clique no botão menu',
                     'CLIQUE na imagem para adicionar',
-                    'Ajuste horários e remova se necessário',
+                    '⏰ Novo! Horário automático +30min',
+                    'Ajuste horários se necessário',
                     'Salve sua rotina completa'
                   ].map((text, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <div className="bg-purple-500 text-white w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">
                         {i + 1}
                       </div>
-                      <p className="text-sm sm:text-base">{text}</p>
+                      <p className={`text-sm sm:text-base ${i === 3 ? 'font-semibold text-purple-600' : ''}`}>
+                        {text}
+                      </p>
                     </div>
                   ))}
+                </div>
+                
+                <div className="bg-blue-50 rounded-lg p-3 mt-4">
+                  <p className="text-sm text-blue-700">
+                    <strong>Dica:</strong> Cada nova atividade é adicionada automaticamente 30 minutos após a última!
+                  </p>
                 </div>
               </div>
               
@@ -345,7 +394,7 @@ export default function RoutineVisualPage() {
             
             <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-center gap-4">
               <button
-                onClick={() => speakText("Para montar sua rotina, escolha o dia, clique no menu no mobile, e adicione atividades.")}
+                onClick={() => speakText("Nova funcionalidade! Agora cada atividade é adicionada automaticamente 30 minutos após a última, facilitando sua organização.")}
                 className="px-4 sm:px-6 py-2 sm:py-3 bg-purple-100 text-purple-700 rounded-xl hover:bg-purple-200 flex items-center justify-center gap-2"
               >
                 <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -366,6 +415,7 @@ export default function RoutineVisualPage() {
     );
   }
 
+  // [RESTO DA TELA PRINCIPAL PERMANECE IGUAL...]
   // TELA PRINCIPAL
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
@@ -530,7 +580,6 @@ export default function RoutineVisualPage() {
                       className="w-full h-20 object-contain mb-1"
                     />
                     <p className="text-xs font-medium">{card.name}</p>
-                    <p className="text-xs text-gray-500">{card.time}</p>
                   </button>
                 ))}
               </div>
@@ -576,7 +625,6 @@ export default function RoutineVisualPage() {
                       className="w-full h-16 object-contain mb-1"
                     />
                     <p className="text-xs font-medium">{card.name}</p>
-                    <p className="text-xs text-gray-500">{card.time}</p>
                   </button>
                 ))}
               </div>
