@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation'; // GARANTA QUE ESTA LINHA ESTEJA AQUI
+import { useRouter } from 'next/navigation';
 import { BookOpen, Trophy, Gamepad2, Star, Sparkles, ChevronRight, Award, Lock, ArrowLeft } from 'lucide-react';
 
 export default function SequentialNarrativeGame() {
-  const router = useRouter(); // E ESTA TAMBÉM
+  const router = useRouter(); 
 
   const [currentScreen, setCurrentScreen] = useState('landing');
   const [selectedLevel, setSelectedLevel] = useState('beginner');
