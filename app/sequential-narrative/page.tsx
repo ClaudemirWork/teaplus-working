@@ -7,7 +7,6 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// As interfaces continuam as mesmas
 interface StoryElement {
   id: number;
   text: string;
@@ -27,9 +26,10 @@ interface Story {
 
 // COLE AQUI A SUA LISTA COMPLETA DE 50 HISTÓRIAS
 const beginnerStories: Story[] = [
-    { id: 'routine_1', title: 'Acordando para o Dia', category: 'Rotinas Diárias', narrator: 'Leo', elements: [ { id: 1, text: "O despertador tocou bem cedinho", icon: "⏰", correctOrder: 1 }, { id: 2, text: "João abriu os olhos e espreguiçou", icon: "👁️", correctOrder: 2 }, { id: 3, text: "Levantou da cama pronto para o dia", icon: "🛏️", correctOrder: 3 } ], completionMessage: "Muito bem! Você organizou a rotina de acordar!", hint: "Pense: o que acontece primeiro quando acordamos?" },
-    // ... E ASSIM POR DIANTE ATÉ A ÚLTIMA ...
-    { id: 'emotion_7', title: 'Cachorro Amigo', category: 'Emoções', narrator: 'Mila', elements: [ { id: 1, text: "Viu o cachorro fofinho", icon: "🐕", correctOrder: 1 }, { id: 2, text: "Fez carinho na cabeça", icon: "✋", correctOrder: 2 }, { id: 3, text: "Ganhou uma lambida", icon: "💕", correctOrder: 3 } ], completionMessage: "Amizade! Que cachorro carinhoso!", hint: "Vemos o cachorro antes de fazer carinho!" }
+  { id: 'routine_1', title: 'Acordando para o Dia', category: 'Rotinas Diárias', narrator: 'Leo', elements: [ { id: 1, text: "O despertador tocou bem cedinho", icon: "⏰", correctOrder: 1 }, { id: 2, text: "João abriu os olhos e espreguiçou", icon: "👁️", correctOrder: 2 }, { id: 3, text: "Levantou da cama pronto para o dia", icon: "🛏️", correctOrder: 3 } ], completionMessage: "Muito bem! Você organizou a rotina de acordar!", hint: "Pense: o que acontece primeiro quando acordamos?" },
+  { id: 'routine_2', title: 'Hora do Banho', category: 'Rotinas Diárias', narrator: 'Mila', elements: [ { id: 1, text: "Maria tirou a roupa suja", icon: "👕", correctOrder: 1 }, { id: 2, text: "Ensaboou o corpo todo com cuidado", icon: "🧼", correctOrder: 2 }, { id: 3, text: "Secou-se com a toalha macia", icon: "🏖️", correctOrder: 3 } ], completionMessage: "Parabéns! A sequência do banho está perfeita!", hint: "O que fazemos antes de entrar no chuveiro?" },
+  // ... E ASSIM POR DIANTE ATÉ A ÚLTIMA ...
+  { id: 'emotion_7', title: 'Cachorro Amigo', category: 'Emoções', narrator: 'Mila', elements: [ { id: 1, text: "Viu o cachorro fofinho", icon: "🐕", correctOrder: 1 }, { id: 2, text: "Fez carinho na cabeça", icon: "✋", correctOrder: 2 }, { id: 3, text: "Ganhou uma lambida", icon: "💕", correctOrder: 3 } ], completionMessage: "Amizade! Que cachorro carinhoso!", hint: "Vemos o cachorro antes de fazer carinho!" }
 ];
 
 function SortableItem({ element, isInSequence }: { element: StoryElement, isInSequence: boolean }) {
@@ -85,6 +85,7 @@ export default function BeginnerLevel() {
     const overContainer = over.data.current?.sortable.containerId || over.id;
     
     if (activeContainer === overContainer) {
+        // Reordenando dentro da mesma lista
         if (activeContainer === 'shuffled-list') {
             setShuffledElements(items => {
                 const oldIndex = items.findIndex(item => item.id === active.id);
@@ -99,27 +100,21 @@ export default function BeginnerLevel() {
             });
         }
     } else {
-        let draggedItem: StoryElement | undefined;
+        // Movendo entre listas
+        let draggedItem: StoryElement;
+        // Remove da lista de origem
         if (activeContainer === 'shuffled-list') {
-            draggedItem = shuffledElements.find(item => item.id === active.id);
+            draggedItem = shuffledElements.find(item => item.id === active.id)!;
             setShuffledElements(items => items.filter(item => item.id !== active.id));
         } else {
-            draggedItem = userSequence.find(item => item.id === active.id);
+            draggedItem = userSequence.find(item => item.id === active.id)!;
             setUserSequence(items => items.filter(item => item.id !== active.id));
         }
-        
-        if (!draggedItem) return;
-
+        // Adiciona à lista de destino
         if (overContainer === 'shuffled-list') {
-            const overIndex = shuffledElements.findIndex(item => item.id === over.id);
-            setShuffledElements(items => [...items.slice(0, overIndex), draggedItem!, ...items.slice(overIndex)]);
+            setShuffledElements(items => [...items, draggedItem]);
         } else {
-            const overIndex = userSequence.findIndex(item => item.id === over.id);
-            if (overIndex >= 0) {
-                setUserSequence(items => [...items.slice(0, overIndex), draggedItem!, ...items.slice(overIndex)]);
-            } else {
-                setUserSequence(items => [...items, draggedItem!]);
-            }
+            setUserSequence(items => [...items, draggedItem]);
         }
     }
   }
@@ -166,7 +161,7 @@ export default function BeginnerLevel() {
                 <div className="bg-white rounded-xl shadow-lg p-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">🧩 Partes da História</h3>
                     <div className="space-y-3">
-                        <SortableContext items={shuffledElements.map(item => item.id)} id="shuffled-list">
+                        <SortableContext items={shuffledElements} id="shuffled-list">
                             {shuffledElements.map(element => <SortableItem key={element.id} element={element} isInSequence={false} />)}
                         </SortableContext>
                     </div>
@@ -174,7 +169,7 @@ export default function BeginnerLevel() {
                 <div className="bg-white rounded-xl shadow-lg p-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">📖 Monte a História na Ordem</h3>
                     <div className="min-h-[250px] border-3 border-dashed border-purple-300 rounded-lg p-4 space-y-3 bg-purple-50/30">
-                        <SortableContext items={userSequence.map(item => item.id)} id="sequence-list">
+                        <SortableContext items={userSequence} id="sequence-list">
                            {userSequence.map(element => <SortableItem key={element.id} element={element} isInSequence={true} />)}
                         </SortableContext>
                         {userSequence.length === 0 && (<div className="text-center py-16 text-gray-400"><p className="text-lg">Arraste as partes aqui</p></div>)}
