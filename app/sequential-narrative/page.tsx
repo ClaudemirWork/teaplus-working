@@ -11,60 +11,56 @@ export default function SequentialNarrativeGame() {
   const [unlockedLevels, setUnlockedLevels] = useState(['beginner']);
 
   const levelsData = [
-    {
-      id: 'beginner',
-      name: 'Iniciante',
-      icon: <Star className="h-12 w-12 text-yellow-400 fill-yellow-400" />,
-      color: 'from-green-400 to-blue-400',
-      description: 'Rotinas diárias, brincadeiras e emoções simples.',
-      details: '3 elementos • 50 histórias',
-      stories: ['Acordando', 'Tomando banho', 'Indo à escola', 'Brincando']
-    },
-    {
-      id: 'intermediate',
-      name: 'Intermediário',
-      icon: <Star className="h-12 w-12 text-gray-400" />,
-      color: 'from-gray-300 to-gray-400',
-      description: 'Situações sociais e resolução de problemas.',
-      details: '5 elementos • 30 histórias',
-    },
-    {
-      id: 'advanced',
-      name: 'Avançado',
-      icon: <Trophy className="h-12 w-12 text-gray-400" />,
-      color: 'from-gray-300 to-gray-400',
-      description: 'Narrativas complexas com múltiplas emoções.',
-      details: '7 elementos • 20 histórias',
-    },
+    { id: 'beginner', name: 'Iniciante', icon: <Star className="h-12 w-12 text-yellow-400 fill-yellow-400" />, color: 'from-green-400 to-blue-400', description: 'Rotinas diárias, brincadeiras e emoções simples.', details: '3 elementos • 50 histórias', stories: ['Acordando', 'Tomando banho', 'Indo à escola', 'Brincando'] },
+    { id: 'intermediate', name: 'Intermediário', icon: <Star className="h-12 w-12 text-gray-400" />, color: 'from-gray-300 to-gray-400', description: 'Situações sociais e resolução de problemas.', details: '5 elementos • 30 histórias' },
+    { id: 'advanced', name: 'Avançado', icon: <Trophy className="h-12 w-12 text-gray-400" />, color: 'from-gray-300 to-gray-400', description: 'Narrativas complexas com múltiplas emoções.', details: '7 elementos • 20 histórias' },
   ];
 
+  // TELA INICIAL COM NOVO DESIGN APLICADO
   const LandingScreen = () => (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-orange-400 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-6 md:p-8 transform hover:scale-[1.02] transition-transform duration-300">
-          <div className="text-center mb-4">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent animate-pulse">
-              Estórias Embaralhadas
+    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-orange-300 flex items-center justify-center p-4 overflow-hidden">
+      <div className="w-full max-w-sm">
+        <div className="relative bg-white/90 backdrop-blur-xl rounded-[40px] shadow-2xl p-6 text-center transition-transform duration-300 hover:scale-[1.03]">
+          {/* Elementos decorativos flutuantes */}
+          <div className="absolute -top-5 -left-5 w-16 h-16 bg-yellow-300 rounded-full opacity-70 animate-pulse"></div>
+          <div className="absolute -bottom-8 -right-4 w-20 h-20 bg-pink-300 rounded-full opacity-60 animate-pulse delay-75"></div>
+
+          {/* Título com Novo Estilo */}
+          <div className="mb-4 inline-block">
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-800 flex flex-col items-center gap-2">
+              <span className="bg-purple-200 px-4 py-1 rounded-xl shadow-md transform -rotate-2">
+                Estórias
+              </span>
+              <span className="bg-pink-200 px-4 py-1 rounded-xl shadow-md transform rotate-2">
+                Embaralhadas
+              </span>
             </h1>
-            <div className="flex justify-center gap-2 mt-3">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400 fill-yellow-400 animate-bounce" style={{ animationDelay: `${i * 0.1}s` }} />
-              ))}
+          </div>
+
+          <div className="flex justify-center gap-1.5 mb-6">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className="h-6 w-6 text-yellow-400 fill-yellow-400" />
+            ))}
+          </div>
+
+          {/* Card dos Mascotes Melhorado */}
+          <div className="relative mb-4">
+            <div className="relative bg-gradient-to-br from-purple-50 to-pink-100 rounded-3xl p-3 shadow-inner z-10">
+               <img
+                src="/images/mascotes/Leo-Mila-perdidos.png"
+                alt="Leo e Mila parecendo confusos"
+                className="w-full rounded-2xl"
+              />
             </div>
           </div>
-          <div className="relative mb-6">
-            <img
-              src="/images/mascotes/Leo-Mila-perdidos.png"
-              alt="Leo e Mila parecendo confusos"
-              className="relative w-full max-w-sm mx-auto rounded-2xl shadow-xl"
-            />
-          </div>
-          <div className="text-center">
+          
+          {/* Botão */}
+          <div className="relative z-20">
             <button
               onClick={() => setCurrentScreen('instructions')}
-              className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-xl sm:text-2xl py-4 px-8 rounded-full shadow-2xl transform hover:scale-110 transition-all duration-300"
+              className="group w-full inline-flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-2xl py-4 px-8 rounded-full shadow-xl transform hover:scale-105 active:scale-100 transition-all duration-300"
             >
-              <Sparkles className="h-6 w-6 sm:h-8 sm:w-8" />
+              <Sparkles className="h-7 w-7 transition-transform group-hover:rotate-12" />
               <span>Iniciar Aventura</span>
             </button>
           </div>
