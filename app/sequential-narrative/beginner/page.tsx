@@ -1,221 +1,299 @@
 'use client';
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation'; // 1. Importar o useRouter
-import { BookOpen, Trophy, Gamepad2, Star, Sparkles, ChevronRight, Award, Lock, ArrowLeft } from 'lucide-react';
 
-export default function SequentialNarrativeGame() {
-  // 2. Inicializar o router
-  const router = useRouter(); 
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Star, Trophy, Sparkles, ChevronRight, RotateCcw, Home } from 'lucide-react';
 
-  const [currentScreen, setCurrentScreen] = useState('landing'); // 'landing', 'instructions', 'levels'
-  const [selectedLevel, setSelectedLevel] = useState('beginner');
-  const [unlockedLevels, setUnlockedLevels] = useState(['beginner']);
+interface StoryElement {
+  id: number;
+  text: string;
+  icon: string;
+  correctOrder: number;
+}
 
-  const levelsData = [
-    {
-      id: 'beginner',
-      name: 'Iniciante',
-      icon: <Star className="h-12 w-12 text-yellow-400 fill-yellow-400" />,
-      color: 'from-green-400 to-blue-400',
-      description: 'Rotinas diárias, brincadeiras e emoções simples.',
-      details: '3 elementos • 50 histórias',
-      stories: ['Acordando', 'Tomando banho', 'Indo à escola', 'Brincando']
-    },
-    {
-      id: 'intermediate',
-      name: 'Intermediário',
-      icon: <Star className="h-12 w-12 text-gray-400" />,
-      color: 'from-gray-300 to-gray-400',
-      description: 'Situações sociais e resolução de problemas.',
-      details: '5 elementos • 30 histórias',
-    },
-    {
-      id: 'advanced',
-      name: 'Avançado',
-      icon: <Trophy className="h-12 w-12 text-gray-400" />,
-      color: 'from-gray-300 to-gray-400',
-      description: 'Narrativas complexas com múltiplas emoções.',
-      details: '7 elementos • 20 histórias',
-    },
-  ];
+interface Story {
+  id: string;
+  title: string;
+  category: string;
+  narrator: 'Leo' | 'Mila';
+  elements: StoryElement[];
+  completionMessage: string;
+  hint: string;
+}
 
-  const LandingScreen = () => (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-orange-400 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-6 md:p-8 transform hover:scale-[1.02] transition-transform duration-300">
-          <div className="text-center mb-4">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent animate-pulse">
-              Estórias Embaralhadas
-            </h1>
-            <div className="flex justify-center gap-2 mt-3">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-400 fill-yellow-400 animate-bounce" style={{ animationDelay: `${i * 0.1}s` }} />
-              ))}
-            </div>
-          </div>
-          <div className="relative mb-6">
-            <img
-              src="/images/mascotes/Leo-Mila-perdidos.png"
-              alt="Leo e Mila parecendo confusos"
-              className="relative w-full max-w-sm mx-auto rounded-2xl shadow-xl"
-            />
-            <div className="absolute top-2 left-2 bg-yellow-300 rounded-full p-2 sm:p-3 shadow-lg animate-bounce">
-              <span className="text-xl sm:text-2xl">📚</span>
-            </div>
-            <div className="absolute top-2 right-2 bg-pink-300 rounded-full p-2 sm:p-3 shadow-lg animate-bounce" style={{ animationDelay: '0.5s' }}>
-              <span className="text-xl sm:text-2xl">✨</span>
-            </div>
-          </div>
-          <div className="text-center">
-            <button
-              onClick={() => setCurrentScreen('instructions')}
-              className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-xl sm:text-2xl py-4 px-8 rounded-full shadow-2xl transform hover:scale-110 transition-all duration-300"
-            >
-              <Sparkles className="h-6 w-6 sm:h-8 sm:w-8" />
-              <span>Iniciar Aventura</span>
-              <ChevronRight className="h-6 w-6 sm:h-8 sm:w-8 hidden sm:inline-block group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+// SUAS 50 HISTÓRIAS DO NÍVEL INICIANTE - COMPLETAS
+const beginnerStories: Story[] = [
+  // ROTINAS DIÁRIAS (15 histórias)
+  { id: 'routine_1', title: 'Acordando para o Dia', category: 'Rotinas Diárias', narrator: 'Leo', elements: [ { id: 1, text: "O despertador tocou bem cedinho", icon: "⏰", correctOrder: 1 }, { id: 2, text: "João abriu os olhos e espreguiçou", icon: "👁️", correctOrder: 2 }, { id: 3, text: "Levantou da cama pronto para o dia", icon: "🛏️", correctOrder: 3 } ], completionMessage: "Muito bem! Você organizou a rotina de acordar!", hint: "Pense: o que acontece primeiro quando acordamos?" },
+  { id: 'routine_2', title: 'Hora do Banho', category: 'Rotinas Diárias', narrator: 'Mila', elements: [ { id: 1, text: "Maria tirou a roupa suja", icon: "👕", correctOrder: 1 }, { id: 2, text: "Ensaboou o corpo todo com cuidado", icon: "🧼", correctOrder: 2 }, { id: 3, text: "Secou-se com a toalha macia", icon: "🏖️", correctOrder: 3 } ], completionMessage: "Parabéns! A sequência do banho está perfeita!", hint: "O que fazemos antes de entrar no chuveiro?" },
+  { id: 'routine_3', title: 'Café da Manhã Gostoso', category: 'Rotinas Diárias', narrator: 'Leo', elements: [ { id: 1, text: "Pedro sentou à mesa da cozinha", icon: "🪑", correctOrder: 1 }, { id: 2, text: "Comeu cereal com frutas", icon: "🥣", correctOrder: 2 }, { id: 3, text: "Bebeu um copo de leite fresquinho", icon: "🥛", correctOrder: 3 } ], completionMessage: "Excelente! O café da manhã foi organizado!", hint: "Primeiro sentamos, depois comemos!" },
+  { id: 'routine_4', title: 'Indo para a Escola', category: 'Rotinas Diárias', narrator: 'Mila', elements: [ { id: 1, text: "Ana vestiu o uniforme escolar", icon: "👔", correctOrder: 1 }, { id: 2, text: "Pegou a mochila com os livros", icon: "🎒", correctOrder: 2 }, { id: 3, text: "Entrou no ônibus amarelo", icon: "🚌", correctOrder: 3 } ], completionMessage: "Ótimo! Ana chegará na escola preparada!", hint: "O que vestimos antes de pegar a mochila?" },
+  { id: 'routine_5', title: 'Hora do Lanche', category: 'Rotinas Diárias', narrator: 'Leo', elements: [ { id: 1, text: "Lucas abriu sua lancheira colorida", icon: "📦", correctOrder: 1 }, { id: 2, text: "Comeu a maçã vermelha", icon: "🍎", correctOrder: 2 }, { id: 3, text: "Jogou o lixo na lixeira", icon: "🗑️", correctOrder: 3 } ], completionMessage: "Muito bem! Lucas fez um lanche saudável!", hint: "Abrimos a lancheira antes de comer!" },
+  { id: 'routine_6', title: 'Brincando no Parque', category: 'Rotinas Diárias', narrator: 'Mila', elements: [ { id: 1, text: "Sofia subiu a escada do escorregador", icon: "🪜", correctOrder: 1 }, { id: 2, text: "Desceu escorregando rapidinho", icon: "🛝", correctOrder: 2 }, { id: 3, text: "Riu muito feliz com a brincadeira", icon: "😄", correctOrder: 3 } ], completionMessage: "Parabéns! A diversão foi completa!", hint: "Subimos antes de descer no escorregador!" },
+  { id: 'routine_7', title: 'Almoço em Família', category: 'Rotinas Diárias', narrator: 'Leo', elements: [ { id: 1, text: "Todos lavaram as mãos", icon: "🙌", correctOrder: 1 }, { id: 2, text: "Comeram a comida deliciosa", icon: "🍽️", correctOrder: 2 }, { id: 3, text: "Agradeceram pela refeição", icon: "🙏", correctOrder: 3 } ], completionMessage: "Excelente! Um almoço perfeito em família!", hint: "Sempre lavamos as mãos antes de comer!" },
+  { id: 'routine_8', title: 'Fazendo Xixi', category: 'Rotinas Diárias', narrator: 'Mila', elements: [ { id: 1, text: "Carlos foi ao banheiro", icon: "🚪", correctOrder: 1 }, { id: 2, text: "Fez xixi no vaso sanitário", icon: "🚽", correctOrder: 2 }, { id: 3, text: "Lavou bem as mãozinhas", icon: "🧼", correctOrder: 3 } ], completionMessage: "Muito bem! Higiene é importante!", hint: "Depois de usar o banheiro, sempre lavamos as mãos!" },
+  { id: 'routine_9', title: 'Vestindo o Pijama', category: 'Rotinas Diárias', narrator: 'Leo', elements: [ { id: 1, text: "Julia tirou a roupa do dia", icon: "👗", correctOrder: 1 }, { id: 2, text: "Vestiu o pijama quentinho", icon: "🩱", correctOrder: 2 }, { id: 3, text: "Deitou na cama fofinha", icon: "🛌", correctOrder: 3 } ], completionMessage: "Perfeito! Julia está pronta para dormir!", hint: "Tiramos a roupa antes de vestir o pijama!" },
+  { id: 'routine_10', title: 'Penteando o Cabelo', category: 'Rotinas Diárias', narrator: 'Mila', elements: [ { id: 1, text: "Laura pegou a escova de cabelo", icon: "🪮", correctOrder: 1 }, { id: 2, text: "Penteou o cabelo com cuidado", icon: "💇‍♀️", correctOrder: 2 }, { id: 3, text: "Guardou a escova no lugar", icon: "🗄️", correctOrder: 3 } ], completionMessage: "Ótimo! O cabelo ficou lindinho!", hint: "Pegamos a escova antes de pentear!" },
+  { id: 'routine_11', title: 'Bebendo Água', category: 'Rotinas Diárias', narrator: 'Leo', elements: [ { id: 1, text: "Marcos pegou o copo azul", icon: "🥤", correctOrder: 1 }, { id: 2, text: "Encheu com água geladinha", icon: "💧", correctOrder: 2 }, { id: 3, text: "Bebeu tudo para matar a sede", icon: "😊", correctOrder: 3 } ], completionMessage: "Muito bem! Hidratação é saúde!", hint: "Primeiro pegamos o copo, depois enchemos!" },
+  { id: 'routine_12', title: 'Guardando Brinquedos', category: 'Rotinas Diárias', narrator: 'Mila', elements: [ { id: 1, text: "Nina pegou todos os brinquedos", icon: "🧸", correctOrder: 1 }, { id: 2, text: "Colocou tudo na caixa grande", icon: "📦", correctOrder: 2 }, { id: 3, text: "Fechou a tampa da caixa", icon: "🔒", correctOrder: 3 } ], completionMessage: "Parabéns! O quarto ficou organizado!", hint: "Pegamos os brinquedos antes de guardar!" },
+  { id: 'routine_13', title: 'Lavando as Mãos', category: 'Rotinas Diárias', narrator: 'Leo', elements: [ { id: 1, text: "Paulo abriu a torneira", icon: "🚰", correctOrder: 1 }, { id: 2, text: "Ensaboou as mãos direitinho", icon: "🧼", correctOrder: 2 }, { id: 3, text: "Secou na toalha limpa", icon: "🤲", correctOrder: 3 } ], completionMessage: "Excelente! Mãos limpinhas!", hint: "Abrimos a torneira primeiro!" },
+  { id: 'routine_14', title: 'Hora de Dormir', category: 'Rotinas Diárias', narrator: 'Mila', elements: [ { id: 1, text: "Mamãe apagou a luz do quarto", icon: "💡", correctOrder: 1 }, { id: 2, text: "Gabriel deitou na cama", icon: "🛏️", correctOrder: 2 }, { id: 3, text: "Fechou os olhinhos para sonhar", icon: "😴", correctOrder: 3 } ], completionMessage: "Perfeito! Bons sonhos, Gabriel!", hint: "A luz apaga antes de dormirmos!" },
+  { id: 'routine_15', title: 'Acordando Cedo', category: 'Rotinas Diárias', narrator: 'Leo', elements: [ { id: 1, text: "O galo cantou no quintal", icon: "🐓", correctOrder: 1 }, { id: 2, text: "Bia espreguiçou na cama", icon: "🙆‍♀️", correctOrder: 2 }, { id: 3, text: "Levantou animada para brincar", icon: "🏃‍♀️", correctOrder: 3 } ], completionMessage: "Muito bem! Que dia animado!", hint: "O galo canta e depois acordamos!" },
+  { id: 'school_1', title: 'Pintando um Desenho', category: 'Atividades Escolares', narrator: 'Mila', elements: [ { id: 1, text: "Rita pegou o pincel novo", icon: "🖌️", correctOrder: 1 }, { id: 2, text: "Molhou na tinta colorida", icon: "🎨", correctOrder: 2 }, { id: 3, text: "Pintou o papel todo bonito", icon: "🖼️", correctOrder: 3 } ], completionMessage: "Lindo! Uma obra de arte!", hint: "Pegamos o pincel antes de molhar na tinta!" },
+  { id: 'school_2', title: 'Lendo um Livro', category: 'Atividades Escolares', narrator: 'Leo', elements: [ { id: 1, text: "Bruno escolheu um livro legal", icon: "📚", correctOrder: 1 }, { id: 2, text: "Abriu na primeira página", icon: "📖", correctOrder: 2 }, { id: 3, text: "Viu as figuras coloridas", icon: "🌈", correctOrder: 3 } ], completionMessage: "Ótimo! A leitura é uma aventura!", hint: "Escolhemos o livro antes de abrir!" },
+  { id: 'school_3', title: 'Fazendo Fila', category: 'Atividades Escolares', narrator: 'Mila', elements: [ { id: 1, text: "A professora chamou todos", icon: "👩‍🏫", correctOrder: 1 }, { id: 2, text: "As crianças formaram uma fila", icon: "👥", correctOrder: 2 }, { id: 3, text: "Andaram juntos organizados", icon: "🚶‍♂️", correctOrder: 3 } ], completionMessage: "Parabéns! Que fila organizada!", hint: "A professora chama primeiro!" },
+  { id: 'school_4', title: 'Hora do Recreio', category: 'Atividades Escolares', narrator: 'Leo', elements: [ { id: 1, text: "O sinal tocou alto", icon: "🔔", correctOrder: 1 }, { id: 2, text: "Todos correram para o pátio", icon: "🏃", correctOrder: 2 }, { id: 3, text: "Voltaram quando acabou", icon: "🚪", correctOrder: 3 } ], completionMessage: "Muito bem! Recreio organizado!", hint: "O sinal toca antes de sairmos!" },
+  { id: 'school_5', title: 'Aula de Música', category: 'Atividades Escolares', narrator: 'Mila', elements: [ { id: 1, text: "Cada um pegou um instrumento", icon: "🎸", correctOrder: 1 }, { id: 2, text: "Tocaram uma música juntos", icon: "🎵", correctOrder: 2 }, { id: 3, text: "Guardaram tudo no armário", icon: "🗄️", correctOrder: 3 } ], completionMessage: "Excelente! Que linda melodia!", hint: "Pegamos o instrumento antes de tocar!" },
+  { id: 'school_6', title: 'Colando Papel', category: 'Atividades Escolares', narrator: 'Leo', elements: [ { id: 1, text: "Diego passou cola no papel", icon: "🍯", correctOrder: 1 }, { id: 2, text: "Colou na folha grande", icon: "📄", correctOrder: 2 }, { id: 3, text: "Pressionou bem forte", icon: "✋", correctOrder: 3 } ], completionMessage: "Perfeito! Ficou bem colado!", hint: "Passamos cola antes de colar!" },
+  { id: 'school_7', title: 'Educação Física', category: 'Atividades Escolares', narrator: 'Mila', elements: [ { id: 1, text: "Todos vestiram tênis", icon: "👟", correctOrder: 1 }, { id: 2, text: "Fizeram exercícios divertidos", icon: "🤸", correctOrder: 2 }, { id: 3, text: "Beberam água geladinha", icon: "💦", correctOrder: 3 } ], completionMessage: "Ótimo! Exercício faz bem!", hint: "Vestimos tênis antes do exercício!" },
+  { id: 'school_8', title: 'Hora da História', category: 'Atividades Escolares', narrator: 'Leo', elements: [ { id: 1, text: "Todos sentaram em roda", icon: "⭕", correctOrder: 1 }, { id: 2, text: "Ouviram a professora contar", icon: "👂", correctOrder: 2 }, { id: 3, text: "Bateram palmas no final", icon: "👏", correctOrder: 3 } ], completionMessage: "Muito bem! Que história legal!", hint: "Sentamos antes de ouvir a história!" },
+  { id: 'school_9', title: 'Fazendo Desenho', category: 'Atividades Escolares', narrator: 'Mila', elements: [ { id: 1, text: "Sara pegou lápis de cor", icon: "✏️", correctOrder: 1 }, { id: 2, text: "Fez um desenho lindo", icon: "🎨", correctOrder: 2 }, { id: 3, text: "Coloriu tudo bem bonito", icon: "🌈", correctOrder: 3 } ], completionMessage: "Parabéns! Que artista!", hint: "Pegamos o lápis antes de desenhar!" },
+  { id: 'school_10', title: 'Montando Quebra-cabeça', category: 'Atividades Escolares', narrator: 'Leo', elements: [ { id: 1, text: "Tom espalhou as peças", icon: "🧩", correctOrder: 1 }, { id: 2, text: "Encaixou uma por uma", icon: "🔧", correctOrder: 2 }, { id: 3, text: "Viu a figura completa", icon: "🖼️", correctOrder: 3 } ], completionMessage: "Excelente! Quebra-cabeça montado!", hint: "Espalhamos as peças primeiro!" },
+  { id: 'play_1', title: 'Bolhas de Sabão', category: 'Brincadeiras', narrator: 'Mila', elements: [ { id: 1, text: "Molhou a varinha no pote", icon: "🫧", correctOrder: 1 }, { id: 2, text: "Soprou bem devagarzinho", icon: "💨", correctOrder: 2 }, { id: 3, text: "As bolhas voaram alto", icon: "🎈", correctOrder: 3 } ], completionMessage: "Que lindo! Bolhas mágicas!", hint: "Molhamos antes de soprar!" },
+  { id: 'play_2', title: 'Brincando com Massinha', category: 'Brincadeiras', narrator: 'Leo', elements: [ { id: 1, text: "Abriu o pote colorido", icon: "🥫", correctOrder: 1 }, { id: 2, text: "Modelou formas divertidas", icon: "🐍", correctOrder: 2 }, { id: 3, text: "Guardou a massinha depois", icon: "📦", correctOrder: 3 } ], completionMessage: "Muito bem! Que criativo!", hint: "Abrimos o pote primeiro!" },
+  { id: 'play_3', title: 'Jogando Bola', category: 'Brincadeiras', narrator: 'Mila', elements: [ { id: 1, text: "João pegou a bola", icon: "⚽", correctOrder: 1 }, { id: 2, text: "Chutou bem forte", icon: "🦵", correctOrder: 2 }, { id: 3, text: "Correu atrás dela", icon: "🏃", correctOrder: 3 } ], completionMessage: "Gooool! Que jogada!", hint: "Pegamos a bola antes de chutar!" },
+  { id: 'play_4', title: 'Brincando de Boneca', category: 'Brincadeiras', narrator: 'Leo', elements: [ { id: 1, text: "Lisa pegou sua boneca", icon: "👶", correctOrder: 1 }, { id: 2, text: "Deu comidinha de mentira", icon: "🍼", correctOrder: 2 }, { id: 3, text: "Ninou para dormir", icon: "💤", correctOrder: 3 } ], completionMessage: "Parabéns! Que mamãe carinhosa!", hint: "Pegamos a boneca primeiro!" },
+  { id: 'play_5', title: 'Carrinho Veloz', category: 'Brincadeiras', narrator: 'Mila', elements: [ { id: 1, text: "Pedro empurrou o carrinho", icon: "🚗", correctOrder: 1 }, { id: 2, text: "Fez barulho de motor", icon: "🔊", correctOrder: 2 }, { id: 3, text: "Estacionou na garagem", icon: "🏠", correctOrder: 3 } ], completionMessage: "Vruum! Que piloto rápido!", hint: "Empurramos o carrinho primeiro!" },
+  { id: 'play_6', title: 'Torre de Blocos', category: 'Brincadeiras', narrator: 'Leo', elements: [ { id: 1, text: "Miguel pegou os blocos", icon: "🧱", correctOrder: 1 }, { id: 2, text: "Empilhou bem alto", icon: "🏗️", correctOrder: 2 }, { id: 3, text: "A torre caiu toda", icon: "💥", correctOrder: 3 } ], completionMessage: "Ops! Vamos construir de novo!", hint: "Pegamos os blocos antes de empilhar!" },
+  { id: 'play_7', title: 'Pulando Corda', category: 'Brincadeiras', narrator: 'Mila', elements: [ { id: 1, text: "Ana segurou a corda", icon: "🪢", correctOrder: 1 }, { id: 2, text: "Pulou bem alto", icon: "⬆️", correctOrder: 2 }, { id: 3, text: "Contou até dez", icon: "🔟", correctOrder: 3 } ], completionMessage: "Uau! Dez pulos seguidos!", hint: "Seguramos a corda antes de pular!" },
+  { id: 'play_8', title: 'Esconde-esconde', category: 'Brincadeiras', narrator: 'Leo', elements: [ { id: 1, text: "Tiago contou até dez", icon: "🔢", correctOrder: 1 }, { id: 2, text: "Procurou os amigos", icon: "🔍", correctOrder: 2 }, { id: 3, text: "Achou todo mundo", icon: "🎉", correctOrder: 3 } ], completionMessage: "Achei! Todos encontrados!", hint: "Contamos antes de procurar!" },
+  { id: 'play_9', title: 'Dançando', category: 'Brincadeiras', narrator: 'Mila', elements: [ { id: 1, text: "A música começou", icon: "🎵", correctOrder: 1 }, { id: 2, text: "Todos mexeram o corpo", icon: "💃", correctOrder: 2 }, { id: 3, text: "Giraram rodando felizes", icon: "🌀", correctOrder: 3 } ], completionMessage: "Que dança animada!", hint: "A música começa primeiro!" },
+  { id: 'play_10', title: 'Super-herói', category: 'Brincadeiras', narrator: 'Leo', elements: [ { id: 1, text: "Davi vestiu a capa", icon: "🦸", correctOrder: 1 }, { id: 2, text: "Fingiu voar pelo quintal", icon: "✈️", correctOrder: 2 }, { id: 3, text: "Salvou o dia todo", icon: "🌟", correctOrder: 3 } ], completionMessage: "Super! O herói salvou todos!", hint: "Vestimos a capa antes de voar!" },
+  { id: 'food_1', title: 'Fazendo Suco', category: 'Alimentação', narrator: 'Mila', elements: [ { id: 1, text: "Espremeu as laranjas", icon: "🍊", correctOrder: 1 }, { id: 2, text: "Coou o suco no copo", icon: "🥤", correctOrder: 2 }, { id: 3, text: "Bebeu bem geladinho", icon: "🧊", correctOrder: 3 } ], completionMessage: "Delícia! Suco natural!", hint: "Esprememos antes de coar!" },
+  { id: 'food_2', title: 'Sanduíche Gostoso', category: 'Alimentação', narrator: 'Leo', elements: [ { id: 1, text: "Pegou duas fatias de pão", icon: "🍞", correctOrder: 1 }, { id: 2, text: "Passou manteiga cremosa", icon: "🧈", correctOrder: 2 }, { id: 3, text: "Comeu com vontade", icon: "😋", correctOrder: 3 } ], completionMessage: "Que sanduíche saboroso!", hint: "Pegamos o pão primeiro!" },
+  { id: 'food_3', title: 'Pizza Quentinha', category: 'Alimentação', narrator: 'Mila', elements: [ { id: 1, text: "Pegou uma fatia grande", icon: "🍕", correctOrder: 1 }, { id: 2, text: "Soprou porque estava quente", icon: "💨", correctOrder: 2 }, { id: 3, text: "Mordeu devagarzinho", icon: "😊", correctOrder: 3 } ], completionMessage: "Hmm! Pizza deliciosa!", hint: "Pegamos a fatia antes de soprar!" },
+  { id: 'food_4', title: 'Sorvete no Calor', category: 'Alimentação', narrator: 'Leo', elements: [ { id: 1, text: "Abriu o sorvete gelado", icon: "🍦", correctOrder: 1 }, { id: 2, text: "Lambeu bem rápido", icon: "👅", correctOrder: 2 }, { id: 3, text: "Limpou a boca suja", icon: "🧻", correctOrder: 3 } ], completionMessage: "Refrescante! Que sorvete bom!", hint: "Abrimos antes de lamber!" },
+  { id: 'food_5', title: 'Maçã Crocante', category: 'Alimentação', narrator: 'Mila', elements: [ { id: 1, text: "Lavou a maçã vermelha", icon: "🍎", correctOrder: 1 }, { id: 2, text: "Mordeu fazendo croc", icon: "🦷", correctOrder: 2 }, { id: 3, text: "Jogou fora as sementes", icon: "🌱", correctOrder: 3 } ], completionMessage: "Saudável! Fruta fresquinha!", hint: "Lavamos a fruta antes de comer!" },
+  { id: 'food_6', title: 'Biscoito Crocante', category: 'Alimentação', narrator: 'Leo', elements: [ { id: 1, text: "Abriu o pacote novo", icon: "📦", correctOrder: 1 }, { id: 2, text: "Pegou um biscoito", icon: "🍪", correctOrder: 2 }, { id: 3, text: "Comeu fazendo croc-croc", icon: "😋", correctOrder: 3 } ], completionMessage: "Crocante! Que biscoito gostoso!", hint: "Abrimos o pacote primeiro!" },
+  { id: 'food_7', title: 'Pipoca de Cinema', category: 'Alimentação', narrator: 'Mila', elements: [ { id: 1, text: "O milho estourou na panela", icon: "🌽", correctOrder: 1 }, { id: 2, text: "Colocou sal na pipoca", icon: "🧂", correctOrder: 2 }, { id: 3, text: "Comeu assistindo filme", icon: "🎬", correctOrder: 3 } ], completionMessage: "Pop! Pipoca quentinha!", hint: "O milho estoura primeiro!" },
+  { id: 'food_8', title: 'Bolo de Aniversário', category: 'Alimentação', narrator: 'Leo', elements: [ { id: 1, text: "Cortou um pedaço grande", icon: "🎂", correctOrder: 1 }, { id: 2, text: "Colocou no pratinho", icon: "🍽️", correctOrder: 2 }, { id: 3, text: "Comeu com alegria", icon: "🎉", correctOrder: 3 } ], completionMessage: "Festa! Bolo delicioso!", hint: "Cortamos antes de colocar no prato!" },
+  { id: 'emotion_1', title: 'Presente Surpresa', category: 'Emoções', narrator: 'Mila', elements: [ { id: 1, text: "Ganhou um presente lindo", icon: "🎁", correctOrder: 1 }, { id: 2, text: "Abriu o embrulho colorido", icon: "📦", correctOrder: 2 }, { id: 3, text: "Sorriu muito feliz", icon: "😄", correctOrder: 3 } ], completionMessage: "Que alegria! Presente especial!", hint: "Ganhamos antes de abrir!" },
+  { id: 'emotion_2', title: 'Consolando Amigo', category: 'Emoções', narrator: 'Leo', elements: [ { id: 1, text: "Viu o amigo chorando", icon: "😢", correctOrder: 1 }, { id: 2, text: "Deu um abraço apertado", icon: "🤗", correctOrder: 2 }, { id: 3, text: "O amigo ficou melhor", icon: "🙂", correctOrder: 3 } ], completionMessage: "Amizade! Que carinho bonito!", hint: "Vemos a tristeza antes de consolar!" },
+  { id: 'emotion_3', title: 'Medo do Trovão', category: 'Emoções', narrator: 'Mila', elements: [ { id: 1, text: "Ouviu o trovão forte", icon: "⛈️", correctOrder: 1 }, { id: 2, text: "Abraçou o ursinho", icon: "🧸", correctOrder: 2 }, { id: 3, text: "Sentiu-se seguro", icon: "🛡️", correctOrder: 3 } ], completionMessage: "Coragem! O medo passou!", hint: "O trovão vem antes do abraço!" },
+  { id: 'emotion_4', title: 'Raiva Passando', category: 'Emoções', narrator: 'Leo', elements: [ { id: 1, text: "Ficou muito bravo", icon: "😠", correctOrder: 1 }, { id: 2, text: "Respirou fundo três vezes", icon: "💨", correctOrder: 2 }, { id: 3, text: "O coração se acalmou", icon: "💚", correctOrder: 3 } ], completionMessage: "Calma! Respirar ajuda muito!", hint: "Ficamos bravos antes de respirar!" },
+  { id: 'emotion_5', title: 'Visita da Vovó', category: 'Emoções', narrator: 'Mila', elements: [ { id: 1, text: "A porta se abriu", icon: "🚪", correctOrder: 1 }, { id: 2, text: "Viu a vovó querida", icon: "👵", correctOrder: 2 }, { id: 3, text: "Correu para abraçar", icon: "🏃‍♀️", correctOrder: 3 } ], completionMessage: "Amor! Vovó chegou!", hint: "A porta abre primeiro!" },
+  { id: 'emotion_6', title: 'Desenho Especial', category: 'Emoções', narrator: 'Leo', elements: [ { id: 1, text: "Fez um desenho caprichado", icon: "✏️", correctOrder: 1 }, { id: 2, text: "Mostrou para a mamãe", icon: "👩", correctOrder: 2 }, { id: 3, text: "Recebeu muitos elogios", icon: "⭐", correctOrder: 3 } ], completionMessage: "Orgulho! Você é um artista!", hint: "Fazemos o desenho antes de mostrar!" },
+  { id: 'emotion_7', title: 'Cachorro Amigo', category: 'Emoções', narrator: 'Mila', elements: [ { id: 1, text: "Viu o cachorro fofinho", icon: "🐕", correctOrder: 1 }, { id: 2, text: "Fez carinho na cabeça", icon: "✋", correctOrder: 2 }, { id: 3, text: "Ganhou uma lambida", icon: "💕", correctOrder: 3 } ], completionMessage: "Amizade! Que cachorro carinhoso!", hint: "Vemos o cachorro antes de fazer carinho!" }
+];
 
-  const InstructionsScreen = () => (
-    <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 p-4 pt-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-6">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-2">Como Jogar</h2>
-          <p className="text-white/90 text-md md:text-lg">Organize as histórias para ganhar estrelas!</p>
-        </div>
-        <div className="space-y-4">
-          <div className="bg-white/95 backdrop-blur rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all">
-            <div className="flex items-start gap-4">
-              <div className="bg-purple-100 p-3 rounded-xl"><BookOpen className="h-8 w-8 text-purple-600" /></div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Sua Missão</h3>
-                <p className="text-gray-600">
-                  Você receberá cartões com partes de uma história fora de ordem. Sua missão é arrastá-los para a sequência certa!
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white/95 backdrop-blur rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all">
-            <div className="flex items-start gap-4">
-              <div className="bg-yellow-100 p-3 rounded-xl"><Trophy className="h-8 w-8 text-yellow-600" /></div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Conquistas e Prêmios</h3>
-                <ul className="text-gray-600 space-y-2 list-disc list-inside">
-                  <li>Ganhe estrelas por cada história organizada.</li>
-                  <li>Desbloqueie níveis mais desafiadores.</li>
-                  <li>Conquiste badges especiais de narrador.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="text-center mt-8 pb-8">
-          <button
-            onClick={() => setCurrentScreen('levels')}
-            className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-xl py-4 px-10 rounded-full shadow-2xl transform hover:scale-110 transition-all duration-300"
-          >
-            <Gamepad2 className="h-7 w-7" />
-            <span>Vamos Jogar!</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+export default function BeginnerLevel() {
+  const router = useRouter();
+  
+  const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
+  const [shuffledElements, setShuffledElements] = useState<StoryElement[]>([]);
+  const [userSequence, setUserSequence] = useState<StoryElement[]>([]);
+  const [draggedItem, setDraggedItem] = useState<StoryElement | null>(null);
+  
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [score, setScore] = useState(0);
+  const [totalScore, setTotalScore] = useState(0);
+  const [attempts, setAttempts] = useState(0);
+  const [completedStories, setCompletedStories] = useState<string[]>([]);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [showHint, setShowHint] = useState(false);
+  const [stars, setStars] = useState(0);
 
-  const LevelsScreen = () => {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center justify-between p-4 mb-6">
-            <button
-              onClick={() => setCurrentScreen('instructions')}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span className="font-semibold">Voltar</span>
-            </button>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Escolha seu Nível</h2>
-            <div className="bg-yellow-100 px-3 py-1 rounded-full flex items-center gap-1">
-              <span className="text-lg font-bold text-yellow-700">0</span>
-              <Star className="h-5 w-5 text-yellow-600 fill-yellow-500" />
-            </div>
-          </div>
-          <div className="space-y-6">
-            {levelsData.map((level) => {
-              const isUnlocked = unlockedLevels.includes(level.id);
-              const isSelected = selectedLevel === level.id;
-              return (
-                <div
-                  key={level.id}
-                  onClick={() => isUnlocked && setSelectedLevel(level.id)}
-                  className={`
-                    rounded-2xl shadow-lg border-4 transition-all duration-300
-                    ${isUnlocked ? 'cursor-pointer' : 'cursor-not-allowed bg-gray-100'}
-                    ${isSelected && isUnlocked ? 'border-blue-500 scale-105' : 'border-transparent'}
-                  `}
-                >
-                  <div className={`flex flex-col md:flex-row items-center p-4 rounded-t-xl bg-gradient-to-r ${isUnlocked ? level.color : 'from-gray-300 to-gray-400'}`}>
-                    <div className="mb-2 md:mb-0 md:mr-6">{level.icon}</div>
-                    <div className="text-center md:text-left text-white">
-                      <h3 className="text-2xl font-bold">{level.name}</h3>
-                      <p className="text-sm opacity-90">{level.details}</p>
-                    </div>
-                    {!isUnlocked && (
-                      <div className="md:ml-auto mt-2 md:mt-0">
-                        <Lock className="h-8 w-8 text-white/70" />
-                      </div>
-                    )}
-                  </div>
-                  {isUnlocked && (
-                    <div className="bg-white p-6 rounded-b-xl">
-                      <p className="text-gray-700 font-medium">{level.description}</p>
-                      {level.stories && (
-                         <div className="flex flex-wrap gap-2 mt-4">
-                            {level.stories.map((story, i) => (
-                              <span key={i} className="text-xs font-semibold px-3 py-1 rounded-full bg-green-100 text-green-700">
-                                {story}
-                              </span>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div className="text-center mt-8 pb-8">
-            <button
-              // 3. Lógica de navegação ATUALIZADA
-              onClick={() => {
-                  if (selectedLevel) {
-                      // Navega para a página do nível correspondente
-                      router.push(`/sequential-narrative/${selectedLevel}`);
-                  }
-              }}
-              disabled={!selectedLevel || !unlockedLevels.includes(selectedLevel)}
-              className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-xl py-4 px-10 rounded-full shadow-2xl transform hover:scale-110 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100"
-            >
-              <Gamepad2 className="h-7 w-7" />
-              <span>Começar Aventura</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  const currentStory = beginnerStories[currentStoryIndex];
+
+  useEffect(() => {
+    const shuffled = [...currentStory.elements].sort(() => Math.random() - 0.5);
+    setShuffledElements(shuffled);
+    setUserSequence([]);
+    setShowFeedback(false);
+    setScore(0);
+    setAttempts(0);
+    setShowHint(false);
+  }, [currentStoryIndex, currentStory.elements]);
+
+  const handleDragStart = (element: StoryElement) => {
+    setDraggedItem(element);
   };
 
-  // --- RENDERIZAÇÃO PRINCIPAL ---
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (draggedItem) {
+      const newSequence = [...userSequence, draggedItem];
+      setUserSequence(newSequence);
+      setShuffledElements(prev => prev.filter(item => item.id !== draggedItem.id));
+      setDraggedItem(null);
+    }
+  };
+
+  const removeFromSequence = (elementToRemove: StoryElement) => {
+    setUserSequence(prev => prev.filter(item => item.id !== elementToRemove.id));
+    setShuffledElements(prev => [...prev, elementToRemove].sort((a,b) => a.id - b.id));
+  };
+
+  const checkSequence = () => {
+    if (userSequence.length !== currentStory.elements.length) {
+      return;
+    }
+
+    setAttempts(prev => prev + 1);
+    
+    const isCorrect = userSequence.every((element, index) => element.correctOrder === index + 1);
+
+    if (isCorrect) {
+      let earnedStars = attempts === 0 ? 3 : attempts === 1 ? 2 : 1;
+      setStars(earnedStars);
+      setScore(100);
+      setCurrentStreak(prev => prev + 1);
+      setTotalScore(prev => prev + (100 * earnedStars));
+      
+      if (!completedStories.includes(currentStory.id)) {
+        setCompletedStories(prev => [...prev, currentStory.id]);
+      }
+    } else {
+      setScore(0);
+      setCurrentStreak(0);
+      setStars(0);
+    }
+    
+    setShowFeedback(true);
+  };
+
+  const nextStory = () => {
+    if (currentStoryIndex < beginnerStories.length - 1) {
+      setCurrentStoryIndex(prev => prev + 1);
+    }
+  };
+
+  const resetActivity = () => {
+    const shuffled = [...currentStory.elements].sort(() => Math.random() - 0.5);
+    setShuffledElements(shuffled);
+    setUserSequence([]);
+    setShowFeedback(false);
+    setScore(0);
+    setAttempts(0);
+    setShowHint(false);
+  };
+
+  const progressPercentage = (completedStories.length / beginnerStories.length) * 100;
+
   return (
-    <div className="min-h-screen">
-      {currentScreen === 'landing' && <LandingScreen />}
-      {currentScreen === 'instructions' && <InstructionsScreen />}
-      {currentScreen === 'levels' && <LevelsScreen />}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4 sm:p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <button onClick={() => router.push('/sequential-narrative')} className="flex items-center text-gray-600 hover:text-gray-800 transition-colors">
+              <Home className="w-5 h-5 mr-2" /> Menu
+            </button>
+            <div className="text-center flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Nível Iniciante</h1>
+              <p className="text-sm text-gray-600 mt-1">História {currentStoryIndex + 1} de {beginnerStories.length}</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <div className="flex items-center gap-1"><Trophy className="w-5 h-5 text-yellow-500" /> <span className="font-bold text-lg">{totalScore}</span></div>
+                <div className="text-xs text-gray-600">Pontos</div>
+              </div>
+              {currentStreak > 0 && (
+                <div className="text-right">
+                  <div className="flex items-center gap-1"><Sparkles className="w-5 h-5 text-purple-500" /> <span className="font-bold text-lg">{currentStreak}</span></div>
+                  <div className="text-xs text-gray-600">Sequência</div>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+              <span>Progresso Total</span>
+              <span>{completedStories.length}/{beginnerStories.length}</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-500" style={{ width: `${progressPercentage}%` }}></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">🧩 Partes da História</h3>
+            <div className="space-y-3">
+              {shuffledElements.map((element) => (
+                <div key={element.id} draggable onDragStart={() => handleDragStart(element)} className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg p-4 cursor-move hover:shadow-md transition-all transform hover:scale-[1.02]">
+                  <div className="flex items-center">
+                    <span className="text-3xl mr-3">{element.icon}</span>
+                    <p className="text-gray-800 flex-1">{element.text}</p>
+                  </div>
+                </div>
+              ))}
+              {shuffledElements.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <Sparkles className="w-12 h-12 mx-auto mb-2 text-purple-400" />
+                  <p>Todas as partes foram organizadas!</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">📖 Monte a História na Ordem</h3>
+            <div onDragOver={handleDragOver} onDrop={handleDrop} className="min-h-[250px] border-3 border-dashed border-purple-300 rounded-lg p-4 space-y-3 bg-purple-50/30">
+              {userSequence.length === 0 && (
+                <div className="text-center py-16 text-gray-400">
+                  <div className="text-5xl mb-3">👆</div>
+                  <p className="text-lg">Arraste as partes aqui</p>
+                </div>
+              )}
+              {userSequence.map((element, index) => (
+                <div key={element.id} className="bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-purple-300 rounded-lg p-4 relative">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-full flex items-center justify-center mr-3 text-lg font-bold shadow-md">{index + 1}°</div>
+                    <span className="text-3xl mr-3">{element.icon}</span>
+                    <p className="text-gray-800 flex-1 font-medium">{element.text}</p>
+                    <button onClick={() => removeFromSequence(element)} className="text-red-500 hover:text-red-700 text-2xl ml-2 transition-colors">✕</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-3 mt-6">
+              <button onClick={checkSequence} disabled={userSequence.length !== currentStory.elements.length || showFeedback} className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all transform ${userSequence.length === currentStory.elements.length && !showFeedback ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl hover:scale-105' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
+                Verificar História
+              </button>
+              <button onClick={resetActivity} className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-all flex items-center gap-2">
+                <RotateCcw className="w-4 h-4" /> Tentar de Novo
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {showFeedback && (
+          <div className={`mt-6 rounded-xl border-2 p-6 ${score === 100 ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-300' : 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-300'}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h3 className={`text-2xl font-bold mb-2 ${score === 100 ? 'text-green-600' : 'text-orange-600'}`}>{score === 100 ? '🎉 Parabéns!' : '💪 Quase lá!'}</h3>
+                <p className={`text-lg ${score === 100 ? 'text-green-700' : 'text-orange-700'}`}>{score === 100 ? currentStory.completionMessage : 'A ordem não está certa. Tente de novo!'}</p>
+                {score === 100 && (
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="text-gray-600">Você ganhou:</span>
+                    <div className="flex gap-1">{[...Array(3)].map((_, i) => (<Star key={i} className={`w-8 h-8 ${i < stars ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}/>))}</div>
+                  </div>
+                )}
+              </div>
+              {score === 100 && currentStoryIndex < beginnerStories.length - 1 && (
+                <button onClick={nextStory} className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center gap-2">
+                  Próxima História <ChevronRight className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        {completedStories.length === beginnerStories.length && (
+          <div className="mt-8 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-xl p-6 text-center">
+            <Trophy className="w-16 h-16 text-yellow-600 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">🎊 Nível Iniciante Completo! 🎊</h2>
+            <p className="text-gray-700 mb-4">Você completou todas as {beginnerStories.length} histórias!</p>
+            <button onClick={() => router.push('/sequential-narrative/intermediate')} className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+              Avançar para Nível Intermediário →
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
