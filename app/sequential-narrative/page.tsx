@@ -1,3 +1,4 @@
+'use client';
 import React, { useState } from 'react';
 import { BookOpen, Trophy, Gamepad2, Star, Sparkles, ChevronRight, Award, Clock, Target, Users } from 'lucide-react';
 
