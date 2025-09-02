@@ -16,16 +16,12 @@ export default function SequentialNarrativeGame() {
     { id: 'advanced', name: 'Avançado', icon: <Trophy className="h-12 w-12 text-gray-400" />, color: 'from-gray-300 to-gray-400', description: 'Narrativas complexas com múltiplas emoções.', details: '7 elementos • 20 histórias' },
   ];
 
-  // TELA INICIAL COM NOVO DESIGN APLICADO
   const LandingScreen = () => (
     <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-orange-300 flex items-center justify-center p-4 overflow-hidden">
       <div className="w-full max-w-sm">
         <div className="relative bg-white/90 backdrop-blur-xl rounded-[40px] shadow-2xl p-6 text-center transition-transform duration-300 hover:scale-[1.03]">
-          {/* Elementos decorativos flutuantes */}
           <div className="absolute -top-5 -left-5 w-16 h-16 bg-yellow-300 rounded-full opacity-70 animate-pulse"></div>
           <div className="absolute -bottom-8 -right-4 w-20 h-20 bg-pink-300 rounded-full opacity-60 animate-pulse delay-75"></div>
-
-          {/* Título com Novo Estilo */}
           <div className="mb-4 inline-block">
             <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-800 flex flex-col items-center gap-2">
               <span className="bg-purple-200 px-4 py-1 rounded-xl shadow-md transform -rotate-2">
@@ -36,14 +32,11 @@ export default function SequentialNarrativeGame() {
               </span>
             </h1>
           </div>
-
           <div className="flex justify-center gap-1.5 mb-6">
             {[...Array(5)].map((_, i) => (
               <Star key={i} className="h-6 w-6 text-yellow-400 fill-yellow-400" />
             ))}
           </div>
-
-          {/* Card dos Mascotes Melhorado */}
           <div className="relative mb-4">
             <div className="relative bg-gradient-to-br from-purple-50 to-pink-100 rounded-3xl p-3 shadow-inner z-10">
                <img
@@ -53,8 +46,6 @@ export default function SequentialNarrativeGame() {
               />
             </div>
           </div>
-          
-          {/* Botão */}
           <div className="relative z-20">
             <button
               onClick={() => setCurrentScreen('instructions')}
@@ -83,7 +74,7 @@ export default function SequentialNarrativeGame() {
               <div>
                 <h3 className="text-xl font-bold text-gray-800 mb-2">Sua Missão</h3>
                 <p className="text-gray-600">
-                  Você receberá cartões com partes de uma história fora de ordem. Sua missão é arrastá-los para a sequência certa!
+                  Você receberá cartões com partes de uma história fora de ordem. Sua missão é **clicar** neles na sequência que você acha que é a correta. Se errar, clique no cartão errado para devolvê-lo.
                 </p>
               </div>
             </div>
