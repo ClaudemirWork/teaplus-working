@@ -51,13 +51,12 @@ const PECS_CARDS = {
     { id: 'ir_casa', name: 'Ir para Casa', image: '/images/cards/rotina/Ir para casa.webp', time: '17:30' },
     
     // Dias da Semana
-    { id: 'segunda', name: 'Segunda-feira', image: '/images/cards/rotina/segunda_feira.webp', time: '00:00' },
-    { id: 'terca', name: 'Terça-feira', image: '/images/cards/rotina/terca_feira.webp', time: '00:00' },
-    { id: 'quarta', name: 'Quarta-feira', image: '/images/cards/rotina/quarta_feira.webp', time: '00:00' },
-    { id: 'quinta', name: 'Quinta-feira', image: '/images/cards/rotina/quinta_feira.webp', time: '00:00' },
-    { id: 'sexta', name: 'Sexta-feira', image: '/images/cards/rotina/sexta_feira.webp', time: '00:00' },
-    { id: 'sabado', name: 'Sábado', image: '/images/cards/rotina/sabado.webp', time: '00:00' },
-    { id: 'domingo', name: 'Domingo', image: '/images/cards/rotina/domingo.webp', time: '00:00' },
+    { id: 'terca_dia', name: 'Terça-feira', image: '/images/cards/rotina/terca_feira.webp', time: '00:00' },
+    { id: 'quarta_dia', name: 'Quarta-feira', image: '/images/cards/rotina/quarta_feira.webp', time: '00:00' },
+    { id: 'quinta_dia', name: 'Quinta-feira', image: '/images/cards/rotina/quinta_feira.webp', time: '00:00' },
+    { id: 'sexta_dia', name: 'Sexta-feira', image: '/images/cards/rotina/sexta_feira.webp', time: '00:00' },
+    { id: 'sabado_dia', name: 'Sábado', image: '/images/cards/rotina/sabado.webp', time: '00:00' },
+    { id: 'domingo_dia', name: 'Domingo', image: '/images/cards/rotina/domingo.webp', time: '00:00' },
     { id: 'semana', name: 'Semana', image: '/images/cards/rotina/semana.webp', time: '00:00' },
     
     // Tempo/Temporalidade
@@ -180,6 +179,7 @@ export default function RoutineVisualPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   // Detectar se é mobile
   useEffect(() => {
@@ -190,6 +190,11 @@ export default function RoutineVisualPage() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Função para lidar com erro de imagem
+  const handleImageError = (cardId: string) => {
+    setImageErrors(prev => new Set(prev).add(cardId));
+  };
 
   // Funções auxiliares
   const addMinutesToTime = (time: string, minutes: number): string => {
@@ -516,14 +521,18 @@ export default function RoutineVisualPage() {
                     onClick={() => addActivityToDay(card)}
                     className="bg-white rounded-xl p-3 shadow-sm active:scale-95 transition-transform"
                   >
-                    <img
-                      src={card.image}
-                      alt={card.name}
-                      className="w-full h-20 object-contain mb-2"
-                      onError={(e) => {
-                        e.currentTarget.src = '/images/placeholder.webp';
-                      }}
-                    />
+                    {imageErrors.has(card.id) ? (
+                      <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center mb-2">
+                        <span className="text-3xl">📋</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={card.image}
+                        alt={card.name}
+                        className="w-full h-20 object-contain mb-2"
+                        onError={() => handleImageError(card.id)}
+                      />
+                    )}
                     <p className="text-xs font-medium text-center line-clamp-2">
                       {card.name}
                     </p>
@@ -623,7 +632,7 @@ export default function RoutineVisualPage() {
     );
   }
 
-  // INTERFACE DESKTOP - Continua igual...
+  // INTERFACE DESKTOP
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       {/* Header Desktop */}
@@ -748,14 +757,18 @@ export default function RoutineVisualPage() {
                   onClick={() => addActivityToDay(card)}
                   className="p-2 bg-gray-50 rounded-lg hover:bg-blue-50 hover:scale-105 transition-all border-2 border-gray-200 hover:border-blue-300"
                 >
-                  <img
-                    src={card.image}
-                    alt={card.name}
-                    className="w-full h-16 object-contain mb-1"
-                    onError={(e) => {
-                      e.currentTarget.src = '/images/placeholder.webp';
-                    }}
-                  />
+                  {imageErrors.has(card.id) ? (
+                    <div className="w-full h-16 bg-gray-200 rounded flex items-center justify-center mb-1">
+                      <span className="text-2xl">📋</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={card.image}
+                      alt={card.name}
+                      className="w-full h-16 object-contain mb-1"
+                      onError={() => handleImageError(card.id)}
+                    />
+                  )}
                   <p className="text-xs font-medium">{card.name}</p>
                 </button>
               ))}
