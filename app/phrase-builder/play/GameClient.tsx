@@ -237,34 +237,13 @@ export default function GameClient() {
                   className={styles.cardButtonInSequence}
                 >
                   <div className={styles.sequenceNumber}>{index + 1}°</div>
-                  {element.type === 'image' ? (
-                    <Image 
-                      src={element.content} 
-                      alt={element.label} 
-                      width={60} 
-                      height={60} 
-                      className={styles.cardImage} 
-                    />
-                  ) : (
-                    // Para texto (artigos O/A)
-                    <div 
-                      style={{ 
-                        backgroundColor: '#F3F4F6',
-                        width: '60px',
-                        height: '60px',
-                        borderRadius: '0.5rem',
-                        border: '2px solid #E5E7EB',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 'bold',
-                        fontSize: '1.5rem',
-                        color: '#1F2937'
-                      }}
-                    >
-                      {element.content}
-                    </div>
-                  )}
+                  <Image 
+                    src={element.content} 
+                    alt={element.label} 
+                    width={60} 
+                    height={60} 
+                    className={styles.cardImage} 
+                  />
                   <span className={styles.cardLabel}>{element.label}</span>
                 </button>
               ))}
