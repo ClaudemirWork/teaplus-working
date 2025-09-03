@@ -1,5 +1,16 @@
-/* ARQUIVO COMPLETO E FINAL */
-/* Local: app/phrase-builder/PhraseBuilder.module.css */
+/* ARQUIVO CORRIGIDO - PhraseBuilder.module.css */
+/* Variáveis CSS */
+:root {
+  --primary-color: #3b82f6;
+  --success-color: #10b981;
+  --error-color: #ef4444;
+  --text-dark: #1f2937;
+  --text-light: #6b7280;
+  --panel-bg: rgba(255, 255, 255, 0.95);
+  --border-radius: 1rem;
+  --shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  --background-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
 
 /* --- Estilos da Tela de Abertura --- */
 .welcomeContainer {
@@ -11,7 +22,7 @@
   text-align: center;
   background: var(--background-gradient);
   padding: 2rem;
-  font-family: sans-serif;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
 .welcomeTitle {
@@ -38,19 +49,19 @@
 }
 
 .rulesContainer h2 {
-    margin-top: 0;
-    color: var(--text-dark);
+  margin-top: 0;
+  color: var(--text-dark);
 }
 
 .rulesContainer ul {
-    list-style-type: none;
-    padding: 0;
-    text-align: left;
+  list-style-type: none;
+  padding: 0;
+  text-align: left;
 }
 
 .rulesContainer li {
-    margin-bottom: 0.5rem;
-    color: #444;
+  margin-bottom: 0.5rem;
+  color: #444;
 }
 
 .playButton {
@@ -71,58 +82,63 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
-
-/* --- Estilos da Tela do Jogo (ATUALIZADOS) --- */
-
+/* --- GAME SCREEN STYLES (CORRECTED) --- */
 .playPageContainer {
   min-height: 100vh;
-  background: var(--background-gradient);
-  padding: 1rem;
-  font-family: sans-serif;
-  display: flex;
-  flex-direction: column;
+  background: linear-gradient(135deg, #93a5cf 0%, #e4efe9 100%);
+  padding: 1.5rem;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
+/* Header estilo igual ao Sequential Narrative */
 .playHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
-  background: var(--panel-bg);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow);
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto 1.5rem auto;
+  padding: 1.5rem 2rem;
+  background: white;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .headerButton {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
   background: #f3f4f6;
   border: none;
-  padding: 0.5rem 1rem;
   border-radius: 9999px;
   cursor: pointer;
   font-weight: 600;
-  color: var(--text-light);
-  transition: background-color 0.2s;
+  color: #4b5563;
+  transition: all 0.2s;
 }
+
 .headerButton:hover {
-  background-color: #e5e7eb;
+  background: #e5e7eb;
+  transform: scale(1.05);
 }
 
 .headerTitle {
   text-align: center;
 }
+
 .headerTitle h1 {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: bold;
-  color: var(--text-dark);
-  text-transform: capitalize;
+  color: #1f2937;
+  margin: 0;
 }
+
 .headerTitle p {
-  color: var(--text-light);
+  color: #6b7280;
+  margin: 0.25rem 0 0 0;
+  font-size: 0.9rem;
 }
 
 .headerScore {
@@ -131,261 +147,353 @@
   gap: 0.5rem;
   font-size: 1.25rem;
   font-weight: bold;
-  color: var(--text-dark);
+  color: #1f2937;
+  background: #fef3c7;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
 }
 
+/* Área central do jogo */
+.gameContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Área da imagem estímulo - centralizada como no Sequential */
 .stimulusArea {
-    text-align: center;
-    margin-bottom: 1.5rem;
+  text-align: center;
+  margin-bottom: 2rem;
 }
 
 .stimulusImage {
-  max-width: 250px;
-  width: 100%;
-  height: auto;
-  border: 5px solid white;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow);
-  background-color: white;
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  background: white;
+  padding: 0.5rem;
 }
 
+/* Grid principal - igual ao Sequential Narrative */
 .gameGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  flex-grow: 1; 
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
 }
 
+/* Painéis laterais */
 .panel {
-  background: var(--panel-bg);
-  border-radius: var(--border-radius);
-  padding: 1.5rem;
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
+  background: white;
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  min-height: 400px;
 }
 
 .panelTitle {
   font-size: 1.25rem;
   font-weight: bold;
-  color: var(--text-dark);
+  color: #1f2937;
   margin-bottom: 1.5rem;
   display: flex;
   align-items: center;
-}
-
-.cardArea {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
-  align-items: center;
-  flex-grow: 1;
-}
-
-.dropZone {
-  background-color: #f9fafb;
-  border: 2px dashed #d1d5db;
-  border-radius: var(--border-radius);
-  padding: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-content: flex-start;
-  flex-grow: 1;
-}
-
-.cardButton, .cardButtonInSequence {
-  background-color: #f9fafb;
-  border: 2px solid #e5e7eb;
-  border-radius: 0.75rem;
-  padding: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   gap: 0.5rem;
 }
+
+/* Área dos cards disponíveis */
+.cardArea {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Cards individuais - estilo do Sequential */
+.cardButton {
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-align: left;
+}
+
 .cardButton:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  border-color: var(--primary-color);
+  background: white;
+  border-color: #3b82f6;
+  transform: translateX(5px);
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
 }
 
 .cardImage {
+  width: 60px;
+  height: 60px;
   object-fit: contain;
+  border-radius: 0.5rem;
+  background: white;
+  padding: 0.25rem;
 }
 
+.cardLabel {
+  font-weight: 600;
+  color: #374151;
+  font-size: 1rem;
+  flex-grow: 1;
+}
+
+/* Área de drop/sequência */
+.dropZone {
+  min-height: 350px;
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Cards na sequência */
 .cardButtonInSequence {
-  background-color: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  gap: 0.25rem;
+  background: white;
+  border: 2px solid #10b981;
+  border-radius: 1rem;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.cardButtonInSequence:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
 .sequenceNumber {
   position: absolute;
   top: -10px;
   left: -10px;
-  background: var(--primary-color);
+  background: #10b981;
   color: white;
   width: 2rem;
   height: 2rem;
-  border-radius: 9999px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  font-size: 0.9rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .emptyAreaText {
-  color: var(--text-light);
-  align-self: center;
-  width: 100%;
+  color: #9ca3af;
   text-align: center;
+  padding: 3rem;
+  font-style: italic;
 }
 
-.cardLabel {
-  font-weight: 600;
-  color: var(--text-dark);
-  font-size: 0.9rem;
-  text-transform: capitalize;
-}
-
+/* Barra inferior de ações */
 .bottomBar {
-    margin-top: 1.5rem;
-    max-width: 1200px;
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .actionButtonsContainer {
   display: flex;
   gap: 1rem;
-}
-
-.verifyButton, .resetButton, .nextPhaseButton {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: bold;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s;
+  justify-content: center;
 }
 
 .verifyButton {
-  background: var(--primary-color);
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  background: #3b82f6;
   color: white;
-  flex-grow: 1;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.5rem;
 }
 
 .verifyButton:hover:not(:disabled) {
   background: #2563eb;
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
 }
+
 .verifyButton:disabled {
   background: #9ca3af;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .resetButton {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
   background: #e5e7eb;
-  color: var(--text-dark);
+  color: #4b5563;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-grow: 0;
-}
-.resetButton:hover {
-  background: #d1d5db;
+  gap: 0.5rem;
 }
 
+.resetButton:hover {
+  background: #d1d5db;
+  transform: scale(1.05);
+}
+
+/* Área de feedback */
 .feedbackArea {
-  padding: 1.5rem;
-  border-radius: var(--border-radius);
+  padding: 1.5rem 2rem;
+  border-radius: 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: bold;
+  font-weight: 600;
+  animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .feedbackCorrect {
-  background: #d1fae5;
-  color: #065f46;
-  border: 2px solid var(--success-color);
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 2px solid #10b981;
 }
+
 .feedbackIncorrect {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 2px solid var(--error-color);
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 2px solid #ef4444;
 }
 
 .feedbackText {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.feedbackText p {
+  margin: 0;
+  font-size: 1.1rem;
 }
 
 .correctSentence {
-    font-size: 1.1rem;
-    color: var(--success-color);
-    text-transform: capitalize;
+  font-size: 1.25rem;
+  color: #059669;
+  font-weight: bold;
 }
 
 .nextPhaseButton {
-    background: var(--success-color);
-    color: white;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.nextPhaseButton:hover {
-    background: #059669;
+  padding: 0.75rem 1.5rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-/* --- Responsividade para Telas Pequenas --- */
+.nextPhaseButton:hover {
+  background: #059669;
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+}
+
+/* Responsividade */
 @media (max-width: 768px) {
-    .playPageContainer {
-        padding: 0.5rem;
-    }
-    .gameGrid {
-        grid-template-columns: 1fr;
-    }
-    .playHeader {
-        flex-direction: column;
-        gap: 0.5rem;
-        padding: 0.75rem;
-    }
-    .headerTitle h1 {
-        font-size: 1.2rem;
-    }
-    .stimulusImage {
-        max-width: 180px;
-    }
-    .panel {
-        padding: 1rem;
-    }
-    .cardButton, .cardButtonInSequence {
-        padding: 0.25rem;
-    }
-    .cardLabel {
-        font-size: 0.8rem;
-    }
-    .bottomBar {
-        margin-bottom: 1rem;
-    }
-    .feedbackArea {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-    }
+  .playPageContainer {
+    padding: 1rem;
+  }
+  
+  .playHeader {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .headerTitle h1 {
+    font-size: 1.25rem;
+  }
+  
+  .stimulusImage {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .gameGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .panel {
+    padding: 1.5rem;
+    min-height: auto;
+  }
+  
+  .cardButton,
+  .cardButtonInSequence {
+    padding: 0.75rem 1rem;
+  }
+  
+  .cardImage {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .dropZone {
+    min-height: 250px;
+  }
+  
+  .actionButtonsContainer {
+    flex-direction: column;
+  }
+  
+  .verifyButton,
+  .resetButton {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .feedbackArea {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .nextPhaseButton {
+    width: 100%;
+    justify-content: center;
+  }
 }
