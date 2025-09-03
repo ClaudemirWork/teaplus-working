@@ -1,623 +1,115 @@
 /* app/number-journey/number-journey.css */
 
-/* Reset e Base */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* ... (mantenha todo o CSS anterior até a tela splash) ... */
 
-.container-jogo {
-  min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Tela Splash */
+/* Tela Splash - ATUALIZADA */
 .tela-splash {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  position: relative;
+}
+
+/* Background animado */
+.background-animado {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  opacity: 0.1;
+}
+
+.elemento-flutuante {
+  position: absolute;
+  color: white;
+  animation: floatUp 10s linear infinite;
+  font-weight: bold;
+}
+
+@keyframes floatUp {
+  from {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
 }
 
 .conteudo-splash {
   text-align: center;
   animation: fadeIn 0.5s ease-out;
+  position: relative;
+  z-index: 1;
 }
 
-.titulo-principal {
-  font-size: 3rem;
-  color: white;
-  margin-bottom: 30px;
-  text-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
-
-.icone-titulo {
-  font-size: 2.5rem;
-  animation: sparkle 2s ease-in-out infinite;
-}
-
-.mila-container {
+.mila-container-estatica {
   margin: 30px 0;
-  animation: float 3s ease-in-out infinite;
 }
 
-.mila-imagem {
+.mila-imagem-grande {
   filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+  width: 100%;
+  max-width: 400px;
+  height: auto;
 }
 
-.botao-iniciar {
-  background: white;
-  color: #764ba2;
-  border: none;
-  padding: 20px 50px;
-  border-radius: 50px;
-  font-size: 1.3rem;
-  font-weight: bold;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-}
+/* ... (mantenha o resto do CSS anterior) ... */
 
-.botao-iniciar:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-}
-
-/* Tela de Instruções */
-.tela-instrucoes {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  padding: 20px;
-}
-
-.botao-voltar {
-  background: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  margin-bottom: 20px;
-}
-
-.conteudo-instrucoes {
-  max-width: 600px;
-  margin: 0 auto;
+/* Objetos Contáveis - ATUALIZADO */
+.nome-objeto {
   text-align: center;
-}
-
-.conteudo-instrucoes h2 {
-  color: white;
-  font-size: 2.5rem;
-  margin-bottom: 20px;
-}
-
-.conteudo-instrucoes > p {
-  color: white;
-  font-size: 1.2rem;
-  margin-bottom: 30px;
-}
-
-.card-instrucao {
-  background: white;
-  border-radius: 20px;
-  padding: 25px;
-  margin-bottom: 20px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.icone-instrucao {
-  font-size: 3rem;
-  margin-bottom: 15px;
-}
-
-.card-instrucao h3 {
-  color: #333;
-  margin-bottom: 10px;
-}
-
-.card-instrucao p,
-.card-instrucao li {
-  color: #666;
-  line-height: 1.6;
-}
-
-.card-instrucao ul {
-  list-style: none;
-  padding: 0;
-}
-
-.card-instrucao li {
-  padding: 5px 0;
-}
-
-.card-instrucao li::before {
-  content: '✨ ';
-}
-
-.botao-escolher {
-  background: #4CAF50;
-  color: white;
-  border: none;
-  padding: 15px 40px;
-  border-radius: 30px;
   font-size: 1.2rem;
   font-weight: bold;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 20px;
-  transition: transform 0.2s;
-}
-
-/* Seleção de Reino */
-.tela-selecao {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  padding: 20px;
-  min-height: 100vh;
-}
-
-.titulo-selecao {
-  text-align: center;
-  color: white;
-  font-size: 2.5rem;
-  margin-bottom: 20px;
-  text-shadow: 0 3px 10px rgba(0,0,0,0.2);
-}
-
-.pontos-display {
-  background: white;
-  border-radius: 20px;
-  padding: 10px 20px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  font-weight: bold;
-}
-
-.grid-reinos {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  max-width: 900px;
-  margin: 40px auto;
-}
-
-.card-reino {
-  padding: 30px;
-  border-radius: 20px;
-  color: white;
-  text-align: center;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: none;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-
-.card-reino:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-}
-
-.icone-reino {
-  font-size: 4rem;
+  color: #2196F3;
   margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-.card-reino h3 {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-}
-
-.card-reino p {
-  font-size: 1rem;
-  opacity: 0.95;
-}
-
-/* Tela de Jogo */
-.tela-jogo {
-  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-  min-height: 100vh;
-}
-
-.header-jogo {
-  background: white;
-  padding: 15px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.botao-sair {
-  background: #f44336;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-}
-
-.info-jogo {
-  display: flex;
-  gap: 20px;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: bold;
-}
-
-.botao-som {
-  background: #2196F3;
-  color: white;
-  border: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.area-principal {
-  padding: 30px 20px;
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-.pergunta-container {
-  background: white;
-  border-radius: 20px;
-  padding: 30px;
-  margin-bottom: 30px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-}
-
-.pergunta {
-  text-align: center;
-  font-size: 2rem;
-  color: #333;
-  margin-bottom: 30px;
-}
-
-/* Objetos Contáveis */
-.objetos-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 30px;
-  padding: 20px;
-  min-height: 150px;
-}
-
-.objetos-container.soma {
-  flex-wrap: wrap;
-}
-
-.grupo-objetos {
-  display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.objeto-contavel {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-  animation: bounceIn 0.5s ease-out backwards;
-  transition: transform 0.2s;
-}
-
-.objeto-contavel:hover {
-  transform: scale(1.1);
-}
-
-.objeto-removido {
-  opacity: 0.3;
-  filter: grayscale(100%);
-}
-
-.simbolo-matematico {
-  width: 50px;
-  height: 50px;
-  object-fit: contain;
-}
-
-.texto-subtracao {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #ff5252;
-  color: white;
-  padding: 8px 20px;
-  border-radius: 20px;
-  font-weight: bold;
-}
-
-/* Opções de Resposta */
-.opcoes-resposta {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.card-numero {
-  background: white;
-  border: 3px solid #ddd;
-  border-radius: 20px;
-  padding: 20px;
-  cursor: pointer;
-  transition: all 0.2s;
+.grupo-com-nome {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  min-width: 120px;
 }
 
-.card-numero:hover:not(:disabled) {
-  transform: translateY(-5px);
-  border-color: #4CAF50;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-}
-
-.card-numero.correto {
-  background: #4CAF50;
-  border-color: #4CAF50;
-  animation: pulse 0.5s;
-}
-
-.card-numero.incorreto {
-  background: #ff5252;
-  border-color: #ff5252;
-  animation: shake 0.5s;
-}
-
-.card-numero:disabled {
-  cursor: not-allowed;
-}
-
-.imagem-numero {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-}
-
-.texto-numero {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #333;
-}
-
-.card-numero.correto .texto-numero,
-.card-numero.incorreto .texto-numero {
-  color: white;
-}
-
-/* Dica */
-.dica {
-  background: #FFF3E0;
-  border: 2px solid #FFB74D;
-  border-radius: 15px;
-  padding: 15px;
-  margin-top: 20px;
-  text-align: center;
-  color: #E65100;
-  font-weight: bold;
-  animation: slideIn 0.3s ease-out;
-}
-
-/* Celebração */
-.celebracao {
+/* Sistema de Confetes */
+.confetti-container {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
 }
 
-.texto-celebracao {
-  background: white;
-  padding: 30px 60px;
-  border-radius: 30px;
-  font-size: 2rem;
-  font-weight: bold;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-  animation: bounceIn 0.5s ease-out;
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: -10px;
+  animation: confettiFall 2s linear forwards;
 }
 
-/* Tela de Vitória */
-.tela-vitoria {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.conteudo-vitoria {
-  background: white;
-  border-radius: 30px;
-  padding: 40px;
-  text-align: center;
-  max-width: 500px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-  animation: fadeIn 0.5s ease-out;
-}
-
-.trofeu {
-  font-size: 5rem;
-  margin-bottom: 20px;
-  animation: bounce 1s infinite;
-}
-
-.conteudo-vitoria h1 {
-  color: #333;
-  margin-bottom: 10px;
-}
-
-.conteudo-vitoria p {
-  color: #666;
-  margin-bottom: 30px;
-}
-
-.pontuacao-final {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  margin-bottom: 30px;
-}
-
-.icone-grande {
-  width: 40px;
-  height: 40px;
-  color: #FFD700;
-}
-
-.pontos-finais {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #764ba2;
-}
-
-.conquistas {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
-}
-
-.conquista {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-}
-
-.badge {
-  font-size: 2rem;
-}
-
-.botao-jogar-novamente {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 15px 40px;
-  border-radius: 30px;
-  font-size: 1.2rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-/* Animações */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
-}
-
-@keyframes sparkle {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-@keyframes bounceIn {
-  0% { transform: scale(0); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-10px); }
-  75% { transform: translateX(10px); }
-}
-
-@keyframes slideIn {
-  from { transform: translateY(-20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-  .titulo-principal {
-    font-size: 2rem;
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
   }
-  
-  .grid-reinos {
-    grid-template-columns: 1fr;
-  }
-  
-  .pergunta {
-    font-size: 1.5rem;
-  }
-  
-  .objeto-contavel {
-    width: 60px;
-    height: 60px;
-  }
-  
-  .card-numero {
-    min-width: 100px;
-  }
-  
-  .imagem-numero {
-    width: 60px;
-    height: 60px;
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
   }
 }
 
-@media (max-width: 480px) {
-  .objeto-contavel {
-    width: 50px;
-    height: 50px;
-  }
-  
-  .info-jogo {
-    gap: 10px;
-  }
-  
-  .opcoes-resposta {
-    gap: 10px;
-  }
-}
+/* ... (mantenha o resto do CSS) ... */
