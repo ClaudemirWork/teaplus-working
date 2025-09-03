@@ -1,6 +1,7 @@
-/* Arquivo: app/phrase-builder/PhraseBuilder.module.css (VERSÃO ATUALIZADA) */
+/* ARQUIVO COMPLETO E FINAL */
+/* Local: app/phrase-builder/PhraseBuilder.module.css */
 
-/* ... (Todos os estilos da tela de Abertura que já estavam aqui) ... */
+/* --- Estilos da Tela de Abertura --- */
 .welcomeContainer {
   display: flex;
   flex-direction: column;
@@ -12,7 +13,63 @@
   padding: 2rem;
   font-family: sans-serif;
 }
-/* ... etc ... cole todos os estilos da tela de abertura aqui ... */
+
+.welcomeTitle {
+  font-size: 3.5rem;
+  font-weight: bold;
+  color: var(--text-dark);
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.welcomeSubtitle {
+  font-size: 1.25rem;
+  color: var(--text-light);
+  margin-bottom: 2rem;
+}
+
+.rulesContainer {
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 2rem;
+  max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.rulesContainer h2 {
+    margin-top: 0;
+    color: var(--text-dark);
+}
+
+.rulesContainer ul {
+    list-style-type: none;
+    padding: 0;
+    text-align: left;
+}
+
+.rulesContainer li {
+    margin-bottom: 0.5rem;
+    color: #444;
+}
+
+.playButton {
+  padding: 1rem 2.5rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+  background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%);
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.playButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
 
 
 /* --- Estilos da Tela do Jogo (ATUALIZADOS) --- */
@@ -34,11 +91,48 @@
   background: var(--panel-bg);
   border-radius: var(--border-radius);
   box-shadow: var(--shadow);
-  max-width: 1200px;
   width: 100%;
+  max-width: 1200px;
   margin: 0 auto 1.5rem auto;
 }
-/* ... (estilos do header que já estavam aqui) ... */
+
+.headerButton {
+  display: flex;
+  align-items: center;
+  background: #f3f4f6;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-light);
+  transition: background-color 0.2s;
+}
+.headerButton:hover {
+  background-color: #e5e7eb;
+}
+
+.headerTitle {
+  text-align: center;
+}
+.headerTitle h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--text-dark);
+  text-transform: capitalize;
+}
+.headerTitle p {
+  color: var(--text-light);
+}
+
+.headerScore {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--text-dark);
+}
 
 .stimulusArea {
     text-align: center;
@@ -62,7 +156,7 @@
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
-  flex-grow: 1; /* Faz a grade ocupar o espaço disponível */
+  flex-grow: 1; 
 }
 
 .panel {
@@ -73,15 +167,23 @@
   display: flex;
   flex-direction: column;
 }
-/* ... (estilos do panelTitle que já estavam aqui) ... */
+
+.panelTitle {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--text-dark);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+}
 
 .cardArea {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
   justify-content: center;
-  align-items: center; /* Centraliza os itens verticalmente */
-  flex-grow: 1; /* Ocupa o espaço do painel */
+  align-items: center;
+  flex-grow: 1;
 }
 
 .dropZone {
@@ -93,20 +195,138 @@
   flex-wrap: wrap;
   gap: 1rem;
   align-content: flex-start;
-  flex-grow: 1; /* Ocupa o espaço do painel */
+  flex-grow: 1;
 }
 
-/* ... (Todos os outros estilos para botões, cartões, etc., que já estavam aqui) ... */
-/* Adicione o código CSS completo anterior aqui */
+.cardButton, .cardButtonInSequence {
+  background-color: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cardButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  border-color: var(--primary-color);
+}
 
+.cardImage {
+  object-fit: contain;
+}
 
-/* NOVO: Barra inferior para ações e feedback */
+.cardButtonInSequence {
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  gap: 0.25rem;
+}
+
+.sequenceNumber {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  background: var(--primary-color);
+  color: white;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.emptyAreaText {
+  color: var(--text-light);
+  align-self: center;
+  width: 100%;
+  text-align: center;
+}
+
+.cardLabel {
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 0.9rem;
+  text-transform: capitalize;
+}
+
 .bottomBar {
     margin-top: 1.5rem;
     max-width: 1200px;
     width: 100%;
     margin-left: auto;
     margin-right: auto;
+}
+
+.actionButtonsContainer {
+  display: flex;
+  gap: 1rem;
+}
+
+.verifyButton, .resetButton, .nextPhaseButton {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.verifyButton {
+  background: var(--primary-color);
+  color: white;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.verifyButton:hover:not(:disabled) {
+  background: #2563eb;
+}
+.verifyButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.resetButton {
+  background: #e5e7eb;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 0;
+}
+.resetButton:hover {
+  background: #d1d5db;
+}
+
+.feedbackArea {
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+}
+
+.feedbackCorrect {
+  background: #d1fae5;
+  color: #065f46;
+  border: 2px solid var(--success-color);
+}
+.feedbackIncorrect {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 2px solid var(--error-color);
 }
 
 .feedbackText {
@@ -121,14 +341,18 @@
     text-transform: capitalize;
 }
 
-.verifyButton {
+.nextPhaseButton {
+    background: var(--success-color);
+    color: white;
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 0.5rem;
+}
+.nextPhaseButton:hover {
+    background: #059669;
 }
 
-
-/* --- Responsividade para Telas Pequenas (ATUALIZADA) --- */
+/* --- Responsividade para Telas Pequenas --- */
 @media (max-width: 768px) {
     .playPageContainer {
         padding: 0.5rem;
