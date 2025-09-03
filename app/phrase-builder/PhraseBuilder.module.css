@@ -1,6 +1,6 @@
 /* ARQUIVO CORRIGIDO - PhraseBuilder.module.css */
-/* Variáveis CSS */
-:root {
+/* Variáveis CSS Globais */
+:global(:root) {
   --primary-color: #3b82f6;
   --success-color: #10b981;
   --error-color: #ef4444;
