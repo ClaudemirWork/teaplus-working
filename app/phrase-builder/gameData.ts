@@ -149,8 +149,10 @@ export function gerarFasesDeJogo(): GamePhase[] {
 
   for (const item of substantivos) {
     const artigoCorreto = item.genero === 'm' ? 'o' : 'a';
-    const baseFileName = item.base.replace(' ', '_');
-    const adjetivoFileName = item.adjetivo.replace(' ', '_');
+    
+    // Manter caracteres especiais e espaços nos nomes de arquivo
+    const baseFileName = item.base; // Não substitui espaços nem caracteres especiais
+    const adjetivoFileName = item.adjetivo;
     const imagemComposta = `/illustrations/${item.categoria}/${baseFileName}_${adjetivoFileName}.webp`;
     
     // Função para obter o nome correto do arquivo de cor
@@ -167,6 +169,7 @@ export function gerarFasesDeJogo(): GamePhase[] {
     }
     
     const imagemCor = getColorImagePath(item.adjetivo);
+    const imagemArtigo = `/illustrations/articles/artigo_${artigoCorreto}.webp`;
 
     // --- FASE INICIANTE: Objeto + Cor ---
     todasAsFases.push({
@@ -184,8 +187,8 @@ export function gerarFasesDeJogo(): GamePhase[] {
         }, 
         { 
           id: 2, 
-          type: 'image', // Volta a ser imagem
-          content: imagemCor, // Usa a imagem da cor
+          type: 'image',
+          content: imagemCor,
           label: item.adjetivo, 
           correctOrder: 2
         },
@@ -202,8 +205,8 @@ export function gerarFasesDeJogo(): GamePhase[] {
       elements: [
         { 
           id: 1, 
-          type: 'text', // Artigo continua como texto
-          content: artigoCorreto.toUpperCase(),
+          type: 'image', // Agora usa imagem do artigo
+          content: imagemArtigo,
           label: artigoCorreto.toUpperCase(), 
           correctOrder: 1
         },
@@ -216,8 +219,8 @@ export function gerarFasesDeJogo(): GamePhase[] {
         }, 
         { 
           id: 3, 
-          type: 'image', // Volta a ser imagem
-          content: imagemCor, // Usa a imagem da cor
+          type: 'image',
+          content: imagemCor,
           label: item.adjetivo, 
           correctOrder: 3
         },
