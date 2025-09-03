@@ -1,6 +1,19 @@
 /* Arquivo: app/phrase-builder/PhraseBuilder.module.css */
 
-/* Estilos para a tela de Abertura */
+/* --- Variáveis de Tema (fácil de customizar depois) --- */
+:root {
+  --background-gradient: linear-gradient(135deg, #e0f7fa 0%, #d1c4e9 100%);
+  --panel-bg: white;
+  --primary-color: #3b82f6; /* Azul */
+  --success-color: #10b981; /* Verde Esmeralda */
+  --error-color: #ef4444;   /* Vermelho */
+  --text-dark: #1f2937;
+  --text-light: #6b7280;
+  --border-radius: 1rem; /* 16px */
+  --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* --- Estilos da Tela de Abertura --- */
 .welcomeContainer {
   display: flex;
   flex-direction: column;
@@ -8,35 +21,37 @@
   justify-content: center;
   min-height: 100vh;
   text-align: center;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: var(--background-gradient);
   padding: 2rem;
+  font-family: sans-serif;
 }
 
 .welcomeTitle {
   font-size: 3.5rem;
   font-weight: bold;
-  color: #333;
+  color: var(--text-dark);
   margin-top: 1rem;
   margin-bottom: 0.5rem;
 }
 
 .welcomeSubtitle {
   font-size: 1.25rem;
-  color: #555;
+  color: var(--text-light);
   margin-bottom: 2rem;
 }
 
 .rulesContainer {
   background-color: rgba(255, 255, 255, 0.7);
   padding: 1.5rem;
-  border-radius: 10px;
+  border-radius: var(--border-radius);
   margin-bottom: 2rem;
   max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
 
 .rulesContainer h2 {
     margin-top: 0;
-    color: #333;
+    color: var(--text-dark);
 }
 
 .rulesContainer ul {
@@ -68,15 +83,240 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
+/* --- Estilos da Tela do Jogo --- */
 
-/* Estilos para a tela do Jogo (vamos adicionar mais aqui depois) */
-.gameContainer {
-  padding: 2rem;
+.playPageContainer {
+  min-height: 100vh;
+  background: var(--background-gradient);
+  padding: 1rem;
+  font-family: sans-serif;
+}
+
+.playHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: var(--panel-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 1.5rem;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.headerButton {
+  display: flex;
+  align-items: center;
+  background: #f3f4f6;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-light);
+  transition: background-color 0.2s;
+}
+.headerButton:hover {
+  background-color: #e5e7eb;
+}
+
+.headerTitle {
+  text-align: center;
+}
+.headerTitle h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--text-dark);
+}
+.headerTitle p {
+  color: var(--text-light);
+}
+
+.headerScore {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--text-dark);
+}
+
+.gameGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.panel {
+  background: var(--panel-bg);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.panelTitle {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--text-dark);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.cardArea {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.cardButton, .cardButtonInSequence {
+  background-color: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+}
+.cardButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  border-color: var(--primary-color);
+}
+
+.cardImage {
+  object-fit: contain;
+}
+
+.dropZone {
+  background-color: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: var(--border-radius);
+  min-height: 300px;
+  padding: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-content: flex-start;
+}
+
+.cardButtonInSequence {
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.sequenceNumber {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  background: var(--primary-color);
+  color: white;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.emptyAreaText {
+  color: var(--text-light);
+  align-self: center;
+  width: 100%;
   text-align: center;
 }
 
-.stimulusImage {
-  max-width: 300px;
-  border: 5px solid #ddd;
-  border-radius: 15px;
+.actionButtonsContainer {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.verifyButton, .resetButton, .nextPhaseButton {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  flex-grow: 1;
+}
+
+.verifyButton {
+  background: var(--primary-color);
+  color: white;
+}
+.verifyButton:hover:not(:disabled) {
+  background: #2563eb;
+}
+.verifyButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.resetButton {
+  background: #e5e7eb;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 0;
+}
+.resetButton:hover {
+  background: #d1d5db;
+}
+
+.feedbackArea {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+}
+
+.feedbackCorrect {
+  background: #d1fae5;
+  color: #065f46;
+  border: 2px solid var(--success-color);
+}
+.feedbackIncorrect {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 2px solid var(--error-color);
+}
+
+.nextPhaseButton {
+    background: var(--success-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.nextPhaseButton:hover {
+    background: #059669;
+}
+
+/* --- Responsividade para Telas Pequenas --- */
+@media (max-width: 768px) {
+    .gameGrid {
+        grid-template-columns: 1fr;
+    }
+    .playHeader {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
 }
