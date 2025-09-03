@@ -1,4 +1,5 @@
-// Arquivo: app/phrase-builder/page.tsx (VERSÃO ATUALIZADA)
+// ARQUIVO COMPLETO E FINAL
+// Local: app/phrase-builder/page.tsx
 
 'use client';
 
@@ -12,7 +13,6 @@ export default function PhraseBuilderGame() {
   const [currentScreen, setCurrentScreen] = useState('landing');
   const [unlockedLevels, setUnlockedLevels] = useState(['iniciante']);
 
-  // Efeito que roda no navegador para checar se o nível já foi desbloqueado
   useEffect(() => {
     const inicianteCompleto = localStorage.getItem('phraseBuilderInicianteCompleto');
     if (inicianteCompleto === 'true') {
