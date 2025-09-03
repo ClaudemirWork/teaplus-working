@@ -1,173 +1,186 @@
-// ARQUIVO COMPLETO E CORRIGIDO
-// Local: app/phrase-builder/play/GameClient.tsx
+// ARQUIVO CORRETO E FINAL
+// Local: app/phrase-builder/gameData.ts
 
-'use client';
+export interface GameElement {
+  id: number;
+  type: 'image'; 
+  content: string; 
+  label: string; 
+  correctOrder: number;
+}
 
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Home, ChevronRight, RotateCcw, Trophy, Sparkles, CheckCircle } from 'lucide-react';
-import Image from 'next/image';
-import { GamePhase, GameElement, gerarFasesDeJogo } from '../gameData'; // <-- CAMINHO CORRIGIDO AQUI
-import styles from '../PhraseBuilder.module.css'; 
-import ReactConfetti from 'react-confetti';
+export interface GamePhase {
+  id:string;
+  level: 'iniciante' | 'intermediario';
+  title: string;
+  stimulusImage: string;
+  elements: GameElement[];
+  completionMessage: string;
+}
 
-export default function GameClient() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const level = searchParams.get('level') as 'iniciante' | 'intermediario' | null;
-
-  const [allPhases, setAllPhases] = useState<GamePhase[]>([]);
-  const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
-  const [shuffledElements, setShuffledElements] = useState<GameElement[]>([]);
-  const [userSequence, setUserSequence] = useState<GameElement[]>([]);
-  const [feedback, setFeedback] = useState<{ show: boolean; correct: boolean; message: string; correctSentence?: string }>({ show: false, correct: false, message: '' });
-  const [score, setScore] = useState(0);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-
-  useEffect(() => {
-    const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-    window.addEventListener('resize', handleResize);
-    handleResize();
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    if (level) {
-      const todasAsFases = gerarFasesDeJogo();
-      const fasesDoNivel = todasAsFases.filter(fase => fase.level === level);
-      setAllPhases(fasesDoNivel);
-      setCurrentPhaseIndex(0);
-    }
-  }, [level]);
-
-  const currentPhase = useMemo(() => allPhases[currentPhaseIndex], [allPhases, currentPhaseIndex]);
-
-  useEffect(() => {
-    if (currentPhase) {
-      const elementsToShuffle = [...currentPhase.elements];
-      setShuffledElements(elementsToShuffle.sort(() => Math.random() - 0.5));
-      setUserSequence([]);
-      setFeedback({ show: false, correct: false, message: '' });
-      setShowConfetti(false);
-    }
-  }, [currentPhase]);
-
-  const handleSelectElement = (elementToMove: GameElement) => {
-    if (feedback.show) return;
-    setShuffledElements(prev => prev.filter(el => el.id !== elementToMove.id));
-    setUserSequence(prev => [...prev, elementToMove]);
-  };
-
-  const handleDeselectElement = (elementToMove: GameElement) => {
-    if (feedback.show) return;
-    setUserSequence(prev => prev.filter(el => el.id !== elementToMove.id));
-    setShuffledElements(prev => [...prev, elementToMove].sort((a,b) => a.id - b.id));
-  };
-
-  const checkSequence = () => {
-    if (userSequence.length !== currentPhase.elements.length) return;
-    const isCorrect = userSequence.every((element, index) => element.correctOrder === index + 1);
-    
-    if (isCorrect) {
-      setFeedback({ show: true, correct: true, message: currentPhase.completionMessage, correctSentence: currentPhase.title });
-      setScore(prev => prev + 100);
-      setShowConfetti(true);
-      if (level === 'iniciante' && typeof window !== 'undefined') {
-          localStorage.setItem('phraseBuilderInicianteCompleto', 'true');
-      }
-    } else {
-      setFeedback({ show: true, correct: false, message: 'Ops! A ordem não está certa. Tente de novo!' });
-    }
-  };
-
-  const nextPhase = () => {
-    if (currentPhaseIndex < allPhases.length - 1) {
-      setCurrentPhaseIndex(prev => prev + 1);
-    } else {
-      alert('Parabéns, você completou todas as fases deste nível!');
-      router.push('/phrase-builder');
-    }
-  };
+const substantivos = [
+    // Animals (34)
+    { base: 'cachorro', genero: 'm', adjetivo: 'marrom', categoria: 'animals' },
+    { base: 'camelo', genero: 'm', adjetivo: 'amarelo', categoria: 'animals' },
+    { base: 'camundongo', genero: 'm', adjetivo: 'cinza', categoria: 'animals' },
+    { base: 'canguru', genero: 'm', adjetivo: 'marrom', categoria: 'animals' },
+    { base: 'carneiro', genero: 'm', adjetivo: 'branco', categoria: 'animals' },
+    { base: 'cavalo', genero: 'm', adjetivo: 'marrom', categoria: 'animals' },
+    { base: 'cisne', genero: 'm', adjetivo: 'branco', categoria: 'animals' },
+    { base: 'coelho', genero: 'm', adjetivo: 'branco', categoria: 'animals' },
+    { base: 'coelho', genero: 'm', adjetivo: 'marrom', categoria: 'animals' },
+    { base: 'elefante', genero: 'm', adjetivo: 'cinza', categoria: 'animals' },
+    { base: 'galinha', genero: 'f', adjetivo: 'marrom', categoria: 'animals' },
+    { base: 'galo', genero: 'm', adjetivo: 'marrom', categoria: 'animals' },
+    { base: 'ganso', genero: 'm', adjetivo: 'branco', categoria: 'animals' },
+    { base: 'gato', genero: 'm', adjetivo: 'amarelo', categoria: 'animals' },
+    { base: 'gato', genero: 'm', adjetivo: 'branco', categoria: 'animals' },
+    { base: 'girafa', genero: 'f', adjetivo: 'laranja', categoria: 'animals' },
+    { base: 'gorila', genero: 'm', adjetivo: 'cinza', categoria: 'animals' },
+    { base: 'hipopotamo', genero: 'm', adjetivo: 'cinza', categoria: 'animals' },
+    { base: 'jacare', genero: 'm', adjetivo: 'verde', categoria: 'animals' },
+    { base: 'macaco', genero: 'm', adjetivo: 'marrom', categoria: 'animals' },
+    { base: 'onca', genero: 'f', adjetivo: 'amarelo', categoria: 'animals' },
+    { base: 'ovelha', genero: 'f', adjetivo: 'branca', categoria: 'animals' },
+    { base: 'pavao', genero: 'm', adjetivo: 'colorido', categoria: 'animals' },
+    { base: 'peixe', genero: 'm', adjetivo: 'amarelo', categoria: 'animals' },
+    { base: 'pintinho', genero: 'm', adjetivo: 'amarelo', categoria: 'animals' },
+    { base: 'pomba', genero: 'f', adjetivo: 'branca', categoria: 'animals' },
+    { base: 'ra', genero: 'f', adjetivo: 'marrom', categoria: 'animals' },
+    { base: 'raposa', genero: 'f', adjetivo: 'laranja', categoria: 'animals' },
+    { base: 'rato', genero: 'm', adjetivo: 'marrom', categoria: 'animals' },
+    { base: 'sapo', genero: 'm', adjetivo: 'verde', categoria: 'animals' },
+    { base: 'tigre', genero: 'm', adjetivo: 'amarelo', categoria: 'animals' },
+    { base: 'urso', genero: 'm', adjetivo: 'branco', categoria: 'animals' },
+    { base: 'urso', genero: 'm', adjetivo: 'marrom', categoria: 'animals' },
   
-  const resetActivity = () => {
-      const elementsToShuffle = [...currentPhase.elements];
-      setShuffledElements(elementsToShuffle.sort(() => Math.random() - 0.5));
-      setUserSequence([]);
-      setFeedback({ show: false, correct: false, message: '' });
-      setShowConfetti(false);
+    // Clothes (16)
+    { base: 'bikini', genero: 'm', adjetivo: 'rosa', categoria: 'clothes' },
+    { base: 'blusa', genero: 'f', adjetivo: 'rosa', categoria: 'clothes' },
+    { base: 'blusa', genero: 'f', adjetivo: 'verde', categoria: 'clothes' },
+    { base: 'blusa', genero: 'f', adjetivo: 'vermelho', categoria: 'clothes' },
+    { base: 'bone', genero: 'm', adjetivo: 'colorido', categoria: 'clothes' },
+    { base: 'calca', genero: 'f', adjetivo: 'azul', categoria: 'clothes' },
+    { base: 'camiseta', genero: 'f', adjetivo: 'azul', categoria: 'clothes' },
+    { base: 'camisola', genero: 'f', adjetivo: 'amarelo', categoria: 'clothes' },
+    { base: 'capa_chuva', genero: 'f', adjetivo: 'amarelo', categoria: 'clothes' },
+    { base: 'casaco', genero: 'm', adjetivo: 'marrom', categoria: 'clothes' },
+    { base: 'cueca', genero: 'f', adjetivo: 'azul', categoria: 'clothes' },
+    { base: 'gorro', genero: 'm', adjetivo: 'colorido', categoria: 'clothes' },
+    { base: 'jaqueta', genero: 'f', adjetivo: 'marrom', categoria: 'clothes' },
+    { base: 'pijama_bebe', genero: 'm', adjetivo: 'azul', categoria: 'clothes' },
+    { base: 'shorts', genero: 'm', adjetivo: 'verde', categoria: 'clothes' },
+    { base: 'vestido', genero: 'm', adjetivo: 'azul', categoria: 'clothes' },
+  
+    // Fruits (25)
+    { base: 'abacate', genero: 'm', adjetivo: 'verde', categoria: 'fruits' },
+    { base: 'abacaxi', genero: 'm', adjetivo: 'amarelo', categoria: 'fruits' },
+    { base: 'abobora', genero: 'f', adjetivo: 'laranja', categoria: 'fruits' },
+    { base: 'ameixa', genero: 'f', adjetivo: 'roxo', categoria: 'fruits' },
+    { base: 'banana', genero: 'f', adjetivo: 'amarelo', categoria: 'fruits' },
+    { base: 'cereja', genero: 'f', adjetivo: 'vermelho', categoria: 'fruits' },
+    { base: 'cranberries', genero: 'm', adjetivo: 'vermelho', categoria: 'fruits' },
+    { base: 'damasco', genero: 'm', adjetivo: 'laranja', categoria: 'fruits' },
+    { base: 'figo', genero: 'm', adjetivo: 'roxo', categoria: 'fruits' },
+    { base: 'figo', genero: 'm', adjetivo: 'verde', categoria: 'fruits' },
+    { base: 'kiwi', genero: 'm', adjetivo: 'verde', categoria: 'fruits' },
+    { base: 'laranja', genero: 'f', adjetivo: 'laranja', categoria: 'fruits' },
+    { base: 'limao', genero: 'm', adjetivo: 'amarelo', categoria: 'fruits' },
+    { base: 'limao', genero: 'm', adjetivo: 'verde', categoria: 'fruits' },
+    { base: 'maca', genero: 'f', adjetivo: 'verde', categoria: 'fruits' },
+    { base: 'maca', genero: 'f', adjetivo: 'vermelho', categoria: 'fruits' },
+    { base: 'manga', genero: 'f', adjetivo: 'verde', categoria: 'fruits' },
+    { base: 'melancia', genero: 'f', adjetivo: 'verde', categoria: 'fruits' },
+    { base: 'melao', genero: 'm', adjetivo: 'verde', categoria: 'fruits' },
+    { base: 'morango', genero: 'm', adjetivo: 'vermelho', categoria: 'fruits' },
+    { base: 'pera', genero: 'f', adjetivo: 'verde', categoria: 'fruits' },
+    { base: 'pessego', genero: 'm', adjetivo: 'laranja', categoria: 'fruits' },
+    { base: 'tomate', genero: 'm', adjetivo: 'vermelho', categoria: 'fruits' },
+    { base: 'uva', genero: 'f', adjetivo: 'roxo', categoria: 'fruits' },
+    { base: 'uva', genero: 'f', adjetivo: 'verde', categoria: 'fruits' },
+  
+    // Insects (8)
+    { base: 'abelha', genero: 'f', adjetivo: 'amarelo', categoria: 'insects' },
+    { base: 'aranha', genero: 'f', adjetivo: 'marrom', categoria: 'insects' },
+    { base: 'besouro', genero: 'm', adjetivo: 'verde', categoria: 'insects' },
+    { base: 'borboleta', genero: 'f', adjetivo: 'amarelo', categoria: 'insects' },
+    { base: 'formiga', genero: 'f', adjetivo: 'vermelho', categoria: 'insects' },
+    { base: 'grilo', genero: 'm', adjetivo: 'amarelo', categoria: 'insects' },
+    { base: 'libelula', genero: 'f', adjetivo: 'cinza', categoria: 'insects' },
+    { base: 'mosca', genero: 'f', adjetivo: 'preto', categoria: 'insects' },
+  
+    // Toys (13)
+    { base: 'balao', genero: 'm', adjetivo: 'rosa', categoria: 'toys' },
+    { base: 'bola basquete', genero: 'f', adjetivo: 'laranja', categoria: 'toys' },
+    { base: 'bola_futebol', genero: 'f', adjetivo: 'colorido', categoria: 'toys' },
+    { base: 'bola_praia', genero: 'f', adjetivo: 'colorido', categoria: 'toys' },
+    { base: 'bola', genero: 'f', adjetivo: 'vermelha', categoria: 'toys' },
+    { base: 'brinquedos', genero: 'm', adjetivo: 'colorido', categoria: 'toys' },
+    { base: 'cubo', genero: 'm', adjetivo: 'colorido', categoria: 'toys' },
+    { base: 'joystick', genero: 'm', adjetivo: 'colorido', categoria: 'toys' },
+    { base: 'pecas_lego', genero: 'f', adjetivo: 'colorido', categoria: 'toys' },
+    { base: 'pipa', genero: 'f', adjetivo: 'vermelho', categoria: 'toys' },
+    { base: 'piscina_bolinha', genero: 'f', adjetivo: 'colorido', categoria: 'toys' },
+    { base: 'playstation', genero: 'm', adjetivo: 'cinza', categoria: 'toys' },
+    { base: 'quebra_cabeca', genero: 'm', adjetivo: 'colorido', categoria: 'toys' },
+  
+    // Vegetables (16)
+    { base: 'Berinjela', genero: 'f', adjetivo: 'roxo', categoria: 'vegetables' },
+    { base: 'abobrinha', genero: 'f', adjetivo: 'verde', categoria: 'vegetables' },
+    { base: 'alface', genero: 'f', adjetivo: 'verde', categoria: 'vegetables' },
+    { base: 'aspargos', genero: 'm', adjetivo: 'verde', categoria: 'vegetables' },
+    { base: 'azeitona', genero: 'f', adjetivo: 'verde', categoria: 'vegetables' },
+    { base: 'brocolis', genero: 'm', adjetivo: 'verde', categoria: 'vegetables' },
+    { base: 'cenoura', genero: 'f', adjetivo: 'laranja', categoria: 'vegetables' },
+    { base: 'chuchu', genero: 'm', adjetivo: 'verde', categoria: 'vegetables' },
+    { base: 'ervilha', genero: 'f', adjetivo: 'verde', categoria: 'vegetables' },
+    { base: 'milho', genero: 'm', adjetivo: 'amarelo', categoria: 'vegetables' },
+    { base: 'pepino', genero: 'm', adjetivo: 'verde', categoria: 'vegetables' },
+    { base: 'pimenta', genero: 'f', adjetivo: 'vermelho', categoria: 'vegetables' },
+    { base: 'pimentao', genero: 'm', adjetivo: 'amarelo', categoria: 'vegetables' },
+    { base: 'pimentao', genero: 'm', adjetivo: 'verde', categoria: 'vegetables' },
+    { base: 'pimentao', genero: 'm', adjetivo: 'vermelho', categoria: 'vegetables' },
+    { base: 'repolho', genero: 'm', adjetivo: 'verde', categoria: 'vegetables' },
+];
+
+export function gerarFasesDeJogo(): GamePhase[] {
+  const todasAsFases: GamePhase[] = [];
+  let idCounter = 1;
+
+  for (const item of substantivos) {
+    const artigoCorreto = item.genero === 'm' ? 'o' : 'a';
+    const baseFileName = item.base.replace(' ', '_');
+    const adjetivoFileName = item.adjetivo.replace(' ', '_');
+    const imagemComposta = `/illustrations/${item.categoria}/${baseFileName}_${adjetivoFileName}.webp`;
+
+    // --- FASE INICIANTE ---
+    todasAsFases.push({
+      id: `iniciante_${idCounter}`,
+      level: 'iniciante',
+      title: `${item.base} ${item.adjetivo}`,
+      stimulusImage: imagemComposta,
+      elements: [
+        { id: 1, type: 'image', content: imagemComposta, label: item.base.replace('_', ' '), correctOrder: 1 }, 
+        { id: 2, type: 'image', content: `/illustrations/colors/${adjetivoFileName}.webp`, label: item.adjetivo, correctOrder: 2 },
+      ],
+      completionMessage: `Isso mesmo!`,
+    });
+
+    // --- FASE INTERMEDIÁRIO ---
+    todasAsFases.push({
+      id: `intermediario_${idCounter}`,
+      level: 'intermediario',
+      title: `${artigoCorreto} ${item.base} ${item.adjetivo}`,
+      stimulusImage: imagemComposta,
+      elements: [
+        { id: 1, type: 'image', content: `/illustrations/articles/artigo_${artigoCorreto}.webp`, label: artigoCorreto.toUpperCase(), correctOrder: 1 },
+        { id: 2, type: 'image', content: imagemComposta, label: item.base.replace('_', ' '), correctOrder: 2 }, 
+        { id: 3, type: 'image', content: `/illustrations/colors/${adjetivoFileName}.webp`, label: item.adjetivo, correctOrder: 3 },
+      ],
+      completionMessage: `Perfeito!`,
+    });
+
+    idCounter++;
   }
-
-  if (!level || !currentPhase) {
-    return <div className="min-h-screen flex items-center justify-center">Carregando nível...</div>;
-  }
-
-  const isSequenceComplete = shuffledElements.length === 0;
-
-  return (
-    <div className={styles.playPageContainer}>
-      {showConfetti && <ReactConfetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={400} />}
-      <div className={styles.playHeader}>
-        <button onClick={() => router.push('/phrase-builder')} className={styles.headerButton}><Home className="w-5 h-5 mr-2" /> Menu</button>
-        <div className={styles.headerTitle}><h1>{currentPhase.title}</h1><p>Fase {currentPhaseIndex + 1} de {allPhases.length}</p></div>
-        <div className={styles.headerScore}><Trophy className="w-5 h-5 text-yellow-500" /><span>{score}</span></div>
-      </div>
-      
-      <div className={styles.stimulusArea}>
-        <Image src={currentPhase.stimulusImage} alt={currentPhase.title} width={300} height={300} className={styles.stimulusImage} />
-      </div>
-
-      <div className={styles.gameGrid}>
-        <div className={styles.panel}>
-          <h3 className={styles.panelTitle}><Sparkles className="w-5 h-5 mr-2 text-blue-500"/>Figuras Disponíveis</h3>
-          <div className={styles.cardArea}>
-            {shuffledElements.map(element => (
-              <button key={element.id} onClick={() => handleSelectElement(element)} className={styles.cardButton}>
-                <Image src={element.content} alt={element.label} width={150} height={150} className={styles.cardImage} />
-                <span className={styles.cardLabel}>{element.label}</span>
-              </button>
-            ))}
-            {isSequenceComplete && !feedback.show && <p className={styles.emptyAreaText}>Ótimo! Agora clique em Verificar.</p>}
-          </div>
-        </div>
-
-        <div className={styles.panel}>
-          <h3 className={styles.panelTitle}>📖 Monte a Sequência na Ordem</h3>
-          <div className={styles.dropZone}>
-            {userSequence.map((element, index) => (
-              <button key={element.id} onClick={() => handleDeselectElement(element)} className={styles.cardButtonInSequence}>
-                 <div className={styles.sequenceNumber}>{index + 1}°</div>
-                 <Image src={element.content} alt={element.label} width={120} height={120} className={styles.cardImage} />
-                 <span className={styles.cardLabel}>{element.label}</span>
-              </button>
-            ))}
-            {!isSequenceComplete && userSequence.length === 0 && <p className={styles.emptyAreaText}>Clique nas figuras para adicioná-las aqui.</p>}
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.bottomBar}>
-        {!feedback.show ? (
-            <div className={styles.actionButtonsContainer}>
-                <button onClick={checkSequence} disabled={!isSequenceComplete} className={styles.verifyButton}>
-                    <CheckCircle className="w-5 h-5 mr-2"/> Verificar
-                </button>
-                <button onClick={resetActivity} className={styles.resetButton}>
-                    <RotateCcw className="w-4 h-4 mr-2" /> Recomeçar
-                </button>
-            </div>
-        ) : (
-            <div className={`${styles.feedbackArea} ${feedback.correct ? styles.feedbackCorrect : styles.feedbackIncorrect}`}>
-                <div className={styles.feedbackText}>
-                    <p>{feedback.message}</p>
-                    {feedback.correctSentence && <strong className={styles.correctSentence}>{feedback.correctSentence}</strong>}
-                </div>
-                {feedback.correct && (
-                    <button onClick={nextPhase} className={styles.nextPhaseButton}>Próxima Fase <ChevronRight /></button>
-                )}
-            </div>
-        )}
-      </div>
-    </div>
-  );
+  return todasAsFases.sort(() => Math.random() - 0.5);
 }
