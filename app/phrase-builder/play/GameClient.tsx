@@ -176,17 +176,6 @@ export default function GameClient() {
       </header>
       
       <div className={styles.gameContainer}>
-        {/* Imagem Estímulo */}
-        <div className={styles.stimulusArea}>
-          <Image 
-            src={currentPhase.stimulusImage} 
-            alt={currentPhase.title} 
-            width={200} 
-            height={200} 
-            className={styles.stimulusImage} 
-          />
-        </div>
-
         {/* Grid Principal */}
         <div className={styles.gameGrid}>
           {/* Painel Esquerdo - Figuras Disponíveis */}
