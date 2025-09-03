@@ -1,18 +1,5 @@
 /* Arquivo: app/phrase-builder/PhraseBuilder.module.css */
 
-/* --- Variáveis de Tema (fácil de customizar depois) --- */
-:root {
-  --background-gradient: linear-gradient(135deg, #e0f7fa 0%, #d1c4e9 100%);
-  --panel-bg: white;
-  --primary-color: #3b82f6; /* Azul */
-  --success-color: #10b981; /* Verde Esmeralda */
-  --error-color: #ef4444;   /* Vermelho */
-  --text-dark: #1f2937;
-  --text-light: #6b7280;
-  --border-radius: 1rem; /* 16px */
-  --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-}
-
 /* --- Estilos da Tela de Abertura --- */
 .welcomeContainer {
   display: flex;
