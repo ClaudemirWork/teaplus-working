@@ -100,16 +100,27 @@ const REINOS: Reino[] = [
 
 // Componente de Confetes
 const Confetti = () => {
+  const [confettiElements, setConfettiElements] = useState<Array<{left: string, delay: string, color: string}>>([]);
+  
+  useEffect(() => {
+    const elements = [...Array(50)].map(() => ({
+      left: `${Math.random() * 100}%`,
+      delay: `${Math.random() * 3}s`,
+      color: ['#ff6b6b', '#4ecdc4', '#ffd93d', '#95e77e', '#a8e6cf', '#ff8cc8'][Math.floor(Math.random() * 6)]
+    }));
+    setConfettiElements(elements);
+  }, []);
+
   return (
     <div className="confetti-container">
-      {[...Array(50)].map((_, i) => (
+      {confettiElements.map((element, i) => (
         <div
           key={i}
           className="confetti"
           style={{
-            left: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 3}s`,
-            backgroundColor: ['#ff6b6b', '#4ecdc4', '#ffd93d', '#95e77e', '#a8e6cf', '#ff8cc8'][Math.floor(Math.random() * 6)]
+            left: element.left,
+            animationDelay: element.delay,
+            backgroundColor: element.color
           }}
         />
       ))}
@@ -119,6 +130,7 @@ const Confetti = () => {
 
 export default function NumberJourney() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [estadoJogo, setEstadoJogo] = useState<'splash' | 'instrucoes' | 'selecao' | 'jogando' | 'vitoria'>('splash');
   const [reinoAtual, setReinoAtual] = useState<Reino | null>(null);
   const [problema, setProblema] = useState<Problema | null>(null);
@@ -131,6 +143,22 @@ export default function NumberJourney() {
   const [mostrarDica, setMostrarDica] = useState(false);
   const [tentativas, setTentativas] = useState(0);
   const [mostrarConfetes, setMostrarConfetes] = useState(false);
+  const [elementosBackground, setElementosBackground] = useState<Array<{left: string, delay: string, fontSize: string, content: string}>>([]);
+
+  useEffect(() => {
+    setMounted(true);
+    
+    // Gerar elementos do background após montar
+    const elementos = [...Array(15)].map((_, i) => ({
+      left: `${Math.random() * 100}%`,
+      delay: `${Math.random() * 10}s`,
+      fontSize: `${Math.random() * 30 + 20}px`,
+      content: i % 3 === 0 ? ['1', '2', '3', '4', '5'][Math.floor(Math.random() * 5)] 
+               : i % 3 === 1 ? ['+', '-', '×', '÷'][Math.floor(Math.random() * 4)]
+               : ['🔢', '🎯', '⭐', '🏆'][Math.floor(Math.random() * 4)]
+    }));
+    setElementosBackground(elementos);
+  }, []);
 
   // Gerar problema baseado no reino
   const gerarProblema = (reino: Reino): Problema => {
@@ -412,23 +440,23 @@ export default function NumberJourney() {
     return (
       <div className="container-jogo tela-splash">
         {/* Background animado com números e símbolos */}
-        <div className="background-animado">
-          {[...Array(15)].map((_, i) => (
-            <div
-              key={i}
-              className="elemento-flutuante"
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 10}s`,
-                fontSize: `${Math.random() * 30 + 20}px`
-              }}
-            >
-              {i % 3 === 0 ? ['1', '2', '3', '4', '5'][Math.floor(Math.random() * 5)] 
-               : i % 3 === 1 ? ['+', '-', '×', '÷'][Math.floor(Math.random() * 4)]
-               : ['🔢', '🎯', '⭐', '🏆'][Math.floor(Math.random() * 4)]}
-            </div>
-          ))}
-        </div>
+        {mounted && (
+          <div className="background-animado">
+            {elementosBackground.map((elemento, i) => (
+              <div
+                key={i}
+                className="elemento-flutuante"
+                style={{
+                  left: elemento.left,
+                  animationDelay: elemento.delay,
+                  fontSize: elemento.fontSize
+                }}
+              >
+                {elemento.content}
+              </div>
+            ))}
+          </div>
+        )}
         
         <div className="conteudo-splash">
           <h1 className="titulo-principal">
