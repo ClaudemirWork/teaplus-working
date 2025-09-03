@@ -21,18 +21,46 @@ interface Reino {
 interface Problema {
   tipo: 'contar' | 'somar' | 'subtrair';
   objetos: string[];
+  objetosNomes: string[];
   quantidades: number[];
   resposta: number;
   opcoes: number[];
 }
 
-// Lista de objetos disponíveis
-const OBJETOS = [
-  'maca_vermelho', 'maca_verde', 'banana', 'laranja', 'morango', 'abacaxi',
-  'bola_vermelha', 'bola_futebol', 'bola_basquete',
-  'gato_amarelo', 'gato_branco', 'cachorro', 'coelho_branco', 'coelho_marrom',
-  'pintinho_amarelo', 'urso_marrom', 'urso_branco'
-];
+// Mapeamento de objetos com nomes corretos
+const OBJETOS_MAP: { [key: string]: string } = {
+  'maca_vermelho': 'Maçã',
+  'maca_verde': 'Maçã Verde',
+  'banana': 'Banana',
+  'laranja': 'Laranja',
+  'morango': 'Morango',
+  'abacaxi': 'Abacaxi',
+  'bola_vermelha': 'Bola',
+  'bola_futebol': 'Bola de Futebol',
+  'bola_basquete': 'Bola de Basquete', // Corrigido - sem espaço no arquivo
+  'gato_amarelo': 'Gato',
+  'gato_branco': 'Gato Branco',
+  'cachorro': 'Cachorro',
+  'coelho_branco': 'Coelho',
+  'coelho_marrom': 'Coelho Marrom',
+  'pintinho_amarelo': 'Pintinho',
+  'urso_marrom': 'Urso',
+  'urso_branco': 'Urso Polar'
+};
+
+const OBJETOS = Object.keys(OBJETOS_MAP);
+
+// Função para falar números
+const falarNumero = (numero: number) => {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(numero.toString());
+    utterance.lang = 'pt-BR';
+    utterance.rate = 0.9;
+    utterance.pitch = 1.2;
+    utterance.volume = 0.8;
+    speechSynthesis.speak(utterance);
+  }
+};
 
 // Reinos disponíveis
 const REINOS: Reino[] = [
@@ -62,6 +90,25 @@ const REINOS: Reino[] = [
   }
 ];
 
+// Componente de Confetes
+const Confetti = () => {
+  return (
+    <div className="confetti-container">
+      {[...Array(50)].map((_, i) => (
+        <div
+          key={i}
+          className="confetti"
+          style={{
+            left: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 3}s`,
+            backgroundColor: ['#ff6b6b', '#4ecdc4', '#ffd93d', '#95e77e', '#a8e6cf', '#ff8cc8'][Math.floor(Math.random() * 6)]
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
 export default function NumberJourney() {
   const router = useRouter();
   const [estadoJogo, setEstadoJogo] = useState<'splash' | 'instrucoes' | 'selecao' | 'jogando' | 'vitoria'>('splash');
@@ -75,10 +122,12 @@ export default function NumberJourney() {
   const [respostaSelecionada, setRespostaSelecionada] = useState<number | null>(null);
   const [mostrarDica, setMostrarDica] = useState(false);
   const [tentativas, setTentativas] = useState(0);
+  const [mostrarConfetes, setMostrarConfetes] = useState(false);
 
   // Gerar problema baseado no reino
   const gerarProblema = (reino: Reino): Problema => {
     const objetoAleatorio = OBJETOS[Math.floor(Math.random() * OBJETOS.length)];
+    const nomeObjeto = OBJETOS_MAP[objetoAleatorio];
     
     switch (reino.operacao) {
       case 'contar':
@@ -86,6 +135,7 @@ export default function NumberJourney() {
         return {
           tipo: 'contar',
           objetos: [objetoAleatorio],
+          objetosNomes: [nomeObjeto],
           quantidades: [quantidade],
           resposta: quantidade,
           opcoes: gerarOpcoes(quantidade, 1, 5)
@@ -97,6 +147,7 @@ export default function NumberJourney() {
         return {
           tipo: 'somar',
           objetos: [objetoAleatorio, objetoAleatorio],
+          objetosNomes: [nomeObjeto, nomeObjeto],
           quantidades: [q1, q2],
           resposta: q1 + q2,
           opcoes: gerarOpcoes(q1 + q2, 1, 6)
@@ -108,6 +159,7 @@ export default function NumberJourney() {
         return {
           tipo: 'subtrair',
           objetos: [objetoAleatorio],
+          objetosNomes: [nomeObjeto],
           quantidades: [total, tirar],
           resposta: total - tirar,
           opcoes: gerarOpcoes(total - tirar, 0, 5)
@@ -149,6 +201,7 @@ export default function NumberJourney() {
     if (resposta === problema?.resposta) {
       // Acertou!
       setAnimacaoAcerto(true);
+      setMostrarConfetes(true);
       setPontos(pontos + (10 * nivel));
       
       if (somAtivo) {
@@ -159,6 +212,7 @@ export default function NumberJourney() {
       
       setTimeout(() => {
         setAnimacaoAcerto(false);
+        setMostrarConfetes(false);
         setRespostaSelecionada(null);
         setTentativas(0);
         setMostrarDica(false);
@@ -172,7 +226,7 @@ export default function NumberJourney() {
         } else {
           setEstadoJogo('vitoria');
         }
-      }, 1500);
+      }, 2000);
     } else {
       // Errou
       if (tentativas >= 1) {
@@ -185,6 +239,14 @@ export default function NumberJourney() {
     }
   };
 
+  // Função para clicar no cartão de número
+  const handleClickNumero = (numero: number) => {
+    if (somAtivo) {
+      falarNumero(numero);
+    }
+    verificarResposta(numero);
+  };
+
   // Renderizar objetos duplicados
   const renderizarObjetos = () => {
     if (!problema) return null;
@@ -192,16 +254,23 @@ export default function NumberJourney() {
     if (problema.tipo === 'contar') {
       return (
         <div className="objetos-container">
+          <div className="nome-objeto">{problema.objetosNomes[0]}</div>
           <div className="grupo-objetos">
-            {[...Array(problema.quantidades[0])].map((_, i) => (
-              <img
-                key={i}
-                src={`/objects/${problema.objetos[0]}.webp`}
-                alt="objeto"
-                className="objeto-contavel"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              />
-            ))}
+            {[...Array(problema.quantidades[0])].map((_, i) => {
+              const nomeArquivo = problema.objetos[0] === 'bola_basquete' 
+                ? 'bola basquete' // Nome do arquivo com espaço
+                : problema.objetos[0];
+              
+              return (
+                <img
+                  key={i}
+                  src={`/objects/${nomeArquivo}.webp`}
+                  alt={problema.objetosNomes[0]}
+                  className="objeto-contavel"
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                />
+              );
+            })}
           </div>
         </div>
       );
@@ -210,28 +279,46 @@ export default function NumberJourney() {
     if (problema.tipo === 'somar') {
       return (
         <div className="objetos-container soma">
-          <div className="grupo-objetos">
-            {[...Array(problema.quantidades[0])].map((_, i) => (
-              <img
-                key={`g1-${i}`}
-                src={`/objects/${problema.objetos[0]}.webp`}
-                alt="objeto"
-                className="objeto-contavel"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              />
-            ))}
+          <div className="grupo-com-nome">
+            <div className="nome-objeto">{problema.objetosNomes[0]}</div>
+            <div className="grupo-objetos">
+              {[...Array(problema.quantidades[0])].map((_, i) => {
+                const nomeArquivo = problema.objetos[0] === 'bola_basquete' 
+                  ? 'bola basquete'
+                  : problema.objetos[0];
+                
+                return (
+                  <img
+                    key={`g1-${i}`}
+                    src={`/objects/${nomeArquivo}.webp`}
+                    alt={problema.objetosNomes[0]}
+                    className="objeto-contavel"
+                    style={{ animationDelay: `${i * 0.1}s` }}
+                  />
+                );
+              })}
+            </div>
           </div>
           <img src="/math_symbols/soma.webp" alt="+" className="simbolo-matematico" />
-          <div className="grupo-objetos">
-            {[...Array(problema.quantidades[1])].map((_, i) => (
-              <img
-                key={`g2-${i}`}
-                src={`/objects/${problema.objetos[1]}.webp`}
-                alt="objeto"
-                className="objeto-contavel"
-                style={{ animationDelay: `${(problema.quantidades[0] + i) * 0.1}s` }}
-              />
-            ))}
+          <div className="grupo-com-nome">
+            <div className="nome-objeto">{problema.objetosNomes[1]}</div>
+            <div className="grupo-objetos">
+              {[...Array(problema.quantidades[1])].map((_, i) => {
+                const nomeArquivo = problema.objetos[1] === 'bola_basquete' 
+                  ? 'bola basquete'
+                  : problema.objetos[1];
+                
+                return (
+                  <img
+                    key={`g2-${i}`}
+                    src={`/objects/${nomeArquivo}.webp`}
+                    alt={problema.objetosNomes[1]}
+                    className="objeto-contavel"
+                    style={{ animationDelay: `${(problema.quantidades[0] + i) * 0.1}s` }}
+                  />
+                );
+              })}
+            </div>
           </div>
         </div>
       );
@@ -240,16 +327,23 @@ export default function NumberJourney() {
     if (problema.tipo === 'subtrair') {
       return (
         <div className="objetos-container subtracao">
+          <div className="nome-objeto">{problema.objetosNomes[0]}</div>
           <div className="grupo-objetos">
-            {[...Array(problema.quantidades[0])].map((_, i) => (
-              <img
-                key={i}
-                src={`/objects/${problema.objetos[0]}.webp`}
-                alt="objeto"
-                className={`objeto-contavel ${i < problema.quantidades[1] ? 'objeto-removido' : ''}`}
-                style={{ animationDelay: `${i * 0.1}s` }}
-              />
-            ))}
+            {[...Array(problema.quantidades[0])].map((_, i) => {
+              const nomeArquivo = problema.objetos[0] === 'bola_basquete' 
+                ? 'bola basquete'
+                : problema.objetos[0];
+              
+              return (
+                <img
+                  key={i}
+                  src={`/objects/${nomeArquivo}.webp`}
+                  alt={problema.objetosNomes[0]}
+                  className={`objeto-contavel ${i < problema.quantidades[1] ? 'objeto-removido' : ''}`}
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                />
+              );
+            })}
           </div>
           <div className="texto-subtracao">
             Tiramos {problema.quantidades[1]}
@@ -263,6 +357,25 @@ export default function NumberJourney() {
   if (estadoJogo === 'splash') {
     return (
       <div className="container-jogo tela-splash">
+        {/* Background animado com números e símbolos */}
+        <div className="background-animado">
+          {[...Array(15)].map((_, i) => (
+            <div
+              key={i}
+              className="elemento-flutuante"
+              style={{
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 10}s`,
+                fontSize: `${Math.random() * 30 + 20}px`
+              }}
+            >
+              {i % 3 === 0 ? ['1', '2', '3', '4', '5'][Math.floor(Math.random() * 5)] 
+               : i % 3 === 1 ? ['+', '-', '×', '÷'][Math.floor(Math.random() * 4)]
+               : ['🔢', '🎯', '⭐', '🏆'][Math.floor(Math.random() * 4)]}
+            </div>
+          ))}
+        </div>
+        
         <div className="conteudo-splash">
           <h1 className="titulo-principal">
             <span className="icone-titulo">🌟</span>
@@ -270,13 +383,13 @@ export default function NumberJourney() {
             <span className="icone-titulo">🌟</span>
           </h1>
           
-          <div className="mila-container">
+          <div className="mila-container-estatica">
             <Image
               src="/images/mascotes/mila/mila_forca_resultado.webp"
               alt="Mila"
-              width={300}
-              height={300}
-              className="mila-imagem"
+              width={400}
+              height={400}
+              className="mila-imagem-grande"
               priority
             />
           </div>
@@ -370,6 +483,8 @@ export default function NumberJourney() {
   if (estadoJogo === 'jogando' && problema && reinoAtual) {
     return (
       <div className="container-jogo tela-jogo">
+        {mostrarConfetes && <Confetti />}
+        
         <header className="header-jogo">
           <button onClick={() => setEstadoJogo('selecao')} className="botao-sair">
             <ChevronLeft /> Sair
@@ -415,7 +530,7 @@ export default function NumberJourney() {
             {problema.opcoes.map((opcao) => (
               <button
                 key={opcao}
-                onClick={() => verificarResposta(opcao)}
+                onClick={() => handleClickNumero(opcao)}
                 className={`card-numero ${
                   respostaSelecionada === opcao
                     ? opcao === problema.resposta
