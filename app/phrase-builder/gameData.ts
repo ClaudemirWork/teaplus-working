@@ -1,13 +1,12 @@
-// ARQUIVO CORRIGIDO E FINAL
+// ARQUIVO CORRIGIDO COM IMAGENS DE CORES
 // Local: app/phrase-builder/gameData.ts
 
 export interface GameElement {
   id: number;
-  type: 'image' | 'text'; // Mudança: agora suporta texto também
+  type: 'image' | 'text'; 
   content: string; 
   label: string; 
   correctOrder: number;
-  backgroundColor?: string; // Para cards de cor
 }
 
 export interface GamePhase {
@@ -18,23 +17,6 @@ export interface GamePhase {
   elements: GameElement[];
   completionMessage: string;
 }
-
-// Mapeamento de cores para seus valores hexadecimais
-const coresHex: { [key: string]: string } = {
-  'amarelo': '#FFC107',
-  'azul': '#2196F3',
-  'branco': '#FFFFFF',
-  'cinza': '#9E9E9E',
-  'colorido': 'linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1, #FFA07A)',
-  'laranja': '#FF9800',
-  'marrom': '#795548',
-  'preto': '#212121',
-  'rosa': '#E91E63',
-  'roxo': '#9C27B0',
-  'verde': '#4CAF50',
-  'vermelho': '#F44336',
-  'vermelha': '#F44336'
-};
 
 const substantivos = [
     // Animals (34)
@@ -170,7 +152,21 @@ export function gerarFasesDeJogo(): GamePhase[] {
     const baseFileName = item.base.replace(' ', '_');
     const adjetivoFileName = item.adjetivo.replace(' ', '_');
     const imagemComposta = `/illustrations/${item.categoria}/${baseFileName}_${adjetivoFileName}.webp`;
-    const corHex = coresHex[item.adjetivo] || '#E5E7EB';
+    
+    // Função para obter o nome correto do arquivo de cor
+    function getColorImagePath(adjetivo: string): string {
+      // Tratamento especial para cores femininas
+      if (adjetivo === 'branca') return '/illustrations/colors/branco.webp';
+      if (adjetivo === 'vermelha') return '/illustrations/colors/vermelho.webp';
+      
+      // Tratamento especial para laranja
+      if (adjetivo === 'laranja') return '/illustrations/colors/cor_laranja.webp';
+      
+      // Para todas as outras cores
+      return `/illustrations/colors/${adjetivo}.webp`;
+    }
+    
+    const imagemCor = getColorImagePath(item.adjetivo);
 
     // --- FASE INICIANTE: Objeto + Cor ---
     todasAsFases.push({
@@ -188,11 +184,10 @@ export function gerarFasesDeJogo(): GamePhase[] {
         }, 
         { 
           id: 2, 
-          type: 'text', // Mudança: agora é texto/cor ao invés de imagem
-          content: corHex,
+          type: 'image', // Volta a ser imagem
+          content: imagemCor, // Usa a imagem da cor
           label: item.adjetivo, 
-          correctOrder: 2,
-          backgroundColor: corHex
+          correctOrder: 2
         },
       ],
       completionMessage: `Isso mesmo! É ${item.base} ${item.adjetivo}!`,
@@ -207,11 +202,10 @@ export function gerarFasesDeJogo(): GamePhase[] {
       elements: [
         { 
           id: 1, 
-          type: 'text', // Artigo como texto
+          type: 'text', // Artigo continua como texto
           content: artigoCorreto.toUpperCase(),
           label: artigoCorreto.toUpperCase(), 
-          correctOrder: 1,
-          backgroundColor: '#F3F4F6'
+          correctOrder: 1
         },
         { 
           id: 2, 
@@ -222,11 +216,10 @@ export function gerarFasesDeJogo(): GamePhase[] {
         }, 
         { 
           id: 3, 
-          type: 'text', // Cor como texto
-          content: corHex,
+          type: 'image', // Volta a ser imagem
+          content: imagemCor, // Usa a imagem da cor
           label: item.adjetivo, 
-          correctOrder: 3,
-          backgroundColor: corHex
+          correctOrder: 3
         },
       ],
       completionMessage: `Perfeito! ${artigoCorreto.toUpperCase()} ${item.base} ${item.adjetivo}!`,
