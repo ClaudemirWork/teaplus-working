@@ -176,6 +176,17 @@ export default function GameClient() {
       </header>
       
       <div className={styles.gameContainer}>
+        {/* Imagem Estímulo */}
+        <div className={styles.stimulusArea}>
+          <Image 
+            src={currentPhase.stimulusImage} 
+            alt={currentPhase.title} 
+            width={200} 
+            height={200} 
+            className={styles.stimulusImage} 
+          />
+        </div>
+
         {/* Grid Principal */}
         <div className={styles.gameGrid}>
           {/* Painel Esquerdo - Figuras Disponíveis */}
@@ -226,13 +237,34 @@ export default function GameClient() {
                   className={styles.cardButtonInSequence}
                 >
                   <div className={styles.sequenceNumber}>{index + 1}°</div>
-                  <Image 
-                    src={element.content} 
-                    alt={element.label} 
-                    width={60} 
-                    height={60} 
-                    className={styles.cardImage} 
-                  />
+                  {element.type === 'image' ? (
+                    <Image 
+                      src={element.content} 
+                      alt={element.label} 
+                      width={60} 
+                      height={60} 
+                      className={styles.cardImage} 
+                    />
+                  ) : (
+                    <div 
+                      style={{ 
+                        backgroundColor: element.backgroundColor,
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '0.5rem',
+                        border: element.backgroundColor === '#FFFFFF' ? '2px solid #E5E7EB' : 'none',
+                        backgroundImage: element.content.includes('gradient') ? element.content : undefined,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold',
+                        fontSize: element.content.length <= 2 ? '1.5rem' : '1rem',
+                        color: element.backgroundColor === '#F3F4F6' ? '#1F2937' : 'white'
+                      }}
+                    >
+                      {element.content.length <= 2 ? element.content : ''}
+                    </div>
+                  )}
                   <span className={styles.cardLabel}>{element.label}</span>
                 </button>
               ))}
