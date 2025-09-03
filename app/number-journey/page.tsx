@@ -14,12 +14,12 @@ interface Reino {
   nome: string;
   icone: string;
   cor: string;
-  operacao: 'contar' | 'somar' | 'subtrair';
+  operacao: 'contar' | 'somar' | 'subtrair' | 'grupos';
   descricao: string;
 }
 
 interface Problema {
-  tipo: 'contar' | 'somar' | 'subtrair';
+  tipo: 'contar' | 'somar' | 'subtrair' | 'grupos';
   objetos: string[];
   objetosNomes: string[];
   quantidades: number[];
@@ -37,7 +37,7 @@ const OBJETOS_MAP: { [key: string]: string } = {
   'abacaxi': 'Abacaxi',
   'bola_vermelha': 'Bola',
   'bola_futebol': 'Bola de Futebol',
-  'bola_basquete': 'Bola de Basquete', // Corrigido - sem espaço no arquivo
+  'bola_basquete': 'Bola de Basquete',
   'gato_amarelo': 'Gato',
   'gato_branco': 'Gato Branco',
   'cachorro': 'Cachorro',
@@ -87,6 +87,14 @@ const REINOS: Reino[] = [
     cor: 'from-purple-400 to-purple-600',
     operacao: 'subtrair',
     descricao: 'Explore a magia de tirar'
+  },
+  {
+    id: 'grupos',
+    nome: 'Reino dos Grupos',
+    icone: '🎁',
+    cor: 'from-orange-400 to-red-600',
+    operacao: 'grupos',
+    descricao: 'Conte grupos de objetos'
   }
 ];
 
@@ -163,6 +171,18 @@ export default function NumberJourney() {
           quantidades: [total, tirar],
           resposta: total - tirar,
           opcoes: gerarOpcoes(total - tirar, 0, 5)
+        };
+      
+      case 'grupos':
+        const numGrupos = nivel === 1 ? 2 : Math.min(nivel, 3);
+        const porGrupo = nivel === 1 ? 2 : Math.min(Math.floor(Math.random() * 2) + 2, 3);
+        return {
+          tipo: 'grupos',
+          objetos: [objetoAleatorio],
+          objetosNomes: [nomeObjeto],
+          quantidades: [numGrupos, porGrupo],
+          resposta: numGrupos * porGrupo,
+          opcoes: gerarOpcoes(numGrupos * porGrupo, 2, 9)
         };
       
       default:
@@ -258,7 +278,7 @@ export default function NumberJourney() {
           <div className="grupo-objetos">
             {[...Array(problema.quantidades[0])].map((_, i) => {
               const nomeArquivo = problema.objetos[0] === 'bola_basquete' 
-                ? 'bola basquete' // Nome do arquivo com espaço
+                ? 'bola basquete'
                 : problema.objetos[0];
               
               return (
@@ -347,6 +367,40 @@ export default function NumberJourney() {
           </div>
           <div className="texto-subtracao">
             Tiramos {problema.quantidades[1]}
+          </div>
+        </div>
+      );
+    }
+    
+    if (problema.tipo === 'grupos') {
+      return (
+        <div className="objetos-container grupos">
+          <div className="nome-objeto">{problema.objetosNomes[0]}</div>
+          <div className="instrucao-grupos">
+            {problema.quantidades[0]} grupos de {problema.quantidades[1]}
+          </div>
+          <div className="grupos-wrapper">
+            {[...Array(problema.quantidades[0])].map((_, grupoIndex) => (
+              <div key={grupoIndex} className="grupo-individual">
+                {[...Array(problema.quantidades[1])].map((_, itemIndex) => {
+                  const nomeArquivo = problema.objetos[0] === 'bola_basquete' 
+                    ? 'bola basquete'
+                    : problema.objetos[0];
+                  
+                  return (
+                    <img
+                      key={itemIndex}
+                      src={`/objects/${nomeArquivo}.webp`}
+                      alt={problema.objetosNomes[0]}
+                      className="objeto-contavel"
+                      style={{ 
+                        animationDelay: `${(grupoIndex * problema.quantidades[1] + itemIndex) * 0.1}s` 
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
       );
@@ -515,6 +569,7 @@ export default function NumberJourney() {
               {problema.tipo === 'contar' && 'Quantos você vê?'}
               {problema.tipo === 'somar' && 'Quanto dá a soma?'}
               {problema.tipo === 'subtrair' && 'Quantos sobraram?'}
+              {problema.tipo === 'grupos' && 'Quantos ao todo?'}
             </h2>
             
             {renderizarObjetos()}
