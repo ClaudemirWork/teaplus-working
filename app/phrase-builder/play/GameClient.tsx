@@ -1,11 +1,14 @@
+// ARQUIVO COMPLETO E FINAL
+// Local: app/phrase-builder/play/GameClient.tsx
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Home, ChevronRight, RotateCcw, Trophy, Sparkles, CheckCircle, XCircle } from 'lucide-react';
+import { Home, ChevronRight, RotateCcw, Trophy, Sparkles, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
-import { GamePhase, GameElement, gerarFasesDeJogo } from '../gameData';
-import styles from '../PhraseBuilder.module.css';
+import { GamePhase, GameElement, gerarFasesDeJogo } from '../../data/gameData'; // Caminho corrigido para a pasta data
+import styles from '../PhraseBuilder.module.css'; // Importa os estilos do arquivo CSS
 import ReactConfetti from 'react-confetti';
 
 export default function GameClient() {
@@ -13,17 +16,15 @@ export default function GameClient() {
   const searchParams = useSearchParams();
   const level = searchParams.get('level') as 'iniciante' | 'intermediario' | null;
 
-  // Estados do Jogo
   const [allPhases, setAllPhases] = useState<GamePhase[]>([]);
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
   const [shuffledElements, setShuffledElements] = useState<GameElement[]>([]);
   const [userSequence, setUserSequence] = useState<GameElement[]>([]);
-  const [feedback, setFeedback] = useState<{ show: boolean; correct: boolean; message: string, correctSentence?: string }>({ show: false, correct: false, message: '' });
+  const [feedback, setFeedback] = useState<{ show: boolean; correct: boolean; message: string; correctSentence?: string }>({ show: false, correct: false, message: '' });
   const [score, setScore] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
-  // Efeito para pegar o tamanho da tela (para o confete)
   useEffect(() => {
     const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', handleResize);
@@ -31,7 +32,6 @@ export default function GameClient() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Carrega e filtra as fases com base no nível da URL
   useEffect(() => {
     if (level) {
       const todasAsFases = gerarFasesDeJogo();
@@ -43,7 +43,6 @@ export default function GameClient() {
 
   const currentPhase = useMemo(() => allPhases[currentPhaseIndex], [allPhases, currentPhaseIndex]);
 
-  // Prepara cada nova fase
   useEffect(() => {
     if (currentPhase) {
       const elementsToShuffle = [...currentPhase.elements];
@@ -54,7 +53,6 @@ export default function GameClient() {
     }
   }, [currentPhase]);
 
-  // Lógica de Interação
   const handleSelectElement = (elementToMove: GameElement) => {
     if (feedback.show) return;
     setShuffledElements(prev => prev.filter(el => el.id !== elementToMove.id));
@@ -68,16 +66,15 @@ export default function GameClient() {
   };
 
   const checkSequence = () => {
+    if (userSequence.length !== currentPhase.elements.length) return;
     const isCorrect = userSequence.every((element, index) => element.correctOrder === index + 1);
-    // Cria a frase correta para exibição
-    const correctSentence = (level === 'iniciante' ? '' : userSequence[0].label + ' ') + userSequence[1].label + ' ' + userSequence[2]?.label;
-
+    
     if (isCorrect) {
       setFeedback({ show: true, correct: true, message: currentPhase.completionMessage, correctSentence: currentPhase.title });
       setScore(prev => prev + 100);
       setShowConfetti(true);
-      if (level === 'iniciante' && !localStorage.getItem('phraseBuilderInicianteCompleto')) {
-        localStorage.setItem('phraseBuilderInicianteCompleto', 'true');
+      if (level === 'iniciante' && typeof window !== 'undefined') {
+          localStorage.setItem('phraseBuilderInicianteCompleto', 'true');
       }
     } else {
       setFeedback({ show: true, correct: false, message: 'Ops! A ordem não está certa. Tente de novo!' });
@@ -94,11 +91,11 @@ export default function GameClient() {
   };
   
   const resetActivity = () => {
-    const elementsToShuffle = [...currentPhase.elements];
-    setShuffledElements(elementsToShuffle.sort(() => Math.random() - 0.5));
-    setUserSequence([]);
-    setFeedback({ show: false, correct: false, message: '' });
-    setShowConfetti(false);
+      const elementsToShuffle = [...currentPhase.elements];
+      setShuffledElements(elementsToShuffle.sort(() => Math.random() - 0.5));
+      setUserSequence([]);
+      setFeedback({ show: false, correct: false, message: '' });
+      setShowConfetti(false);
   }
 
   if (!level || !currentPhase) {
@@ -149,7 +146,6 @@ export default function GameClient() {
         </div>
       </div>
 
-      {/* Área de Ações e Feedback */}
       <div className={styles.bottomBar}>
         {!feedback.show ? (
             <div className={styles.actionButtonsContainer}>
