@@ -1,14 +1,11 @@
-// ARQUIVO COMPLETO E FINAL
-// Local: app/phrase-builder/play/GameClient.tsx
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Home, ChevronRight, RotateCcw, Trophy, Sparkles, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
-import { GamePhase, GameElement, gerarFasesDeJogo } from '../../data/gameData'; // Caminho corrigido para a pasta data
-import styles from '../PhraseBuilder.module.css'; // Importa os estilos do arquivo CSS
+import { GamePhase, GameElement, gerarFasesDeJogo } from '../gameData'; // <-- ESTA LINHA FOI CORRIGIDA
+import styles from '../PhraseBuilder.module.css'; 
 import ReactConfetti from 'react-confetti';
 
 export default function GameClient() {
