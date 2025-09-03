@@ -1,4 +1,5 @@
-// Arquivo: app/phrase-builder/play/GameClient.tsx (VERSÃO FINAL)
+// ARQUIVO COMPLETO E FINAL
+// Local: app/phrase-builder/play/GameClient.tsx
 
 'use client';
 
@@ -22,6 +23,17 @@ export default function GameClient() {
   const [feedback, setFeedback] = useState<{ show: boolean; correct: boolean; message: string }>({ show: false, correct: false, message: '' });
   const [score, setScore] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    // Roda apenas no cliente para obter o tamanho da janela para o confete
+    const handleResize = () => {
+        setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (level) {
@@ -53,10 +65,11 @@ export default function GameClient() {
   const handleDeselectElement = (elementToMove: GameElement) => {
     if (feedback.show) return;
     setUserSequence(prev => prev.filter(el => el.id !== elementToMove.id));
-    setShuffledElements(prev => [...prev, elementToMove].sort((a,b) => a.id - b.id)); // Re-sort for consistency
+    setShuffledElements(prev => [...prev, elementToMove].sort((a,b) => a.id - b.id));
   };
 
   const checkSequence = () => {
+    if (userSequence.length !== currentPhase.elements.length) return;
     const isCorrect = userSequence.every((element, index) => element.correctOrder === index + 1);
     if (isCorrect) {
       setFeedback({ show: true, correct: true, message: currentPhase.completionMessage });
@@ -88,12 +101,12 @@ export default function GameClient() {
   }
 
   if (!level || !currentPhase) {
-    return <div>Carregando nível...</div>;
+    return <div className="min-h-screen flex items-center justify-center">Carregando nível...</div>;
   }
 
   return (
     <div className={styles.playPageContainer}>
-      {showConfetti && <ReactConfetti width={window.innerWidth} height={window.innerHeight} recycle={false} numberOfPieces={400} />}
+      {showConfetti && <ReactConfetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={400} />}
       <div className={styles.playHeader}>
         <button onClick={() => router.push('/phrase-builder')} className={styles.headerButton}><Home className="w-5 h-5 mr-2" /> Menu</button>
         <div className={styles.headerTitle}><h1>{currentPhase.title}</h1><p>Fase {currentPhaseIndex + 1} de {allPhases.length}</p></div>
