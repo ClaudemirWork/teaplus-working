@@ -246,23 +246,23 @@ export default function GameClient() {
                       className={styles.cardImage} 
                     />
                   ) : (
+                    // Para texto (artigos O/A)
                     <div 
                       style={{ 
-                        backgroundColor: element.backgroundColor,
+                        backgroundColor: '#F3F4F6',
                         width: '60px',
                         height: '60px',
                         borderRadius: '0.5rem',
-                        border: element.backgroundColor === '#FFFFFF' ? '2px solid #E5E7EB' : 'none',
-                        backgroundImage: element.content.includes('gradient') ? element.content : undefined,
+                        border: '2px solid #E5E7EB',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontWeight: 'bold',
-                        fontSize: element.content.length <= 2 ? '1.5rem' : '1rem',
-                        color: element.backgroundColor === '#F3F4F6' ? '#1F2937' : 'white'
+                        fontSize: '1.5rem',
+                        color: '#1F2937'
                       }}
                     >
-                      {element.content.length <= 2 ? element.content : ''}
+                      {element.content}
                     </div>
                   )}
                   <span className={styles.cardLabel}>{element.label}</span>
