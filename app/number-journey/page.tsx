@@ -14,12 +14,12 @@ interface Reino {
   nome: string;
   icone: string;
   cor: string;
-  operacao: 'contar' | 'somar' | 'subtrair' | 'grupos';
+  operacao: 'contar' | 'contar_avancado' | 'somar' | 'subtrair' | 'grupos';
   descricao: string;
 }
 
 interface Problema {
-  tipo: 'contar' | 'somar' | 'subtrair' | 'grupos';
+  tipo: 'contar' | 'contar_avancado' | 'somar' | 'subtrair' | 'grupos';
   objetos: string[];
   objetosNomes: string[];
   quantidades: number[];
@@ -71,6 +71,14 @@ const REINOS: Reino[] = [
     cor: 'from-blue-400 to-blue-600',
     operacao: 'contar',
     descricao: 'Aprenda a contar de 1 a 5'
+  },
+  {
+    id: 'contar_avancado',
+    nome: 'Reino dos Grandes Números',
+    icone: '🏗️',
+    cor: 'from-indigo-400 to-indigo-600',
+    operacao: 'contar_avancado',
+    descricao: 'Conte de 5 a 10'
   },
   {
     id: 'somar',
@@ -175,6 +183,17 @@ export default function NumberJourney() {
           quantidades: [quantidade],
           resposta: quantidade,
           opcoes: gerarOpcoes(quantidade, 1, 5)
+        };
+      
+      case 'contar_avancado':
+        const quantidadeAvancada = Math.min(nivel + 4, 10); // De 5 a 10
+        return {
+          tipo: 'contar_avancado',
+          objetos: [objetoAleatorio],
+          objetosNomes: [nomeObjeto],
+          quantidades: [quantidadeAvancada],
+          resposta: quantidadeAvancada,
+          opcoes: gerarOpcoes(quantidadeAvancada, 5, 10)
         };
       
       case 'somar':
@@ -299,7 +318,7 @@ export default function NumberJourney() {
   const renderizarObjetos = () => {
     if (!problema) return null;
     
-    if (problema.tipo === 'contar') {
+    if (problema.tipo === 'contar' || problema.tipo === 'contar_avancado') {
       return (
         <div className="objetos-container">
           <div className="nome-objeto">{problema.objetosNomes[0]}</div>
@@ -594,7 +613,7 @@ export default function NumberJourney() {
         <main className="area-principal">
           <div className="pergunta-container">
             <h2 className="pergunta">
-              {problema.tipo === 'contar' && 'Quantos você vê?'}
+              {(problema.tipo === 'contar' || problema.tipo === 'contar_avancado') && 'Quantos você vê?'}
               {problema.tipo === 'somar' && 'Quanto dá a soma?'}
               {problema.tipo === 'subtrair' && 'Quantos sobraram?'}
               {problema.tipo === 'grupos' && 'Quantos ao todo?'}
