@@ -257,11 +257,12 @@
   color: #FFD700;
 }
 
+/* Grid de Reinos ajustada para 5 reinos */
 .grid-reinos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 20px;
-  max-width: 900px;
+  max-width: 1000px;
   margin: 40px auto;
 }
 
@@ -564,24 +565,30 @@
   animation: slideIn 0.3s ease-out;
 }
 
-/* Celebração */
+/* Celebração - Corrigida para iPhone */
 .celebracao {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 1000;
+  z-index: 10000;
   pointer-events: none;
+  width: 90%;
+  max-width: 400px;
 }
 
 .texto-celebracao {
   background: white;
-  padding: 30px 60px;
+  color: #333 !important;
+  padding: 30px 40px;
   border-radius: 30px;
   font-size: 2rem;
   font-weight: bold;
   box-shadow: 0 10px 40px rgba(0,0,0,0.3);
   animation: bounceIn 0.5s ease-out;
+  text-align: center;
+  -webkit-text-fill-color: #333;
+  text-shadow: none;
 }
 
 /* Sistema de Confetes */
@@ -767,7 +774,8 @@
   }
   
   .grid-reinos {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 15px;
   }
   
   .pergunta {
@@ -808,6 +816,11 @@
     width: 50px;
     height: 50px;
   }
+  
+  .texto-celebracao {
+    font-size: 1.5rem;
+    padding: 20px 30px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -845,5 +858,9 @@
   .grupo-individual .objeto-contavel {
     width: 40px;
     height: 40px;
+  }
+  
+  .grid-reinos {
+    grid-template-columns: 1fr;
   }
 }
