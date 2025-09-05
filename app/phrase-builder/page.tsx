@@ -1,6 +1,3 @@
-// ARQUIVO COMPLETO E FINAL
-// Local: app/phrase-builder/page.tsx
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
