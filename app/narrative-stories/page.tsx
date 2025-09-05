@@ -1,6 +1,6 @@
 'use client';
 
-import React, a, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { BookText, Star } from 'lucide-react';
 
