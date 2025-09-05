@@ -16,10 +16,10 @@ interface Card {
     compatibleWithTypes?: ('human' | 'animal')[];
     verb?: {
         infinitive: string;
-        requiresObject?: boolean; // Indica se o verbo requer objeto
-        withPreposition?: string; // Preposição usada com objeto específico
+        requiresObject?: boolean;
+        withPreposition?: string;
     };
-    objectType?: string; // Tipo de objeto para compatibilidade
+    objectType?: string;
 }
 
 interface Level {
@@ -151,7 +151,7 @@ const allCards: { [key in Card['category']]: Card[] } = {
             verb: { 
                 infinitive: 'brincar',
                 requiresObject: false,
-                withPreposition: 'com' // Só usa quando tem objeto tipo 'brinquedo'
+                withPreposition: 'com'
             } 
         },
         { 
@@ -321,14 +321,14 @@ export default function HistoriasEpicasGame() {
             const conjugated = conjugateVerb(action.verb.infinitive, subject.person!);
             sentence += ` ${conjugated}`;
             
-            // Só adiciona preposição se tem objeto e é apropriado
-            if (object && action.verb.withPreposition && object.objectType === 'brinquedo') {
-                sentence += ` ${action.verb.withPreposition}`;
+            // CORREÇÃO AQUI: Só adiciona preposição quando tem objeto
+            if (object) {
+                if (action.verb.withPreposition && object.objectType === 'brinquedo') {
+                    sentence += ` ${action.verb.withPreposition} ${object.sentenceLabel}`;
+                } else {
+                    sentence += ` ${object.sentenceLabel}`;
+                }
             }
-        }
-        
-        if (object?.sentenceLabel) {
-            sentence += ` ${object.sentenceLabel}`;
         }
         
         let formattedSentence = sentence.trim();
@@ -376,7 +376,6 @@ export default function HistoriasEpicasGame() {
         const currentLevel = gameLevels[currentLevelIndex];
 
         if (nextStepIndex >= currentLevel.structure.length) {
-            // Frase completa
             const newCount = phrasesCompletedInLevel + 1;
             setPhrasesCompletedInLevel(newCount);
             setTotalStars(totalStars + 1);
@@ -387,7 +386,6 @@ export default function HistoriasEpicasGame() {
             
             setShowConfetti(true);
             
-            // Som de sucesso
             try {
                 const audio = new Audio('/sounds/success.mp3');
                 audio.volume = 0.5;
@@ -398,12 +396,10 @@ export default function HistoriasEpicasGame() {
             
             setTimeout(() => setShowConfetti(false), 3000);
             
-            // Mostra recompensa a cada 3 estrelas
             if (totalStars > 0 && (totalStars + 1) % 3 === 0) {
                 setTimeout(() => setShowStarReward(true), 500);
             }
         } else {
-            // Continua construindo a frase
             const nextCategory = currentLevel.structure[nextStepIndex];
             generateCardOptions(nextCategory, card);
             
@@ -424,7 +420,6 @@ export default function HistoriasEpicasGame() {
         const currentLevel = gameLevels[currentLevelIndex];
         
         if (phrasesCompletedInLevel >= currentLevel.phrasesToComplete) {
-            // Nível completo
             const nextLevelIndex = currentLevelIndex + 1;
             
             if (nextLevelIndex < gameLevels.length) {
@@ -509,7 +504,6 @@ export default function HistoriasEpicasGame() {
                 {showStarReward && renderStarReward()}
                 
                 <div className="relative z-10 bg-white/95 backdrop-blur-sm rounded-3xl p-6 md:p-8 shadow-2xl w-full max-w-6xl mx-auto border-4 border-purple-300">
-                    {/* Header com Progresso */}
                     <div className="mb-6">
                         <div className="flex justify-between items-center text-purple-700 font-bold text-lg md:text-xl mb-3">
                             <div className="flex items-center gap-2">
@@ -529,14 +523,12 @@ export default function HistoriasEpicasGame() {
                         </div>
                     </div>
                     
-                    {/* Área de Exibição da Frase */}
                     <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-2xl mb-6 border-3 border-yellow-300 min-h-[120px] flex items-center justify-center shadow-lg">
                         <p className="text-3xl md:text-5xl text-purple-800 font-bold text-center leading-relaxed">
                             {displayedSentence}
                         </p>
                     </div>
                     
-                    {/* Mensagem do Leo */}
                     <div className="flex items-center justify-center mb-6">
                         <div className="relative bg-white p-4 rounded-2xl shadow-lg max-w-2xl w-full">
                             <div className="flex items-center gap-4">
@@ -554,7 +546,6 @@ export default function HistoriasEpicasGame() {
                         </div>
                     </div>
                     
-                    {/* Cards ou Botão de Próxima */}
                     {gameState === 'playing' ? (
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6">
                             {cardOptions.map((card, index) => (
@@ -605,7 +596,6 @@ export default function HistoriasEpicasGame() {
             {gameState === 'titleScreen' ? renderTitleScreen() : renderGame()}
             
             <style jsx global>{`
-                /* ESTILOS PARA OS CONFETES */
                 .confetti-container { 
                     position: fixed; 
                     top: 0; 
@@ -645,7 +635,6 @@ export default function HistoriasEpicasGame() {
                         animation-duration: ${3 + Math.random()*2}s;
                     }`).join('')}
                 
-                /* ANIMAÇÃO PARA A ESTRELA GRANDE */
                 .star-reward-animate { 
                     animation: star-pop 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; 
                 }
@@ -664,7 +653,6 @@ export default function HistoriasEpicasGame() {
                     } 
                 }
                 
-                /* Animação de entrada dos cards */
                 @keyframes slideIn {
                     from {
                         opacity: 0;
