@@ -11,22 +11,16 @@ interface Card {
     image: string;
     category: 'personagens' | 'acoes' | 'objetos' | 'lugares' | 'tempo' | 'emocoes';
     
-    // Para Personagens
-    sentenceLabel?: string; // Ex: "o gatinho", "eu", "a professora"
+    sentenceLabel?: string; 
     characterType?: 'human' | 'animal';
-    person?: 'eu' | 'voce' | 'ele_ela'; // Pessoa gramatical para conjugação
+    person?: 'eu' | 'voce' | 'ele_ela';
 
-    // Para Ações
-    compatibleWithTypes?: ('human' | 'animal')[]; // Com quais tipos de personagem a ação é compatível
+    compatibleWithTypes?: ('human' | 'animal')[];
     verb?: {
-        infinitive: string; // Ex: "brincar", "comer", "ler"
-        preposition?: string; // Ex: "com", "de"
+        infinitive: string;
+        preposition?: string;
     };
-
-    // Para Objetos e Lugares
-    // sentenceLabel continua a ser usado aqui. Ex: "a bola", "na escola"
 }
-
 
 // --- FUNÇÃO DE CONJUGAÇÃO VERBAL (O MOTOR GRAMATICAL) ---
 const conjugateVerb = (infinitive: string, person: 'eu' | 'voce' | 'ele_ela'): string => {
@@ -43,13 +37,13 @@ const conjugateVerb = (infinitive: string, person: 'eu' | 'voce' | 'ele_ela'): s
     }
     if (ending === 'ir') {
         if (person === 'eu') return root + 'o';
-        if (person === 'voce' || person === 'ele_ela') return root + 'e'; // Simplificado, mas funciona para muitos casos
+        if (person === 'voce' || person === 'ele_ela') return root + 'e';
     }
-    return infinitive; // Retorna o infinitivo se a regra não for encontrada
+    return infinitive; 
 };
 
-
 // --- BANCO DE CARDS COM A NOVA ESTRUTURA INTELIGENTE ---
+// Lembre-se de preencher esta lista com todos os seus cards!
 const allCards: { [key in Card['category']]: Card[] } = {
     personagens: [
         { id: 'eu_homem', displayLabel: 'Eu', sentenceLabel: 'eu', image: '/narrative_cards/personagens/eu_homem.webp', category: 'personagens', characterType: 'human', person: 'eu' },
@@ -79,14 +73,11 @@ const allCards: { [key in Card['category']]: Card[] } = {
     tempo: [],
 };
 
-
-// --- NÍVEIS COM ESTRUTURA LÓGICA ---
 const gameLevels: Level[] = [
     { level: 1, name: "Primeiras Frases", phrasesToComplete: 10, structure: ['personagens', 'acoes'] },
     { level: 2, name: "O Que Acontece?", phrasesToComplete: 15, structure: ['personagens', 'acoes', 'objetos'] },
 ];
 
-// --- O RESTO DO COMPONENTE (COM LÓGICA ATUALIZADA) ---
 export default function HistoriasEpicasGame() {
     const [gameState, setGameState] = useState<'titleScreen' | 'playing' | 'phraseComplete' | 'levelComplete' | 'gameOver'>('titleScreen');
     const [leoMessage, setLeoMessage] = useState('');
@@ -96,14 +87,21 @@ export default function HistoriasEpicasGame() {
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [cardOptions, setCardOptions] = useState<Card[]>([]);
 
-    const leoSpeak = useCallback((message: string) => { /* ...código mantido... */ }, []);
+    const leoSpeak = useCallback((message: string) => {
+        setLeoMessage(message);
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(message);
+            utterance.lang = 'pt-BR';
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+    }, []);
 
-    // --- LÓGICA DE GERAÇÃO DE OPÇÕES AGORA É INTELIGENTE ---
     const generateCardOptions = useCallback((category: Card['category'], previousCard?: Card) => {
         let potentialCards = allCards[category];
 
-        // Se estamos a escolher uma AÇÃO, filtramos por compatibilidade
-        if (category === 'acoes' && previousCard && previousCard.category === 'personagens') {
+        if (category === 'acoes' && previousCard?.category === 'personagens') {
             potentialCards = potentialCards.filter(actionCard => 
                 actionCard.compatibleWithTypes?.includes(previousCard.characterType!)
             );
@@ -113,7 +111,6 @@ export default function HistoriasEpicasGame() {
         setCardOptions(shuffled.slice(0, 4));
     }, []);
     
-    // --- FUNÇÃO QUE CONSTRÓI A FRASE CORRETAMENTE ---
     const buildSentence = (phrase: Card[]): string => {
         const subject = phrase.find(c => c.category === 'personagens');
         const action = phrase.find(c => c.category === 'acoes');
@@ -131,12 +128,29 @@ export default function HistoriasEpicasGame() {
             sentence += ` ${object.sentenceLabel}`;
         }
 
-        return sentence.charAt(0).toUpperCase() + sentence.slice(1) + ".";
+        const finalSentence = sentence.trim() + ".";
+        return finalSentence.charAt(0).toUpperCase() + finalSentence.slice(1);
     };
 
-    const loadNewPhrase = useCallback((levelIdx: number) => { /* ...código mantido... */ }, [generateCardOptions, leoSpeak]);
-    const startGame = useCallback(() => { /* ...código mantido... */ }, [loadNewPhrase]);
-    const handleStartIntro = () => { setGameState('playing'); startGame(); }; // Removido o Intro por simplicidade
+    const loadNewPhrase = useCallback((levelIdx: number) => {
+        const level = gameLevels[levelIdx];
+        setCurrentPhrase([]);
+        setCurrentStepIndex(0);
+        setGameState('playing');
+        generateCardOptions(level.structure[0]);
+        leoSpeak(`Nível ${level.level}: ${level.name}. Vamos começar!`);
+    }, [generateCardOptions]);
+
+    const startGame = useCallback(() => {
+        setCurrentLevelIndex(0);
+        setPhrasesCompletedInLevel(0);
+        loadNewPhrase(0);
+    }, [loadNewPhrase]);
+
+    const handleStartGame = () => {
+        setGameState('playing');
+        startGame();
+    };
     
     const handleCardSelection = (card: Card) => {
         if (gameState !== 'playing') return;
@@ -160,9 +174,97 @@ export default function HistoriasEpicasGame() {
         }
     };
 
-    const handleNext = () => { /* ...código mantido... */ };
+    const handleNext = () => {
+        const currentLevel = gameLevels[currentLevelIndex];
+        if (phrasesCompletedInLevel >= currentLevel.phrasesToComplete) {
+            const nextLevelIndex = currentLevelIndex + 1;
+            if (nextLevelIndex < gameLevels.length) {
+                setCurrentLevelIndex(nextLevelIndex);
+                setPhrasesCompletedInLevel(0);
+                setGameState('levelComplete');
+                leoSpeak(`Incrível! Você completou o nível ${currentLevel.name}!`);
+                setTimeout(() => loadNewPhrase(nextLevelIndex), 3000);
+            } else {
+                setGameState('gameOver');
+                leoSpeak("Parabéns! Você completou o jogo!");
+            }
+        } else {
+            loadNewPhrase(currentLevelIndex);
+        }
+    };
+
+    const renderTitleScreen = () => (
+        <div className="relative w-full h-screen flex justify-center items-center bg-gradient-to-b from-[#1e0c42] to-[#431d6d] overflow-hidden">
+            <div className="relative z-10 flex flex-col items-center text-center text-white animate-fade-in">
+                <h1 className="text-5xl sm:text-7xl md:text-8xl font-bold text-yellow-400">Histórias Épicas</h1>
+                <p className="text-lg sm:text-xl text-gray-200 mt-4 mb-10">Uma aventura de criação e fantasia</p>
+                <button onClick={handleStartGame} className="text-xl font-bold text-[#1e0c42] bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full px-10 py-4 shadow-lg transition-transform duration-300 ease-in-out hover:scale-105">
+                    Começar Aventura
+                </button>
+            </div>
+        </div>
+    );
     
-    // As funções de renderização (renderTitleScreen, renderGame, etc.) são mantidas.
-    // Apenas a lógica interna foi alterada.
-    // ... (Cole aqui as funções renderTitleScreen, renderGame, renderContent e o return final do código anterior)
+    const renderGame = () => {
+        const level = gameLevels[currentLevelIndex];
+        if (!level) return <div>Carregando nível...</div>;
+        const progressPercentage = (phrasesCompletedInLevel / level.phrasesToComplete) * 100;
+
+        return (
+            <div className="w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-blue-200 via-green-200 to-yellow-200">
+                <div className="relative z-10 bg-white/90 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-xl w-full max-w-6xl mx-auto border-4 border-violet-300">
+                    <div className="mb-4">
+                        <div className="flex justify-between items-center text-purple-700 font-bold text-lg md:text-xl mb-2">
+                            <div><BookText size={24} className="inline-block mr-2"/> Fase {level.level}: {level.name}</div>
+                            <div className="flex items-center gap-1 text-yellow-500"><Star size={24}/> {phrasesCompletedInLevel} / {level.phrasesToComplete}</div>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-4 shadow-inner"><div className="bg-gradient-to-r from-yellow-400 to-orange-500 h-4 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%` }}></div></div>
+                    </div>
+                    <div className="bg-yellow-50 p-4 rounded-xl mb-6 border-2 border-yellow-300 min-h-[100px] flex items-center justify-center text-center shadow-inner">
+                        <p className="text-xl md:text-2xl text-gray-800 font-semibold leading-relaxed">
+                            {level.structure.map((category, index) => (
+                                currentPhrase[index] ? 
+                                <span key={index} className="inline-block bg-white px-2 py-1 rounded-md shadow-sm font-bold text-purple-700 border border-purple-200 mx-1">{currentPhrase[index].displayLabel}</span> : 
+                                <span key={index} className={`inline-block mx-1 text-gray-400`}>_______</span>
+                            ))}
+                        </p>
+                    </div>
+                    <div className="flex flex-col md:flex-row items-center gap-4 my-6 justify-center">
+                        <div className="relative bg-white p-4 rounded-lg shadow-md flex-1 text-center min-h-[80px] flex items-center justify-center">
+                            <p className="text-lg md:text-xl font-medium text-gray-800">{leoMessage}</p>
+                        </div>
+                    </div>
+                    {(gameState === 'playing') ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+                            {cardOptions.map(card => (
+                                <button key={card.id} onClick={() => handleCardSelection(card)} className="p-3 bg-white rounded-xl shadow-lg border-2 border-purple-200 hover:border-purple-500 hover:scale-105 transition-transform">
+                                    <div className="aspect-square relative rounded-md overflow-hidden"><Image src={card.image} alt={card.displayLabel} fill sizes="25vw" className="object-contain p-1"/></div>
+                                    <p className="mt-2 text-center font-bold text-sm md:text-base text-gray-800">{card.displayLabel}</p>
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                         <div className='text-center mt-8'>
+                             <button onClick={handleNext} className="px-10 py-4 bg-gradient-to-r from-green-500 to-blue-600 text-white font-bold text-xl rounded-full shadow-xl hover:scale-105 transition-transform">
+                                 {gameState === 'levelComplete' ? 'Próximo Nível!' : gameState === 'gameOver' ? 'Jogar Novamente' : 'Próxima Frase!'}
+                             </button>
+                         </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+    
+    const renderContent = () => {
+        switch (gameState) {
+            case 'titleScreen': return renderTitleScreen();
+            default: return renderGame();
+        }
+    };
+    
+    return (
+        <>
+            {renderContent()}
+        </>
+    );
 }
