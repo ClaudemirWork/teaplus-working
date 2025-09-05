@@ -63,7 +63,7 @@ const conjugateVerb = (infinitive: string, person: 'eu' | 'voce' | 'ele_ela'): s
     return infinitive; 
 };
 
-// --- BANCO DE CARDS ---
+// --- BANCO DE CARDS COM IMAGENS CORRETAS ---
 const allCards: { [key in Card['category']]: Card[] } = {
     personagens: [
         { 
@@ -112,19 +112,19 @@ const allCards: { [key in Card['category']]: Card[] } = {
             person: 'ele_ela' 
         },
         { 
-            id: 'menino', 
+            id: 'filho', 
             displayLabel: 'Menino', 
             sentenceLabel: 'O menino', 
-            image: '/narrative_cards/personagens/menino.webp', 
+            image: '/narrative_cards/personagens/filho.webp', 
             category: 'personagens', 
             characterType: 'human', 
             person: 'ele_ela' 
         },
         { 
-            id: 'menina', 
+            id: 'filha', 
             displayLabel: 'Menina', 
             sentenceLabel: 'A menina', 
-            image: '/narrative_cards/personagens/menina.webp', 
+            image: '/narrative_cards/personagens/filha.webp', 
             category: 'personagens', 
             characterType: 'human', 
             person: 'ele_ela' 
@@ -168,7 +168,7 @@ const allCards: { [key in Card['category']]: Card[] } = {
         { 
             id: 'dormir', 
             displayLabel: 'Dormir', 
-            image: '/narrative_cards/acoes/dormir.webp', 
+            image: '/narrative_cards/acoes/dormir_lado.webp', 
             category: 'acoes', 
             compatibleWithTypes: ['human', 'animal'], 
             verb: { 
@@ -209,18 +209,18 @@ const allCards: { [key in Card['category']]: Card[] } = {
             objectType: 'brinquedo'
         },
         { 
-            id: 'livro', 
-            displayLabel: 'Livro', 
-            sentenceLabel: 'o livro', 
-            image: '/narrative_cards/objetos/livro.webp', 
+            id: 'papel', 
+            displayLabel: 'Papel', 
+            sentenceLabel: 'o papel', 
+            image: '/narrative_cards/objetos/papel_lapis.webp', 
             category: 'objetos',
             objectType: 'leitura'
         },
         { 
-            id: 'maca', 
-            displayLabel: 'Maçã', 
-            sentenceLabel: 'a maçã', 
-            image: '/narrative_cards/objetos/maca.webp', 
+            id: 'pizza', 
+            displayLabel: 'Pizza', 
+            sentenceLabel: 'a pizza', 
+            image: '/narrative_cards/objetos/pizza.webp', 
             category: 'objetos',
             objectType: 'comida'
         },
@@ -228,15 +228,15 @@ const allCards: { [key in Card['category']]: Card[] } = {
             id: 'carrinho', 
             displayLabel: 'Carrinho', 
             sentenceLabel: 'o carrinho', 
-            image: '/narrative_cards/objetos/carrinho.webp', 
+            image: '/narrative_cards/objetos/carrinho_brinquedo.webp', 
             category: 'objetos',
             objectType: 'brinquedo'
         },
         { 
-            id: 'boneca', 
-            displayLabel: 'Boneca', 
-            sentenceLabel: 'a boneca', 
-            image: '/narrative_cards/objetos/boneca.webp', 
+            id: 'cubo', 
+            displayLabel: 'Cubo', 
+            sentenceLabel: 'o cubo', 
+            image: '/narrative_cards/objetos/cubo_colorido.webp', 
             category: 'objetos',
             objectType: 'brinquedo'
         }
@@ -321,7 +321,7 @@ export default function HistoriasEpicasGame() {
             const conjugated = conjugateVerb(action.verb.infinitive, subject.person!);
             sentence += ` ${conjugated}`;
             
-            // CORREÇÃO AQUI: Só adiciona preposição quando tem objeto
+            // Só adiciona preposição quando tem objeto
             if (object) {
                 if (action.verb.withPreposition && object.objectType === 'brinquedo') {
                     sentence += ` ${action.verb.withPreposition} ${object.sentenceLabel}`;
