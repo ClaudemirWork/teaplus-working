@@ -1,5 +1,4 @@
-// Cole este código corrigido dentro de app/home/page.tsx
-
+"use client"
 export default function HomePage() {
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
