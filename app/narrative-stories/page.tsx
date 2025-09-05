@@ -148,7 +148,7 @@ export default function HistoriasEpicasGame() {
         setGameState('playing');
         generateCardOptions(level.structure[0]);
         leoSpeak(`Nível ${level.level}: ${level.name}. Vamos começar!`);
-    }, [generateCardOptions]);
+    }, [generateCardOptions, leoSpeak]);
 
     const startGame = useCallback(() => {
         setCurrentLevelIndex(0);
@@ -306,3 +306,4 @@ export default function HistoriasEpicasGame() {
         </>
     );
 }
+
