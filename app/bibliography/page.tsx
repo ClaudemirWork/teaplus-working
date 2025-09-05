@@ -1,3 +1,8 @@
+"use client"
+
+import React from 'react'
+import Link from 'next/link'
+
 export default function BibliographyPage() {
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -6,22 +11,22 @@ export default function BibliographyPage() {
           <h1 className="text-2xl font-bold text-gray-800">🌟 TeaPlus</h1>
         </div>
         <nav className="mt-6">
-          <a href="/" className="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50">
+          <Link href="/" className="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50">
             <span className="text-xl mr-3">🏠</span>
             <span>Dashboard</span>
-          </a>
-          <a href="/mood-tracker" className="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50">
+          </Link>
+          <Link href="/mood-tracker" className="flex items-center px-6 py-3 text-gray-700 hover:bg-blue-50">
             <span className="text-xl mr-3">😊</span>
             <span>Rastreador de Humor</span>
-          </a>
-          <a href="/eye-contact" className="flex items-center px-6 py-3 text-gray-700 hover:bg-purple-50">
+          </Link>
+          <Link href="/eye-contact" className="flex items-center px-6 py-3 text-gray-700 hover:bg-purple-50">
             <span className="text-xl mr-3">👁️</span>
             <span>Jogo de Contato Visual</span>
-          </a>
-          <a href="/communication" className="flex items-center px-6 py-3 text-gray-700 hover:bg-yellow-50">
+          </Link>
+          <Link href="/communication" className="flex items-center px-6 py-3 text-gray-700 hover:bg-yellow-50">
             <span className="text-xl mr-3">🗣️</span>
             <span>Comunicação Social</span>
-          </a>
+          </Link>
         </nav>
       </div>
 
@@ -77,5 +82,5 @@ export default function BibliographyPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
