@@ -20,13 +20,17 @@ interface Card {
         withPreposition?: string;
     };
     objectType?: string;
+    placePreposition?: string;
+    emotionType?: 'feeling' | 'state';
 }
 
 interface Level {
     level: number;
     name: string;
+    description: string;
     phrasesToComplete: number;
     structure: Card['category'][];
+    isRecognitionOnly?: boolean;
 }
 
 // --- MOTOR GRAMATICAL ---
@@ -63,7 +67,7 @@ const conjugateVerb = (infinitive: string, person: 'eu' | 'voce' | 'ele_ela'): s
     return infinitive; 
 };
 
-// --- BANCO DE CARDS COM IMAGENS CORRETAS ---
+// --- BANCO DE CARDS COMPLETO ---
 const allCards: { [key in Card['category']]: Card[] } = {
     personagens: [
         { 
@@ -74,6 +78,15 @@ const allCards: { [key in Card['category']]: Card[] } = {
             category: 'personagens', 
             characterType: 'human', 
             person: 'eu' 
+        },
+        { 
+            id: 'voce', 
+            displayLabel: 'Você', 
+            sentenceLabel: 'Você', 
+            image: '/narrative_cards/personagens/voce.webp', 
+            category: 'personagens', 
+            characterType: 'human', 
+            person: 'voce' 
         },
         { 
             id: 'cachorro', 
@@ -197,6 +210,28 @@ const allCards: { [key in Card['category']]: Card[] } = {
                 infinitive: 'estudar',
                 requiresObject: false 
             } 
+        },
+        { 
+            id: 'cantar', 
+            displayLabel: 'Cantar', 
+            image: '/narrative_cards/acoes/cantar.webp', 
+            category: 'acoes', 
+            compatibleWithTypes: ['human'], 
+            verb: { 
+                infinitive: 'cantar',
+                requiresObject: false 
+            } 
+        },
+        { 
+            id: 'sentar', 
+            displayLabel: 'Sentar', 
+            image: '/narrative_cards/acoes/sentar.webp', 
+            category: 'acoes', 
+            compatibleWithTypes: ['human', 'animal'], 
+            verb: { 
+                infinitive: 'sentar',
+                requiresObject: false 
+            } 
         }
     ],
     objetos: [
@@ -239,27 +274,207 @@ const allCards: { [key in Card['category']]: Card[] } = {
             image: '/narrative_cards/objetos/cubo_colorido.webp', 
             category: 'objetos',
             objectType: 'brinquedo'
+        },
+        { 
+            id: 'mochila', 
+            displayLabel: 'Mochila', 
+            sentenceLabel: 'a mochila', 
+            image: '/narrative_cards/objetos/mochila_escola.webp', 
+            category: 'objetos',
+            objectType: 'escolar'
         }
     ],
-    lugares: [], 
-    emocoes: [], 
-    tempo: []
+    lugares: [
+        { 
+            id: 'casa', 
+            displayLabel: 'Em Casa', 
+            sentenceLabel: 'em casa', 
+            image: '/narrative_cards/lugares/casa.webp', 
+            category: 'lugares',
+            placePreposition: 'em'
+        },
+        { 
+            id: 'escola', 
+            displayLabel: 'Na Escola', 
+            sentenceLabel: 'na escola', 
+            image: '/narrative_cards/lugares/escola.webp', 
+            category: 'lugares',
+            placePreposition: 'na'
+        },
+        { 
+            id: 'jardim', 
+            displayLabel: 'No Jardim', 
+            sentenceLabel: 'no jardim', 
+            image: '/narrative_cards/lugares/jardim.webp', 
+            category: 'lugares',
+            placePreposition: 'no'
+        },
+        { 
+            id: 'praia', 
+            displayLabel: 'Na Praia', 
+            sentenceLabel: 'na praia', 
+            image: '/narrative_cards/lugares/praia.webp', 
+            category: 'lugares',
+            placePreposition: 'na'
+        },
+        { 
+            id: 'cama', 
+            displayLabel: 'Na Cama', 
+            sentenceLabel: 'na cama', 
+            image: '/narrative_cards/lugares/cama.webp', 
+            category: 'lugares',
+            placePreposition: 'na'
+        },
+        { 
+            id: 'mesa', 
+            displayLabel: 'Na Mesa', 
+            sentenceLabel: 'na mesa', 
+            image: '/narrative_cards/lugares/mesa.webp', 
+            category: 'lugares',
+            placePreposition: 'na'
+        }
+    ],
+    tempo: [
+        { 
+            id: 'hoje', 
+            displayLabel: 'Hoje', 
+            sentenceLabel: 'Hoje', 
+            image: '/narrative_cards/tempo/hoje.webp', 
+            category: 'tempo'
+        },
+        { 
+            id: 'amanha', 
+            displayLabel: 'Amanhã', 
+            sentenceLabel: 'Amanhã', 
+            image: '/narrative_cards/tempo/amanha.webp', 
+            category: 'tempo'
+        },
+        { 
+            id: 'ontem', 
+            displayLabel: 'Ontem', 
+            sentenceLabel: 'Ontem', 
+            image: '/narrative_cards/tempo/ontem.webp', 
+            category: 'tempo'
+        },
+        { 
+            id: 'manha', 
+            displayLabel: 'De Manhã', 
+            sentenceLabel: 'De manhã', 
+            image: '/narrative_cards/tempo/manha.webp', 
+            category: 'tempo'
+        },
+        { 
+            id: 'tarde', 
+            displayLabel: 'À Tarde', 
+            sentenceLabel: 'À tarde', 
+            image: '/narrative_cards/tempo/tarde.webp', 
+            category: 'tempo'
+        },
+        { 
+            id: 'noite', 
+            displayLabel: 'À Noite', 
+            sentenceLabel: 'À noite', 
+            image: '/narrative_cards/tempo/noite.webp', 
+            category: 'tempo'
+        }
+    ],
+    emocoes: [
+        { 
+            id: 'feliz', 
+            displayLabel: 'Feliz', 
+            sentenceLabel: 'feliz', 
+            image: '/narrative_cards/emocoes/homem_feliz.webp', 
+            category: 'emocoes',
+            emotionType: 'feeling'
+        },
+        { 
+            id: 'triste', 
+            displayLabel: 'Triste', 
+            sentenceLabel: 'triste', 
+            image: '/narrative_cards/emocoes/homem_triste.webp', 
+            category: 'emocoes',
+            emotionType: 'feeling'
+        },
+        { 
+            id: 'bravo', 
+            displayLabel: 'Bravo', 
+            sentenceLabel: 'bravo', 
+            image: '/narrative_cards/emocoes/homem_bravo.webp', 
+            category: 'emocoes',
+            emotionType: 'feeling'
+        },
+        { 
+            id: 'animado', 
+            displayLabel: 'Animado', 
+            sentenceLabel: 'animado', 
+            image: '/narrative_cards/emocoes/homem_animado.webp', 
+            category: 'emocoes',
+            emotionType: 'state'
+        },
+        { 
+            id: 'calmo', 
+            displayLabel: 'Calmo', 
+            sentenceLabel: 'calmo', 
+            image: '/narrative_cards/emocoes/homem_calmo.webp', 
+            category: 'emocoes',
+            emotionType: 'state'
+        },
+        { 
+            id: 'surpreso', 
+            displayLabel: 'Surpreso', 
+            sentenceLabel: 'surpreso', 
+            image: '/narrative_cards/emocoes/homem_surpreso.webp', 
+            category: 'emocoes',
+            emotionType: 'feeling'
+        }
+    ]
 };
 
-// --- NÍVEIS ---
+// --- NÍVEIS PEDAGÓGICOS PROGRESSIVOS ---
 const gameLevels: Level[] = [
     { 
         level: 1, 
-        name: "Primeiras Frases", 
+        name: "Reconhecimento", 
+        description: "Identifique os personagens",
+        phrasesToComplete: 5, 
+        structure: ['personagens'],
+        isRecognitionOnly: true
+    },
+    { 
+        level: 2, 
+        name: "Ação Simples", 
+        description: "Quem faz o quê?",
         phrasesToComplete: 5, 
         structure: ['personagens', 'acoes'] 
     },
     { 
-        level: 2, 
-        name: "Frases com Objetos", 
-        phrasesToComplete: 8, 
+        level: 3, 
+        name: "Com Objetos", 
+        description: "Adicione objetos às ações",
+        phrasesToComplete: 6, 
         structure: ['personagens', 'acoes', 'objetos'] 
     },
+    { 
+        level: 4, 
+        name: "Onde Acontece", 
+        description: "Adicione o lugar",
+        phrasesToComplete: 6, 
+        structure: ['personagens', 'acoes', 'lugares'] 
+    },
+    { 
+        level: 5, 
+        name: "Quando e Como", 
+        description: "Adicione tempo à história",
+        phrasesToComplete: 7, 
+        structure: ['tempo', 'personagens', 'acoes', 'objetos'] 
+    },
+    { 
+        level: 6, 
+        name: "História Completa", 
+        description: "Conte uma história com emoções",
+        phrasesToComplete: 8, 
+        structure: ['personagens', 'acoes', 'objetos', 'emocoes'] 
+    }
 ];
 
 const Confetti = () => (
@@ -296,32 +511,56 @@ export default function HistoriasEpicasGame() {
     const generateCardOptions = useCallback((category: Card['category'], previousCard?: Card) => {
         let potentialCards = allCards[category];
         
+        // Filtros de compatibilidade
         if (category === 'acoes' && previousCard?.category === 'personagens') {
             potentialCards = potentialCards.filter(actionCard => 
                 actionCard.compatibleWithTypes?.includes(previousCard.characterType!)
             );
         }
         
+        // Para emoções, filtrar baseado no contexto
+        if (category === 'emocoes') {
+            const action = currentPhrase.find(c => c.category === 'acoes');
+            // Lógica de compatibilidade emocional pode ser adicionada aqui
+        }
+        
         const shuffled = [...potentialCards].sort(() => 0.5 - Math.random());
         setCardOptions(shuffled.slice(0, 4));
-    }, []);
+    }, [currentPhrase]);
     
     const buildSentence = useCallback((phrase: Card[], isComplete: boolean = false): string => {
         if (phrase.length === 0) return "";
         
+        const tempo = phrase.find(c => c.category === 'tempo');
         const subject = phrase.find(c => c.category === 'personagens');
         const action = phrase.find(c => c.category === 'acoes');
         const object = phrase.find(c => c.category === 'objetos');
+        const place = phrase.find(c => c.category === 'lugares');
+        const emotion = phrase.find(c => c.category === 'emocoes');
+        
+        // Para nível 1 (só reconhecimento)
+        if (!action && subject) {
+            return subject.displayLabel;
+        }
         
         if (!subject) return "";
         
-        let sentence = subject.sentenceLabel || "";
+        let sentence = "";
         
+        // Adiciona tempo se existir
+        if (tempo) {
+            sentence = tempo.sentenceLabel + ", ";
+        }
+        
+        // Adiciona sujeito
+        sentence += (subject.sentenceLabel || "") + " ";
+        
+        // Adiciona ação conjugada
         if (action?.verb) {
             const conjugated = conjugateVerb(action.verb.infinitive, subject.person!);
-            sentence += ` ${conjugated}`;
+            sentence += conjugated;
             
-            // Só adiciona preposição quando tem objeto
+            // Adiciona objeto se existir
             if (object) {
                 if (action.verb.withPreposition && object.objectType === 'brinquedo') {
                     sentence += ` ${action.verb.withPreposition} ${object.sentenceLabel}`;
@@ -329,12 +568,35 @@ export default function HistoriasEpicasGame() {
                     sentence += ` ${object.sentenceLabel}`;
                 }
             }
+            
+            // Adiciona lugar se existir
+            if (place) {
+                sentence += ` ${place.sentenceLabel}`;
+            }
+            
+            // Adiciona emoção se existir
+            if (emotion) {
+                if (emotion.emotionType === 'feeling') {
+                    sentence += `, ${emotion.sentenceLabel}`;
+                } else {
+                    sentence += ` ${emotion.sentenceLabel}`;
+                }
+            }
         }
         
-        let formattedSentence = sentence.trim();
-        formattedSentence = formattedSentence.charAt(0).toUpperCase() + formattedSentence.slice(1).toLowerCase();
+        sentence = sentence.trim();
         
-        return isComplete ? formattedSentence + "." : formattedSentence;
+        // Capitaliza primeira letra e adiciona ponto se completo
+        if (sentence.length > 0) {
+            sentence = sentence.charAt(0).toUpperCase() + sentence.slice(1);
+            if (isComplete && !sentence.includes(',')) {
+                sentence += ".";
+            } else if (isComplete) {
+                sentence = sentence.replace(',', '') + ".";
+            }
+        }
+        
+        return sentence;
     }, []);
 
     const loadNewPhrase = useCallback((levelIdx: number) => {
@@ -343,16 +605,18 @@ export default function HistoriasEpicasGame() {
         setGameState('playing');
         generateCardOptions(level.structure[0]);
         
-        const encouragements = [
-            "Vamos criar uma nova frase!",
-            "Que tal mais uma história?",
-            "Você está indo muito bem!",
-            "Vamos continuar criando!",
-            "Mais uma frase incrível!"
-        ];
+        // Mensagens específicas por nível
+        const levelMessages = {
+            1: "Vamos conhecer os personagens! Quem você vê?",
+            2: "Agora vamos fazer os personagens fazerem alguma coisa!",
+            3: "Que tal adicionar objetos à história?",
+            4: "Onde nossa história acontece?",
+            5: "Quando isso aconteceu? Vamos adicionar o tempo!",
+            6: "Como o personagem se sente? Adicione emoções!"
+        };
         
-        const randomMessage = encouragements[Math.floor(Math.random() * encouragements.length)];
-        leoSpeak(randomMessage);
+        const message = levelMessages[level.level as keyof typeof levelMessages] || "Vamos criar uma nova frase!";
+        leoSpeak(message);
     }, [generateCardOptions, leoSpeak]);
 
     const startGame = useCallback(() => {
@@ -376,13 +640,18 @@ export default function HistoriasEpicasGame() {
         const currentLevel = gameLevels[currentLevelIndex];
 
         if (nextStepIndex >= currentLevel.structure.length) {
+            // Frase completa
             const newCount = phrasesCompletedInLevel + 1;
             setPhrasesCompletedInLevel(newCount);
             setTotalStars(totalStars + 1);
             setGameState('phraseComplete');
             
-            const finalSentence = buildSentence(newPhrase, true);
-            leoSpeak(`Muito bem! Você formou: "${finalSentence}". Ganhou uma estrela!`);
+            if (currentLevel.isRecognitionOnly) {
+                leoSpeak(`Muito bem! Você reconheceu: ${card.displayLabel}! Ganhou uma estrela!`);
+            } else {
+                const finalSentence = buildSentence(newPhrase, true);
+                leoSpeak(`Excelente! Você formou: "${finalSentence}". Ganhou uma estrela!`);
+            }
             
             setShowConfetti(true);
             
@@ -400,6 +669,7 @@ export default function HistoriasEpicasGame() {
                 setTimeout(() => setShowStarReward(true), 500);
             }
         } else {
+            // Continua construindo a frase
             const nextCategory = currentLevel.structure[nextStepIndex];
             generateCardOptions(nextCategory, card);
             
@@ -408,7 +678,9 @@ export default function HistoriasEpicasGame() {
                 "Muito bem!",
                 "Continue assim!",
                 "Perfeito!",
-                "Excelente!"
+                "Excelente!",
+                "Você está indo muito bem!",
+                "Isso mesmo!"
             ];
             
             const randomEncouragement = encouragements[Math.floor(Math.random() * encouragements.length)];
@@ -420,17 +692,18 @@ export default function HistoriasEpicasGame() {
         const currentLevel = gameLevels[currentLevelIndex];
         
         if (phrasesCompletedInLevel >= currentLevel.phrasesToComplete) {
+            // Nível completo
             const nextLevelIndex = currentLevelIndex + 1;
             
             if (nextLevelIndex < gameLevels.length) {
                 setCurrentLevelIndex(nextLevelIndex);
                 setPhrasesCompletedInLevel(0);
                 setGameState('levelComplete');
-                leoSpeak(`Parabéns! Você completou o nível ${currentLevel.level}! Vamos para o próximo desafio!`);
+                leoSpeak(`Parabéns! Você completou o nível ${currentLevel.level}: ${currentLevel.name}! Vamos para o próximo desafio!`);
                 setTimeout(() => loadNewPhrase(nextLevelIndex), 3000);
             } else {
                 setGameState('gameOver');
-                leoSpeak(`Incrível! Você completou todos os níveis! Você é um campeão! Total de ${totalStars} estrelas!`);
+                leoSpeak(`Incrível! Você completou todos os níveis! Você é um mestre das histórias! Total de ${totalStars} estrelas!`);
             }
         } else {
             loadNewPhrase(currentLevelIndex);
@@ -457,14 +730,25 @@ export default function HistoriasEpicasGame() {
                 <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-orange-900 drop-shadow-lg mb-4">
                     Histórias Épicas
                 </h1>
-                <p className="text-xl sm:text-2xl text-orange-800 mt-2 mb-8 drop-shadow-md">
+                <p className="text-xl sm:text-2xl text-orange-800 mt-2 mb-4 drop-shadow-md">
                     Crie frases e aprenda brincando!
                 </p>
+                <div className="bg-white/90 rounded-xl p-4 mb-6 max-w-md">
+                    <h2 className="text-lg font-bold text-gray-800 mb-3">Jornada de Aprendizado:</h2>
+                    <div className="text-left text-sm text-gray-700 space-y-1">
+                        <p>🎯 Nível 1: Reconhecer personagens</p>
+                        <p>🎬 Nível 2: Personagem + Ação</p>
+                        <p>📦 Nível 3: Adicionar objetos</p>
+                        <p>🏠 Nível 4: Onde acontece</p>
+                        <p>⏰ Nível 5: Quando acontece</p>
+                        <p>❤️ Nível 6: Como se sente</p>
+                    </div>
+                </div>
                 <button 
                     onClick={handleStartGame} 
                     className="text-xl font-bold text-white bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95"
                 >
-                    Começar a Brincar
+                    Começar a Aventura
                 </button>
             </div>
         </div>
@@ -495,7 +779,9 @@ export default function HistoriasEpicasGame() {
         
         const progressPercentage = (phrasesCompletedInLevel / level.phrasesToComplete) * 100;
         const displayedSentence = currentPhrase.length === 0 
-            ? "Escolha as cartas para formar uma frase!" 
+            ? level.isRecognitionOnly 
+                ? "Escolha o personagem!" 
+                : "Escolha as cartas para formar uma frase!" 
             : buildSentence(currentPhrase, false);
 
         return (
@@ -504,6 +790,7 @@ export default function HistoriasEpicasGame() {
                 {showStarReward && renderStarReward()}
                 
                 <div className="relative z-10 bg-white/95 backdrop-blur-sm rounded-3xl p-6 md:p-8 shadow-2xl w-full max-w-6xl mx-auto border-4 border-purple-300">
+                    {/* Header com Progresso */}
                     <div className="mb-6">
                         <div className="flex justify-between items-center text-purple-700 font-bold text-lg md:text-xl mb-3">
                             <div className="flex items-center gap-2">
@@ -515,6 +802,7 @@ export default function HistoriasEpicasGame() {
                                 <span className="text-xl">{phrasesCompletedInLevel} / {level.phrasesToComplete}</span>
                             </div>
                         </div>
+                        <p className="text-center text-sm text-gray-600 mb-2">{level.description}</p>
                         <div className="w-full bg-gray-200 rounded-full h-5 shadow-inner">
                             <div 
                                 className="bg-gradient-to-r from-yellow-400 to-orange-500 h-5 rounded-full transition-all duration-700 ease-out shadow-md"
@@ -523,12 +811,14 @@ export default function HistoriasEpicasGame() {
                         </div>
                     </div>
                     
+                    {/* Área de Exibição da Frase */}
                     <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-2xl mb-6 border-3 border-yellow-300 min-h-[120px] flex items-center justify-center shadow-lg">
                         <p className="text-3xl md:text-5xl text-purple-800 font-bold text-center leading-relaxed">
                             {displayedSentence}
                         </p>
                     </div>
                     
+                    {/* Mensagem do Leo */}
                     <div className="flex items-center justify-center mb-6">
                         <div className="relative bg-white p-4 rounded-2xl shadow-lg max-w-2xl w-full">
                             <div className="flex items-center gap-4">
@@ -546,6 +836,7 @@ export default function HistoriasEpicasGame() {
                         </div>
                     </div>
                     
+                    {/* Cards ou Botão de Próxima */}
                     {gameState === 'playing' ? (
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6">
                             {cardOptions.map((card, index) => (
