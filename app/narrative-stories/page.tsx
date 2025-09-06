@@ -163,7 +163,8 @@ const allCards: { [key in Card['category']]: Card[] } = {
             compatibleWithTypes: ['human', 'animal'], 
             verb: { 
                 infinitive: 'brincar',
-                requiresObject: false
+                requiresObject: false,
+                withPreposition: 'com'
             } 
         },
         { 
@@ -510,10 +511,17 @@ export default function HistoriasEpicasGame() {
     const generateCardOptions = useCallback((category: Card['category'], previousCard?: Card) => {
         let potentialCards = allCards[category];
         
+        // Filtros de compatibilidade
         if (category === 'acoes' && previousCard?.category === 'personagens') {
             potentialCards = potentialCards.filter(actionCard => 
                 actionCard.compatibleWithTypes?.includes(previousCard.characterType!)
             );
+        }
+        
+        // Para emoções, filtrar baseado no contexto
+        if (category === 'emocoes') {
+            const action = currentPhrase.find(c => c.category === 'acoes');
+            // Lógica de compatibilidade emocional pode ser adicionada aqui
         }
         
         const shuffled = [...potentialCards].sort(() => 0.5 - Math.random());
@@ -530,6 +538,7 @@ export default function HistoriasEpicasGame() {
         const place = phrase.find(c => c.category === 'lugares');
         const emotion = phrase.find(c => c.category === 'emocoes');
         
+        // Para nível 1 (só reconhecimento)
         if (!action && subject) {
             return subject.displayLabel;
         }
@@ -538,16 +547,20 @@ export default function HistoriasEpicasGame() {
         
         let sentence = "";
         
+        // Adiciona tempo se existir
         if (tempo) {
             sentence = tempo.sentenceLabel + ", ";
         }
         
+        // Adiciona sujeito
         sentence += (subject.sentenceLabel || "") + " ";
         
+        // Adiciona ação conjugada
         if (action?.verb) {
             const conjugated = conjugateVerb(action.verb.infinitive, subject.person!);
             sentence += conjugated;
             
+            // Adiciona objeto se existir
             if (object) {
                 if (action.verb.withPreposition && object.objectType === 'brinquedo') {
                     sentence += ` ${action.verb.withPreposition} ${object.sentenceLabel}`;
@@ -556,10 +569,12 @@ export default function HistoriasEpicasGame() {
                 }
             }
             
+            // Adiciona lugar se existir
             if (place) {
                 sentence += ` ${place.sentenceLabel}`;
             }
             
+            // Adiciona emoção se existir
             if (emotion) {
                 if (emotion.emotionType === 'feeling') {
                     sentence += `, ${emotion.sentenceLabel}`;
@@ -571,6 +586,7 @@ export default function HistoriasEpicasGame() {
         
         sentence = sentence.trim();
         
+        // Capitaliza primeira letra e adiciona ponto se completo
         if (sentence.length > 0) {
             sentence = sentence.charAt(0).toUpperCase() + sentence.slice(1);
             if (isComplete && !sentence.includes(',')) {
@@ -589,7 +605,8 @@ export default function HistoriasEpicasGame() {
         setGameState('playing');
         generateCardOptions(level.structure[0]);
         
-        const levelMessages: { [key: number]: string } = {
+        // Mensagens específicas por nível
+        const levelMessages = {
             1: "Vamos conhecer os personagens! Quem você vê?",
             2: "Agora vamos fazer os personagens fazerem alguma coisa!",
             3: "Que tal adicionar objetos à história?",
@@ -598,7 +615,7 @@ export default function HistoriasEpicasGame() {
             6: "Como o personagem se sente? Adicione emoções!"
         };
         
-        const message = levelMessages[level.level] || "Vamos criar uma nova frase!";
+        const message = levelMessages[level.level as keyof typeof levelMessages] || "Vamos criar uma nova frase!";
         leoSpeak(message);
     }, [generateCardOptions, leoSpeak]);
 
@@ -623,6 +640,7 @@ export default function HistoriasEpicasGame() {
         const currentLevel = gameLevels[currentLevelIndex];
 
         if (nextStepIndex >= currentLevel.structure.length) {
+            // Frase completa
             const newCount = phrasesCompletedInLevel + 1;
             setPhrasesCompletedInLevel(newCount);
             setTotalStars(totalStars + 1);
@@ -651,12 +669,18 @@ export default function HistoriasEpicasGame() {
                 setTimeout(() => setShowStarReward(true), 500);
             }
         } else {
+            // Continua construindo a frase
             const nextCategory = currentLevel.structure[nextStepIndex];
             generateCardOptions(nextCategory, card);
             
             const encouragements = [
-                "Ótima escolha!", "Muito bem!", "Continue assim!", "Perfeito!", 
-                "Excelente!", "Você está indo muito bem!", "Isso mesmo!"
+                "Ótima escolha!",
+                "Muito bem!",
+                "Continue assim!",
+                "Perfeito!",
+                "Excelente!",
+                "Você está indo muito bem!",
+                "Isso mesmo!"
             ];
             
             const randomEncouragement = encouragements[Math.floor(Math.random() * encouragements.length)];
@@ -668,6 +692,7 @@ export default function HistoriasEpicasGame() {
         const currentLevel = gameLevels[currentLevelIndex];
         
         if (phrasesCompletedInLevel >= currentLevel.phrasesToComplete) {
+            // Nível completo
             const nextLevelIndex = currentLevelIndex + 1;
             
             if (nextLevelIndex < gameLevels.length) {
@@ -691,7 +716,7 @@ export default function HistoriasEpicasGame() {
 
     const renderTitleScreen = () => (
         <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-yellow-200 via-orange-300 to-amber-400 overflow-hidden">
-            <div className="relative z-10 flex flex-col items-center text-center">
+            <div className="relative z-10 flex flex-col items-center text-center text-white">
                 <div className="mb-4">
                     <Image 
                         src="/images/mascotes/leo/leo_feliz_resultado.webp" 
@@ -705,9 +730,20 @@ export default function HistoriasEpicasGame() {
                 <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-orange-900 drop-shadow-lg mb-4">
                     Histórias Épicas
                 </h1>
-                <p className="text-xl sm:text-2xl text-orange-800 mt-2 mb-8 drop-shadow-md">
+                <p className="text-xl sm:text-2xl text-orange-800 mt-2 mb-4 drop-shadow-md">
                     Crie frases e aprenda brincando!
                 </p>
+                <div className="bg-white/90 rounded-xl p-4 mb-6 max-w-md">
+                    <h2 className="text-lg font-bold text-gray-800 mb-3">Jornada de Aprendizado:</h2>
+                    <div className="text-left text-sm text-gray-700 space-y-1">
+                        <p>🎯 Nível 1: Reconhecer personagens</p>
+                        <p>🎬 Nível 2: Personagem + Ação</p>
+                        <p>📦 Nível 3: Adicionar objetos</p>
+                        <p>🏠 Nível 4: Onde acontece</p>
+                        <p>⏰ Nível 5: Quando acontece</p>
+                        <p>❤️ Nível 6: Como se sente</p>
+                    </div>
+                </div>
                 <button 
                     onClick={handleStartGame} 
                     className="text-xl font-bold text-white bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95"
@@ -852,41 +888,73 @@ export default function HistoriasEpicasGame() {
             
             <style jsx global>{`
                 .confetti-container { 
-                    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                    pointer-events: none; z-index: 100; 
+                    position: fixed; 
+                    top: 0; 
+                    left: 0; 
+                    width: 100%; 
+                    height: 100%; 
+                    pointer-events: none; 
+                    z-index: 100; 
                 }
+                
                 .confetti-piece { 
-                    position: absolute; width: 12px; height: 24px; 
+                    position: absolute; 
+                    width: 12px; 
+                    height: 24px; 
                     background: linear-gradient(45deg, #ffD700, #ff6c00);
                     top: -30px; 
                     animation: fall 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite; 
                 }
+                
                 .piece-0 { background: linear-gradient(45deg, #ffD700, #ffa500); } 
                 .piece-1 { background: linear-gradient(45deg, #00c4ff, #0099ff); }
                 .piece-2 { background: linear-gradient(45deg, #ff007c, #ff4c94); } 
                 .piece-3 { background: linear-gradient(45deg, #00ff8c, #00d68f); }
                 .piece-4 { background: linear-gradient(45deg, #ff6c00, #ff9a00); }
+                
                 @keyframes fall { 
-                    to { transform: translateY(120vh) rotate(720deg); opacity: 0; } 
+                    to { 
+                        transform: translateY(120vh) rotate(720deg); 
+                        opacity: 0; 
+                    } 
                 }
+                
                 ${[...Array(50)].map((_, i) => `
                     .confetti-piece:nth-child(${i+1}) { 
                         left: ${Math.random()*100}%; 
                         animation-delay: ${Math.random()*3}s;
                         animation-duration: ${3 + Math.random()*2}s;
                     }`).join('')}
+                
                 .star-reward-animate { 
                     animation: star-pop 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; 
                 }
+                
                 @keyframes star-pop { 
-                    0% { transform: scale(0) rotate(0deg); opacity: 0; } 
-                    50% { transform: scale(1.2) rotate(180deg); }
-                    100% { transform: scale(1) rotate(360deg); opacity: 1; } 
+                    0% { 
+                        transform: scale(0) rotate(0deg); 
+                        opacity: 0; 
+                    } 
+                    50% {
+                        transform: scale(1.2) rotate(180deg);
+                    }
+                    100% { 
+                        transform: scale(1) rotate(360deg); 
+                        opacity: 1; 
+                    } 
                 }
+                
                 @keyframes slideIn {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
+                    from {
+                        opacity: 0;
+                        transform: translateY(20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
                 }
+                
                 .group {
                     animation: slideIn 0.4s ease-out forwards;
                     opacity: 0;
