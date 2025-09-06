@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { BookText, Star } from 'lucide-react';
 
-// --- INTERFACES (ATUALIZADAS) ---
+// --- INTERFACES ---
 interface Card {
     id: string;
     displayLabel: string;
@@ -59,7 +59,7 @@ const conjugateVerb = (infinitive: string, person: 'eu' | 'voce' | 'ele_ela'): s
     return infinitive; 
 };
 
-// --- BANCO DE CARDS COMPLETO (COM ETIQUETAS) ---
+// --- BANCO DE CARDS COM CAMINHOS CORRIGIDOS ---
 const allCards: { [key in Card['category']]: Card[] } = {
     personagens: [
         { id: 'eu_homem', displayLabel: 'Eu', sentenceLabel: 'Eu', image: '/narrative_cards/personagens/eu_homem.webp', category: 'personagens', characterType: 'human', person: 'eu' },
@@ -68,8 +68,8 @@ const allCards: { [key in Card['category']]: Card[] } = {
         { id: 'gatinho', displayLabel: 'Gatinho', sentenceLabel: 'O gatinho', image: '/narrative_cards/personagens/gatinho.webp', category: 'personagens', characterType: 'animal', person: 'ele_ela' },
         { id: 'professora', displayLabel: 'Professora', sentenceLabel: 'A professora', image: '/narrative_cards/personagens/professora.webp', category: 'personagens', characterType: 'human', person: 'ele_ela' },
         { id: 'medico', displayLabel: 'Médico', sentenceLabel: 'O médico', image: '/narrative_cards/personagens/medico.webp', category: 'personagens', characterType: 'human', person: 'ele_ela' },
-        { id: 'menino', displayLabel: 'Menino', sentenceLabel: 'O menino', image: '/narrative_cards/personagens/menino.webp', category: 'personagens', characterType: 'human', person: 'ele_ela' },
-        { id: 'menina', displayLabel: 'Menina', sentenceLabel: 'A menina', image: '/narrative_cards/personagens/menina.webp', category: 'personagens', characterType: 'human', person: 'ele_ela' }
+        { id: 'menino', displayLabel: 'Menino', sentenceLabel: 'O menino', image: '/narrative_cards/personagens/filho.webp', category: 'personagens', characterType: 'human', person: 'ele_ela' },
+        { id: 'menina', displayLabel: 'Menina', sentenceLabel: 'A menina', image: '/narrative_cards/personagens/filha.webp', category: 'personagens', characterType: 'human', person: 'ele_ela' }
     ],
     acoes: [
         { id: 'comer', displayLabel: 'Comer', image: '/narrative_cards/acoes/comer.webp', category: 'acoes', compatibleWithTypes: ['human', 'animal'], verb: { infinitive: 'comer', acceptsObjectType: 'comida' } },
@@ -77,11 +77,11 @@ const allCards: { [key in Card['category']]: Card[] } = {
         { id: 'ler', displayLabel: 'Ler', image: '/narrative_cards/acoes/ler_livro.webp', category: 'acoes', compatibleWithTypes: ['human'], verb: { infinitive: 'ler', acceptsObjectType: 'leitura' } },
         { id: 'dormir', displayLabel: 'Dormir', image: '/narrative_cards/acoes/dormir_lado.webp', category: 'acoes', compatibleWithTypes: ['human', 'animal'], verb: { infinitive: 'dormir' } },
         { id: 'correr', displayLabel: 'Correr', image: '/narrative_cards/acoes/correr.webp', category: 'acoes', compatibleWithTypes: ['human', 'animal'], verb: { infinitive: 'correr' } },
-        { id: 'estudar', displayLabel: 'Estudar', image: '/narrative_cards/acoes/estudar.webp', category: 'acoes', compatibleWithTypes: ['human'], verb: { infinitive: 'estudar' } },
+        { id: 'estudar', displayLabel: 'Estudar', image: '/narrative_cards/acoes/estudar.webp', category: 'acoes', compatibleWithTypes: ['human'], verb: { infinitive: 'estudar', acceptsObjectType: 'leitura' } },
     ],
     objetos: [
         { id: 'bola', displayLabel: 'Bola', sentenceLabel: 'a bola', image: '/narrative_cards/objetos/bola_praia.webp', category: 'objetos', objectType: 'brinquedo' },
-        { id: 'livro', displayLabel: 'Livro', sentenceLabel: 'o livro', image: '/narrative_cards/objetos/livro.webp', category: 'objetos', objectType: 'leitura' },
+        { id: 'livro', displayLabel: 'Livro', sentenceLabel: 'o livro', image: '/narrative_cards/objetos/papel_lapis.webp', category: 'objetos', objectType: 'leitura' },
         { id: 'pizza', displayLabel: 'Pizza', sentenceLabel: 'a pizza', image: '/narrative_cards/objetos/pizza.webp', category: 'objetos', objectType: 'comida' },
         { id: 'carrinho', displayLabel: 'Carrinho', sentenceLabel: 'o carrinho', image: '/narrative_cards/objetos/carrinho_brinquedo.webp', category: 'objetos', objectType: 'brinquedo' },
         { id: 'mochila', displayLabel: 'Mochila', sentenceLabel: 'a mochila', image: '/narrative_cards/objetos/mochila_escola.webp', category: 'objetos', objectType: 'escolar' },
@@ -165,9 +165,11 @@ export default function HistoriasEpicasGame() {
     const buildSentence = useCallback((phrase: Card[], isComplete: boolean = false): string => {
         if (phrase.length === 0) return "";
         let parts: string[] = [];
-        const structure = gameLevels[currentLevelIndex].structure;
+        const level = gameLevels[currentLevelIndex];
+        if (!level) return "";
         
-        // Constrói a frase na ordem da estrutura do nível
+        const structure = level.structure;
+        
         structure.forEach(category => {
             const card = phrase.find(c => c.category === category);
             if (card) {
@@ -190,14 +192,17 @@ export default function HistoriasEpicasGame() {
 
     const getInstruction = useCallback((phrase: Card[], level: Level): string => {
         const nextCategoryIndex = phrase.length;
+        if (level.isRecognitionOnly) {
+            return `Nível ${level.level}: ${level.description}.`;
+        }
         if (nextCategoryIndex >= level.structure.length) return "Frase completa!";
+        
         const nextCategory = level.structure[nextCategoryIndex];
+        const subject = phrase.find(c => c.category === 'personagens');
 
         switch(nextCategory) {
-            case 'personagens': return "Escolha um personagem para começar a história.";
-            case 'acoes': 
-                const subject = phrase.find(c => c.category === 'personagens');
-                return subject ? `O que ${subject.displayLabel.toLowerCase()} faz?` : "Agora, escolha uma ação.";
+            case 'personagens': return `Nível ${level.level}: Escolha um personagem para começar.`;
+            case 'acoes': return subject ? `O que ${subject.displayLabel.toLowerCase()} faz?` : "Agora, escolha uma ação.";
             case 'objetos': return "Com o quê?";
             case 'lugares': return "Onde?";
             case 'tempo': return "Quando?";
@@ -381,6 +386,10 @@ export default function HistoriasEpicasGame() {
                     0% { transform: scale(0) rotate(0deg); opacity: 0; } 
                     50% { transform: scale(1.2) rotate(180deg); }
                     100% { transform: scale(1) rotate(360deg); opacity: 1; } 
+                }
+                .group {
+                    animation: slideIn 0.4s ease-out forwards;
+                    opacity: 0;
                 }
             `}</style>
         </>
