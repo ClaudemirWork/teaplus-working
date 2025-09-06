@@ -703,7 +703,7 @@ export default function HistoriasEpicasGame() {
                     />
                 </div>
                 <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-orange-900 drop-shadow-lg mb-4">
-                    TESTE JOGO CORRETO
+                    Histórias Épicas
                 </h1>
                 <p className="text-xl sm:text-2xl text-orange-800 mt-2 mb-8 drop-shadow-md">
                     Crie frases e aprenda brincando!
