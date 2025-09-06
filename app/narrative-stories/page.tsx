@@ -120,8 +120,6 @@ export default function HistoriasEpicasGame() {
         return sentence;
     }, []);
 
-    // >>>>> INÍCIO DA LÓGICA REESTRUTURADA COM useEffect <<<<<
-
     const loadNewPhrase = useCallback((levelIdx: number) => {
         setCurrentLevelIndex(levelIdx);
         setPhrasesCompletedInLevel(0);
@@ -139,30 +137,28 @@ export default function HistoriasEpicasGame() {
     };
 
     useEffect(() => {
-        if (gameState !== 'playing') return;
+        if (gameState !== 'playing' && gameState !== 'phraseComplete') return;
 
         const level = gameLevels[currentLevelIndex];
         if (!level) return;
 
         const nextStepIndex = currentPhrase.length;
 
-        // Se a frase está completa
         if (nextStepIndex >= level.structure.length) {
-            setGameState('phraseComplete');
-            setPhrasesCompletedInLevel(prev => prev + 1);
-            const finalSentence = buildSentence(currentPhrase, level) + ".";
-            leoSpeak(`Excelente! Você formou: ${finalSentence}`);
-            setShowConfetti(true);
-            setTimeout(() => setShowConfetti(false), 3000);
-            if ((phrasesCompletedInLevel + 1) % 3 === 0) {
-                setShowStarReward(true);
+            if(gameState === 'playing') { // Evita loop
+                setGameState('phraseComplete');
+                setPhrasesCompletedInLevel(prev => prev + 1);
+                const finalSentence = buildSentence(currentPhrase, level) + ".";
+                leoSpeak(`Excelente! Você formou: ${finalSentence}`);
+                setShowConfetti(true);
+                setTimeout(() => setShowConfetti(false), 3000);
+                if ((phrasesCompletedInLevel + 1) % 3 === 0) {
+                    setShowStarReward(true);
+                }
             }
         } else {
-            // Se a frase ainda não está completa, gera novos cards
             const nextCategory = level.structure[nextStepIndex];
-            
             let potentialCards = [...allCards[nextCategory]];
-
             if (nextCategory === 'objetos') {
                 const actionCard = currentPhrase.find(c => c.category === 'acoes');
                 const requiredObjectType = actionCard?.verb?.acceptsObjectType;
@@ -170,7 +166,6 @@ export default function HistoriasEpicasGame() {
                     potentialCards = potentialCards.filter(objectCard => objectCard.objectType === requiredObjectType);
                 }
             }
-            
             if (nextCategory === 'acoes') {
                 const subjectCard = currentPhrase.find(c => c.category === 'personagens');
                 if (subjectCard) {
@@ -179,11 +174,9 @@ export default function HistoriasEpicasGame() {
                     );
                 }
             }
-            
             const shuffled = potentialCards.sort(() => 0.5 - Math.random());
             setCardOptions(shuffled.slice(0, 4));
 
-            // Gera a instrução
             const subject = currentPhrase.find(c => c.category === 'personagens');
             let instruction = "";
             if (level.isRecognitionOnly) {
@@ -202,8 +195,6 @@ export default function HistoriasEpicasGame() {
         }
     }, [currentPhrase, currentLevelIndex, gameState, buildSentence, leoSpeak, phrasesCompletedInLevel]);
 
-    // >>>>> FIM DA LÓGICA REESTRUTURADA COM useEffect <<<<<
-
     const handleNext = () => {
         setShowStarReward(false);
         const currentLevel = gameLevels[currentLevelIndex];
@@ -218,10 +209,11 @@ export default function HistoriasEpicasGame() {
                 leoSpeak("Uau! Você completou todos os níveis!");
             }
         } else {
-            loadNewPhrase(currentLevelIndex);
+            setCurrentPhrase([]); // Começa a próxima frase do mesmo nível
+            setGameState('playing');
         }
     };
-
+    
     const renderTitleScreen = () => (
         <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-yellow-200 via-orange-300 to-amber-400 overflow-hidden">
             <div className="relative z-10 flex flex-col items-center text-center">
@@ -242,7 +234,8 @@ export default function HistoriasEpicasGame() {
         if (!level) return <div>Carregando...</div>;
         const progressPercentage = (phrasesCompletedInLevel / level.phrasesToComplete) * 100;
         const displayedSentence = buildSentence(currentPhrase, level);
-    
+        const finalSentence = buildSentence(currentPhrase, level) + ".";
+
         return (
             <div className="w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-blue-200 via-green-200 to-yellow-200">
                 {showConfetti && <Confetti />}
@@ -257,7 +250,7 @@ export default function HistoriasEpicasGame() {
                         <p className="text-center text-sm text-gray-600 mt-2">{level.description}</p>
                     </div>
                     <div className="bg-yellow-50 p-4 rounded-xl mb-4 border-2 border-yellow-300 min-h-[100px] flex items-center justify-center text-center shadow-inner">
-                        <p className="text-2xl md:text-4xl text-purple-800 font-bold leading-relaxed">{displayedSentence || "..."}</p>
+                        <p className="text-2xl md:text-4xl text-purple-800 font-bold leading-relaxed">{gameState === 'phraseComplete' ? finalSentence : displayedSentence || '...'}</p>
                     </div>
                     <div className="relative bg-white p-3 rounded-lg shadow-md text-center mb-4 min-h-[60px] flex items-center justify-center">
                         <p className="text-lg md:text-xl font-medium text-gray-800">{leoMessage}</p>
@@ -266,7 +259,9 @@ export default function HistoriasEpicasGame() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             {cardOptions.map((card, index) => (
                                 <button key={card.id + index} onClick={() => handleCardSelection(card)} className="group p-3 bg-white rounded-xl shadow-lg border-2 border-purple-200 hover:border-purple-500 hover:scale-105 transition-transform">
-                                    <div className="aspect-square relative rounded-md overflow-hidden"><Image src={card.image} alt={card.displayLabel} fill sizes="25vw" className="object-contain p-1"/></div>
+                                    <div className="aspect-square relative w-full h-full">
+                                        <Image src={card.image} alt={card.displayLabel} fill style={{ objectFit: 'contain', padding: '0.25rem' }} sizes="25vw" />
+                                    </div>
                                     <p className="mt-2 text-center font-bold text-sm md:text-base text-gray-800">{card.displayLabel}</p>
                                 </button>
                             ))}
@@ -301,10 +296,6 @@ export default function HistoriasEpicasGame() {
                     0% { transform: scale(0) rotate(0deg); opacity: 0; } 
                     50% { transform: scale(1.2) rotate(180deg); }
                     100% { transform: scale(1) rotate(360deg); opacity: 1; } 
-                }
-                .group {
-                    animation: slideIn 0.4s ease-out forwards;
-                    opacity: 0;
                 }
             `}</style>
         </>
