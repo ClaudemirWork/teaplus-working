@@ -16,10 +16,8 @@ interface Card {
     compatibleWithTypes?: ('human' | 'animal')[];
     verb?: {
         infinitive: string;
-        // NOVO: Define qual tipo de objeto o verbo aceita
         acceptsObjectType?: 'comida' | 'brinquedo' | 'leitura' | 'escolar';
     };
-    // NOVO: Define a categoria do objeto
     objectType?: 'comida' | 'brinquedo' | 'leitura' | 'escolar';
 }
 
@@ -32,7 +30,7 @@ interface Level {
     isRecognitionOnly?: boolean;
 }
 
-// --- MOTOR GRAMATICAL (sem alterações) ---
+// --- MOTOR GRAMATICAL ---
 const conjugateVerb = (infinitive: string, person: 'eu' | 'voce' | 'ele_ela'): string => {
     const irregulars: { [key: string]: { [key: string]: string } } = {
         'ler': { eu: 'leio', voce: 'lê', ele_ela: 'lê' },
@@ -120,9 +118,8 @@ const Confetti = () => (
 
 // --- COMPONENTE PRINCIPAL DO JOGO ---
 export default function HistoriasEpicasGame() {
-    // ... (os useStates continuam os mesmos)
     const [gameState, setGameState] = useState<'titleScreen' | 'playing' | 'phraseComplete' | 'levelComplete' | 'gameOver'>('titleScreen');
-    const [leoMessage, setLeoMessage] = useState('');
+    const [leoMessage, setLeoMessage] = useState('Vamos começar nossa aventura de criar histórias!');
     const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
     const [phrasesCompletedInLevel, setPhrasesCompletedInLevel] = useState(0);
     const [currentPhrase, setCurrentPhrase] = useState<Card[]>([]);
@@ -130,24 +127,20 @@ export default function HistoriasEpicasGame() {
     const [showConfetti, setShowConfetti] = useState(false);
     const [showStarReward, setShowStarReward] = useState(false);
 
-    const leoSpeak = useCallback((message: string, isInstruction = false) => {
-        if (!isInstruction) {
-            setLeoMessage(message);
-        }
+    const leoSpeak = useCallback((message: string) => {
+        setLeoMessage(message);
         if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(message);
             utterance.lang = 'pt-BR';
-            utterance.rate = 0.9;
+            utterance.rate = 0.95;
             window.speechSynthesis.speak(utterance);
         }
     }, []);
 
-    // LÓGICA ATUALIZADA para gerar opções de cards
     const generateCardOptions = useCallback((category: Card['category'], phrase: Card[]) => {
         let potentialCards = [...allCards[category]];
 
-        // LÓGICA ATUALIZADA: Filtra objetos baseados na ação
         if (category === 'objetos') {
             const actionCard = phrase.find(c => c.category === 'acoes');
             const requiredObjectType = actionCard?.verb?.acceptsObjectType;
@@ -156,7 +149,6 @@ export default function HistoriasEpicasGame() {
             }
         }
         
-        // Filtra ações baseadas no tipo de personagem
         if (category === 'acoes') {
             const subjectCard = phrase.find(c => c.category === 'personagens');
             if (subjectCard) {
@@ -170,12 +162,12 @@ export default function HistoriasEpicasGame() {
         setCardOptions(shuffled.slice(0, 4));
     }, []);
     
-    // LÓGICA ATUALIZADA para construir a frase
-    const buildSentence = useCallback((phrase: Card[]): string => {
+    const buildSentence = useCallback((phrase: Card[], isComplete: boolean = false): string => {
         if (phrase.length === 0) return "";
         let parts: string[] = [];
         const structure = gameLevels[currentLevelIndex].structure;
-
+        
+        // Constrói a frase na ordem da estrutura do nível
         structure.forEach(category => {
             const card = phrase.find(c => c.category === category);
             if (card) {
@@ -192,46 +184,35 @@ export default function HistoriasEpicasGame() {
         
         let sentence = parts.join(" ");
         sentence = sentence.charAt(0).toUpperCase() + sentence.slice(1);
+        if (isComplete) sentence += ".";
         return sentence;
     }, [currentLevelIndex]);
 
-    // LÓGICA ATUALIZADA para gerar instruções dinâmicas
-    const getInstruction = useCallback((): string => {
-        const level = gameLevels[currentLevelIndex];
-        const nextCategoryIndex = currentPhrase.length;
-        
-        if (nextCategoryIndex >= level.structure.length) {
-            return "Frase completa!";
-        }
-
+    const getInstruction = useCallback((phrase: Card[], level: Level): string => {
+        const nextCategoryIndex = phrase.length;
+        if (nextCategoryIndex >= level.structure.length) return "Frase completa!";
         const nextCategory = level.structure[nextCategoryIndex];
-        const subject = currentPhrase.find(c => c.category === 'personagens');
 
         switch(nextCategory) {
-            case 'personagens':
-                return `Nível ${level.level}: Escolha um personagem para começar.`;
-            case 'acoes':
-                return subject ? `O que ${subject.displayLabel.toLowerCase()} faz?` : "Escolha uma ação.";
-            case 'objetos':
-                const action = currentPhrase.find(c => c.category === 'acoes');
-                return action ? `... ${action.displayLabel.toLowerCase()} o quê?` : "Escolha um objeto.";
-            case 'lugares':
-                return "Onde isso acontece?";
-            case 'tempo':
-                 return "Quando isso acontece?";
-            default:
-                return "Continue a história!";
+            case 'personagens': return "Escolha um personagem para começar a história.";
+            case 'acoes': 
+                const subject = phrase.find(c => c.category === 'personagens');
+                return subject ? `O que ${subject.displayLabel.toLowerCase()} faz?` : "Agora, escolha uma ação.";
+            case 'objetos': return "Com o quê?";
+            case 'lugares': return "Onde?";
+            case 'tempo': return "Quando?";
+            case 'emocoes': return "Como se sente?";
+            default: return "Continue a história!";
         }
-    }, [currentLevelIndex, currentPhrase]);
+    }, []);
     
     const loadNewPhrase = useCallback((levelIdx: number) => {
         const level = gameLevels[levelIdx];
         setCurrentPhrase([]);
         setGameState('playing');
         generateCardOptions(level.structure[0], []);
-        const instruction = getInstruction(); // Usa a nova função de instrução
-        leoSpeak(instruction, true);
-    }, [generateCardOptions, leoSpeak, getInstruction]);
+        leoSpeak(getInstruction([], level));
+    }, [generateCardOptions, getInstruction, leoSpeak]);
 
     const startGame = useCallback(() => {
         setCurrentLevelIndex(0);
@@ -244,7 +225,6 @@ export default function HistoriasEpicasGame() {
         startGame();
     };
     
-    // LÓGICA ATUALIZADA para seleção de cards
     const handleCardSelection = (card: Card) => {
         if (gameState !== 'playing') return;
         
@@ -255,26 +235,24 @@ export default function HistoriasEpicasGame() {
         const currentLevel = gameLevels[currentLevelIndex];
 
         if (nextStepIndex >= currentLevel.structure.length) {
-            // Frase completa
             setGameState('phraseComplete');
             setPhrasesCompletedInLevel(prev => prev + 1);
-            const finalSentence = buildSentence(newPhrase) + ".";
-            leoSpeak(`Excelente! Você formou: "${finalSentence}".`);
+            const finalSentence = buildSentence(newPhrase, true);
+            leoSpeak(`Excelente! Você formou: ${finalSentence}`);
             setShowConfetti(true);
             setTimeout(() => setShowConfetti(false), 3000);
             if ((phrasesCompletedInLevel + 1) % 3 === 0) {
                 setShowStarReward(true);
             }
         } else {
-            // Continua construindo a frase
             const nextCategory = currentLevel.structure[nextStepIndex];
             generateCardOptions(nextCategory, newPhrase);
-            const instruction = getInstruction();
-            setTimeout(() => leoSpeak(instruction, true), 500); // Dá um tempo para a criança processar
+            leoSpeak(getInstruction(newPhrase, currentLevel));
         }
     };
 
     const handleNext = () => {
+        setShowStarReward(false);
         const currentLevel = gameLevels[currentLevelIndex];
         if (phrasesCompletedInLevel >= currentLevel.phrasesToComplete) {
             const nextLevelIndex = currentLevelIndex + 1;
@@ -282,8 +260,8 @@ export default function HistoriasEpicasGame() {
                 setCurrentLevelIndex(nextLevelIndex);
                 setPhrasesCompletedInLevel(0);
                 setGameState('levelComplete');
-                leoSpeak(`Parabéns! Você passou para o nível ${nextLevelIndex + 1}!`);
-                setTimeout(() => loadNewPhrase(nextLevelIndex), 3000);
+                leoSpeak(`Parabéns! Você passou para o Nível ${nextLevelIndex + 1}: ${gameLevels[nextLevelIndex].name}!`);
+                setTimeout(() => loadNewPhrase(nextLevelIndex), 3500);
             } else {
                 setGameState('gameOver');
                 leoSpeak("Uau! Você completou todos os níveis e se tornou um mestre das histórias épicas!");
@@ -293,38 +271,80 @@ export default function HistoriasEpicasGame() {
         }
     };
     
-    // ... (renderTitleScreen, renderStarReward continuam os mesmos da nossa versão mais moderna)
+    const renderTitleScreen = () => (
+        <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-yellow-200 via-orange-300 to-amber-400 overflow-hidden">
+            <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="mb-4">
+                    <Image 
+                        src="/images/mascotes/leo/leo_feliz_resultado.webp" 
+                        alt="Leo, o Leão Amigável" 
+                        width={400} 
+                        height={400} 
+                        className="w-[250px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl" 
+                        priority
+                    />
+                </div>
+                <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-orange-900 drop-shadow-lg mb-4">
+                    Histórias Épicas
+                </h1>
+                <p className="text-xl sm:text-2xl text-orange-800 mt-2 mb-8 drop-shadow-md">
+                    Crie frases e aprenda brincando!
+                </p>
+                <button 
+                    onClick={handleStartGame} 
+                    className="text-xl font-bold text-white bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95"
+                >
+                    Começar a Aventura
+                </button>
+            </div>
+        </div>
+    );
     
-    const displayedSentence = buildSentence(currentPhrase);
-    const instructionMessage = getInstruction();
-
+    const renderStarReward = () => (
+        <div 
+            className="fixed inset-0 bg-black/60 flex justify-center items-center z-50" 
+            onClick={() => setShowStarReward(false)}
+        >
+            <div className="star-reward-animate">
+                <div className="text-yellow-400 flex justify-center">
+                    <Star size={200} fill="currentColor" />
+                </div>
+                <p className="text-white text-4xl font-bold text-center mt-4">
+                    Recompensa!
+                </p>
+            </div>
+        </div>
+    );
+    
     const renderGame = () => {
         const level = gameLevels[currentLevelIndex];
         if (!level) return <div>Carregando...</div>;
         const progressPercentage = (phrasesCompletedInLevel / level.phrasesToComplete) * 100;
+        const displayedSentence = buildSentence(currentPhrase, false);
     
         return (
             <div className="w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-blue-200 via-green-200 to-yellow-200">
                 {showConfetti && <Confetti />}
-                {showStarReward && <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowStarReward(false)}><div className="flex justify-center items-center h-full"><Star size={200} className="text-yellow-400 star-reward-animate" fill="currentColor"/></div></div>}
+                {showStarReward && renderStarReward()}
                 <div className="relative z-10 bg-white/95 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-xl w-full max-w-6xl mx-auto border-4 border-violet-300">
                     <div className="mb-4">
                         <div className="flex justify-between items-center text-purple-700 font-bold text-lg md:text-xl mb-2">
-                            <div><BookText size={24} className="inline-block mr-2"/> {level.name}</div>
+                            <div className='flex items-center gap-2'><BookText size={24} /> Nível {level.level}: {level.name}</div>
                             <div className="flex items-center gap-1 text-yellow-500"><Star size={24} fill="currentColor"/> {phrasesCompletedInLevel} / {level.phrasesToComplete}</div>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-4 shadow-inner"><div className="bg-gradient-to-r from-yellow-400 to-orange-500 h-4 rounded-full transition-all duration-500" style={{ width: `${progressPercentage}%` }}></div></div>
+                         <p className="text-center text-sm text-gray-600 mt-2">{level.description}</p>
                     </div>
                     <div className="bg-yellow-50 p-4 rounded-xl mb-4 border-2 border-yellow-300 min-h-[100px] flex items-center justify-center text-center shadow-inner">
-                        <p className="text-2xl md:text-4xl text-purple-800 font-bold leading-relaxed">{displayedSentence || instructionMessage}</p>
+                        <p className="text-2xl md:text-4xl text-purple-800 font-bold leading-relaxed">{displayedSentence || "..."}</p>
                     </div>
                     <div className="relative bg-white p-3 rounded-lg shadow-md text-center mb-4 min-h-[60px] flex items-center justify-center">
                         <p className="text-lg md:text-xl font-medium text-gray-800">{leoMessage}</p>
                     </div>
                     {gameState === 'playing' ? (
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            {cardOptions.map(card => (
-                                <button key={card.id} onClick={() => handleCardSelection(card)} className="p-3 bg-white rounded-xl shadow-lg border-2 border-purple-200 hover:border-purple-500 hover:scale-105 transition-transform">
+                            {cardOptions.map((card, index) => (
+                                <button key={card.id + index} onClick={() => handleCardSelection(card)} className="group p-3 bg-white rounded-xl shadow-lg border-2 border-purple-200 hover:border-purple-500 hover:scale-105 transition-transform">
                                     <div className="aspect-square relative rounded-md overflow-hidden"><Image src={card.image} alt={card.displayLabel} fill sizes="25vw" className="object-contain p-1"/></div>
                                     <p className="mt-2 text-center font-bold text-sm md:text-base text-gray-800">{card.displayLabel}</p>
                                 </button>
@@ -341,11 +361,28 @@ export default function HistoriasEpicasGame() {
             </div>
         );
     }
-
+    
     return (
         <>
             {gameState === 'titleScreen' ? renderTitleScreen() : renderGame()}
-            {/* O CSS pode ser mantido da versão mais completa */}
+            
+            <style jsx global>{`
+                .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+                .confetti-piece { position: absolute; width: 12px; height: 24px; top: -30px; animation: fall 3s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite; }
+                .piece-0 { background: linear-gradient(45deg, #ffD700, #ffa500); } 
+                .piece-1 { background: linear-gradient(45deg, #00c4ff, #0099ff); }
+                .piece-2 { background: linear-gradient(45deg, #ff007c, #ff4c94); } 
+                .piece-3 { background: linear-gradient(45deg, #00ff8c, #00d68f); }
+                .piece-4 { background: linear-gradient(45deg, #ff6c00, #ff9a00); }
+                @keyframes fall { to { transform: translateY(120vh) rotate(720deg); opacity: 0; } }
+                ${[...Array(50)].map((_, i) => `.confetti-piece:nth-child(${i+1}) { left: ${Math.random()*100}%; animation-delay: ${Math.random()*3}s; animation-duration: ${3 + Math.random()*2}s; }`).join('')}
+                .star-reward-animate { animation: star-pop 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
+                @keyframes star-pop { 
+                    0% { transform: scale(0) rotate(0deg); opacity: 0; } 
+                    50% { transform: scale(1.2) rotate(180deg); }
+                    100% { transform: scale(1) rotate(360deg); opacity: 1; } 
+                }
+            `}</style>
         </>
     );
 }
