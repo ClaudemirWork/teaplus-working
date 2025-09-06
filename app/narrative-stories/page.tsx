@@ -17,7 +17,7 @@ interface Card {
     verb?: {
         infinitive: string;
         requiresObject?: boolean;
-        withPreposition?: string;
+        withPreposition?: string; // Esta linha foi removida do card 'brincar'
     };
     objectType?: string;
     placePreposition?: string;
@@ -163,8 +163,8 @@ const allCards: { [key in Card['category']]: Card[] } = {
             compatibleWithTypes: ['human', 'animal'], 
             verb: { 
                 infinitive: 'brincar',
-                requiresObject: false,
-                withPreposition: 'com'
+                requiresObject: false
+                // A linha 'withPreposition: "com"' foi REMOVIDA daqui.
             } 
         },
         { 
@@ -562,6 +562,8 @@ export default function HistoriasEpicasGame() {
             
             // Adiciona objeto se existir
             if (object) {
+                // A lógica que adicionava a preposição 'com' foi alterada.
+                // Agora ela só adiciona se a preposição existir no card. Como removemos do 'brincar', não vai mais adicionar.
                 if (action.verb.withPreposition && object.objectType === 'brinquedo') {
                     sentence += ` ${action.verb.withPreposition} ${object.sentenceLabel}`;
                 } else {
@@ -606,7 +608,7 @@ export default function HistoriasEpicasGame() {
         generateCardOptions(level.structure[0]);
         
         // Mensagens específicas por nível
-        const levelMessages = {
+        const levelMessages: { [key: number]: string } = {
             1: "Vamos conhecer os personagens! Quem você vê?",
             2: "Agora vamos fazer os personagens fazerem alguma coisa!",
             3: "Que tal adicionar objetos à história?",
@@ -615,7 +617,7 @@ export default function HistoriasEpicasGame() {
             6: "Como o personagem se sente? Adicione emoções!"
         };
         
-        const message = levelMessages[level.level as keyof typeof levelMessages] || "Vamos criar uma nova frase!";
+        const message = levelMessages[level.level] || "Vamos criar uma nova frase!";
         leoSpeak(message);
     }, [generateCardOptions, leoSpeak]);
 
