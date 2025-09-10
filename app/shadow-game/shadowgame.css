@@ -26,37 +26,18 @@
   gap: 1.5rem;
 }
 
-/* --- TELA DE INÍCIO E INSTRUÇÕES --- */
-.start-screen h1, .instructions-screen h2 {
-  font-size: 2.5rem;
-  color: #333;
+/* --- TELA DE INÍCIO --- */
+.start-screen .main-title {
+  font-size: 3rem;
+  color: #2c3e50;
   margin-bottom: 0.5rem;
 }
 
-.start-screen p {
-  font-size: 1.2rem;
-  color: #666;
-}
-
-.instructions-text-container {
-    text-align: left;
-    width: 100%;
-    color: #555;
-    font-size: 1.1rem;
-    line-height: 1.6;
-}
-
-.instructions-text-container p {
-    margin-bottom: 1rem;
-}
-
-.mascot-image {
-  width: 60%;
-  max-width: 200px;
+.mascot-image-large {
+  width: 70%;
+  max-width: 250px;
   height: auto;
-  margin-bottom: 1rem;
-  /* CORREÇÃO: Garante que a imagem mantenha a proporção */
-  object-fit: contain; 
+  object-fit: contain;
 }
 
 .start-button {
@@ -70,6 +51,7 @@
   cursor: pointer;
   box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
   transition: all 0.3s ease;
+  margin-top: 1rem;
 }
 
 .start-button:hover {
@@ -77,15 +59,79 @@
   box-shadow: 0 6px 20px rgba(0, 123, 255, 0.5);
 }
 
-/* --- TELA DE JOGO --- */
-.playing-screen {
-  position: relative; /* Para posicionar o feedback de pontos */
+/* --- TELA DE SELEÇÃO DE FASE --- */
+.phase-selection-screen h2 {
+  font-size: 2.5rem;
+  color: #333;
 }
 
-.score-container {
+.phase-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.phase-button {
+  width: 100%;
+  padding: 1.5rem 1rem;
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 15px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.3s ease;
+}
+
+.phase-button:hover {
+  border-color: #007BFF;
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.phase-button h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: #007BFF;
+}
+
+.phase-button p {
+  margin: 0;
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.4;
+}
+
+/* --- TELA DE JOGO --- */
+.playing-screen {
+  position: relative;
+}
+
+.top-bar {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   width: 100%;
+}
+
+.back-button {
+  background: none;
+  border: 2px solid #bdc3c7;
+  color: #34495e;
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background: #ecf0f1;
+  border-color: #34495e;
+}
+
+.score-display {
   padding: 0.5rem 1rem;
   background-color: #f0f4f8;
   border-radius: 12px;
@@ -128,67 +174,51 @@
   border-color: #007BFF;
 }
 
-/* --- FEEDBACK VISUAL --- */
+/* --- FEEDBACKS, ANIMAÇÕES, CONFETES (Sem alterações) --- */
 .option-button.correct {
   border-color: #28a745;
   background-color: #e9f7ea;
   animation: correct-pulse 0.5s ease;
 }
-
 .option-button.incorrect {
   border-color: #dc3545;
   background-color: #fbe9e7;
   animation: incorrect-shake 0.5s ease;
 }
-
 @keyframes correct-pulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.1); }
   100% { transform: scale(1); }
 }
-
 @keyframes incorrect-shake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
   75% { transform: translateX(5px); }
 }
-
-/* --- FEEDBACK DE PONTOS --- */
 .points-feedback {
   position: absolute;
-  top: 15%;
+  top: 20%;
   left: 50%;
   transform: translateX(-50%);
   font-size: 2.5rem;
   font-weight: bold;
   color: #28a745;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-  pointer-events: none; /* Para não interferir com cliques */
+  pointer-events: none;
 }
-
 .fade-out-up {
   animation: fadeOutUp 1.5s ease-out forwards;
 }
-
 @keyframes fadeOutUp {
-  from {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-  to {
-    opacity: 0;
-    transform: translate(-50%, -80px);
-  }
+  from { opacity: 1; transform: translate(-50%, 0); }
+  to { opacity: 0; transform: translate(-50%, -80px); }
 }
-
-/* --- EFEITO DE CONFETES --- */
 .confetti {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   pointer-events: none;
   overflow: hidden;
 }
-
 .confetti::before {
   content: '';
   position: absolute;
@@ -198,13 +228,9 @@
   top: -20px;
   animation: confetti-fall 2s linear infinite;
   box-shadow: 
-    20vw 10vh 0 #0f0, 40vw -5vh 0 #00f, 
-    60vw 15vh 0 #ff0, 80vw 5vh 0 #f0f, 
-    -10vw 20vh 0 #0ff, 50vw 30vh 0 #f80,
-    30vw 50vh 0 #f4c2c2, 70vw 60vh 0 #8a2be2,
-    15vw 70vh 0 #7fff00, 85vw 80vh 0 #d2691e;
+    20vw 10vh 0 #0f0, 40vw -5vh 0 #00f, 60vw 15vh 0 #ff0, 80vw 5vh 0 #f0f, -10vw 20vh 0 #0ff, 50vw 30vh 0 #f80,
+    30vw 50vh 0 #f4c2c2, 70vw 60vh 0 #8a2be2, 15vw 70vh 0 #7fff00, 85vw 80vh 0 #d2691e;
 }
-
 @keyframes confetti-fall {
   from { transform: translateY(0) rotate(0deg); }
   to { transform: translateY(120vh) rotate(720deg); }
@@ -216,8 +242,8 @@
     padding: 1.5rem;
     gap: 1rem;
   }
-  .start-screen h1, .instructions-screen h2 {
-    font-size: 2rem;
+  .start-screen .main-title {
+    font-size: 2.2rem;
   }
   .main-item-container {
     max-width: 200px;
