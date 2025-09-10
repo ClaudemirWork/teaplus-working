@@ -1,27 +1,27 @@
 /* ========================================
-   AUDITORY MEMORY GAME - EFEITOS ESPECIAIS
-   ======================================== */
+   AUDITORY MEMORY GAME - EFEITOS ESPECIAIS
+   ======================================== */
 
 /* Botões sempre visíveis e vibrantes */
 .musical-button {
-  backdrop-filter: blur(10px);
-  background-blend-mode: screen;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
-  border: 2px solid rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  background-blend-mode: screen;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
+  border: 2px solid rgba(255,255,255,0.2);
 }
 
 .musical-button:not(:disabled) {
-  cursor: pointer;
-  animation: subtle-glow 2s ease-in-out infinite;
+  cursor: pointer;
+  animation: subtle-glow 2s ease-in-out infinite;
 }
 
 @keyframes subtle-glow {
-  0%, 100% { 
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
-  }
-  50% { 
-    box-shadow: 0 4px 30px rgba(255,255,255,0.2), inset 0 1px 1px rgba(255,255,255,0.5);
-  }
+  0%, 100% { 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
+  }
+  50% { 
+    box-shadow: 0 4px 30px rgba(255,255,255,0.2), inset 0 1px 1px rgba(255,255,255,0.5);
+  }
 }
 
 /* Estados dos botões mais visíveis */
@@ -34,68 +34,77 @@
 
 /* Animação dos Mascotes */
 @keyframes mascotBounce {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-20px) scale(1.1); }
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-20px) scale(1.1); }
 }
 
 @keyframes mascotPulse {
-  0% { transform: scale(1) rotate(0deg); }
-  25% { transform: scale(1.1) rotate(-5deg); }
-  75% { transform: scale(1.1) rotate(5deg); }
-  100% { transform: scale(1) rotate(0deg); }
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-5deg); }
+  75% { transform: scale(1.1) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
 }
 
 /* Efeito de Botão Ativo */
 .btn-active {
-  animation: buttonPulse 0.5s ease-out;
-  transform: scale(1.2) !important;
+  animation: buttonPulse 0.5s ease-out;
+  transform: scale(1.2) !important;
 }
 
 @keyframes buttonPulse {
-  0% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
-  }
-  50% {
-    transform: scale(1.2);
-    box-shadow: 0 0 30px 20px rgba(255, 255, 255, 0);
-  }
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
-  }
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow: 0 0 30px 20px rgba(255, 255, 255, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
 }
 
 /* Animações e Efeitos Bônus */
 @keyframes rainbowBackground {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .combo-mode {
-  background: linear-gradient(270deg, #ff6b6b, #ff9f43, #ffe66d, #6bcf7f, #4ecdc4, #a8a4e6);
-  background-size: 600% 600%;
-  animation: rainbowBackground 3s ease infinite;
+  background: linear-gradient(270deg, #ff6b6b, #ff9f43, #ffe66d, #6bcf7f, #4ecdc4, #a8a4e6);
+  background-size: 600% 600%;
+  animation: rainbowBackground 3s ease infinite;
 }
 
 @keyframes screenShake {
-  0%, 100% { transform: translate(0, 0); }
-  10% { transform: translate(-5px, -5px); }
-  20% { transform: translate(5px, -5px); }
-  30% { transform: translate(-5px, 5px); }
-  40% { transform: translate(5px, 5px); }
-  50% { transform: translate(0, 0); }
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-5px, -5px); }
+  20% { transform: translate(5px, -5px); }
+  30% { transform: translate(-5px, 5px); }
+  40% { transform: translate(5px, 5px); }
+  50% { transform: translate(0, 0); }
 }
 
 .shake-screen {
-  animation: screenShake 0.5s ease-out;
+  animation: screenShake 0.5s ease-out;
 }
 
 @keyframes bounce-slow {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
 }
+
 .animate-bounce-slow {
-    animation: bounce-slow 3s ease-in-out infinite;
+    animation: bounce-slow 3s ease-in-out infinite;
+}
+
+/* Desabilita seleção de texto no jogo */
+.game-container {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
