@@ -48,14 +48,13 @@ export default function ShadowGamePage() {
   // --- REFERÊNCIAS PARA OS ÁUDIOS ---
   const successAudioRef = useRef<HTMLAudioElement | null>(null);
   const clickAudioRef = useRef<HTMLAudioElement | null>(null);
-  const errorAudioRef = useRef<HTMLAudioElement | null>(null);
+  // A referência para o som de erro foi removida.
 
   useEffect(() => {
     // Prepara os áudios quando o componente montar
-    // CORRIGIDO: Usando o coin.wav e garantindo que os outros existam
     successAudioRef.current = new Audio('/sounds/coin.wav'); 
     clickAudioRef.current = new Audio('/sounds/click.mp3'); 
-    errorAudioRef.current = new Audio('/sounds/error.mp3'); 
+    // A inicialização do som de erro foi removida.
   }, []);
 
   const startNewRound = () => {
@@ -107,7 +106,7 @@ export default function ShadowGamePage() {
 
     } else {
       // --- ERROU ---
-      errorAudioRef.current?.play();
+      // A linha que tocava o som de erro foi removida.
       setStreak(0); // Zera o combo
       setFeedback({ [clickedShadow]: 'incorrect' });
       setTimeout(() => setFeedback({}), 500);
@@ -185,5 +184,6 @@ export default function ShadowGamePage() {
     </div>
   );
 }
+
 
 
