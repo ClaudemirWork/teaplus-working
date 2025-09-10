@@ -1,251 +1,229 @@
-/* --- ESTILOS GERAIS E LAYOUT --- */
-.shadow-game-container {
-  width: 100%;
+/* --- GERAL --- */
+.shadow-game-main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  font-family: 'Arial', sans-serif;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.game-screen {
+  width: 100%;
+  max-width: 480px;
+  background-color: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  box-sizing: border-box;
+  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
-  box-sizing: border-box;
-  text-align: center;
-  font-family: 'Arial', sans-serif;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  position: relative; /* Para posicionar elementos internos */
+  gap: 1.5rem;
 }
 
-/* --- TELA 1: ABERTURA --- */
-.start-screen {
-  background: linear-gradient(to bottom, #141e30, #243b55);
-  color: white;
+/* --- TELA DE INÍCIO E INSTRUÇÕES --- */
+.start-screen h1, .instructions-screen h2 {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 0.5rem;
 }
 
-/* AJUSTE: Imagem do mascote maior e sem o círculo */
+.start-screen p {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.instructions-text-container {
+    text-align: left;
+    width: 100%;
+    color: #555;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.instructions-text-container p {
+    margin-bottom: 1rem;
+}
+
 .mascot-image {
+  width: 60%;
+  max-width: 200px;
+  height: auto;
   margin-bottom: 1rem;
-  /* Removido: border-radius, border, box-shadow */
-}
-
-.game-title {
-  font-size: 3.5rem;
-  font-weight: bold;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
-}
-
-.game-subtitle {
-  font-size: 1.5rem;
-  color: #c3cfe2;
+  /* CORREÇÃO: Garante que a imagem mantenha a proporção */
+  object-fit: contain; 
 }
 
 .start-button {
-  margin-top: 2rem;
-  padding: 15px 40px;
-  font-size: 1.5rem;
+  padding: 1rem 2.5rem;
+  font-size: 1.2rem;
   font-weight: bold;
-  color: #141e30;
-  background-color: #fff;
+  color: white;
+  background: linear-gradient(45deg, #007BFF, #00C6FF);
   border: none;
   border-radius: 50px;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+  transition: all 0.3s ease;
 }
 
 .start-button:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.5);
 }
 
-/* --- TELA 2: INSTRUÇÕES --- */
-.instructions-screen {
-  gap: 2rem;
+/* --- TELA DE JOGO --- */
+.playing-screen {
+  position: relative; /* Para posicionar o feedback de pontos */
 }
 
-.instructions-title {
-  font-size: 2.5rem;
-  color: #243b55;
-}
-
-.instructions-text {
-  font-size: 1.3rem;
-  line-height: 1.6;
-  max-width: 500px;
-  color: #333;
-}
-
-/* --- TELA 3: JOGO --- */
-.game-screen {
-  justify-content: flex-start; /* Alinha itens ao topo */
-  padding-top: 80px; /* Espaço para o placar */
-  gap: 1.5rem;
-}
-
-/* NOVO: Cabeçalho do jogo com placar */
-.game-header {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background-color: rgba(20, 30, 48, 0.8);
-  color: white;
-  padding: 10px 20px;
-  border-radius: 20px;
-  font-size: 1.5rem;
-  font-weight: bold;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
-
-.main-image-container {
-  position: relative; /* Para o feedback de pontos */
-  padding: 15px;
-  background-color: white;
-  border-radius: 20px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-}
-
-/* NOVO: Feedback de pontos flutuantes */
-.points-feedback {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 3rem;
-  font-weight: bold;
-  color: #FFD700; /* Dourado */
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-  animation: float-up 1.5s ease-out forwards;
-  pointer-events: none; /* Não interfere com cliques */
-}
-
-@keyframes float-up {
-  from {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translate(-50%, -200%) scale(1.5);
-  }
-}
-
-
-.main-image {
-  max-width: 100%;
-  height: auto;
-  object-fit: contain;
-}
-
-.shadow-options-container {
+.score-container {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap; /* Para telas menores */
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  background-color: #f0f4f8;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #2c3e50;
 }
 
-.shadow-option {
-  padding: 10px;
-  background-color: white;
+.main-item-container {
+  width: 100%;
+  max-width: 250px;
+  aspect-ratio: 1 / 1;
+  background-color: #f8f9fa;
+  border-radius: 20px;
+  padding: 1rem;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+  position: relative;
+}
+
+.options-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  width: 100%;
+}
+
+.option-button {
+  aspect-ratio: 1 / 1;
+  background-color: #ffffff;
+  border: 2px solid #e0e0e0;
   border-radius: 15px;
-  border: 4px solid transparent;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+  transition: all 0.2s ease-in-out;
+  position: relative;
 }
 
-.shadow-option:hover {
-  transform: translateY(-5px);
-  border-color: #a7bfe8;
-}
-
-.shadow-image {
-  object-fit: contain;
+.option-button:hover {
+  transform: scale(1.05);
+  border-color: #007BFF;
 }
 
 /* --- FEEDBACK VISUAL --- */
-.shadow-option.correct {
-  border-color: #4CAF50; /* Verde */
-  transform: scale(1.1);
-  animation: pulse-correct 1s infinite;
+.option-button.correct {
+  border-color: #28a745;
+  background-color: #e9f7ea;
+  animation: correct-pulse 0.5s ease;
 }
 
-.shadow-option.incorrect {
-  border-color: #F44336; /* Vermelho */
-  animation: shake 0.5s ease;
+.option-button.incorrect {
+  border-color: #dc3545;
+  background-color: #fbe9e7;
+  animation: incorrect-shake 0.5s ease;
 }
 
-@keyframes pulse-correct {
-  0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
-  70% { box-shadow: 0 0 0 20px rgba(76, 175, 80, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+@keyframes correct-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 
-@keyframes shake {
+@keyframes incorrect-shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-10px); }
-  75% { transform: translateX(10px); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
 
-/* --- EFEITO DE CONFETE (requer container no JSX) --- */
-.confetti-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    overflow: hidden;
-    z-index: 9999;
+/* --- FEEDBACK DE PONTOS --- */
+.points-feedback {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #28a745;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+  pointer-events: none; /* Para não interferir com cliques */
 }
 
-.confetti-container::before,
-.confetti-container::after {
-    content: '';
-    position: absolute;
-    width: 10px;
-    height: 20px;
-    background: gold;
-    top: -20px;
-    animation: confetti-fall 2s linear infinite;
+.fade-out-up {
+  animation: fadeOutUp 1.5s ease-out forwards;
 }
 
-.confetti-container::after {
-    background: #4CAF50; /* verde */
-    left: 20%;
-    animation-delay: -0.5s;
+@keyframes fadeOutUp {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -80px);
+  }
 }
 
-.confetti-container::before {
-    left: 10%;
-    box-shadow: 
-        15vw 10vh 0 blue, 30vw -15vh 0 red, 45vw 5vh 0 orange,
-        60vw -5vh 0 purple, 75vw 12vh 0 pink, 90vw 2vh 0 turquoise;
-}
-.confetti-container::after {
-    left: 5%;
-    box-shadow: 
-        10vw -8vh 0 yellow, 25vw 15vh 0 lightgreen, 40vw -2vh 0 cyan,
-        55vw 8vh 0 deeppink, 70vw -12vh 0 mediumslateblue, 85vw 5vh 0 tomato;
+/* --- EFEITO DE CONFETES --- */
+.confetti {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
 }
 
+.confetti::before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 20px;
+  background: #f00;
+  top: -20px;
+  animation: confetti-fall 2s linear infinite;
+  box-shadow: 
+    20vw 10vh 0 #0f0, 40vw -5vh 0 #00f, 
+    60vw 15vh 0 #ff0, 80vw 5vh 0 #f0f, 
+    -10vw 20vh 0 #0ff, 50vw 30vh 0 #f80,
+    30vw 50vh 0 #f4c2c2, 70vw 60vh 0 #8a2be2,
+    15vw 70vh 0 #7fff00, 85vw 80vh 0 #d2691e;
+}
 
 @keyframes confetti-fall {
-    from { transform: translateY(0) rotate(0deg); }
-    to { transform: translateY(110vh) rotate(720deg); }
+  from { transform: translateY(0) rotate(0deg); }
+  to { transform: translateY(120vh) rotate(720deg); }
 }
 
-
-/* --- RESPONSIVIDADE PARA CELULARES --- */
-@media (max-width: 768px) {
-  .game-title { font-size: 2.5rem; }
-  .mascot-image { width: 300px; height: 300px; }
-  .instructions-title { font-size: 2rem; }
-  .instructions-text { font-size: 1.1rem; }
-  
-  .game-header { font-size: 1.2rem; top: 10px; right: 10px; }
-  .game-screen { padding-top: 70px; }
-  
-  .main-image { max-width: 250px; }
-  .shadow-options-container { gap: 15px; }
-  .shadow-option { flex: 1 1 120px; max-width: 120px; }
+/* --- RESPONSIVIDADE PARA CELULAR --- */
+@media (max-width: 480px) {
+  .game-screen {
+    padding: 1.5rem;
+    gap: 1rem;
+  }
+  .start-screen h1, .instructions-screen h2 {
+    font-size: 2rem;
+  }
+  .main-item-container {
+    max-width: 200px;
+  }
+  .options-container {
+    gap: 0.5rem;
+  }
 }
 
