@@ -1,95 +1,70 @@
-/* ========================================
-   AUDITORY MEMORY GAME - ESTILOS v2
-   ======================================== */
-
-/* Botões com opacidade reduzida por padrão */
-.musical-button {
-  backdrop-filter: blur(10px);
-  background-blend-mode: screen;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
-  border: 2px solid rgba(255,255,255,0.2);
-  /* A MUDANÇA ESTÁ AQUI: opacidade e transição */
-  opacity: 0.7;
-  transition: all 0.1s ease-in-out;
-}
-
-.musical-button:not(:disabled) {
-  cursor: pointer;
-  animation: subtle-glow 2s ease-in-out infinite;
-}
-
-@keyframes subtle-glow {
-  0%, 100% { 
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
+/* Animações de Gamificação */
+@keyframes float-up {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
   }
-  50% { 
-    box-shadow: 0 4px 30px rgba(255,255,255,0.2), inset 0 1px 1px rgba(255,255,255,0.5);
+  50% {
+    transform: translateY(-30px) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-60px) scale(0.8);
+    opacity: 0;
   }
 }
 
-/* O resto do arquivo CSS continua o mesmo... */
-.btn-red { background: linear-gradient(135deg, #ff6b6b 0%, #ff4444 100%) !important; }
-.btn-orange { background: linear-gradient(135deg, #ff9f43 0%, #ff6348 100%) !important; }
-.btn-yellow { background: linear-gradient(135deg, #ffe66d 0%, #ffcc00 100%) !important; }
-.btn-green { background: linear-gradient(135deg, #6bcf7f 0%, #4cd137 100%) !important; }
-.btn-blue { background: linear-gradient(135deg, #4ecdc4 0%, #0097e6 100%) !important; }
-.btn-purple { background: linear-gradient(135deg, #a8a4e6 0%, #7c3aed 100%) !important; }
-
-@keyframes mascotBounce {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-20px) scale(1.1); }
-}
-
-@keyframes mascotPulse {
-  0% { transform: scale(1) rotate(0deg); }
-  25% { transform: scale(1.1) rotate(-5deg); }
-  75% { transform: scale(1.1) rotate(5deg); }
-  100% { transform: scale(1) rotate(0deg); }
-}
-
-@keyframes buttonPulse {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
-  50% { transform: scale(1.2); box-shadow: 0 0 30px 20px rgba(255, 255, 255, 0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
-}
-
-@keyframes rainbowBackground {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.combo-mode {
-  background: linear-gradient(270deg, #ff6b6b, #ff9f43, #ffe66d, #6bcf7f, #4ecdc4, #a8a4e6);
-  background-size: 600% 600%;
-  animation: rainbowBackground 3s ease infinite;
-}
-
-@keyframes screenShake {
-  0%, 100% { transform: translate(0, 0); }
-  10% { transform: translate(-5px, -5px); }
-  20% { transform: translate(5px, -5px); }
-  30% { transform: translate(-5px, 5px); }
-  40% { transform: translate(5px, 5px); }
-  50% { transform: translate(0, 0); }
-}
-
-.shake-screen {
-  animation: screenShake 0.5s ease-out;
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
 
 @keyframes bounce-slow {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+.animate-float-up {
+  animation: float-up 2s ease-out forwards;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
 }
 
 .animate-bounce-slow {
-    animation: bounce-slow 3s ease-in-out infinite;
+  animation: bounce-slow 3s ease-in-out infinite;
 }
 
-.game-container {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
+/* Cores dos botões musicais */
+.btn-red { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.btn-orange { background: linear-gradient(135deg, #fb923c, #ea580c); }
+.btn-yellow { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+.btn-green { background: linear-gradient(135deg, #4ade80, #16a34a); }
+.btn-blue { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+.btn-purple { background: linear-gradient(135deg, #c084fc, #9333ea); }
+
+.musical-button {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.musical-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.musical-button:active::before {
+  width: 100%;
+  height: 100%;
 }
