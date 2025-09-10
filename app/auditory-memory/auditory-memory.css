@@ -1,426 +1,101 @@
-'use client';
+/* ========================================
+   AUDITORY MEMORY GAME - EFEITOS ESPECIAIS
+   ======================================== */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import Image from 'next/image';
-import { Volume2, VolumeX, Play, RotateCcw, Trophy, Star, Sparkles, Heart, Zap, Gift } from 'lucide-react';
-import './auditory-memory.css';
-
-interface GameStats {
-  level: number;
-  score: number;
-  highScore: number;
-  coins: number;
-  combo: number;
-  lives: number;
+/* Botões sempre visíveis e vibrantes */
+.musical-button {
+  backdrop-filter: blur(10px);
+  background-blend-mode: screen;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
+  border: 2px solid rgba(255,255,255,0.2);
 }
 
-const AuditoryMemoryGame: React.FC = () => {
-  // ===== ESTADOS DO JOGO (COM NOVA LÓGICA DE TELAS) =====
-  const [currentScreen, setCurrentScreen] = useState<'titleScreen' | 'instructions' | 'game'>('titleScreen');
-  const [gameState, setGameState] = useState<'idle' | 'playing' | 'listening' | 'success' | 'fail'>('idle');
-  const [sequence, setSequence] = useState<number[]>([]);
-  const [userSequence, setUserSequence] = useState<number[]>([]);
-  const [currentNote, setCurrentNote] = useState<number | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showError, setShowError] = useState(false);
-  const [showCombo, setShowCombo] = useState(false);
-  const [showTreasure, setShowTreasure] = useState(false);
-  const [confettiActive, setConfettiActive] = useState(false);
-  const [coinsRaining, setCoinsRaining] = useState(false);
-  
-  // Estatísticas
-  const [stats, setStats] = useState<GameStats>({
-    level: 1,
-    score: 0,
-    highScore: 0,
-    coins: 0,
-    combo: 0,
-    lives: 3
-  });
+.musical-button:not(:disabled) {
+  cursor: pointer;
+  animation: subtle-glow 2s ease-in-out infinite;
+}
 
-  // Configuração do jogo
-  const [sequenceLength, setSequenceLength] = useState(3);
-  const [playbackSpeed, setPlaybackSpeed] = useState(800);
-  
-  // Referências de áudio
-  const audioContextRef = useRef<AudioContext | null>(null);
-  
-  // Cores e frequências dos botões
-  const buttons = [
-    { color: 'btn-red', emoji: '🎵', freq: 261.63, name: 'DÓ' },
-    { color: 'btn-orange', emoji: '🎶', freq: 293.66, name: 'RÉ' },
-    { color: 'btn-yellow', emoji: '🎼', freq: 329.63, name: 'MI' },
-    { color: 'btn-green', emoji: '🎹', freq: 392.00, name: 'FÁ' },
-    { color: 'btn-blue', emoji: '🎸', freq: 440.00, name: 'SOL' },
-    { color: 'btn-purple', emoji: '🎺', freq: 523.25, name: 'LÁ' }
-  ];
-
-  // ===== TODA A LÓGICA DE JOGABILIDADE ABAIXO PERMANECE A MESMA =====
-  // (Funções como playNote, generateSequence, playSequence, handleSuccess, etc. não foram alteradas)
-
-  // Inicializar áudio
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      const savedHighScore = localStorage.getItem('memoriaSonoraHighScore');
-      const savedCoins = localStorage.getItem('memoriaSonoraCoins');
-      
-      if (savedHighScore) {
-        setStats(prev => ({ ...prev, highScore: parseInt(savedHighScore) }));
-      }
-      if (savedCoins) {
-        setStats(prev => ({ ...prev, coins: parseInt(savedCoins) }));
-      }
-    }
-
-    return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-    };
-  }, []);
-
-  // Tocar nota musical
-  const playNote = useCallback((frequency: number, duration: number = 400) => {
-    if (!soundEnabled || !audioContextRef.current) return;
-    const oscillator = audioContextRef.current.createOscillator();
-    const gainNode = audioContextRef.current.createGain();
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(frequency, audioContextRef.current.currentTime);
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContextRef.current.destination);
-    gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.3, audioContextRef.current.currentTime + 0.01);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration / 1000);
-    oscillator.start(audioContextRef.current.currentTime);
-    oscillator.stop(audioContextRef.current.currentTime + duration / 1000);
-  }, [soundEnabled]);
-
-  // Gerar nova sequência
-  const generateSequence = useCallback(() => {
-    const newSequence = Array.from({ length: sequenceLength }, () => Math.floor(Math.random() * 6));
-    setSequence(newSequence);
-    return newSequence;
-  }, [sequenceLength]);
-
-  // Tocar sequência
-  const playSequence = useCallback(async (seq: number[]) => {
-    setIsPlaying(true);
-    setGameState('listening');
-    await new Promise(resolve => setTimeout(resolve, 500));
-    for (let i = 0; i < seq.length; i++) {
-      setCurrentNote(seq[i]);
-      playNote(buttons[seq[i]].freq, 400);
-      await new Promise(resolve => setTimeout(resolve, playbackSpeed));
-      setCurrentNote(null);
-      if (i < seq.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
-    setIsPlaying(false);
-    setGameState('playing');
-    setUserSequence([]);
-  }, [playNote, buttons, playbackSpeed]);
-
-  // Iniciar jogo
-  const startGame = useCallback(() => {
-    // Agora o jogo começa de verdade aqui
-    setCurrentScreen('game');
-    setGameState('idle'); // Inicia em idle para o jogador clicar em 'começar' no painel
-  }, []);
-  
-  // Função para começar a primeira rodada
-  const startFirstRound = () => {
-    const newSequence = generateSequence();
-    setUserSequence([]);
-    setShowSuccess(false);
-    setShowError(false);
-    playSequence(newSequence);
-  }
-
-  // Verificar clique do usuário
-  const handleNoteClick = useCallback((noteIndex: number) => {
-    if (gameState !== 'playing' || isPlaying) return;
-    playNote(buttons[noteIndex].freq, 300);
-    const newUserSequence = [...userSequence, noteIndex];
-    setUserSequence(newUserSequence);
-    setCurrentNote(noteIndex);
-    setTimeout(() => setCurrentNote(null), 300);
-    
-    if (newUserSequence.length === sequence.length) {
-      const isCorrect = newUserSequence.every((note, index) => note === sequence[index]);
-      setTimeout(() => {
-        if (isCorrect) {
-          handleSuccess();
-        } else {
-          handleFailure();
-        }
-      }, 400);
-    }
-  }, [gameState, isPlaying, userSequence, sequence, playNote, buttons]);
-
-  // Sucesso
-  const handleSuccess = useCallback(() => {
-    setGameState('success');
-    setShowSuccess(true);
-    const basePoints = sequenceLength * 10;
-    const comboBonus = stats.combo * 5;
-    const totalPoints = (basePoints + comboBonus) * stats.level;
-    const newCombo = stats.combo + 1;
-    const newScore = stats.score + totalPoints;
-    const newHighScore = Math.max(newScore, stats.highScore);
-    
-    setStats(prev => ({ ...prev, score: newScore, highScore: newHighScore, combo: newCombo, coins: prev.coins + 10 }));
-    localStorage.setItem('memoriaSonoraHighScore', newHighScore.toString());
-    localStorage.setItem('memoriaSonoraCoins', (stats.coins + 10).toString());
-    
-    if (newCombo >= 3) {
-      setConfettiActive(true);
-      setTimeout(() => setConfettiActive(false), 3000);
-    }
-    
-    setTimeout(() => {
-      setShowSuccess(false);
-      const newLevel = stats.level + 1;
-      setStats(prev => ({ ...prev, level: newLevel }));
-      if (newLevel % 3 === 0) setSequenceLength(prev => Math.min(prev + 1, 12));
-      if (newLevel % 5 === 0) setPlaybackSpeed(prev => Math.max(prev - 50, 400));
-      
-      // Gera a nova sequência mas espera o jogador iniciar
-      const newSequence = generateSequence();
-      setUserSequence([]);
-      setShowSuccess(false);
-      setShowError(false);
-      playSequence(newSequence);
-
-    }, 2500);
-  }, [sequenceLength, stats, generateSequence, playSequence]);
-
-  // Falha
-  const handleFailure = useCallback(() => {
-    setGameState('fail');
-    setShowError(true);
-    const newLives = stats.lives - 1;
-    setStats(prev => ({ ...prev, lives: newLives, combo: 0 }));
-    
-    if (newLives <= 0) {
-      setTimeout(() => {
-        alert(`Game Over! 🎮 Pontuação Final: ${stats.score}`);
-        resetGame();
-      }, 1000);
-    } else {
-      setTimeout(() => {
-        setShowError(false);
-        playSequence(sequence);
-      }, 2000);
-    }
-  }, [stats, playSequence, sequence]);
-
-  // Resetar jogo
-  const resetGame = () => {
-    setCurrentScreen('titleScreen'); // ATUALIZADO
-    setGameState('idle');
-    setSequence([]);
-    setUserSequence([]);
-    setStats(prev => ({
-      level: 1,
-      score: 0,
-      highScore: prev.highScore,
-      coins: prev.coins,
-      combo: 0,
-      lives: 3
-    }));
-    setSequenceLength(3);
-    setPlaybackSpeed(800);
-  };
-
-  // Repetir sequência
-  const replaySequence = () => {
-    if (!isPlaying && gameState === 'playing' && sequence.length > 0) {
-      setUserSequence([]);
-      playSequence(sequence);
-    }
-  };
-
-  // ===== NOVAS TELAS DE ABERTURA PADRONIZADAS =====
-
-  // NOVA TELA DE TÍTULO
-  const TitleScreen = () => (
-    <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-400 via-pink-300 to-yellow-300 overflow-hidden">
-      <div className="relative z-10 flex flex-col items-center text-center">
-        <div className="mb-4">
-          <Image 
-            src="/images/mascotes/mila/mila_apoio_resultado.webp"
-            alt="Mila" 
-            width={400} 
-            height={400} 
-            className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl animate-bounce-slow"
-            priority 
-          />
-        </div>
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-purple-800 drop-shadow-lg mb-4">
-          Memória Sonora
-        </h1>
-        <p className="text-xl sm:text-2xl text-purple-700 mt-2 mb-8 drop-shadow-md">
-          Siga a melodia e teste sua memória!
-        </p>
-        <button 
-          onClick={() => setCurrentScreen('instructions')}
-          className="text-xl font-bold text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95"
-        >
-          Começar
-        </button>
-      </div>
-    </div>
-  );
-
-  // NOVA TELA DE INSTRUÇÕES
-  const InstructionsScreen = () => (
-    <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-blue-300 via-green-300 to-yellow-300">
-      <div className="bg-white/95 rounded-3xl p-8 max-w-2xl shadow-2xl text-center">
-        <h2 className="text-4xl font-bold mb-6 text-purple-600">
-          Como Jogar
-        </h2>
-        <div className="text-lg text-gray-700 space-y-6 mb-8 text-left">
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">🎧</span>
-            <span><b>Escute com atenção</b> a sequência de sons que a Mila vai tocar.</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">🎹</span>
-            <span><b>Repita a sequência</b> na ordem correta, clicando nos botões coloridos.</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">🏆</span>
-            <span><b>Acerte para avançar de nível</b>, aumentar a dificuldade e ganhar muitos pontos!</span>
-          </p>
-        </div>
-        <button 
-          onClick={startGame}
-          className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl transition-all duration-300 hover:scale-105"
-        >
-          Entendi, vamos jogar!
-        </button>
-      </div>
-    </div>
-  );
-  
-  // Tela do Jogo (GameScreen) - Permanece a mesma, apenas renomeada
-  const GameScreen = () => (
-    <div id="game-container" className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 game-container">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white/20 backdrop-blur rounded-2xl p-4 mb-4">
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-center">
-            <div>
-              <div className="text-yellow-300 text-xs font-bold">NÍVEL</div>
-              <div className="text-white text-2xl font-bold">{stats.level}</div>
-            </div>
-            <div>
-              <div className="text-green-300 text-xs font-bold">PONTOS</div>
-              <div className="text-white text-2xl font-bold">{stats.score}</div>
-            </div>
-            <div>
-              <div className="text-orange-300 text-xs font-bold">COMBO</div>
-              <div className="text-white text-2xl font-bold">{stats.combo}x</div>
-            </div>
-            <div>
-              <div className="text-red-300 text-xs font-bold">VIDAS</div>
-              <div className="text-white text-2xl">
-                {Array.from({ length: stats.lives }, (_, i) => (
-                  <Heart key={i} className="inline w-5 h-5 text-red-500 fill-red-500" />
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className="text-yellow-300 text-xs font-bold">MOEDAS</div>
-              <div className="text-white text-2xl font-bold">💰 {stats.coins}</div>
-            </div>
-            <div>
-              <div className="text-purple-300 text-xs font-bold">SEQUÊNCIA</div>
-              <div className="text-white text-2xl font-bold">{sequenceLength}</div>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white/10 backdrop-blur rounded-3xl p-6 mb-4">
-          <div className="text-center mb-6 min-h-[128px] flex items-center justify-center">
-            {gameState === 'idle' && (
-              <div className="flex flex-col items-center">
-                  <Image src="/images/mascotes/leo/leo_boas_vindas_resultado.webp" alt="Leo" width={100} height={100} />
-                <p className="text-white text-xl font-bold">Clique em COMEÇAR para jogar!</p>
-              </div>
-            )}
-            {gameState === 'listening' && (
-              <div className="flex flex-col items-center">
-                  <Image src="/images/mascotes/mila/mila_apoio_resultado.webp" alt="Mila" width={100} height={100} />
-                <p className="text-yellow-300 text-2xl font-bold animate-pulse">🎧 ESCUTE COM ATENÇÃO!</p>
-              </div>
-            )}
-            {gameState === 'playing' && !showSuccess && !showError && (
-              <div className="flex flex-col items-center">
-                  <Image src="/images/mascotes/leo/leo_apontando_resultado.webp" alt="Leo" width={100} height={100} />
-                <p className="text-green-300 text-2xl font-bold">SUA VEZ! REPITA A SEQUÊNCIA!</p>
-              </div>
-            )}
-            {showSuccess && (
-              <div className="flex flex-col items-center animate-bounce">
-                  <Image src="/images/mascotes/leo/leo_joinha_resultado.webp" alt="Leo" width={120} height={120} />
-                <p className="text-green-400 text-3xl font-bold">PERFEITO! 🎉</p>
-              </div>
-            )}
-            {showError && (
-              <div className="flex flex-col items-center">
-                  <Image src="/images/mascotes/leo/leo_surpreso_resultado.webp" alt="Leo" width={100} height={100} />
-                <p className="text-red-400 text-2xl font-bold">OPS! TENTE NOVAMENTE!</p>
-              </div>
-            )}
-          </div>
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            {buttons.map((button, index) => (
-              <button
-                key={index}
-                id={`btn-${index}`}
-                onClick={() => handleNoteClick(index)}
-                disabled={gameState !== 'playing' || isPlaying}
-                className={`musical-button ${button.color} h-24 md:h-28 rounded-2xl ${gameState === 'listening' && currentNote === index ? 'scale-110 ring-4 ring-white' : ''}`}
-              >
-                <span className="text-3xl">{button.emoji}</span>
-                <span className="text-lg font-bold">{button.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex justify-center gap-3 flex-wrap">
-          {gameState === 'idle' && (
-            <button onClick={startFirstRound} className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-bold">
-              <Play className="inline-block mr-2" />
-              COMEÇAR
-            </button>
-          )}
-          {gameState === 'playing' && (
-            <button onClick={replaySequence} disabled={isPlaying} className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-bold">
-              <RotateCcw className="inline-block mr-2" />
-              OUVIR NOVAMENTE
-            </button>
-          )}
-          <button onClick={resetGame} className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold">
-            MENU
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  // ===== LÓGICA DE RENDERIZAÇÃO ATUALIZADA =====
-  if (currentScreen === 'titleScreen') {
-    return <TitleScreen />;
+@keyframes subtle-glow {
+  0%, 100% { 
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
   }
-  if (currentScreen === 'instructions') {
-    return <InstructionsScreen />;
+  50% { 
+    box-shadow: 0 4px 30px rgba(255,255,255,0.2), inset 0 1px 1px rgba(255,255,255,0.5);
   }
-  return <GameScreen />;
-};
+}
 
-export default AuditoryMemoryGame;
+/* Estados dos botões mais visíveis */
+.btn-red { background: linear-gradient(135deg, #ff6b6b 0%, #ff4444 100%) !important; }
+.btn-orange { background: linear-gradient(135deg, #ff9f43 0%, #ff6348 100%) !important; }
+.btn-yellow { background: linear-gradient(135deg, #ffe66d 0%, #ffcc00 100%) !important; }
+.btn-green { background: linear-gradient(135deg, #6bcf7f 0%, #4cd137 100%) !important; }
+.btn-blue { background: linear-gradient(135deg, #4ecdc4 0%, #0097e6 100%) !important; }
+.btn-purple { background: linear-gradient(135deg, #a8a4e6 0%, #7c3aed 100%) !important; }
+
+/* Animação dos Mascotes */
+@keyframes mascotBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-20px) scale(1.1); }
+}
+
+@keyframes mascotPulse {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-5deg); }
+  75% { transform: scale(1.1) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* Efeito de Botão Ativo */
+.btn-active {
+  animation: buttonPulse 0.5s ease-out;
+  transform: scale(1.2) !important;
+}
+
+@keyframes buttonPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow: 0 0 30px 20px rgba(255, 255, 255, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+/* Animações e Efeitos Bônus */
+@keyframes rainbowBackground {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.combo-mode {
+  background: linear-gradient(270deg, #ff6b6b, #ff9f43, #ffe66d, #6bcf7f, #4ecdc4, #a8a4e6);
+  background-size: 600% 600%;
+  animation: rainbowBackground 3s ease infinite;
+}
+
+@keyframes screenShake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-5px, -5px); }
+  20% { transform: translate(5px, -5px); }
+  30% { transform: translate(-5px, 5px); }
+  40% { transform: translate(5px, 5px); }
+  50% { transform: translate(0, 0); }
+}
+
+.shake-screen {
+  animation: screenShake 0.5s ease-out;
+}
+
+@keyframes bounce-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+.animate-bounce-slow {
+    animation: bounce-slow 3s ease-in-out infinite;
+}
