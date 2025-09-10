@@ -11,6 +11,7 @@
   text-align: center;
   font-family: 'Arial', sans-serif;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  position: relative; /* Para posicionar elementos internos */
 }
 
 /* --- TELA 1: ABERTURA --- */
@@ -19,11 +20,10 @@
   color: white;
 }
 
+/* AJUSTE: Imagem do mascote maior e sem o círculo */
 .mascot-image {
-  border-radius: 50%;
-  border: 5px solid #fff;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
+  /* Removido: border-radius, border, box-shadow */
 }
 
 .game-title {
@@ -75,21 +75,58 @@
 
 /* --- TELA 3: JOGO --- */
 .game-screen {
-  justify-content: space-around;
-  gap: 2rem;
+  justify-content: flex-start; /* Alinha itens ao topo */
+  padding-top: 80px; /* Espaço para o placar */
+  gap: 1.5rem;
 }
 
-.game-prompt {
-  font-size: 2rem;
-  color: #243b55;
+/* NOVO: Cabeçalho do jogo com placar */
+.game-header {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: rgba(20, 30, 48, 0.8);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
 .main-image-container {
+  position: relative; /* Para o feedback de pontos */
   padding: 15px;
   background-color: white;
   border-radius: 20px;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
+
+/* NOVO: Feedback de pontos flutuantes */
+.points-feedback {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3rem;
+  font-weight: bold;
+  color: #FFD700; /* Dourado */
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  animation: float-up 1.5s ease-out forwards;
+  pointer-events: none; /* Não interfere com cliques */
+}
+
+@keyframes float-up {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -200%) scale(1.5);
+  }
+}
+
 
 .main-image {
   max-width: 100%;
@@ -177,57 +214,38 @@
     animation-delay: -0.5s;
 }
 
-/* Gerando mais confetes com box-shadow */
 .confetti-container::before {
     left: 10%;
     box-shadow: 
-        15vw 10vh 0 blue, 
-        30vw -15vh 0 red, 
-        45vw 5vh 0 orange,
-        60vw -5vh 0 purple,
-        75vw 12vh 0 pink,
-        90vw 2vh 0 turquoise;
+        15vw 10vh 0 blue, 30vw -15vh 0 red, 45vw 5vh 0 orange,
+        60vw -5vh 0 purple, 75vw 12vh 0 pink, 90vw 2vh 0 turquoise;
 }
 .confetti-container::after {
     left: 5%;
     box-shadow: 
-        10vw -8vh 0 yellow, 
-        25vw 15vh 0 lightgreen, 
-        40vw -2vh 0 cyan,
-        55vw 8vh 0 deeppink,
-        70vw -12vh 0 mediumslateblue,
-        85vw 5vh 0 tomato;
+        10vw -8vh 0 yellow, 25vw 15vh 0 lightgreen, 40vw -2vh 0 cyan,
+        55vw 8vh 0 deeppink, 70vw -12vh 0 mediumslateblue, 85vw 5vh 0 tomato;
 }
 
 
 @keyframes confetti-fall {
-    from {
-        transform: translateY(0) rotate(0deg);
-    }
-    to {
-        transform: translateY(110vh) rotate(720deg);
-    }
+    from { transform: translateY(0) rotate(0deg); }
+    to { transform: translateY(110vh) rotate(720deg); }
 }
 
 
 /* --- RESPONSIVIDADE PARA CELULARES --- */
 @media (max-width: 768px) {
   .game-title { font-size: 2.5rem; }
-  .game-subtitle { font-size: 1.2rem; }
+  .mascot-image { width: 300px; height: 300px; }
   .instructions-title { font-size: 2rem; }
   .instructions-text { font-size: 1.1rem; }
   
-  .game-prompt { font-size: 1.5rem; }
+  .game-header { font-size: 1.2rem; top: 10px; right: 10px; }
+  .game-screen { padding-top: 70px; }
   
   .main-image { max-width: 250px; }
-  
-  .shadow-options-container {
-    gap: 15px;
-  }
-
-  .shadow-option {
-    /* Ajusta o tamanho das opções para caber melhor */
-    flex: 1 1 120px; 
-    max-width: 120px;
-  }
+  .shadow-options-container { gap: 15px; }
+  .shadow-option { flex: 1 1 120px; max-width: 120px; }
 }
+
