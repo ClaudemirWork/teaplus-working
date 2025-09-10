@@ -1,1 +1,233 @@
-gitkeeper
+/* --- ESTILOS GERAIS E LAYOUT --- */
+.shadow-game-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  text-align: center;
+  font-family: 'Arial', sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+/* --- TELA 1: ABERTURA --- */
+.start-screen {
+  background: linear-gradient(to bottom, #141e30, #243b55);
+  color: white;
+}
+
+.mascot-image {
+  border-radius: 50%;
+  border: 5px solid #fff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  margin-bottom: 2rem;
+}
+
+.game-title {
+  font-size: 3.5rem;
+  font-weight: bold;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.game-subtitle {
+  font-size: 1.5rem;
+  color: #c3cfe2;
+}
+
+.start-button {
+  margin-top: 2rem;
+  padding: 15px 40px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #141e30;
+  background-color: #fff;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.start-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+}
+
+/* --- TELA 2: INSTRUÇÕES --- */
+.instructions-screen {
+  gap: 2rem;
+}
+
+.instructions-title {
+  font-size: 2.5rem;
+  color: #243b55;
+}
+
+.instructions-text {
+  font-size: 1.3rem;
+  line-height: 1.6;
+  max-width: 500px;
+  color: #333;
+}
+
+/* --- TELA 3: JOGO --- */
+.game-screen {
+  justify-content: space-around;
+  gap: 2rem;
+}
+
+.game-prompt {
+  font-size: 2rem;
+  color: #243b55;
+}
+
+.main-image-container {
+  padding: 15px;
+  background-color: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.main-image {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.shadow-options-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap; /* Para telas menores */
+}
+
+.shadow-option {
+  padding: 10px;
+  background-color: white;
+  border-radius: 15px;
+  border: 4px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-option:hover {
+  transform: translateY(-5px);
+  border-color: #a7bfe8;
+}
+
+.shadow-image {
+  object-fit: contain;
+}
+
+/* --- FEEDBACK VISUAL --- */
+.shadow-option.correct {
+  border-color: #4CAF50; /* Verde */
+  transform: scale(1.1);
+  animation: pulse-correct 1s infinite;
+}
+
+.shadow-option.incorrect {
+  border-color: #F44336; /* Vermelho */
+  animation: shake 0.5s ease;
+}
+
+@keyframes pulse-correct {
+  0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+  70% { box-shadow: 0 0 0 20px rgba(76, 175, 80, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
+/* --- EFEITO DE CONFETE (requer container no JSX) --- */
+.confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 9999;
+}
+
+.confetti-container::before,
+.confetti-container::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 20px;
+    background: gold;
+    top: -20px;
+    animation: confetti-fall 2s linear infinite;
+}
+
+.confetti-container::after {
+    background: #4CAF50; /* verde */
+    left: 20%;
+    animation-delay: -0.5s;
+}
+
+/* Gerando mais confetes com box-shadow */
+.confetti-container::before {
+    left: 10%;
+    box-shadow: 
+        15vw 10vh 0 blue, 
+        30vw -15vh 0 red, 
+        45vw 5vh 0 orange,
+        60vw -5vh 0 purple,
+        75vw 12vh 0 pink,
+        90vw 2vh 0 turquoise;
+}
+.confetti-container::after {
+    left: 5%;
+    box-shadow: 
+        10vw -8vh 0 yellow, 
+        25vw 15vh 0 lightgreen, 
+        40vw -2vh 0 cyan,
+        55vw 8vh 0 deeppink,
+        70vw -12vh 0 mediumslateblue,
+        85vw 5vh 0 tomato;
+}
+
+
+@keyframes confetti-fall {
+    from {
+        transform: translateY(0) rotate(0deg);
+    }
+    to {
+        transform: translateY(110vh) rotate(720deg);
+    }
+}
+
+
+/* --- RESPONSIVIDADE PARA CELULARES --- */
+@media (max-width: 768px) {
+  .game-title { font-size: 2.5rem; }
+  .game-subtitle { font-size: 1.2rem; }
+  .instructions-title { font-size: 2rem; }
+  .instructions-text { font-size: 1.1rem; }
+  
+  .game-prompt { font-size: 1.5rem; }
+  
+  .main-image { max-width: 250px; }
+  
+  .shadow-options-container {
+    gap: 15px;
+  }
+
+  .shadow-option {
+    /* Ajusta o tamanho das opções para caber melhor */
+    flex: 1 1 120px; 
+    max-width: 120px;
+  }
+}
