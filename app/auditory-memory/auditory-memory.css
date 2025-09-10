@@ -1,13 +1,16 @@
 /* ========================================
-   AUDITORY MEMORY GAME - EFEITOS ESPECIAIS
+   AUDITORY MEMORY GAME - ESTILOS v2
    ======================================== */
 
-/* Botões sempre visíveis e vibrantes */
+/* Botões com opacidade reduzida por padrão */
 .musical-button {
   backdrop-filter: blur(10px);
   background-blend-mode: screen;
   box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3);
   border: 2px solid rgba(255,255,255,0.2);
+  /* A MUDANÇA ESTÁ AQUI: opacidade e transição */
+  opacity: 0.7;
+  transition: all 0.1s ease-in-out;
 }
 
 .musical-button:not(:disabled) {
@@ -24,7 +27,7 @@
   }
 }
 
-/* Estados dos botões mais visíveis */
+/* O resto do arquivo CSS continua o mesmo... */
 .btn-red { background: linear-gradient(135deg, #ff6b6b 0%, #ff4444 100%) !important; }
 .btn-orange { background: linear-gradient(135deg, #ff9f43 0%, #ff6348 100%) !important; }
 .btn-yellow { background: linear-gradient(135deg, #ffe66d 0%, #ffcc00 100%) !important; }
@@ -32,7 +35,6 @@
 .btn-blue { background: linear-gradient(135deg, #4ecdc4 0%, #0097e6 100%) !important; }
 .btn-purple { background: linear-gradient(135deg, #a8a4e6 0%, #7c3aed 100%) !important; }
 
-/* Animação dos Mascotes */
 @keyframes mascotBounce {
   0%, 100% { transform: translateY(0) scale(1); }
   50% { transform: translateY(-20px) scale(1.1); }
@@ -45,28 +47,12 @@
   100% { transform: scale(1) rotate(0deg); }
 }
 
-/* Efeito de Botão Ativo */
-.btn-active {
-  animation: buttonPulse 0.5s ease-out;
-  transform: scale(1.2) !important;
-}
-
 @keyframes buttonPulse {
-  0% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
-  }
-  50% {
-    transform: scale(1.2);
-    box-shadow: 0 0 30px 20px rgba(255, 255, 255, 0);
-  }
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
-  }
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+  50% { transform: scale(1.2); box-shadow: 0 0 30px 20px rgba(255, 255, 255, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
 }
 
-/* Animações e Efeitos Bônus */
 @keyframes rainbowBackground {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -101,7 +87,6 @@
     animation: bounce-slow 3s ease-in-out infinite;
 }
 
-/* Desabilita seleção de texto no jogo */
 .game-container {
   -webkit-user-select: none;
   -moz-user-select: none;
