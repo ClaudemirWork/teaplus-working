@@ -5,7 +5,6 @@ import Image from 'next/image';
 import './shadowgame.css';
 
 // Lista completa com os nomes base de todas as imagens que você subiu.
-// O código usa esta lista para montar o jogo dinamicamente.
 const imageNames = [
   'abacate', 'abelha', 'abelha_feliz', 'abelha_voando', 'abelhinha', 'aguia', 'amigos', 'apresentacao',
   'arvore_natal', 'baleia', 'bananas', 'barraca', 'beagle', 'berinjela', 'bike', 'biscoito', 'boneca',
@@ -36,78 +35,88 @@ const shuffleArray = (array: any[]) => {
 };
 
 export default function ShadowGamePage() {
-  // Estado para controlar a tela atual: 'start', 'instructions', 'playing'
   const [gameState, setGameState] = useState('start');
-  
-  // Estado para a rodada atual
   const [correctImage, setCorrectImage] = useState<string | null>(null);
   const [shadowOptions, setShadowOptions] = useState<string[]>([]);
-  
-  // Estado para feedback visual (acerto/erro)
   const [feedback, setFeedback] = useState<{ [key: string]: 'correct' | 'incorrect' }>({});
+  
+  // --- NOVOS ESTADOS PARA GAMIFICAÇÃO ---
+  const [score, setScore] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [pointsFeedback, setPointsFeedback] = useState<string | null>(null);
 
-  // Referência para o áudio de sucesso
+  // --- REFERÊNCIAS PARA OS ÁUDIOS ---
   const successAudioRef = useRef<HTMLAudioElement | null>(null);
+  const clickAudioRef = useRef<HTMLAudioElement | null>(null);
+  const errorAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Prepara o áudio quando o componente montar
-    // O ideal é ter o arquivo de som em /public/sounds/
+    // Prepara os áudios quando o componente montar
     successAudioRef.current = new Audio('/sounds/success_celebration.mp3'); 
+    clickAudioRef.current = new Audio('/sounds/click.mp3'); 
+    errorAudioRef.current = new Audio('/sounds/error.mp3'); 
   }, []);
 
   const startNewRound = () => {
-    setFeedback({}); // Limpa feedbacks anteriores
+    setFeedback({});
+    setPointsFeedback(null);
 
-    // 1. Escolhe a imagem correta aleatoriamente
     const availableImages = [...imageNames];
     const correctIndex = Math.floor(Math.random() * availableImages.length);
     const correctName = availableImages.splice(correctIndex, 1)[0];
     
     setCorrectImage(correctName);
 
-    // 2. Escolhe duas sombras incorretas aleatoriamente
     const incorrectName1 = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
     const incorrectName2 = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
 
-    // 3. Monta a lista de opções de sombras
     const options = [
       `/shadow-game/shadows/${correctName}_black.webp`,
       `/shadow-game/shadows/${incorrectName1}_black.webp`,
       `/shadow-game/shadows/${incorrectName2}_black.webp`,
     ];
-
-    // 4. Embaralha as opções e atualiza o estado
+    
     setShadowOptions(shuffleArray(options));
   };
 
   const handleShadowClick = (clickedShadow: string) => {
+    clickAudioRef.current?.play(); // Toca o som de clique
     const correctShadowPath = `/shadow-game/shadows/${correctImage}_black.webp`;
 
     if (clickedShadow === correctShadowPath) {
       // --- ACERTOU ---
+      const newStreak = streak + 1;
+      let pointsGained = 100;
+
+      if (newStreak >= 5) {
+        pointsGained = 500;
+      } else if (newStreak >= 2) {
+        pointsGained = 200;
+      }
+
+      setScore(score + pointsGained);
+      setStreak(newStreak);
+      setPointsFeedback(`+${pointsGained}`);
       setFeedback({ [clickedShadow]: 'correct' });
       successAudioRef.current?.play();
 
-      // Aguarda a animação de confete e som, e então inicia a próxima rodada
       setTimeout(() => {
         startNewRound();
-      }, 2000); // 2 segundos de celebração
+      }, 2000);
 
     } else {
       // --- ERROU ---
+      errorAudioRef.current?.play();
+      setStreak(0); // Zera o combo
       setFeedback({ [clickedShadow]: 'incorrect' });
-      // Remove o feedback de erro após a animação de "tremer"
       setTimeout(() => setFeedback({}), 500);
     }
   };
 
-  // --- Renderização condicional das telas do jogo ---
-
-  // Tela 1: Abertura
   if (gameState === 'start') {
     return (
       <div className="shadow-game-container start-screen">
-        <Image src="/shadow-game/leo_abertura.webp" alt="Mascote Léo" width={300} height={300} className="mascot-image" priority />
+        <Image src="/shadow-game/leo_abertura.webp" alt="Mascote Léo" width={400} height={400} className="mascot-image" priority />
         <h1 className="game-title">Jogo das Sombras</h1>
         <p className="game-subtitle">Encontre a sombra correta!</p>
         <button className="start-button" onClick={() => setGameState('instructions')}>
@@ -117,7 +126,6 @@ export default function ShadowGamePage() {
     );
   }
 
-  // Tela 2: Instruções
   if (gameState === 'instructions') {
     return (
       <div className="shadow-game-container instructions-screen">
@@ -133,16 +141,17 @@ export default function ShadowGamePage() {
     );
   }
 
-  // Tela 3: O Jogo
   return (
     <div className="shadow-game-container game-screen">
-      {/* Container para o efeito de confete */}
       {Object.values(feedback)[0] === 'correct' && <div className="confetti-container" />}
-
-      <h2 className="game-prompt">Qual é a sombra certa?</h2>
+      
+      <div className="game-header">
+        <div className="score-display">Pontos: {score}</div>
+      </div>
       
       {correctImage && (
         <div className="main-image-container">
+          {pointsFeedback && <div className="points-feedback">{pointsFeedback}</div>}
           <Image
             src={`/shadow-game/images/${correctImage}.webp`}
             alt="Figura colorida"
@@ -175,3 +184,4 @@ export default function ShadowGamePage() {
     </div>
   );
 }
+
