@@ -52,7 +52,8 @@ export default function ShadowGamePage() {
 
   useEffect(() => {
     // Prepara os áudios quando o componente montar
-    successAudioRef.current = new Audio('/sounds/success_celebration.mp3'); 
+    // CORRIGIDO: Usando o coin.wav e garantindo que os outros existam
+    successAudioRef.current = new Audio('/sounds/coin.wav'); 
     clickAudioRef.current = new Audio('/sounds/click.mp3'); 
     errorAudioRef.current = new Audio('/sounds/error.mp3'); 
   }, []);
@@ -184,4 +185,5 @@ export default function ShadowGamePage() {
     </div>
   );
 }
+
 
