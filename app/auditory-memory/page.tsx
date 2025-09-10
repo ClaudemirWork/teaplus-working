@@ -14,14 +14,14 @@ interface GameStats {
 }
 
 const AuditoryMemoryGame: React.FC = () => {
-  // Controle das telas
+  // Controle de Telas
   const [currentScreen, setCurrentScreen] = useState<'titleScreen' | 'instructions' | 'game'>('titleScreen');
   
-  // Estados do jogo
+  // Estados do Jogo
   const [gameState, setGameState] = useState<'idle' | 'playing' | 'listening' | 'success' | 'fail'>('idle');
   const [sequence, setSequence] = useState<number[]>([]);
   const [userSequence, setUserSequence] = useState<number[]>([]);
-  const [currentNote, setCurrentNote] = useState<number | null>(null);
+  const [currentNote, setCurrentNote] = useState<number | null>(null); // Essencial para a animação
   const [isPlaying, setIsPlaying] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -36,8 +36,8 @@ const AuditoryMemoryGame: React.FC = () => {
   });
 
   // NOVA LÓGICA DE JOGABILIDADE
-  const [sequenceLength, setSequenceLength] = useState(1); // Começa com 1 nota
-  const [playbackSpeed, setPlaybackSpeed] = useState(800); // Velocidade inicial padrão
+  const [sequenceLength, setSequenceLength] = useState(1); // Começa com 1
+  const [playbackSpeed, setPlaybackSpeed] = useState(800); // Velocidade Padrão
 
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -79,25 +79,27 @@ const AuditoryMemoryGame: React.FC = () => {
   const generateSequence = useCallback(() => {
     return Array.from({ length: sequenceLength }, () => Math.floor(Math.random() * 6));
   }, [sequenceLength]);
-
+  
+  // LÓGICA DE ANIMAÇÃO CORRIGIDA
   const playSequence = useCallback(async (seq: number[]) => {
     setIsPlaying(true);
     setGameState('listening');
     await new Promise(resolve => setTimeout(resolve, 500));
-
-    for (const noteIndex of seq) {
-      setCurrentNote(noteIndex);
-      const button = document.getElementById(`btn-${noteIndex}`);
+    for (let i = 0; i < seq.length; i++) {
+      setCurrentNote(seq[i]); // <-- LINHA ESSENCIAL RESTAURADA
+      const button = document.getElementById(`btn-${seq[i]}`);
       if (button) button.style.opacity = '1'; // Acende o botão
       
-      playNote(buttons[noteIndex].freq, 400);
+      playNote(buttons[seq[i]].freq, 400);
       await new Promise(resolve => setTimeout(resolve, playbackSpeed));
       
       if (button) button.style.opacity = ''; // Apaga o botão
-      setCurrentNote(null);
-      await new Promise(resolve => setTimeout(resolve, 100));
+      setCurrentNote(null); // <-- LINHA ESSENCIAL RESTAURADA
+      
+      if (i < seq.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
-
     setIsPlaying(false);
     setGameState('playing');
     setUserSequence([]);
@@ -114,7 +116,7 @@ const AuditoryMemoryGame: React.FC = () => {
     
     const button = document.getElementById(`btn-${noteIndex}`);
     if (button) {
-      button.style.opacity = '1'; // Acende ao clicar
+      button.style.opacity = '1';
       setTimeout(() => { if (button) button.style.opacity = ''; }, 300);
     }
 
@@ -122,13 +124,11 @@ const AuditoryMemoryGame: React.FC = () => {
     const newUserSequence = [...userSequence, noteIndex];
     setUserSequence(newUserSequence);
 
-    // Checagem imediata de erro
     if (newUserSequence[newUserSequence.length - 1] !== sequence[newUserSequence.length - 1]) {
-      handleFailure();
-      return;
+        handleFailure();
+        return;
     }
 
-    // Checagem de sucesso ao final da sequência
     if (newUserSequence.length === sequence.length) {
       handleSuccess();
     }
@@ -145,13 +145,13 @@ const AuditoryMemoryGame: React.FC = () => {
     setStats(prev => ({...prev, score: newScore, highScore: newHighScore, level: newLevel, combo: prev.combo + 1}));
     localStorage.setItem('memoriaSonoraHighScore', newHighScore.toString());
     
-    // Fase 1: Níveis 1-5, aumenta de 1 em 1
+    // Fase 1: Níveis 1-5
     if (newLevel <= 5) {
       setSequenceLength(newLevel);
-    } else { // Fase 2: Nível 6 em diante
-      if (newLevel === 6) {
-        setPlaybackSpeed(650); // Aumenta a velocidade
-        setSequenceLength(2);  // Começa fase 2 com 2 notas
+    } else { // Fase 2: Nível 6+
+      if (newLevel === 6) { // Transição de fase
+        setPlaybackSpeed(650);
+        setSequenceLength(2);
       } else {
         const lengthInPhase2 = 2 * (newLevel - 5);
         setSequenceLength(lengthInPhase2);
@@ -196,23 +196,15 @@ const AuditoryMemoryGame: React.FC = () => {
     setPlaybackSpeed(800); // Reseta a velocidade
   };
 
-  // ===== TELAS DO JOGO =====
-
   const TitleScreen = () => (
     <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-400 via-pink-300 to-yellow-300 overflow-hidden">
       <div className="relative z-10 flex flex-col items-center text-center">
         <div className="mb-4 animate-bounce-slow">
-          <Image src="/images/mascotes/mila/mila_apoio_resultado.webp" alt="Mascote Mila" width={400} height={400} className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl" priority />
+          <Image src="/images/mascotes/mila/mila_apoio_resultado.webp" alt="Mila" width={400} height={400} className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl" priority />
         </div>
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-purple-800 drop-shadow-lg mb-4">
-          Memória Sonora
-        </h1>
-        <p className="text-xl sm:text-2xl text-purple-700 mt-2 mb-8 drop-shadow-md">
-          Siga a melodia e teste sua memória!
-        </p>
-        <button onClick={() => setCurrentScreen('instructions')} className="text-xl font-bold text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110">
-          Começar
-        </button>
+        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-purple-800 drop-shadow-lg mb-4">Memória Sonora</h1>
+        <p className="text-xl sm:text-2xl text-purple-700 mt-2 mb-8 drop-shadow-md">Siga a melodia e teste sua memória!</p>
+        <button onClick={() => setCurrentScreen('instructions')} className="text-xl font-bold text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110">Começar</button>
       </div>
     </div>
   );
@@ -226,70 +218,65 @@ const AuditoryMemoryGame: React.FC = () => {
           <p className="flex items-center gap-4"><span className="text-4xl">🎹</span><span><b>Repita a sequência</b> na ordem correta.</span></p>
           <p className="flex items-center gap-4"><span className="text-4xl">🏆</span><span><b>Acerte para avançar</b> e aumentar o desafio!</span></p>
         </div>
-        <button onClick={() => setCurrentScreen('game')} className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105">
-          Entendi, vamos jogar!
-        </button>
+        <button onClick={() => setCurrentScreen('game')} className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105">Entendi, vamos jogar!</button>
       </div>
     </div>
   );
   
+  // TELA DO JOGO (LAYOUT ORIGINAL RESTAURADO)
   const GameScreen = () => {
-    // Inicia o jogo na primeira vez que esta tela é renderizada
     useEffect(() => {
-      // Começa no estado 'idle', esperando o jogador clicar em 'COMEÇAR'
       setGameState('idle');
     }, []);
 
     return (
-        <div id="game-container" className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 game-container">
-            <div className="max-w-4xl mx-auto">
-                <div className="bg-white/20 backdrop-blur rounded-2xl p-4 mb-4">
-                    <div className="grid grid-cols-3 md:grid-cols-5 gap-2 text-center text-white">
-                        <div><div className="text-xs opacity-80">NÍVEL</div><div className="text-2xl font-bold">{stats.level}</div></div>
-                        <div><div className="text-xs opacity-80">PONTOS</div><div className="text-2xl font-bold">{stats.score}</div></div>
-                        <div><div className="text-xs opacity-80">COMBO</div><div className="text-2xl font-bold">{stats.combo}x</div></div>
-                        <div><div className="text-xs opacity-80">VIDAS</div><div className="text-2xl">{Array.from({ length: stats.lives }).map((_, i) => <Heart key={i} className="inline w-5 h-5 text-red-500 fill-red-500" />)}</div></div>
-                        <div className="hidden md:block"><div className="text-xs opacity-80">RECORDE</div><div className="text-2xl font-bold">{stats.highScore}</div></div>
-                    </div>
-                </div>
-                <div className="bg-white/10 backdrop-blur rounded-3xl p-6 mb-4">
-                    <div className="text-center mb-6 min-h-[128px] flex items-center justify-center">
-                        {gameState === 'idle' && <div className="flex flex-col items-center"><Image src="/images/mascotes/leo/leo_boas_vindas_resultado.webp" alt="Leo" width={100} height={100} className="object-contain mb-2" /><p className="text-white text-xl font-bold">Clique em COMEÇAR para jogar!</p></div>}
-                        {gameState === 'listening' && <div className="flex flex-col items-center"><Image src="/images/mascotes/mila/mila_apoio_resultado.webp" alt="Mila" width={100} height={100} className="object-contain mb-2 animate-pulse" /><p className="text-yellow-300 text-2xl font-bold animate-pulse">🎧 ESCUTE COM ATENÇÃO!</p></div>}
-                        {gameState === 'playing' && !showSuccess && !showError && <div className="flex flex-col items-center"><Image src="/images/mascotes/leo/leo_apontando_resultado.webp" alt="Leo" width={100} height={100} className="object-contain mb-2" /><p className="text-green-300 text-2xl font-bold">SUA VEZ! REPITA A SEQUÊNCIA!</p></div>}
-                        {showSuccess && <div className="flex flex-col items-center animate-bounce"><Image src="/images/mascotes/leo/leo_joinha_resultado.webp" alt="Leo" width={120} height={120} className="object-contain mb-2" /><p className="text-green-400 text-3xl font-bold">PERFEITO! 🎉</p></div>}
-                        {showError && <div className="flex flex-col items-center"><Image src="/images/mascotes/leo/leo_surpreso_resultado.webp" alt="Leo" width={100} height={100} className="object-contain mb-2" /><p className="text-red-400 text-2xl font-bold">OPS! TENTE NOVAMENTE!</p></div>}
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                        {buttons.map((button, index) => (
-                            <button key={index} id={`btn-${index}`} onClick={() => handleNoteClick(index)} disabled={gameState !== 'playing' || isPlaying} className={`musical-button ${button.color} h-24 md:h-28 rounded-2xl font-bold text-white text-2xl md:text-3xl flex flex-col items-center justify-center gap-1 shadow-lg`}>
-                                <span className="text-3xl">{button.emoji}</span>
-                                <span className="text-lg font-bold">{button.name}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                <div className="flex justify-center gap-3 flex-wrap">
-                    {gameState === 'idle' && (
-                        <button onClick={startRound} className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-bold text-lg hover:scale-105 transition-transform shadow-lg flex items-center gap-2">
-                            <Play className="w-5 h-5" /> COMEÇAR
-                        </button>
-                    )}
-                    {gameState === 'playing' && (
-                        <button onClick={() => playSequence(sequence)} disabled={isPlaying} className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg flex items-center gap-2 disabled:opacity-50">
-                            <RotateCcw className="w-5 h-5" /> OUVIR NOVAMENTE
-                        </button>
-                    )}
-                    <button onClick={resetGame} className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg">
-                        MENU
-                    </button>
-                </div>
+      <div id="game-container" className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 game-container">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white/20 backdrop-blur rounded-2xl p-4 mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-white">
+              <div><div className="text-xs opacity-80">NÍVEL</div><div className="text-2xl font-bold">{stats.level}</div></div>
+              <div><div className="text-xs opacity-80">PONTOS</div><div className="text-2xl font-bold">{stats.score}</div></div>
+              <div><div className="text-xs opacity-80">VIDAS</div><div className="text-2xl">{Array.from({ length: stats.lives }).map((_, i) => <Heart key={i} className="inline w-5 h-5 text-red-500 fill-red-500" />)}</div></div>
+              <div className="hidden md:block"><div className="text-xs opacity-80">RECORDE</div><div className="text-2xl font-bold">{stats.highScore}</div></div>
             </div>
+          </div>
+          <div className="bg-white/10 backdrop-blur rounded-3xl p-6 mb-4">
+            <div className="text-center mb-6 min-h-[128px] flex items-center justify-center">
+              {gameState === 'idle' && <div className="flex flex-col items-center"><Image src="/images/mascotes/leo/leo_boas_vindas_resultado.webp" alt="Leo" width={100} height={100} className="object-contain mb-2" /><p className="text-white text-xl font-bold">Clique em COMEÇAR para jogar!</p></div>}
+              {gameState === 'listening' && <div className="flex flex-col items-center"><Image src="/images/mascotes/mila/mila_apoio_resultado.webp" alt="Mila" width={100} height={100} className="object-contain mb-2 animate-pulse" /><p className="text-yellow-300 text-2xl font-bold animate-pulse">🎧 ESCUTE COM ATENÇÃO!</p></div>}
+              {gameState === 'playing' && !showSuccess && !showError && <div className="flex flex-col items-center"><Image src="/images/mascotes/leo/leo_apontando_resultado.webp" alt="Leo" width={100} height={100} className="object-contain mb-2" /><p className="text-green-300 text-2xl font-bold">SUA VEZ! REPITA A SEQUÊNCIA!</p></div>}
+              {showSuccess && <div className="flex flex-col items-center animate-bounce"><Image src="/images/mascotes/leo/leo_joinha_resultado.webp" alt="Leo" width={120} height={120} className="object-contain mb-2" /><p className="text-green-400 text-3xl font-bold">PERFEITO! 🎉</p></div>}
+              {showError && <div className="flex flex-col items-center"><Image src="/images/mascotes/leo/leo_surpreso_resultado.webp" alt="Leo" width={100} height={100} className="object-contain mb-2" /><p className="text-red-400 text-2xl font-bold">OPS! TENTE NOVAMENTE!</p></div>}
+            </div>
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              {buttons.map((button, index) => (
+                <button key={index} id={`btn-${index}`} onClick={() => handleNoteClick(index)} disabled={gameState !== 'playing' || isPlaying} className={`musical-button ${button.color} h-24 md:h-28 rounded-2xl font-bold text-white text-2xl md:text-3xl flex flex-col items-center justify-center gap-1 shadow-lg ${gameState === 'listening' && currentNote === index ? 'scale-110 ring-4 ring-white' : ''}`}>
+                  <span className="text-3xl">{button.emoji}</span>
+                  <span className="text-lg font-bold">{button.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex justify-center gap-3 flex-wrap">
+              {gameState === 'idle' && (
+                  <button onClick={startRound} className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-bold text-lg hover:scale-105 transition-transform shadow-lg flex items-center gap-2">
+                      <Play className="w-5 h-5" /> COMEÇAR
+                  </button>
+              )}
+              {gameState === 'playing' && (
+                  <button onClick={() => playSequence(sequence)} disabled={isPlaying} className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg flex items-center gap-2 disabled:opacity-50">
+                      <RotateCcw className="w-5 h-5" /> OUVIR NOVAMENTE
+                  </button>
+              )}
+              <button onClick={resetGame} className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg">
+                  MENU
+              </button>
+          </div>
         </div>
+      </div>
     );
   }
 
-  // Renderização principal
   if (currentScreen === 'titleScreen') return <TitleScreen />;
   if (currentScreen === 'instructions') return <InstructionsScreen />;
   return <GameScreen />;
