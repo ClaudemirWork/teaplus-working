@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './shadowgame.css';
 import Image from 'next/image';
 
-// Lista de nomes base das imagens. Adicione ou remova nomes aqui.
+// Lista de nomes base das imagens.
 const imageNames = [
   'abacate', 'abelha', 'abelha_feliz', 'abelha_voando', 'abelhinha', 'aguia', 'amigos', 
   'apresentacao', 'arvore_natal', 'baleia', 'bananas', 'barraca', 'beagle', 'berinjela', 
@@ -28,7 +28,7 @@ const imageNames = [
   'violino', 'vulcao', 'zebra'
 ];
 
-// Função para embaralhar um array (algoritmo Fisher-Yates)
+// Função para embaralhar um array
 const shuffleArray = (array: any[]) => {
   const newArray = [...array];
   for (let i = newArray.length - 1; i > 0; i--) {
@@ -38,89 +38,68 @@ const shuffleArray = (array: any[]) => {
   return newArray;
 };
 
-type GameState = 'start' | 'instructions' | 'playing';
+type GameState = 'start' | 'phase-selection' | 'playing';
 type RoundType = 'imageToShadow' | 'shadowToImage';
 
 export default function ShadowGamePage() {
   const [gameState, setGameState] = useState<GameState>('start');
+  const [selectedPhase, setSelectedPhase] = useState<number | null>(null);
   const [roundData, setRoundData] = useState<{
     mainItem: string;
     options: string[];
     correctAnswer: string;
-    type: RoundType;
   } | null>(null);
 
-  // --- LÓGICA DE PONTUAÇÃO E FASES ---
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
-  const [currentPhase, setCurrentPhase] = useState(1);
   const [pointsFeedback, setPointsFeedback] = useState<string | null>(null);
-
   const [feedback, setFeedback] = useState<Record<string, 'correct' | 'incorrect'>>({});
   const successAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Prepara o áudio quando o componente montar
     successAudioRef.current = new Audio('/sounds/coin.wav');
   }, []);
 
-  const startNewRound = () => {
+  const startNewRound = (phase: number) => {
     setFeedback({});
     setPointsFeedback(null);
     let availableImages = [...imageNames];
-
     const correctImageName = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
     
-    // Define o tipo de rodada com base na fase
     let roundType: RoundType;
-    if (currentPhase === 1) {
-      roundType = 'imageToShadow';
-    } else if (currentPhase === 2) {
-      roundType = 'shadowToImage';
-    } else { // Fase 3
-      roundType = Math.random() < 0.5 ? 'imageToShadow' : 'shadowToImage';
-    }
+    if (phase === 1) roundType = 'imageToShadow';
+    else if (phase === 2) roundType = 'shadowToImage';
+    else roundType = Math.random() < 0.5 ? 'imageToShadow' : 'shadowToImage';
 
-    let mainItem: string;
-    let correctAnswer: string;
-    let options: string[] = [];
-
-    // Escolhe duas opções incorretas
+    let mainItem: string, correctAnswer: string, options: string[] = [];
     const wrongImageName1 = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
     const wrongImageName2 = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
 
     if (roundType === 'imageToShadow') {
       mainItem = `/shadow-game/images/${correctImageName}.webp`;
       correctAnswer = `/shadow-game/shadows/${correctImageName}_black.webp`;
-      options = [
-        correctAnswer,
-        `/shadow-game/shadows/${wrongImageName1}_black.webp`,
-        `/shadow-game/shadows/${wrongImageName2}_black.webp`,
-      ];
-    } else { // shadowToImage
+      options = [correctAnswer, `/shadow-game/shadows/${wrongImageName1}_black.webp`, `/shadow-game/shadows/${wrongImageName2}_black.webp`];
+    } else {
       mainItem = `/shadow-game/shadows/${correctImageName}_black.webp`;
       correctAnswer = `/shadow-game/images/${correctImageName}.webp`;
-      options = [
-        correctAnswer,
-        `/shadow-game/images/${wrongImageName1}.webp`,
-        `/shadow-game/images/${wrongImageName2}.webp`,
-      ];
+      options = [correctAnswer, `/shadow-game/images/${wrongImageName1}.webp`, `/shadow-game/images/${wrongImageName2}.webp`];
     }
 
-    setRoundData({
-      mainItem,
-      options: shuffleArray(options),
-      correctAnswer,
-      type: roundType,
-    });
+    setRoundData({ mainItem, options: shuffleArray(options), correctAnswer });
+  };
+  
+  const handlePhaseSelect = (phase: number) => {
+    setSelectedPhase(phase);
+    setScore(0);
+    setStreak(0);
+    setGameState('playing');
+    startNewRound(phase);
   };
 
   const handleOptionClick = (clickedOption: string) => {
-    if (Object.keys(feedback).length > 0) return; // Impede múltiplos cliques
+    if (Object.keys(feedback).length > 0 || !selectedPhase) return;
 
     if (clickedOption === roundData?.correctAnswer) {
-      // --- ACERTOU ---
       const newStreak = streak + 1;
       let pointsGained = 100;
       if (newStreak >= 5) pointsGained = 500;
@@ -132,68 +111,53 @@ export default function ShadowGamePage() {
       successAudioRef.current?.play();
       setFeedback({ [clickedOption]: 'correct' });
 
-      // Lógica de progressão de fase
-      const newCorrectCount = correctAnswersCount + 1;
-      setCorrectAnswersCount(newCorrectCount);
-      if (newCorrectCount % 5 === 0) {
-        if (currentPhase < 3) {
-          setCurrentPhase(currentPhase + 1);
-        }
-      }
-
       setTimeout(() => {
-        startNewRound();
+        startNewRound(selectedPhase);
       }, 1500);
     } else {
-      // --- ERROU ---
       setStreak(0);
       setFeedback({ [clickedOption]: 'incorrect' });
       setTimeout(() => setFeedback({}), 800);
     }
   };
 
-  const startGame = () => {
-    setGameState('playing');
-    // Resetar tudo para um novo jogo
-    setScore(0);
-    setStreak(0);
-    setCurrentPhase(1);
-    setCorrectAnswersCount(0);
-    startNewRound();
-  };
-
-  // Renderização condicional com base no estado do jogo
   const renderContent = () => {
     switch (gameState) {
       case 'start':
         return (
           <div className="game-screen start-screen">
-            <Image src="/shadow-game/leo_abertura.webp" alt="Mascote Léo" width={250} height={250} className="mascot-image" />
-            <h1>Jogo das Sombras</h1>
-            <p>Encontre a sombra correta!</p>
-            <button className="start-button" onClick={() => setGameState('instructions')}>Iniciar</button>
+            <Image src="/shadow-game/leo_abertura.webp" alt="Mascote Léo" width={250} height={250} className="mascot-image-large" />
+            <h1 className="main-title">Jogo das Sombras</h1>
+            <button className="start-button" onClick={() => setGameState('phase-selection')}>Iniciar</button>
           </div>
         );
-      case 'instructions':
+      case 'phase-selection':
         return (
-          <div className="game-screen instructions-screen">
-            <h2>Como Jogar</h2>
-            <div className='instructions-text-container'>
-                <p><strong>Este jogo é composto de 3 fases:</strong></p>
-                <p><strong>Fase 1:</strong> Encontre a sombra correta que corresponde à imagem em destaque na parte superior.</p>
-                <p><strong>Fase 2:</strong> Encontre a imagem correta que corresponde à sombra da parte superior.</p>
-                <p><strong>Fase 3:</strong> Desafie sua atenção, ora encontrando a sombra correta da imagem acima e ora encontrando a imagem a partir da sombra. Seja o campeão de observação!</p>
+          <div className="game-screen phase-selection-screen">
+            <h2>Escolha uma Fase</h2>
+            <div className="phase-container">
+              <button className="phase-button" onClick={() => handlePhaseSelect(1)}>
+                <h3>Fase 1</h3>
+                <p>Encontre a sombra correta para cada imagem.</p>
+              </button>
+              <button className="phase-button" onClick={() => handlePhaseSelect(2)}>
+                <h3>Fase 2</h3>
+                <p>Encontre a imagem correta para cada sombra.</p>
+              </button>
+              <button className="phase-button" onClick={() => handlePhaseSelect(3)}>
+                <h3>Fase 3: Desafio!</h3>
+                <p>Um desafio misto de imagens e sombras. Preste muita atenção!</p>
+              </button>
             </div>
-            <button className="start-button" onClick={startGame}>Começar a Jogar!</button>
           </div>
         );
       case 'playing':
         if (!roundData) return <div>Carregando...</div>;
         return (
           <div className="game-screen playing-screen">
-            <div className="score-container">
-              <div className="score-display">Pontos: {score}</div>
-              <div className="phase-display">Fase: {currentPhase}</div>
+            <div className="top-bar">
+                <button className="back-button" onClick={() => setGameState('phase-selection')}>&larr; Voltar</button>
+                <div className="score-display">Pontos: {score}</div>
             </div>
             {pointsFeedback && <div className="points-feedback fade-out-up">{pointsFeedback}</div>}
             
