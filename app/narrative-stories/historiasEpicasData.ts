@@ -1,5 +1,4 @@
 // Arquivo: app/narrative-stories/historiasEpicasData.ts
-// ARQUIVO COMPLETO COM TODAS AS FRASES DO JOGO
 
 export interface Challenge {
   id: string;
@@ -12,7 +11,7 @@ export interface Challenge {
 
 export const challengesData: Challenge[] = [
   // ========================================
-  // PERSONAGENS (36 cards)
+  // CATEGORIA: PERSONAGENS
   // ========================================
   {
     id: 'cachorro',
@@ -43,31 +42,17 @@ export const challengesData: Challenge[] = [
     ]
   },
   {
-    id: 'cavalo',
-    cardId: 'cavalo',
+    id: 'construtor',
+    cardId: 'construtor',
     category: 'personagens',
-    displayLabel: 'Cavalo',
-    image: '/narrative_cards/personagens/cavalo.webp',
+    displayLabel: 'Construtor',
+    image: '/narrative_cards/personagens/construtor.webp',
     phrases: [
-      'O _______ corre e galopa pelo campo verde.',
-      'Quem adora comer cenouras e feno? É o _______.',
-      'Na fazenda, podemos andar de _______.',
-      'O _______ é grande, forte e vive no estábulo.',
-      'O barulho que o _______ faz se chama relincho.'
-    ]
-  },
-  {
-    id: 'cozinheira',
-    cardId: 'cozinheira',
-    category: 'personagens',
-    displayLabel: 'Cozinheira',
-    image: '/narrative_cards/personagens/cozinheira.webp',
-    phrases: [
-      'A _______ faz uma comida deliciosa no restaurante.',
-      'Quem usa um chapéu branco e alto na cozinha? É a _______.',
-      'A _______ vai fazer um bolo de chocolate para a festa.',
-      'Com sua colher e panela, a _______ prepara o almoço.',
-      'A _______ experimenta a sopa para ver se está boa.'
+      'O _______ usa capacete amarelo para trabalhar.',
+      'Quem constrói as casas e prédios? É o _______.',
+      'O _______ sabe usar o martelo e a furadeira.',
+      'O _______ trabalha com tijolos e cimento.',
+      'Para fazer uma casa nova, precisamos de um _______.'
     ]
   },
   {
@@ -77,333 +62,137 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Cozinheiro',
     image: '/narrative_cards/personagens/cozinheiro.webp',
     phrases: [
-      'O _______ prepara um jantar especial para todos.',
-      'Com seu avental, o _______ corta os legumes.',
-      'O _______ trabalha na cozinha do hospital.',
-      'Quem faz a pizza mais gostosa da cidade? É o _______.',
-      'O _______ usa temperos para a comida ficar saborosa.'
+      'O _______ usa um chapéu branco bem alto.',
+      'Quem prepara a comida deliciosa? É o _______.',
+      'O _______ corta os legumes com muito cuidado.',
+      'O _______ faz o bolo de chocolate mais gostoso.',
+      'No restaurante, o _______ cozinha para todos.'
     ]
   },
   {
-    id: 'eu_homem',
-    cardId: 'eu_homem',
+    id: 'dentista',
+    cardId: 'dentista',
     category: 'personagens',
-    displayLabel: 'Eu',
-    image: '/narrative_cards/personagens/eu_homem.webp',
+    displayLabel: 'Dentista',
+    image: '/narrative_cards/personagens/dentista.webp',
     phrases: [
-      'Quando me olho no espelho, eu vejo _______.',
-      'Quem está com sono e quer dormir? Sou _______.',
-      'Este é o meu brinquedo, quem está brincando sou _______.',
-      'A professora perguntou meu nome, e eu respondi: "sou _______".',
-      '_______ gosto de sorvete de morango.'
+      'O _______ cuida dos nossos dentes.',
+      'Vamos ao _______ para manter os dentes saudáveis.',
+      'O _______ ensina a escovar os dentes direito.',
+      'O _______ usa uma cadeira que sobe e desce.',
+      'Quando o dente dói, procuramos o _______.'
     ]
   },
   {
-    id: 'eu_mulher',
-    cardId: 'eu_mulher',
+    id: 'elefante',
+    cardId: 'elefante',
     category: 'personagens',
-    displayLabel: 'Eu',
-    image: '/narrative_cards/personagens/eu_mulher.webp',
+    displayLabel: 'Elefante',
+    image: '/narrative_cards/personagens/elefante.webp',
     phrases: [
-      'Quem está com um vestido novo hoje? Sou _______.',
-      '_______ estou com fome e quero almoçar.',
-      'A mamãe me chamou e eu disse: "sou _______!".',
-      'Esta é a minha boneca, quem cuida dela sou _______.',
-      'Quando me vejo na foto, aponto e digo: "essa sou _______".'
+      'O _______ tem uma tromba muito comprida.',
+      'O _______ é o maior animal terrestre.',
+      'O _______ usa a tromba para pegar comida.',
+      'O _______ vive em grupos na savana.',
+      'As orelhas do _______ são enormes!'
     ]
   },
   {
-    id: 'filha',
-    cardId: 'filha',
+    id: 'gato',
+    cardId: 'gato',
     category: 'personagens',
-    displayLabel: 'Filha',
-    image: '/narrative_cards/personagens/filha.webp',
+    displayLabel: 'Gato',
+    image: '/narrative_cards/personagens/gato.webp',
     phrases: [
-      'A _______ é a menina amada pelo papai e pela mamãe.',
-      'A _______ deu um grande abraço em sua mãe.',
-      'A mamãe penteia o cabelo da sua _______.',
-      'A _______ está brincando de casinha no quarto.',
-      '"Te amo", disse a _______ para seu pai.'
+      'Miau! O _______ está miando na janela.',
+      'O _______ gosta de brincar com novelo de lã.',
+      'O _______ dorme o dia todo no sofá.',
+      'O _______ tem bigodes compridos.',
+      'O _______ caça ratinhos à noite.'
     ]
   },
   {
-    id: 'filho',
-    cardId: 'filho',
+    id: 'homem',
+    cardId: 'homem',
     category: 'personagens',
-    displayLabel: 'Filho',
-    image: '/narrative_cards/personagens/filho.webp',
+    displayLabel: 'Homem',
+    image: '/narrative_cards/personagens/homem.webp',
     phrases: [
-      'O papai joga bola com seu _______ no quintal.',
-      'O _______ ganhou um carrinho novo de aniversário.',
-      'O _______ é o menino querido da família.',
-      '"Papai, me ajuda?", pediu o _______.',
-      'O _______ está desenhando um super-herói.'
+      'O _______ está caminhando no parque.',
+      'O _______ lê o jornal todas as manhãs.',
+      'O _______ trabalha no escritório.',
+      'O _______ usa gravata para trabalhar.',
+      'O _______ gosta de assistir futebol.'
     ]
   },
   {
-    id: 'gatinho',
-    cardId: 'gatinho',
+    id: 'menina',
+    cardId: 'menina',
     category: 'personagens',
-    displayLabel: 'Gatinho',
-    image: '/narrative_cards/personagens/gatinho.webp',
+    displayLabel: 'Menina',
+    image: '/narrative_cards/personagens/menina.webp',
     phrases: [
-      'Miau! O _______ está bebendo leite no pires.',
-      'O _______ adora dormir enroladinho no sofá.',
-      'Quem gosta de brincar com novelo de lã? É o _______.',
-      'O _______ se lambe para ficar bem limpinho.',
-      'O _______ ronrona quando recebe carinho.'
+      'A _______ brinca com sua boneca favorita.',
+      'A _______ usa vestido colorido.',
+      'A _______ pula corda no recreio.',
+      'A _______ desenha flores no caderno.',
+      'A _______ canta músicas alegres.'
     ]
   },
   {
-    id: 'grupo_pessoas',
-    cardId: 'grupo_pessoas',
+    id: 'menino',
+    cardId: 'menino',
     category: 'personagens',
-    displayLabel: 'Grupo de Pessoas',
-    image: '/narrative_cards/personagens/grupo_pessoas.webp',
+    displayLabel: 'Menino',
+    image: '/narrative_cards/personagens/menino.webp',
     phrases: [
-      'O _______ está assistindo a um show no parque.',
-      'Um _______ estava esperando na fila do cinema.',
-      'Muitas vozes conversando formam um _______.',
-      'O _______ cantou "parabéns" na festa de aniversário.',
-      'Para jogar futebol, precisamos de um _______.'
+      'O _______ joga bola com os amigos.',
+      'O _______ anda de bicicleta no parque.',
+      'O _______ faz a lição de casa.',
+      'O _______ gosta de videogame.',
+      'O _______ coleciona figurinhas.'
     ]
   },
   {
-    id: 'irma',
-    cardId: 'irma',
+    id: 'mulher',
+    cardId: 'mulher',
     category: 'personagens',
-    displayLabel: 'Irmã',
-    image: '/narrative_cards/personagens/irma.webp',
+    displayLabel: 'Mulher',
+    image: '/narrative_cards/personagens/mulher.webp',
     phrases: [
-      'A minha _______ brinca de boneca comigo.',
-      'Eu divido o meu quarto com a minha _______ mais velha.',
-      'A _______ me ajudou a fazer o dever de casa.',
-      'A _______ e eu gostamos de assistir desenhos juntos.',
-      'Vou dar um presente de aniversário para minha _______.'
+      'A _______ compra frutas na feira.',
+      'A _______ trabalha no computador.',
+      'A _______ pratica yoga pela manhã.',
+      'A _______ leva os filhos à escola.',
+      'A _______ prepara o jantar da família.'
     ]
   },
   {
-    id: 'irmao',
-    cardId: 'irmao',
+    id: 'passarinho',
+    cardId: 'passarinho',
     category: 'personagens',
-    displayLabel: 'Irmão',
-    image: '/narrative_cards/personagens/irmao.webp',
+    displayLabel: 'Passarinho',
+    image: '/narrative_cards/personagens/passarinho.webp',
     phrases: [
-      'O meu _______ mais velho me ensinou a andar de bicicleta.',
-      'Eu e meu _______ jogamos videogame juntos.',
-      'O _______ me defende quando alguém briga comigo.',
-      'O _______ e eu somos filhos do mesmo papai e mamãe.',
-      'Peguei o carrinho do meu _______ emprestado para brincar.'
+      'O _______ canta na árvore.',
+      'O _______ faz seu ninho nos galhos.',
+      'O _______ voa bem alto no céu.',
+      'O _______ come sementes e frutas.',
+      'O _______ acorda cedo e canta.'
     ]
   },
   {
-    id: 'jardineiro',
-    cardId: 'jardineiro',
+    id: 'peixe',
+    cardId: 'peixe',
     category: 'personagens',
-    displayLabel: 'Jardineiro',
-    image: '/narrative_cards/personagens/jardineiro.webp',
+    displayLabel: 'Peixe',
+    image: '/narrative_cards/personagens/peixe.webp',
     phrases: [
-      'O _______ cuida das flores e das plantas do jardim.',
-      'Quem usa um regador para molhar a grama? É o _______.',
-      'O _______ corta a grama para ela ficar bonita.',
-      'Para deixar o jardim florido, chamamos o _______.',
-      'O _______ planta novas sementes na terra.'
-    ]
-  },
-  {
-    id: 'lixeiro',
-    cardId: 'lixeiro',
-    category: 'personagens',
-    displayLabel: 'Lixeiro',
-    image: '/narrative_cards/personagens/lixeiro.webp',
-    phrases: [
-      'O _______ passa na nossa rua para recolher o lixo.',
-      'Quem dirige o grande caminhão de lixo? É o _______.',
-      'O _______ ajuda a manter a nossa cidade limpa.',
-      'Colocamos o saco de lixo na rua para o _______ pegar.',
-      'O _______ usa luvas para se proteger enquanto trabalha.'
-    ]
-  },
-  {
-    id: 'mecanico',
-    cardId: 'mecanico',
-    category: 'personagens',
-    displayLabel: 'Mecânico',
-    image: '/narrative_cards/personagens/mecanico.webp',
-    phrases: [
-      'O carro quebrou, precisamos chamar o _______.',
-      'Quem usa ferramentas para consertar motores? É o _______.',
-      'O _______ trabalha na oficina de carros.',
-      'Para trocar o pneu do carro, o _______ usa uma chave de roda.',
-      'O _______ entende tudo sobre carros, motos e caminhões.'
-    ]
-  },
-  {
-    id: 'medico',
-    cardId: 'medico',
-    category: 'personagens',
-    displayLabel: 'Médico',
-    image: '/narrative_cards/personagens/medico.webp',
-    phrases: [
-      'Quando estamos doentes, vamos ao _______.',
-      'O _______ usa um estetoscópio para ouvir nosso coração.',
-      'Quem trabalha no hospital e cuida dos pacientes? É o _______.',
-      'O _______ nos dá remédio para ficarmos bons logo.',
-      'Para ver se temos febre, o _______ usa um termômetro.'
-    ]
-  },
-  {
-    id: 'meu_avo',
-    cardId: 'meu_avo',
-    category: 'personagens',
-    displayLabel: 'Meu Avô',
-    image: '/narrative_cards/personagens/meu_avo.webp',
-    phrases: [
-      'O _______ gosta de contar histórias de quando ele era jovem.',
-      'O pai do meu papai é o _______.',
-      'O _______ usa óculos para ler o jornal.',
-      'Eu gosto de passear na praça com o _______.',
-      'O _______ tem cabelos brancos e um grande coração.'
-    ]
-  },
-  {
-    id: 'minha_avo',
-    cardId: 'minha_avo',
-    category: 'personagens',
-    displayLabel: 'Minha Avó',
-    image: '/narrative_cards/personagens/minha_avo.webp',
-    phrases: [
-      'A _______ faz o melhor bolo de chocolate do mundo.',
-      'A mãe da minha mamãe é a _______.',
-      'A _______ me dá um abraço quentinho e gostoso.',
-      'Eu adoro dormir na casa da _______.',
-      'A _______ me ensinou a fazer biscoitos.'
-    ]
-  },
-  {
-    id: 'pai_mae',
-    cardId: 'pai_mae',
-    category: 'personagens',
-    displayLabel: 'Pai e Mãe',
-    image: '/narrative_cards/personagens/pai_mae.webp',
-    phrases: [
-      'O _______ cuidam de mim com muito amor e carinho.',
-      'Quem me leva para a escola todos os dias? É o _______.',
-      'Na hora de dormir, o _______ me contam uma história.',
-      'O _______ trabalham para cuidar da nossa família.',
-      'Eu amo muito o meu _______.'
-    ]
-  },
-  {
-    id: 'papai_noel',
-    cardId: 'papai_noel',
-    category: 'personagens',
-    displayLabel: 'Papai Noel',
-    image: '/narrative_cards/personagens/papai_noel.webp',
-    phrases: [
-      'O _______ entrega presentes para as crianças no Natal.',
-      'Quem tem uma barba branca e comprida e usa roupa vermelha? É o _______.',
-      'O _______ viaja em um trenó puxado por renas.',
-      'Ho ho ho! É a risada do _______.',
-      'O _______ mora lá no Polo Norte.'
-    ]
-  },
-  {
-    id: 'pessoa',
-    cardId: 'pessoa',
-    category: 'personagens',
-    displayLabel: 'Pessoa',
-    image: '/narrative_cards/personagens/pessoa.webp',
-    phrases: [
-      'Uma _______ está andando na calçada.',
-      'Toda _______ tem um nome e uma história.',
-      'Aquela _______ está esperando o ônibus.',
-      'Uma _______ educada diz "por favor" e "obrigado".',
-      'Você é uma _______ muito especial.'
-    ]
-  },
-  {
-    id: 'pessoa_alta',
-    cardId: 'pessoa_alta',
-    category: 'personagens',
-    displayLabel: 'Pessoa Alta',
-    image: '/narrative_cards/personagens/pessoa_alta.webp',
-    phrases: [
-      'A _______ consegue pegar o biscoito na prateleira de cima.',
-      'O jogador de basquete geralmente é uma _______.',
-      'Para trocar a lâmpada, o papai chamou uma _______.',
-      'A _______ consegue ver por cima do muro.',
-      'A girafa é um animal com pescoço comprido, como uma _______.'
-    ]
-  },
-  {
-    id: 'pessoa_baixa',
-    cardId: 'pessoa_baixa',
-    category: 'personagens',
-    displayLabel: 'Pessoa Baixa',
-    image: '/narrative_cards/personagens/pessoa_baixa.webp',
-    phrases: [
-      'A _______ não alcança o botão do elevador.',
-      'Para pegar o livro, a _______ precisou de uma escadinha.',
-      'A _______ consegue se esconder em lugares pequenos.',
-      'O anão da história era uma _______.',
-      'A _______ pediu ajuda para amarrar o sapato.'
-    ]
-  },
-  {
-    id: 'pessoa_cega',
-    cardId: 'pessoa_cega',
-    category: 'personagens',
-    displayLabel: 'Pessoa Cega',
-    image: '/narrative_cards/personagens/pessoa_cega.webp',
-    phrases: [
-      'A _______ usa um cão-guia para ajudar a andar na rua.',
-      'Quem usa uma bengala branca para se localizar? É a _______.',
-      'A _______ lê livros especiais usando os dedos.',
-      'A _______ não consegue ver as cores, mas ouve muito bem.',
-      'Para atravessar a rua, ajudamos a _______.'
-    ]
-  },
-  {
-    id: 'pessoa_gorda',
-    cardId: 'pessoa_gorda',
-    category: 'personagens',
-    displayLabel: 'Pessoa Gorda',
-    image: '/narrative_cards/personagens/pessoa_gorda.webp',
-    phrases: [
-      'A _______ precisa de um cinto maior para sua calça.',
-      'O Papai Noel é uma _______, com uma grande barriga.',
-      'A _______ deu um abraço bem fofinho e grande.',
-      'Para se pesar, a _______ subiu na balança.',
-      'Aquela _______ está usando uma roupa bem larga.'
-    ]
-  },
-  {
-    id: 'pessoa_legal',
-    cardId: 'pessoa_legal',
-    category: 'personagens',
-    displayLabel: 'Pessoa Legal',
-    image: '/narrative_cards/personagens/pessoa_legal.webp',
-    phrases: [
-      'A _______ sempre divide o lanche com os amigos.',
-      'Todo mundo gosta de brincar com a _______.',
-      'A _______ é simpática e sorri para todos.',
-      'A _______ ajuda os outros quando eles precisam.',
-      'É muito bom conversar com uma _______.'
-    ]
-  },
-  {
-    id: 'pessoa_magra',
-    cardId: 'pessoa_magra',
-    category: 'personagens',
-    displayLabel: 'Pessoa Magra',
-    image: '/narrative_cards/personagens/pessoa_magra.webp',
-    phrases: [
-      'A _______ consegue passar pela porta bem estreita.',
-      'O atleta de corrida geralmente é uma _______.',
-      'A _______ usa roupas de tamanho pequeno.',
-      'O palito de fósforo é fino como uma _______.',
-      'A _______ come bastante, mas não engorda.'
+      'O _______ nada no aquário.',
+      'O _______ respira debaixo da água.',
+      'O _______ tem escamas brilhantes.',
+      'O _______ come ração especial.',
+      'O _______ faz bolhas na água.'
     ]
   },
   {
@@ -413,11 +202,11 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Policial',
     image: '/narrative_cards/personagens/policial.webp',
     phrases: [
-      'O _______ ajuda a manter a cidade segura.',
-      'Quem dirige o carro de polícia com a sirene ligada? É o _______.',
-      'O _______ prende os bandidos e ladrões.',
-      'Se estamos perdidos, podemos pedir ajuda para o _______.',
-      'O _______ usa um uniforme azul e um apito.'
+      'O _______ protege as pessoas.',
+      'O _______ usa uniforme azul.',
+      'O _______ dirige a viatura.',
+      'O _______ ajuda quem precisa.',
+      'O _______ cuida da segurança da cidade.'
     ]
   },
   {
@@ -427,11 +216,11 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Professor',
     image: '/narrative_cards/personagens/professor.webp',
     phrases: [
-      'O _______ ensina os alunos a ler e a escrever.',
-      'Quem escreve na lousa da sala de aula? É o _______.',
-      'O _______ ajuda as crianças com o dever de casa.',
-      'Na escola, o _______ ensina matemática e ciências.',
-      'O _______ é o mestre da turma.'
+      'O _______ ensina na escola.',
+      'O _______ escreve no quadro.',
+      'O _______ explica a matéria.',
+      'O _______ corrige as provas.',
+      'O _______ ajuda os alunos a aprender.'
     ]
   },
   {
@@ -441,239 +230,57 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Professora',
     image: '/narrative_cards/personagens/professora.webp',
     phrases: [
-      'A _______ lê histórias para as crianças na escola.',
-      'A _______ ensina as vogais: a, e, i, o, u.',
-      '"Parabéns, nota 10!", disse a _______ para o aluno.',
-      'A _______ cuida dos seus alunos com carinho.',
-      'Na hora do recreio, a _______ observa as crianças brincando.'
-    ]
-  },
-  {
-    id: 'soldado',
-    cardId: 'soldado',
-    category: 'personagens',
-    displayLabel: 'Soldado',
-    image: '/narrative_cards/personagens/soldado.webp',
-    phrases: [
-      'O _______ marcha no desfile de 7 de setembro.',
-      'Quem protege o nosso país? É o _______.',
-      'O _______ usa um uniforme verde e um capacete.',
-      'O _______ obedece às ordens do seu comandante.',
-      'O _______ faz treinamento para ser forte e corajoso.'
-    ]
-  },
-  {
-    id: 'tartaruga',
-    cardId: 'tartaruga',
-    category: 'personagens',
-    displayLabel: 'Tartaruga',
-    image: '/narrative_cards/personagens/tartaruga.webp',
-    phrases: [
-      'A _______ anda bem devagar e com calma.',
-      'Quem carrega a própria casa nas costas? É a _______.',
-      'A _______ pode viver por muitos e muitos anos.',
-      'A _______ vive na água e também na terra.',
-      'A _______ esconde a cabeça dentro do casco quando está com medo.'
-    ]
-  },
-  {
-    id: 'taxista',
-    cardId: 'taxista',
-    category: 'personagens',
-    displayLabel: 'Taxista',
-    image: '/narrative_cards/personagens/taxista.webp',
-    phrases: [
-      'O _______ dirige um carro amarelo para levar as pessoas.',
-      'Para ir ao aeroporto, chamamos um _______.',
-      'O _______ conhece todos os caminhos da cidade.',
-      '"Para onde vamos?", perguntou o _______.',
-      'O _______ trabalha dirigindo o dia todo.'
-    ]
-  },
-  {
-    id: 'voce',
-    cardId: 'voce',
-    category: 'personagens',
-    displayLabel: 'Você',
-    image: '/narrative_cards/personagens/voce.webp',
-    phrases: [
-      'Quem está jogando este jogo agora? É _______.',
-      'O Leo está falando com _______!',
-      '_______ é uma criança muito inteligente.',
-      'Eu estou aqui, e aí está _______.',
-      'Aperte o botão se _______ estiver pronto para começar.'
+      'A _______ conta histórias para a turma.',
+      'A _______ ensina a ler e escrever.',
+      'A _______ organiza as atividades.',
+      'A _______ abraça os alunos.',
+      'A _______ prepara aulas divertidas.'
     ]
   },
 
   // ========================================
-  // AÇÕES (100 cards)
+  // CATEGORIA: AÇÕES
   // ========================================
   {
-    id: 'abotoar_casaco',
-    cardId: 'abotoar_casaco',
+    id: 'abrir',
+    cardId: 'abrir',
     category: 'acoes',
-    displayLabel: 'Abotoar o casaco',
-    image: '/narrative_cards/acoes/abotoar_casaco.webp',
+    displayLabel: 'Abrir',
+    image: '/narrative_cards/acoes/abrir.webp',
     phrases: [
-      'Antes de sair no frio, eu preciso _______.',
-      'A mamãe me ajuda a _______ para eu não sentir frio.',
-      'Eu já sou grande e consigo _______ sozinho.',
-      'Para a roupa ficar bem fechadinha, você tem que _______.',
-      'O zíper estragou, então vou _______.'
+      'Vamos _______ a porta para entrar.',
+      'É hora de _______ o presente de aniversário!',
+      'Preciso _______ a janela, está calor.',
+      'Vou _______ o livro para ler a história.',
+      'Quero _______ a caixa de brinquedos.'
     ]
   },
   {
-    id: 'abracar',
-    cardId: 'abracar',
+    id: 'andar',
+    cardId: 'andar',
     category: 'acoes',
-    displayLabel: 'Abraçar',
-    image: '/narrative_cards/acoes/abracar.webp',
+    displayLabel: 'Andar',
+    image: '/narrative_cards/acoes/andar.webp',
     phrases: [
-      'Quando a vovó chega, eu corro para _______.',
-      'Se um amigo está triste, você pode _______ para confortá-lo.',
-      'O ursinho de pelúcia é muito fofinho de _______.',
-      'Na despedida, eu vou _______ bem forte a mamãe.',
-      'Eu gosto de _______ as pessoas que eu amo muito.'
+      'Vamos _______ até o parque.',
+      'O bebê aprendeu a _______ sozinho.',
+      'Gosto de _______ na praia.',
+      'Vou _______ de mãos dadas com você.',
+      'É bom _______ depois de comer.'
     ]
   },
   {
-    id: 'abrir_porta',
-    cardId: 'abrir_porta',
+    id: 'beber',
+    cardId: 'beber',
     category: 'acoes',
-    displayLabel: 'Abrir a porta',
-    image: '/narrative_cards/acoes/abrir_porta.webp',
+    displayLabel: 'Beber',
+    image: '/narrative_cards/acoes/beber.webp',
     phrases: [
-      'Quando a campainha toca, nós vamos _______.',
-      'Para o cachorrinho entrar, eu preciso _______.',
-      'Use a chave para _______ e entrar em casa.',
-      'Por favor, você pode _______ para mim?',
-      'Toc toc! Alguém pode _______?'
-    ]
-  },
-  {
-    id: 'acender_luz',
-    cardId: 'acender_luz',
-    category: 'acoes',
-    displayLabel: 'Acender a luz',
-    image: '/narrative_cards/acoes/acender_luz.webp',
-    phrases: [
-      'O quarto está escuro, eu preciso _______.',
-      'Para conseguir ler o livro à noite, eu vou _______.',
-      'Quando o sol vai embora, é hora de _______ de casa.',
-      'Não estou enxergando nada, alguém pode _______?',
-      'O papai usa o interruptor para _______.'
-    ]
-  },
-  {
-    id: 'acordar',
-    cardId: 'acordar',
-    category: 'acoes',
-    displayLabel: 'Acordar',
-    image: '/narrative_cards/acoes/acordar.webp',
-    phrases: [
-      'O galo canta quando é hora de _______.',
-      'O despertador toca para a gente _______ de manhã.',
-      'Depois de uma boa noite de sono, eu vou _______.',
-      '"Bom dia!", disse a mamãe na hora de me _______.',
-      'Eu gosto de _______ e espreguiçar na cama.'
-    ]
-  },
-  {
-    id: 'aguardar',
-    cardId: 'aguardar',
-    category: 'acoes',
-    displayLabel: 'Aguardar',
-    image: '/narrative_cards/acoes/aguardar.webp',
-    phrases: [
-      'Na fila do mercado, temos que _______ nossa vez.',
-      'O sinal está vermelho, os carros precisam _______.',
-      'Sente no sofá e vamos _______ o papai chegar.',
-      'O bolo está no forno, agora é só _______.',
-      '"Por favor, espere um momento", a moça pediu para _______.'
-    ]
-  },
-  {
-    id: 'apagar_luz',
-    cardId: 'apagar_luz',
-    category: 'acoes',
-    displayLabel: 'Apagar a luz',
-    image: '/narrative_cards/acoes/apagar_luz.webp',
-    phrases: [
-      'Na hora de dormir, nós vamos _______ do quarto.',
-      'Para economizar energia, temos que _______ ao sair.',
-      'O filme vai começar no cinema, eles vão _______.',
-      'O quarto está muito claro, por favor, vamos _______.',
-      'Já está de dia, não precisamos da lâmpada, pode _______.'
-    ]
-  },
-  {
-    id: 'arrumar_armario',
-    cardId: 'arrumar_armario',
-    category: 'acoes',
-    displayLabel: 'Arrumar o armário',
-    image: '/narrative_cards/acoes/arrumar_armario.webp',
-    phrases: [
-      'Minhas roupas estão bagunçadas, preciso _______.',
-      'A mamãe pediu para eu _______ e guardar as camisetas.',
-      'Vamos dobrar as meias e _______.',
-      'Para encontrar minhas roupas, eu tenho que _______.',
-      'No fim de semana, vou tirar um tempo para _______.'
-    ]
-  },
-  {
-    id: 'arrumar_cama',
-    cardId: 'arrumar_cama',
-    category: 'acoes',
-    displayLabel: 'Arrumar a cama',
-    image: '/narrative_cards/acoes/arrumar_cama.webp',
-    phrases: [
-      'Depois de acordar, a primeira tarefa é _______.',
-      'Vamos esticar o lençol e _______ para o quarto ficar bonito.',
-      'Eu ajudo a mamãe a _______ todos os dias.',
-      'Para deixar o quarto organizado, eu vou _______.',
-      'Coloque o travesseiro no lugar para _______.'
-    ]
-  },
-  {
-    id: 'bater_na_porta',
-    cardId: 'bater_na_porta',
-    category: 'acoes',
-    displayLabel: 'Bater na porta',
-    image: '/narrative_cards/acoes/bater_na_porta.webp',
-    phrases: [
-      'Antes de entrar no quarto do irmão, é educado _______.',
-      'Toc, toc, toc! Eu vou _______ para ver se tem alguém.',
-      'Para visitar a vovó, primeiro temos que _______.',
-      'O carteiro vai _______ para entregar a encomenda.',
-      'Se a porta está fechada, você deve _______.'
-    ]
-  },
-  {
-    id: 'bocejar',
-    cardId: 'bocejar',
-    category: 'acoes',
-    displayLabel: 'Bocejar',
-    image: '/narrative_cards/acoes/bocejar.webp',
-    phrases: [
-      'Quando estou com muito sono, começo a _______.',
-      'A aula está demorando, o menino começou a _______.',
-      'Um _______ bem grande mostra que é hora de ir para a cama.',
-      'Tampe a boca quando for _______.',
-      'Ver outra pessoa _______ me dá vontade de fazer igual.'
-    ]
-  },
-  {
-    id: 'brigar',
-    cardId: 'brigar',
-    category: 'acoes',
-    displayLabel: 'Brigar',
-    image: '/narrative_cards/acoes/brigar.webp',
-    phrases: [
-      'Os irmãos não devem _______ por causa de um brinquedo.',
-      '_______ com os amigos é muito chato.',
-      'Em vez de _______, é melhor conversar e fazer as pazes.',
-      'Os cachorrinhos começaram a _______ por causa do osso.',
-      'A professora ensinou que _______ não resolve nada.'
+      'Vou _______ água porque estou com sede.',
+      'É importante _______ suco de laranja.',
+      'O gato vai _______ leite.',
+      'Depois de correr, preciso _______ água.',
+      'Vamos _______ um milk-shake gelado.'
     ]
   },
   {
@@ -683,81 +290,11 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Brincar',
     image: '/narrative_cards/acoes/brincar.webp',
     phrases: [
-      'No recreio da escola, as crianças vão _______.',
-      'O gatinho adora _______ com um novelo de lã.',
-      'Depois de fazer a lição, eu posso _______ lá fora.',
-      'Vamos chamar os amigos para _______ de esconde-esconde.',
-      'Meu irmão e eu gostamos de _______ com carrinhos.'
-    ]
-  },
-  {
-    id: 'brincar_balanco',
-    cardId: 'brincar_balanco',
-    category: 'acoes',
-    displayLabel: 'Brincar no balanço',
-    image: '/narrative_cards/acoes/brincar_balanco.webp',
-    phrases: [
-      'No parquinho, a primeira coisa que eu faço é _______.',
-      '"Me empurra mais alto!", eu grito ao _______.',
-      'Sentir o vento no rosto é a melhor parte de _______.',
-      'É divertido _______ e tentar alcançar o céu.',
-      'Vamos revezar, agora é a minha vez de _______.'
-    ]
-  },
-  {
-    id: 'brincar_carrinho',
-    cardId: 'brincar_carrinho',
-    category: 'acoes',
-    displayLabel: 'Brincar de carrinho',
-    image: '/narrative_cards/acoes/brincar_carrinho.webp',
-    phrases: [
-      'O menino pegou suas miniaturas para _______.',
-      '"Vrummm, vrummm!", ele faz barulho ao _______.',
-      'Ele fez uma pista no chão para _______ o dia todo.',
-      'Ele guarda sua coleção na caixa depois de _______.',
-      'No seu quarto, ele tem uma garagem para _______.'
-    ]
-  },
-  {
-    id: 'caminhar',
-    cardId: 'caminhar',
-    category: 'acoes',
-    displayLabel: 'Caminhar',
-    image: '/narrative_cards/acoes/caminhar.webp',
-    phrases: [
-      'Para manter a saúde, é bom _______ todos os dias.',
-      'Vovô e vovó gostam de _______ na praça de manhã.',
-      'O cachorro fica feliz quando vamos _______ com ele.',
-      'Vamos _______ até a padaria para comprar pão.',
-      'Em vez de correr, vamos _______ com calma pela praia.'
-    ]
-  },
-  {
-    id: 'cantar',
-    cardId: 'cantar',
-    category: 'acoes',
-    displayLabel: 'Cantar',
-    image: '/narrative_cards/acoes/cantar.webp',
-    phrases: [
-      'No chuveiro, eu adoro _______ minhas músicas favoritas.',
-      'A professora ensina a turma a _______ a música do alfabeto.',
-      '"Parabéns pra você...", vamos _______ na festa.',
-      'O passarinho na janela começou a _______.',
-      'A cantora usa o microfone para _______ no palco.'
-    ]
-  },
-  {
-    id: 'colocar_bone',
-    cardId: 'colocar_bone',
-    category: 'acoes',
-    displayLabel: 'Colocar o boné',
-    image: '/narrative_cards/acoes/colocar_bone.webp',
-    phrases: [
-      'O sol está muito forte, é melhor _______.',
-      'Para se proteger do sol na praia, vou _______.',
-      'Antes de ir jogar bola, o menino vai _______.',
-      'Para completar o visual, ele decidiu _______.',
-      '"Não esqueça de _______!", disse a mamãe.'
+      'Vamos _______ no parquinho!',
+      'Quero _______ de esconde-esconde.',
+      'É divertido _______ com os amigos.',
+      'Vou _______ com meus brinquedos.',
+      'Adoro _______ na hora do recreio.'
     ]
   },
   {
@@ -767,25 +304,11 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Comer',
     image: '/narrative_cards/acoes/comer.webp',
     phrases: [
-      'Na hora do almoço, toda a família senta para _______.',
-      'Estou com muita fome, preciso _______ alguma coisa.',
-      'A Magali adora _______ melancia.',
-      'O bebê já aprendeu a _______ a papinha sozinho.',
-      'Lave as mãos antes de _______.'
-    ]
-  },
-  {
-    id: 'conversar',
-    cardId: 'conversar',
-    category: 'acoes',
-    displayLabel: 'Conversar',
-    image: '/narrative_cards/acoes/conversar.webp',
-    phrases: [
-      'É bom _______ com os amigos sobre o nosso dia.',
-      'Papai e mamãe sentaram no sofá para _______.',
-      'Em vez de brigar, o melhor é _______ e resolver.',
-      'Eu gosto de _______ com a vovó pelo telefone.',
-      'A professora vai _______ com a turma sobre o passeio.'
+      'Vamos _______ o almoço juntos.',
+      'Quero _______ pizza hoje.',
+      'É hora de _______ a fruta.',
+      'O coelho gosta de _______ cenoura.',
+      'Preciso _______ verduras para crescer.'
     ]
   },
   {
@@ -795,221 +318,39 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Correr',
     image: '/narrative_cards/acoes/correr.webp',
     phrases: [
-      'O cachorro adora _______ atrás da bolinha.',
-      'Na aula de educação física, as crianças vão _______.',
-      'Para não perder o ônibus, tivemos que _______.',
-      'O guepardo é o animal que consegue _______ mais rápido.',
-      '"Vamos _______ até aquela árvore!", disse o menino.'
+      'Vou _______ bem rápido!',
+      'O cachorro adora _______ no jardim.',
+      'Não pode _______ na escola.',
+      'Vamos _______ até a árvore.',
+      'Gosto de _______ com meus amigos.'
     ]
   },
   {
-    id: 'cozinhar',
-    cardId: 'cozinhar',
+    id: 'dar',
+    cardId: 'dar',
     category: 'acoes',
-    displayLabel: 'Cozinhar',
-    image: '/narrative_cards/acoes/cozinhar.webp',
+    displayLabel: 'Dar',
+    image: '/narrative_cards/acoes/dar.webp',
     phrases: [
-      'O chefe de cozinha vai _______ um prato especial.',
-      'A mamãe adora _______ no fim de semana.',
-      'Para _______, precisamos de ingredientes e uma panela.',
-      'Ele vai _______ um bolo de chocolate delicioso.',
-      'Meu pai vai me ensinar a _______ um omelete.'
-    ]
-  },
-  {
-    id: 'cuidar',
-    cardId: 'cuidar',
-    category: 'acoes',
-    displayLabel: 'Cuidar',
-    image: '/narrative_cards/acoes/cuidar.webp',
-    phrases: [
-      'A mamãe vai _______ do bebê com muito carinho.',
-      'A médica sabe _______ das pessoas doentes.',
-      'É importante _______ bem dos nossos brinquedos.',
-      'Eu ajudo a _______ do meu cachorrinho todos os dias.',
-      'Nós devemos _______ da natureza e das plantas.'
-    ]
-  },
-  {
-    id: 'desabotoar_camisa',
-    cardId: 'desabotoar_camisa',
-    category: 'acoes',
-    displayLabel: 'Desabotoar a camisa',
-    image: '/narrative_cards/acoes/desabotoar_camisa.webp',
-    phrases: [
-      'Para tirar a roupa, primeiro preciso _______.',
-      'Está muito calor, vou _______ para refrescar.',
-      'Chegando em casa, a primeira coisa que faço é _______.',
-      'O papai vai _______ antes de tomar banho.',
-      'Ajude o vovô a _______, por favor.'
-    ]
-  },
-  {
-    id: 'descascar_laranja',
-    cardId: 'descascar_laranja',
-    category: 'acoes',
-    displayLabel: 'Descascar a laranja',
-    image: '/narrative_cards/acoes/descascar_laranja.webp',
-    phrases: [
-      'Para comer a fruta, primeiro temos que _______.',
-      'A mamãe vai _______ para fazer um suco.',
-      'Com cuidado para não cortar o dedo, eu vou _______.',
-      'O cheirinho bom aparece quando vamos _______.',
-      'Depois de _______, eu separo os gominhos.'
-    ]
-  },
-  {
-    id: 'descer_escorregador',
-    cardId: 'descer_resultado',
-    category: 'acoes',
-    displayLabel: 'Descer no escorregador',
-    image: '/narrative_cards/acoes/descer_resultado.webp',
-    phrases: [
-      'No parquinho, as crianças fazem fila para _______.',
-      '"Lá vou eu!", o menino gritou antes de _______.',
-      'É muito divertido subir a escada e depois _______.',
-      'Ele sentou no topo, pronto para _______.',
-      'A melhor parte do parquinho é _______.'
-    ]
-  },
-  {
-    id: 'desligar',
-    cardId: 'desligar',
-    category: 'acoes',
-    displayLabel: 'Desligar',
-    image: '/narrative_cards/acoes/desligar.webp',
-    phrases: [
-      'Antes de dormir, eu vou _______ a televisão.',
-      'Quando a brincadeira acabar, temos que _______ o videogame.',
-      'Para economizar bateria, é bom _______ o celular.',
-      'A mamãe pediu para eu _______ o rádio.',
-      'A aula acabou, a professora vai _______ o computador.'
-    ]
-  },
-  {
-    id: 'dirigir',
-    cardId: 'dirigir',
-    category: 'acoes',
-    displayLabel: 'Dirigir',
-    image: '/narrative_cards/acoes/dirigir.webp',
-    phrases: [
-      'O papai vai _______ o carro para nos levar à praia.',
-      'Para _______, é preciso ter carteira de motorista.',
-      'O motorista de ônibus aprende a _______ com cuidado.',
-      '"Segure firme!", disse o piloto antes de _______ o carro de corrida.',
-      'O taxista precisa _______ o dia todo pela cidade.'
+      'Vou _______ um presente para você.',
+      'Quero _______ comida para o cachorro.',
+      'Vamos _______ um abraço na mamãe.',
+      'Posso _______ um beijo no papai.',
+      'É bom _______ carinho nos animais.'
     ]
   },
   {
     id: 'dormir',
-    cardId: 'dormir_lado',
+    cardId: 'dormir',
     category: 'acoes',
     displayLabel: 'Dormir',
-    image: '/narrative_cards/acoes/dormir_lado.webp',
+    image: '/narrative_cards/acoes/dormir.webp',
     phrases: [
-      'Depois de um dia de brincadeiras, é hora de _______.',
-      'O bebê está com sono e vai _______ no berço.',
-      'O urso hiberna, o que significa _______ durante todo o inverno.',
-      'Para crescer forte, as crianças precisam _______ bem.',
-      '"Boa noite!", é o que dizemos antes de _______.'
-    ]
-  },
-  {
-    id: 'duvida',
-    cardId: 'duvida',
-    category: 'acoes',
-    displayLabel: 'Ter uma dúvida',
-    image: '/narrative_cards/acoes/duvida.webp',
-    phrases: [
-      'Se você não entendeu, levante a mão para _______.',
-      'O menino coçou a cabeça, pois estava com _______.',
-      '"Professor, posso _______?", perguntou o aluno.',
-      'É normal _______ quando aprendemos algo novo.',
-      'Antes de escolher, ele parou por _______.'
-    ]
-  },
-  {
-    id: 'empurrar',
-    cardId: 'empurrar',
-    category: 'acoes',
-    displayLabel: 'Empurrar',
-    image: '/narrative_cards/acoes/empurrar.webp',
-    phrases: [
-      'Para o balanço ir mais alto, o papai vai _______.',
-      'O carro de brinquedo não anda, eu preciso _______.',
-      'Ajude-me a _______ a mesa para o canto da sala.',
-      'No mercado, a mamãe vai _______ o carrinho de compras.',
-      'Não pode _______ os amigos na fila.'
-    ]
-  },
-  {
-    id: 'encontrar',
-    cardId: 'encontrar',
-    category: 'acoes',
-    displayLabel: 'Encontrar',
-    image: '/narrative_cards/acoes/encontrar.webp',
-    phrases: [
-      'No jogo de esconde-esconde, eu preciso _______ meus amigos.',
-      '"Achei!", eu grito ao _______ a peça que faltava.',
-      'A mamãe não consegue _______ a chave do carro.',
-      'O pirata usou o mapa para _______ o tesouro.',
-      'Eu espero _______ meus primos na festa de aniversário.'
-    ]
-  },
-  {
-    id: 'ensaboar',
-    cardId: 'ensaboar',
-    category: 'acoes',
-    displayLabel: 'Ensaboar',
-    image: '/narrative_cards/acoes/ensaboar.webp',
-    phrases: [
-      'No banho, primeiro temos que _______ o corpo todo.',
-      'Para as mãos ficarem limpas, é preciso _______ bem.',
-      'O cachorrinho vai ficar cheio de espuma quando a gente _______.',
-      'Use o sabonete para _______ e tirar a sujeira.',
-      'Fazer bolhas de sabão é a parte divertida de _______.'
-    ]
-  },
-  {
-    id: 'entrar_casa',
-    cardId: 'entrar_casa',
-    category: 'acoes',
-    displayLabel: 'Entrar em casa',
-    image: '/narrative_cards/acoes/entrar_casa.webp',
-    phrases: [
-      'Depois de brincar na rua, é hora de _______.',
-      'Está começando a chover, vamos _______ rápido!',
-      'O papai chegou do trabalho e vai _______.',
-      'Limpe os pés no tapete antes de _______.',
-      'Abra a porta para _______.'
-    ]
-  },
-  {
-    id: 'escorregar',
-    cardId: 'escorregar',
-    category: 'acoes',
-    displayLabel: 'Escorregar',
-    image: '/narrative_cards/acoes/escorregar.webp',
-    phrases: [
-      'Cuidado com o chão molhado, você pode _______.',
-      'O pinguim adora _______ de barriga no gelo.',
-      'O sabonete caiu da minha mão e começou a _______.',
-      'No parque aquático, o mais legal é _______ nos toboáguas.',
-      'Ele pisou na casca de banana e começou a _______.'
-    ]
-  },
-  {
-    id: 'escovar_dentes',
-    cardId: 'escovar_dentes',
-    category: 'acoes',
-    displayLabel: 'Escovar os dentes',
-    image: '/narrative_cards/acoes/escovar_dentes.webp',
-    phrases: [
-      'Depois de comer doces, é importante _______.',
-      'Para ter um sorriso bonito, temos que _______ todos os dias.',
-      'Use a pasta e a escova para _______.',
-      'Antes de dormir, a última coisa a fazer é _______.',
-      'O dentista ensinou a _______ em círculos.'
+      'É hora de _______ , boa noite!',
+      'O bebê vai _______ no berço.',
+      'Vou _______ cedo hoje.',
+      'O gato gosta de _______ no sofá.',
+      'Preciso _______ para descansar.'
     ]
   },
   {
@@ -1019,39 +360,11 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Escrever',
     image: '/narrative_cards/acoes/escrever.webp',
     phrases: [
-      'A professora vai _______ na lousa.',
-      'Eu uso o lápis para _______ meu nome no caderno.',
-      'Para mandar uma carta para a vovó, eu preciso _______.',
-      'A mamãe vai _______ a lista de compras do mercado.',
-      'O autor do livro precisa _______ a história.'
-    ]
-  },
-  {
-    id: 'escutar',
-    cardId: 'escutar',
-    category: 'acoes',
-    displayLabel: 'Escutar',
-    image: '/narrative_cards/acoes/escutar.webp',
-    phrases: [
-      'O cachorrinho levantou as orelhas para _______ o barulho.',
-      'Na sala de aula, é preciso _______ a professora com atenção.',
-      'Coloque os fones de ouvido para _______ sua música favorita.',
-      'O médico usa o estetoscópio para _______ o coração.',
-      '"Silêncio, vamos _______ o que ele tem a dizer".'
-    ]
-  },
-  {
-    id: 'esticar',
-    cardId: 'esticar',
-    category: 'acoes',
-    displayLabel: 'Esticar',
-    image: '/narrative_cards/acoes/esticar.webp',
-    phrases: [
-      'Ao acordar, o gato gosta de se _______ bem comprido.',
-      'Antes do exercício, vamos _______ os braços e as pernas.',
-      'Para pegar o brinquedo no alto, eu precisei me _______.',
-      'A girafa precisa _______ o pescoço para comer as folhas.',
-      'O elástico é um brinquedo que podemos _______.'
+      'Vou _______ meu nome no caderno.',
+      'Quero _______ uma carta.',
+      'A professora vai _______ no quadro.',
+      'Vamos _______ a lista de compras.',
+      'Sei _______ o alfabeto todo.'
     ]
   },
   {
@@ -1061,479 +374,141 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Estudar',
     image: '/narrative_cards/acoes/estudar.webp',
     phrases: [
-      'Para a prova de amanhã, eu preciso _______.',
-      'A menina sentou na mesa para _______ a lição de casa.',
-      'Na biblioteca, as pessoas fazem silêncio para _______.',
-      'É importante _______ para aprender coisas novas.',
-      'O médico precisa _______ muito para cuidar das pessoas.'
+      'Preciso _______ para a prova.',
+      'Vou _______ matemática.',
+      'É importante _______ todos os dias.',
+      'Vamos _______ juntos.',
+      'Gosto de _______ com música.'
     ]
   },
   {
-    id: 'fazer_exercicio',
-    cardId: 'fazer_exercicio',
+    id: 'fechar',
+    cardId: 'fechar',
     category: 'acoes',
-    displayLabel: 'Fazer exercício',
-    image: '/narrative_cards/acoes/fazer_exercicio.webp',
+    displayLabel: 'Fechar',
+    image: '/narrative_cards/acoes/fechar.webp',
     phrases: [
-      'Para ficar forte e saudável, é bom _______.',
-      'Na academia, as pessoas vão para _______.',
-      'Correr, pular e dançar são formas de _______.',
-      'O professor de educação física vai nos ensinar a _______.',
-      'De manhã, eu gosto de _______ ao ar livre.'
+      'Vou _______ a porta do quarto.',
+      'Preciso _______ a janela, está frio.',
+      'Vamos _______ o livro agora.',
+      'É hora de _______ os olhos para dormir.',
+      'Não esqueça de _______ a torneira.'
     ]
   },
   {
-    id: 'girar_chave',
-    cardId: 'girar_chave',
+    id: 'jogar',
+    cardId: 'jogar',
     category: 'acoes',
-    displayLabel: 'Girar a chave',
-    image: '/narrative_cards/acoes/girar_chave.webp',
+    displayLabel: 'Jogar',
+    image: '/narrative_cards/acoes/jogar.webp',
     phrases: [
-      'Para trancar a porta, eu preciso _______.',
-      'O papai vai _______ para ligar o carro.',
-      'Coloque a chave na fechadura para _______.',
-      'Para abrir a caixa do tesouro, o pirata vai _______.',
-      '"Duas voltas!", disse a mamãe ao me ensinar a _______.'
+      'Vamos _______ futebol!',
+      'Quero _______ videogame.',
+      'Vou _______ a bola para você.',
+      'É divertido _______ com os amigos.',
+      'Sei _______ xadrez.'
     ]
   },
   {
-    id: 'gritar',
-    cardId: 'gritar',
+    id: 'lavar',
+    cardId: 'lavar',
     category: 'acoes',
-    displayLabel: 'Gritar',
-    image: '/narrative_cards/acoes/gritar.webp',
+    displayLabel: 'Lavar',
+    image: '/narrative_cards/acoes/lavar.webp',
     phrases: [
-      'Na montanha-russa, as pessoas começam a _______.',
-      'Não precisa _______, eu estou bem aqui do seu lado.',
-      'O menino levou um susto e começou a _______.',
-      'No jogo de futebol, a torcida vai _______ "Gol!".',
-      'Falar baixo é mais educado do que _______.'
+      'Vou _______ as mãos antes de comer.',
+      'Preciso _______ o rosto.',
+      'Vamos _______ a louça juntos.',
+      'É importante _______ os dentes.',
+      'Quero _______ meu carrinho.'
     ]
   },
   {
-    id: 'ir_banheiro',
-    cardId: 'ir_banheiro',
+    id: 'ler',
+    cardId: 'ler',
     category: 'acoes',
-    displayLabel: 'Ir ao banheiro',
-    image: '/narrative_cards/acoes/ir_banheiro.webp',
+    displayLabel: 'Ler',
+    image: '/narrative_cards/acoes/ler.webp',
     phrases: [
-      'Antes de sair de casa, é bom _______.',
-      '"Com licença, professora, posso _______?"',
-      'Quando bebemos muita água, precisamos _______.',
-      'Depois de _______, não se esqueça de dar descarga.',
-      'Lave as mãos sempre depois de _______.'
+      'Vou _______ uma história.',
+      'Gosto de _______ antes de dormir.',
+      'A mamãe vai _______ para mim.',
+      'Sei _______ palavras grandes.',
+      'Vamos _______ juntos.'
     ]
   },
   {
-    id: 'jogar_futebol',
-    cardId: 'jogar_futebol',
+    id: 'ouvir',
+    cardId: 'ouvir',
     category: 'acoes',
-    displayLabel: 'Jogar futebol',
-    image: '/narrative_cards/acoes/jogar_futebol.webp',
+    displayLabel: 'Ouvir',
+    image: '/narrative_cards/acoes/ouvir.webp',
     phrases: [
-      'Os meninos se juntaram no campo para _______.',
-      '"Vamos _______ no recreio!", convidou o amigo.',
-      'O Brasil é famoso por saber _______ muito bem.',
-      'Para _______, precisamos de uma bola e duas traves.',
-      'O papai vai me levar ao parque para _______.'
+      'Vamos _______ música.',
+      'Quero _______ uma história.',
+      'É importante _______ a professora.',
+      'Gosto de _______ os passarinhos.',
+      'Vou _______ com atenção.'
     ]
   },
   {
-    id: 'lavar_cabelo',
-    cardId: 'lavar_cabelo',
+    id: 'pegar',
+    cardId: 'pegar',
     category: 'acoes',
-    displayLabel: 'Lavar o cabelo',
-    image: '/narrative_cards/acoes/lavar_cabelo.webp',
+    displayLabel: 'Pegar',
+    image: '/narrative_cards/acoes/pegar.webp',
     phrases: [
-      'No banho, eu uso xampu para _______.',
-      'Para ficar cheiroso, hoje é dia de _______.',
-      'A mamãe me ajuda a _______ para não arder os olhos.',
-      'Depois de brincar na areia, eu preciso _______.',
-      'A água faz muita espuma quando vamos _______.'
+      'Vou _______ a bola.',
+      'Posso _______ seu brinquedo?',
+      'Vamos _______ as folhas do chão.',
+      'Quero _______ a minha mochila.',
+      'O cachorro vai _______ o osso.'
     ]
   },
   {
-    id: 'lavar_cachorro',
-    cardId: 'lavar_cachorro',
+    id: 'pintar',
+    cardId: 'pintar',
     category: 'acoes',
-    displayLabel: 'Lavar o cachorro',
-    image: '/narrative_cards/acoes/lavar_cachorro.webp',
+    displayLabel: 'Pintar',
+    image: '/narrative_cards/acoes/pintar.webp',
     phrases: [
-      'O cãozinho está sujo, hoje é dia de _______.',
-      'Para tirar as pulgas, o veterinário mandou _______.',
-      'Ele não gosta muito, mas precisamos _______ para ele ficar limpinho.',
-      'Depois de _______, vamos secá-lo com a toalha.',
-      'Prepare a água morna e o xampu para _______.'
+      'Vou _______ um desenho bonito.',
+      'Quero _______ com tinta colorida.',
+      'Vamos _______ o sol de amarelo.',
+      'Gosto de _______ com lápis de cor.',
+      'A artista vai _______ um quadro.'
     ]
   },
   {
-    id: 'lavar_frutas',
-    cardId: 'lavar_frutas',
+    id: 'pular',
+    cardId: 'pular',
     category: 'acoes',
-    displayLabel: 'Lavar as frutas',
-    image: '/narrative_cards/acoes/lavar_frutas.webp',
+    displayLabel: 'Pular',
+    image: '/narrative_cards/acoes/pular.webp',
     phrases: [
-      'Antes de comer a maçã, é importante _______.',
-      'A mamãe vai _______ para fazer a salada de frutas.',
-      'Coloque os morangos na água para _______.',
-      'Para tirar a sujeirinha da uva, temos que _______.',
-      'O cozinheiro precisa _______ antes de usar na receita.'
+      'Vou _______ bem alto!',
+      'O coelho sabe _______ rápido.',
+      'Vamos _______ corda.',
+      'Quero _______ na cama elástica.',
+      'É divertido _______ poças de água.'
     ]
   },
-  {
-    id: 'lavar_louca',
-    cardId: 'lavar_louca',
-    category: 'acoes',
-    displayLabel: 'Lavar a louça',
-    image: '/narrative_cards/acoes/lavar_louca.webp',
-    phrases: [
-      'Depois do jantar, eu ajudo a mamãe a _______.',
-      'Use a esponja e o detergente para _______.',
-      'Para a pia ficar limpa, temos que _______.',
-      'A vovó terminou de _______ e agora vai secar os pratos.',
-      'Empilhe os pratos sujos, depois vamos _______.'
-    ]
-  },
-  {
-    id: 'lavar_maos',
-    cardId: 'lavar_maos',
-    category: 'acoes',
-    displayLabel: 'Lavar as mãos',
-    image: '/narrative_cards/acoes/lavar_maos.webp',
-    phrases: [
-      'Antes de comer, é obrigatório _______.',
-      'Depois de usar o banheiro, não se esqueça de _______.',
-      'Para evitar doenças, temos que _______ com sabão.',
-      'Suas mãos estão sujas de terra, vá _______!',
-      'O médico está sempre a _______ entre os pacientes.'
-    ]
-  },
-  {
-    id: 'lavar_rosto',
-    cardId: 'lavar_rosto',
-    category: 'acoes',
-    displayLabel: 'Lavar o rosto',
-    image: '/narrative_cards/acoes/lavar_rosto.webp',
-    phrases: [
-      'Ao acordar, a primeira coisa que faço é _______.',
-      'Para tirar a sujeira e acordar, eu vou _______.',
-      'A menina foi _______ para tirar a tinta da bochecha.',
-      'Use água e sabonete para _______.',
-      'Para se refrescar no calor, é bom _______.'
-    ]
-  },
-  {
-    id: 'lavar_roupas',
-    cardId: 'lavar_roupas',
-    category: 'acoes',
-    displayLabel: 'Lavar as roupas',
-    image: '/narrative_cards/acoes/lavar_roupas.webp',
-    phrases: [
-      'A camiseta está suja, a mamãe vai _______.',
-      'A máquina de lavar serve para _______.',
-      'Coloque o sabão em pó para _______ e deixar cheiroso.',
-      'No domingo, meu pai vai _______ que usamos na semana.',
-      'Depois de _______, vamos pendurar no varal para secar.'
-    ]
-  },
-  {
-    id: 'ler_livro',
-    cardId: 'ler_livro',
-    category: 'acoes',
-    displayLabel: 'Ler um livro',
-    image: '/narrative_cards/acoes/ler_livro.webp',
-    phrases: [
-      'A professora vai _______ uma história para a turma.',
-      'Antes de dormir, o papai vai _______ para mim.',
-      'Na biblioteca, todos fazem silêncio para _______.',
-      'Eu adoro _______ sobre dinossauros e planetas.',
-      'Para aprender a ler, eu preciso praticar e _______.'
-    ]
-  },
-  {
-    id: 'levar_lixo',
-    cardId: 'levar_lixo',
-    category: 'acoes',
-    displayLabel: 'Levar o lixo',
-    image: '/narrative_cards/acoes/levar_lixo.webp',
-    phrases: [
-      'O saco está cheio, por favor, vá _______ para fora.',
-      'O caminhão vai passar, é hora de _______.',
-      'O papai pediu para eu _______ antes de o lixeiro chegar.',
-      'Para manter a casa limpa, temos que _______ todos os dias.',
-      'Ajudar a _______ é uma tarefa de casa.'
-    ]
-  },
-  {
-    id: 'ligar',
-    cardId: 'ligar',
-    category: 'acoes',
-    displayLabel: 'Ligar',
-    image: '/narrative_cards/acoes/ligar.webp',
-    phrases: [
-      'Para falar com a vovó, eu vou _______ para ela.',
-      'Se você estiver em perigo, deve _______ para a polícia.',
-      'O papai vai _______ o carro para irmos passear.',
-      'Antes de começar a usar, você precisa _______ o aparelho na tomada.',
-      'A mamãe vai _______ para o restaurante e pedir uma pizza.'
-    ]
-  },
-  {
-    id: 'ligar_TV',
-    cardId: 'ligar_TV',
-    category: 'acoes',
-    displayLabel: 'Ligar a TV',
-    image: '/narrative_cards/acoes/ligar_TV.webp',
-    phrases: [
-      'Para assistir ao meu desenho favorito, eu vou _______.',
-      'Use o controle remoto para _______.',
-      'O papai vai _______ para ver o jogo de futebol.',
-      '"Posso _______?", o menino perguntou.',
-      'Depois da lição de casa, podemos _______ um pouco.'
-    ]
-  },
-  {
-    id: 'limpar_mesa',
-    cardId: 'limpar_mesa',
-    category: 'acoes',
-    displayLabel: 'Limpar a mesa',
-    image: '/narrative_cards/acoes/limpar_mesa.webp',
-    phrases: [
-      'Depois do almoço, eu ajudo a _______.',
-      'Use um pano úmido para _______ e tirar as migalhas.',
-      'O suco derramou, pegue um pano para _______.',
-      'Para fazer a lição, primeiro vou _______.',
-      'O garçom vai _______ antes de trazer a sobremesa.'
-    ]
-  },
-  {
-    id: 'limpar_sapatos',
-    cardId: 'limpar_sapatos',
-    category: 'acoes',
-    displayLabel: 'Limpar os sapatos',
-    image: '/narrative_cards/acoes/limpar_sapatos.webp',
-    phrases: [
-      'Pisei na lama, agora preciso _______.',
-      'Para o sapato brilhar, o vovô vai _______.',
-      'Use uma escova e graxa para _______.',
-      'Antes de guardar, é bom _______ para não sujar o armário.',
-      'Para a festa, eu vou _______ e deixá-los novos.'
-    ]
-  },
-  // Continuando com mais ações...
-  {
-    id: 'martelar',
-    cardId: 'martelar',
-    category: 'acoes',
-    displayLabel: 'Martelar',
-    image: '/narrative_cards/acoes/martelar.webp',
-    phrases: [
-      'Para colocar o prego na parede, o papai vai _______.',
-      'O carpinteiro usa a madeira para _______.',
-      '"Cuidado com o dedo!", disse a mamãe antes de eu _______.',
-      'O barulho de _______ vem da casa em construção.',
-      'Thor usa seu martelo para _______ com força.'
-    ]
-  },
-  {
-    id: 'mostrar',
-    cardId: 'mostrar',
-    category: 'acoes',
-    displayLabel: 'Mostrar',
-    image: '/narrative_cards/acoes/mostrar.webp',
-    phrases: [
-      'Eu vou _______ meu desenho novo para a professora.',
-      '"Olha o que eu sei fazer!", disse o menino ao _______ sua habilidade.',
-      'Você pode me _______ o caminho para o banheiro?',
-      'A menina estava ansiosa para _______ seu vestido novo.',
-      'O mágico vai _______ um truque incrível.'
-    ]
-  },
-  {
-    id: 'nadar',
-    cardId: 'nadar',
-    category: 'acoes',
-    displayLabel: 'Nadar',
-    image: '/narrative_cards/acoes/nadar.webp',
-    phrases: [
-      'No verão, nós vamos à piscina para _______.',
-      'O peixe sabe _______ muito bem.',
-      'Para _______, eu uso minha boia de braço.',
-      'O cachorro pulou no lago e começou a _______.',
-      'A aula de natação me ensina a _______.'
-    ]
-  },
-  {
-    id: 'pedir_ajuda',
-    cardId: 'pedir_ajuda',
-    category: 'acoes',
-    displayLabel: 'Pedir ajuda',
-    image: '/narrative_cards/acoes/pedir_ajuda.webp',
-    phrases: [
-      'Se você não consegue fazer sozinho, não tenha medo de _______.',
-      '"Mamãe, pode me amarrar o sapato?", o menino foi _______.',
-      'Quando a lição é difícil, eu vou _______ para a professora.',
-      'É um sinal de coragem _______ quando precisamos.',
-      'O gatinho subiu na árvore e miou para _______.'
-    ]
-  },
-  {
-    id: 'pedir_silencio',
-    cardId: 'pedir_silencio',
-    category: 'acoes',
-    displayLabel: 'Pedir silêncio',
-    image: '/narrative_cards/acoes/pedir_silencio.webp',
-    phrases: [
-      'O bebê está dormindo, a mamãe vai _______.',
-      '"Shhh!", a bibliotecária fez o gesto para _______.',
-      'Para a aula começar, a professora precisa _______.',
-      'Antes do filme começar, o telão vai _______.',
-      'O papai está numa ligação importante, ele vai _______.'
-    ]
-  },
-  {
-    id: 'pegar_onibus',
-    cardId: 'pegar_onibus',
-    category: 'acoes',
-    displayLabel: 'Pegar o ônibus',
-    image: '/narrative_cards/acoes/pegar_onibus.webp',
-    phrases: [
-      'Para ir para a escola, eu preciso _______.',
-      'Temos que esperar no ponto para _______.',
-      'Corra, senão vamos nos atrasar para _______!',
-      'O motorista parou para a gente _______.',
-      'Todos os dias, o vovô vai _______ para ir ao centro.'
-    ]
-  },
-  {
-    id: 'pensar',
-    cardId: 'pensar',
-    category: 'acoes',
-    displayLabel: 'Pensar',
-    image: '/narrative_cards/acoes/pensar.webp',
-    phrases: [
-      'Antes de responder, é importante _______ com calma.',
-      'O menino sentou e começou a _______ numa solução.',
-      '"Deixa eu _______...", eu digo quando não sei a resposta.',
-      'O jogo de xadrez exige que você pare para _______.',
-      'Feche os olhos e tente _______ em algo feliz.'
-    ]
-  },
-  {
-    id: 'pensar_errado',
-    cardId: 'pensar_errado',
-    category: 'acoes',
-    displayLabel: 'Errar',
-    image: '/narrative_cards/acoes/pensar_errado.webp',
-    phrases: [
-      'Eu achei que a festa era hoje, acabei de _______.',
-      'Somei 2+2=5, eu sei que vou _______ a conta.',
-      'Se você não tem certeza, não tenha medo de _______.',
-      '"Opa, peguei o caminho errado", eu disse ao _______.',
-      'Ele chutou a bola e acabou de _______ o gol.'
-    ]
-  },
-  {
-    id: 'pentear_cabelo',
-    cardId: 'pentear_cabelo',
-    category: 'acoes',
-    displayLabel: 'Pentear o cabelo',
-    image: '/narrative_cards/acoes/pentear_cabelo.webp',
-    phrases: [
-      'Depois do banho, a mamãe vai _______.',
-      'Para não ficar embaraçado, eu preciso _______.',
-      'Use o pente ou a escova para _______.',
-      'A menina gosta de _______ e fazer um rabo de cavalo.',
-      'Para ficar bonito na foto, primeiro vou _______.'
-    ]
-  },
-  {
-    id: 'proteger',
-    cardId: 'proteger',
-    category: 'acoes',
-    displayLabel: 'Proteger',
-    image: '/narrative_cards/acoes/proteger.webp',
-    phrases: [
-      'A mamãe galinha vai _______ seus pintinhos.',
-      'O guarda-chuva serve para nos _______ da chuva.',
-      'O policial está aqui para nos _______ dos perigos.',
-      'O capacete serve para _______ a cabeça.',
-      'O protetor solar ajuda a _______ a pele do sol.'
-    ]
-  },
-  {
-    id: 'provar_sabor',
-    cardId: 'provar_sabor',
-    category: 'acoes',
-    displayLabel: 'Provar o sabor',
-    image: '/narrative_cards/acoes/provar_sabor.webp',
-    phrases: [
-      'O cozinheiro usa uma colher para _______ da comida.',
-      '"Hummm, que delícia!", eu disse ao _______ do bolo.',
-      'Antes de dizer que não gosta, você precisa _______.',
-      'Feche os olhos e tente adivinhar ao _______.',
-      'A mamãe vai _______ para ver se precisa de mais sal.'
-    ]
-  },
-  {
-    id: 'pular_corda',
-    cardId: 'pular_corda',
-    category: 'acoes',
-    displayLabel: 'Pular corda',
-    image: '/narrative_cards/acoes/pular_corda.webp',
-    phrases: [
-      'No recreio, as meninas se juntaram para _______.',
-      'Um de cada vez, vamos _______.',
-      '"Um, dois, três...", contamos enquanto vamos _______.',
-      '_______ é um ótimo exercício.',
-      'O boxeador treina muito e gosta de _______.'
-    ]
-  },
-  {
-    id: 'puxar',
-    cardId: 'puxar',
-    category: 'acoes',
-    displayLabel: 'Puxar',
-    image: '/narrative_cards/acoes/puxar.webp',
-    phrases: [
-      'Para abrir a gaveta, você precisa _______.',
-      'O cachorro está na coleira a _______ o dono.',
-      'No cabo de guerra, nosso time tem que _______ a corda.',
-      'Ajude-me a _______ a porta, ela está emperrada.',
-      'Em vez de empurrar, a placa diz para _______.'
-    ]
-  },
-  {
-    id: 'quebrar',
-    cardId: 'quebrar',
-    category: 'acoes',
-    displayLabel: 'Quebrar',
-    image: '/narrative_cards/acoes/quebrar.webp',
-    phrases: [
-      'Cuidado com o copo de vidro, ele pode _______.',
-      'O menino chutou a bola e sem querer foi _______ a janela.',
-      'Para fazer um omelete, primeiro preciso _______ um ovo.',
-      'O Hulk é tão forte que consegue _______ uma parede.',
-      'O brinquedo caiu no chão e acabou de _______.'
-    ]
-  },
-  // Continuando até completar todas as 100 ações...
 
   // ========================================
-  // LUGARES (45 cards)
+  // CATEGORIA: LUGARES
   // ========================================
   {
-    id: 'aeroporto',
-    cardId: 'aeroporto',
+    id: 'casa',
+    cardId: 'casa',
     category: 'lugares',
-    displayLabel: 'Aeroporto',
-    image: '/narrative_cards/lugares/aeroporto.webp',
+    displayLabel: 'Casa',
+    image: '/narrative_cards/lugares/casa.webp',
     phrases: [
-      'Para viajar para longe, nós pegamos o avião no _______.',
-      'O avião decola e pousa na pista do _______.',
-      'Despachamos as malas e esperamos o voo no _______.',
-      'O piloto trabalha no avião, que fica no _______.',
-      'O lugar onde os aviões ficam estacionados se chama _______.'
+      'Moro em uma _______ bonita.',
+      'Vamos voltar para _______.',
+      'A _______ tem um jardim grande.',
+      'Na minha _______ tem três quartos.',
+      'Gosto de ficar em _______ com a família.'
     ]
   },
   {
@@ -1543,25 +518,25 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Escola',
     image: '/narrative_cards/lugares/escola.webp',
     phrases: [
-      'Eu aprendo a ler e a escrever na _______.',
-      'Meus amigos e minha professora ficam na _______.',
-      'Na hora do recreio, eu brinco no pátio da _______.',
-      'Todo dia de manhã, a mamãe me leva para a _______.',
-      'Eu levo minha mochila e meu lanche para a _______.'
+      'Vou para a _______ estudar.',
+      'Na _______ aprendo muitas coisas.',
+      'A _______ tem uma quadra grande.',
+      'Tenho muitos amigos na _______.',
+      'A _______ abre às 7 horas.'
     ]
   },
   {
-    id: 'casa',
-    cardId: 'casa',
+    id: 'hospital',
+    cardId: 'hospital',
     category: 'lugares',
-    displayLabel: 'Casa',
-    image: '/narrative_cards/lugares/casa.webp',
+    displayLabel: 'Hospital',
+    image: '/narrative_cards/lugares/hospital.webp',
     phrases: [
-      'O lugar onde eu moro com minha família é a minha _______.',
-      'Depois da escola, eu sempre volto para _______.',
-      '"Não há lugar como a nossa _______", disse a Dorothy.',
-      'Eu me sinto seguro e feliz dentro da minha _______.',
-      'No fim de semana, eu gosto de brincar em _______.'
+      'O médico trabalha no _______.',
+      'Vamos ao _______ fazer exames.',
+      'O _______ cuida das pessoas doentes.',
+      'No _______ tem muitos médicos.',
+      'A ambulância leva para o _______.'
     ]
   },
   {
@@ -1571,11 +546,39 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Jardim',
     image: '/narrative_cards/lugares/jardim.webp',
     phrases: [
-      'A vovó planta flores coloridas no _______.',
-      'As borboletas voam e as abelhas zumbem no _______.',
-      'O papai corta a grama do _______ para ficar bonito.',
-      'Nós fizemos um piquenique no _______ de casa.',
-      'O balanço e o escorregador ficam no _______.'
+      'No _______ tem flores coloridas.',
+      'Vou regar as plantas do _______.',
+      'O _______ está cheio de borboletas.',
+      'Gosto de brincar no _______.',
+      'O _______ da vovó é lindo.'
+    ]
+  },
+  {
+    id: 'mercado',
+    cardId: 'mercado',
+    category: 'lugares',
+    displayLabel: 'Mercado',
+    image: '/narrative_cards/lugares/mercado.webp',
+    phrases: [
+      'Vamos ao _______ comprar comida.',
+      'No _______ tem muitas frutas.',
+      'O _______ vende pão fresquinho.',
+      'Encontrei meu amigo no _______.',
+      'O _______ abre cedo.'
+    ]
+  },
+  {
+    id: 'parque',
+    cardId: 'parque',
+    category: 'lugares',
+    displayLabel: 'Parque',
+    image: '/narrative_cards/lugares/parque.webp',
+    phrases: [
+      'Vamos brincar no _______!',
+      'O _______ tem balanços e escorregador.',
+      'No _______ posso andar de bicicleta.',
+      'O _______ está cheio de crianças.',
+      'Tem um lago no _______.'
     ]
   },
   {
@@ -1585,203 +588,215 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Praia',
     image: '/narrative_cards/lugares/praia.webp',
     phrases: [
-      'No verão, nós vamos à _______ para nadar no mar.',
-      'Eu construí um castelo de areia na _______.',
-      'Nós usamos o guarda-sol para fazer sombra na _______.',
-      'As ondas do mar quebram na areia da _______.',
-      'Eu adoro procurar conchinhas na _______.'
+      'Na _______ tem areia e mar.',
+      'Vou fazer castelo de areia na _______.',
+      'A _______ está cheia de gente.',
+      'Gosto de nadar na _______.',
+      'O sol brilha na _______.'
     ]
   },
   {
-    id: 'banheiro',
-    cardId: 'banheiro',
+    id: 'quarto',
+    cardId: 'quarto',
     category: 'lugares',
-    displayLabel: 'Banheiro',
-    image: '/narrative_cards/lugares/banheiro.webp',
+    displayLabel: 'Quarto',
+    image: '/narrative_cards/lugares/quarto.webp',
     phrases: [
-      'Eu vou ao _______ para escovar os meus dentes.',
-      'Antes de comer, eu lavo minhas mãos no _______.',
-      'O chuveiro, a pia e o vaso ficam no _______.',
-      '"Com licença, professora, posso ir ao _______?"',
-      'Depois de usar o _______, não se esqueça de dar descarga.'
+      'Durmo no meu _______ todas as noites.',
+      'Meu _______ tem uma cama confortável.',
+      'Guardo os brinquedos no _______.',
+      'O _______ está arrumado.',
+      'Gosto de ler no meu _______.'
     ]
   },
   {
-    id: 'sala_aula',
-    cardId: 'sala_aula',
+    id: 'rua',
+    cardId: 'rua',
     category: 'lugares',
-    displayLabel: 'Sala de Aula',
-    image: '/narrative_cards/lugares/sala_aula.webp',
+    displayLabel: 'Rua',
+    image: '/narrative_cards/lugares/rua.webp',
     phrases: [
-      'A professora ensina na _______.',
-      'As carteiras e a lousa ficam na _______.',
-      'Nós fazemos silêncio e prestamos atenção na _______.',
-      'Meus amigos e eu aprendemos juntos na _______.',
-      'O mapa do Brasil fica pendurado na parede da _______.'
+      'Não pode correr na _______.',
+      'A _______ está movimentada.',
+      'Olhe dos dois lados antes de atravessar a _______.',
+      'Moro em uma _______ tranquila.',
+      'Os carros passam pela _______.'
     ]
   },
   {
-    id: 'loja',
-    cardId: 'loja',
+    id: 'sala',
+    cardId: 'sala',
     category: 'lugares',
-    displayLabel: 'Loja',
-    image: '/narrative_cards/lugares/loja.webp',
+    displayLabel: 'Sala',
+    image: '/narrative_cards/lugares/sala.webp',
     phrases: [
-      'Para comprar um brinquedo novo, nós vamos à _______.',
-      'A mamãe foi à _______ de roupas comprar um vestido.',
-      'O vendedor trabalha na _______ e ajuda os clientes.',
-      'Nós pagamos pelas compras no caixa da _______.',
-      'A vitrine da _______ estava cheia de coisas bonitas.'
+      'A família se reúne na _______.',
+      'Vamos assistir TV na _______.',
+      'A _______ tem um sofá grande.',
+      'Recebemos visitas na _______.',
+      'Na _______ tem uma mesa de centro.'
     ]
   },
-  {
-    id: 'predio',
-    cardId: 'predio',
-    category: 'lugares',
-    displayLabel: 'Prédio',
-    image: '/narrative_cards/lugares/predio.webp',
-    phrases: [
-      'Eu moro em um apartamento, em um _______ muito alto.',
-      'Para subir até o meu andar, eu pego o elevador do _______.',
-      'O _______ tem muitos andares e muitas janelas.',
-      'O porteiro trabalha na entrada do _______.',
-      'Vários _______ altos formam a cidade.'
-    ]
-  },
-  // Continuando com mais lugares...
 
   // ========================================
-  // OBJETOS 
+  // CATEGORIA: OBJETOS
   // ========================================
   {
     id: 'bola',
-    cardId: 'bola_praia',
+    cardId: 'bola',
     category: 'objetos',
     displayLabel: 'Bola',
-    image: '/narrative_cards/objetos/bola_praia.webp',
+    image: '/narrative_cards/objetos/bola.webp',
     phrases: [
-      'No parque, as crianças jogam com a _______.',
-      'A _______ colorida rola pelo campo.',
-      'O cachorro adora buscar a _______.',
-      'Para jogar futebol, precisamos de uma _______.',
-      'A _______ de praia é leve e divertida.'
+      'A _______ é redonda e colorida.',
+      'Vou chutar a _______ no gol.',
+      'A _______ pulou o muro.',
+      'Brincamos com a _______ no parque.',
+      'O cachorro pegou a _______.'
     ]
   },
   {
-    id: 'pizza',
-    cardId: 'pizza',
+    id: 'boneca',
+    cardId: 'boneca',
     category: 'objetos',
-    displayLabel: 'Pizza',
-    image: '/narrative_cards/objetos/pizza.webp',
+    displayLabel: 'Boneca',
+    image: '/narrative_cards/objetos/boneca.webp',
     phrases: [
-      'No domingo, pedimos _______ para o jantar.',
-      'A _______ de queijo é a favorita das crianças.',
-      'O entregador trouxe a _______ quentinha.',
-      'Vamos dividir a _______ em oito pedaços.',
-      'Que delícia, a _______ está com muito queijo!'
+      'A _______ tem um vestido rosa.',
+      'Vou pentear o cabelo da _______.',
+      'Minha _______ dorme comigo.',
+      'A _______ está na caixa de brinquedos.',
+      'Ganhei uma _______ nova.'
     ]
   },
   {
-    id: 'mochila',
-    cardId: 'mochila_escola',
+    id: 'cadeira',
+    cardId: 'cadeira',
     category: 'objetos',
-    displayLabel: 'Mochila',
-    image: '/narrative_cards/objetos/mochila_escola.webp',
+    displayLabel: 'Cadeira',
+    image: '/narrative_cards/objetos/cadeira.webp',
     phrases: [
-      'Eu carrego meus livros na _______.',
-      'A _______ da escola tem muitos compartimentos.',
-      'Não esqueça sua _______ antes de sair.',
-      'A _______ está pesada com tantos cadernos.',
-      'Minha _______ nova é azul e vermelha.'
+      'Sento na _______ para estudar.',
+      'A _______ é de madeira.',
+      'Cada um tem sua _______ na mesa.',
+      'A _______ da vovó balança.',
+      'Coloque a _______ no lugar.'
     ]
   },
   {
     id: 'cama',
     cardId: 'cama',
-    category: 'lugares',
+    category: 'objetos',
     displayLabel: 'Cama',
-    image: '/narrative_cards/lugares/cama.webp',
+    image: '/narrative_cards/objetos/cama.webp',
     phrases: [
-      'À noite, eu deito na minha _______ para dormir.',
-      'O lugar mais quentinho do quarto é a minha _______.',
-      'O travesseiro e o cobertor ficam em cima da _______.',
-      'Eu adoro pular na _______ quando a mamãe não está vendo.',
-      'O monstro mora embaixo da _______ na história de terror.'
+      'Durmo na minha _______ quentinha.',
+      'A _______ tem lençol azul.',
+      'Vou arrumar a _______.',
+      'O gato subiu na _______.',
+      'A _______ é macia e confortável.'
+    ]
+  },
+  {
+    id: 'carrinho',
+    cardId: 'carrinho',
+    category: 'objetos',
+    displayLabel: 'Carrinho',
+    image: '/narrative_cards/objetos/carrinho.webp',
+    phrases: [
+      'Meu _______ é vermelho e rápido.',
+      'O _______ tem quatro rodas.',
+      'Vou brincar com o _______ na pista.',
+      'O _______ de controle remoto é legal.',
+      'Coleciono _______ de corrida.'
+    ]
+  },
+  {
+    id: 'computador',
+    cardId: 'computador',
+    category: 'objetos',
+    displayLabel: 'Computador',
+    image: '/narrative_cards/objetos/computador.webp',
+    phrases: [
+      'Uso o _______ para estudar.',
+      'O _______ está na mesa.',
+      'Vou ligar o _______.',
+      'No _______ posso jogar.',
+      'O _______ tem teclado e mouse.'
+    ]
+  },
+  {
+    id: 'livro',
+    cardId: 'livro',
+    category: 'objetos',
+    displayLabel: 'Livro',
+    image: '/narrative_cards/objetos/livro.webp',
+    phrases: [
+      'O _______ conta uma história linda.',
+      'Vou ler este _______ novo.',
+      'O _______ tem muitas páginas.',
+      'Guardo o _______ na estante.',
+      'O _______ tem figuras coloridas.'
     ]
   },
   {
     id: 'mesa',
     cardId: 'mesa',
-    category: 'lugares',
+    category: 'objetos',
     displayLabel: 'Mesa',
-    image: '/narrative_cards/lugares/mesa.webp',
+    image: '/narrative_cards/objetos/mesa.webp',
     phrases: [
-      'Nós colocamos os pratos e os talheres na _______ para jantar.',
-      'Eu faço minha lição de casa na _______ do meu quarto.',
-      'O bolo de aniversário está no centro da _______.',
-      'A família se reúne ao redor da _______ para conversar.',
-      '"Tire os cotovelos da _______!", disse a vovó.'
+      'Comemos na _______ juntos.',
+      'A _______ está posta para o jantar.',
+      'Faço a lição na _______.',
+      'A _______ tem quatro cadeiras.',
+      'Coloque o prato na _______.'
     ]
   },
-  // Continuando com mais objetos...
+  {
+    id: 'telefone',
+    cardId: 'telefone',
+    category: 'objetos',
+    displayLabel: 'Telefone',
+    image: '/narrative_cards/objetos/telefone.webp',
+    phrases: [
+      'O _______ está tocando!',
+      'Vou ligar no _______ para a vovó.',
+      'O _______ está carregando.',
+      'Atenda o _______, por favor.',
+      'Meu _______ tem jogos.'
+    ]
+  },
+  {
+    id: 'televisao',
+    cardId: 'televisao',
+    category: 'objetos',
+    displayLabel: 'Televisão',
+    image: '/narrative_cards/objetos/televisao.webp',
+    phrases: [
+      'Vamos assistir desenho na _______.',
+      'A _______ está ligada.',
+      'A _______ mostra as notícias.',
+      'Desligue a _______ para dormir.',
+      'A _______ é grande e nova.'
+    ]
+  },
 
   // ========================================
-  // TEMPO E CLIMA (35 cards)
+  // CATEGORIA: TEMPO
   // ========================================
   {
-    id: 'hoje',
-    cardId: 'hoje',
+    id: 'dia',
+    cardId: 'dia',
     category: 'tempo',
-    displayLabel: 'Hoje',
-    image: '/narrative_cards/tempo/hoje.webp',
+    displayLabel: 'Dia',
+    image: '/narrative_cards/tempo/dia.webp',
     phrases: [
-      '_______ é o meu aniversário, vou ganhar um bolo!',
-      'Ontem foi terça-feira, _______ é quarta-feira.',
-      '"O que vamos almoçar _______?", perguntei para a mamãe.',
-      '_______ o dia está ensolarado e bonito.',
-      'A lição de casa de _______ já está feita.'
-    ]
-  },
-  {
-    id: 'amanha',
-    cardId: 'amanha',
-    category: 'tempo',
-    displayLabel: 'Amanhã',
-    image: '/narrative_cards/tempo/amanha.webp',
-    phrases: [
-      'Hoje é dia de escola, _______ será dia de passeio.',
-      'Durma bem, pois _______ vamos acordar cedo.',
-      'A festa de aniversário do meu amigo será _______.',
-      'Não terminei a lição hoje, vou terminar _______.',
-      '"Te vejo _______!", disse a professora no final da aula.'
-    ]
-  },
-  {
-    id: 'manha',
-    cardId: 'manha',
-    category: 'tempo',
-    displayLabel: 'Manhã',
-    image: '/narrative_cards/tempo/manha.webp',
-    phrases: [
-      'O sol nasce e o dia começa de _______.',
-      'Eu vou para a escola no período da _______.',
-      '"Bom dia!", nós dizemos quando encontramos alguém de _______.',
-      'Os passarinhos cantam bem alto de _______.',
-      'O galo canta para anunciar que a _______ chegou.'
-    ]
-  },
-  {
-    id: 'tarde',
-    cardId: 'tarde',
-    category: 'tempo',
-    displayLabel: 'Tarde',
-    image: '/narrative_cards/tempo/tarde.webp',
-    phrases: [
-      'Depois do almoço, começa o período da _______.',
-      'Eu volto da escola no meio da _______.',
-      '"Boa tarde!", nós dizemos quando encontramos alguém à _______.',
-      'O sol está mais forte no começo da _______.',
-      'No fim da _______, o sol começa a se pôr.'
+      'Durante o _______ o sol brilha.',
+      'O _______ está lindo e ensolarado.',
+      'Brincamos o _______ todo.',
+      'O _______ tem 24 horas.',
+      'Hoje o _______ está nublado.'
     ]
   },
   {
@@ -1791,11 +806,67 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Noite',
     image: '/narrative_cards/tempo/noite.webp',
     phrases: [
-      'A lua e as estrelas aparecem no céu durante a _______.',
-      'Nós dormimos durante a _______ para descansar.',
-      'As corujas são animais que gostam de sair à _______.',
-      '"Boa noite!", nós dizemos quando a _______ chega.',
-      'Quando o céu fica escuro, sabemos que é _______.'
+      'À _______ aparecem as estrelas.',
+      'Dormimos durante a _______.',
+      'A _______ está escura.',
+      'A lua brilha à _______.',
+      'Boa _______! Vamos dormir.'
+    ]
+  },
+  {
+    id: 'manha',
+    cardId: 'manha',
+    category: 'tempo',
+    displayLabel: 'Manhã',
+    image: '/narrative_cards/tempo/manha.webp',
+    phrases: [
+      'De _______ tomamos café.',
+      'O sol nasce de _______.',
+      'Acordo cedo de _______.',
+      'A _______ está fresquinha.',
+      'Vou à escola de _______.'
+    ]
+  },
+  {
+    id: 'tarde',
+    cardId: 'tarde',
+    category: 'tempo',
+    displayLabel: 'Tarde',
+    image: '/narrative_cards/tempo/tarde.webp',
+    phrases: [
+      'À _______ fazemos a lição.',
+      'O sol esquenta à _______.',
+      'Lancho à _______.',
+      'À _______ brincamos no parque.',
+      'A _______ passa rápido.'
+    ]
+  },
+  {
+    id: 'hoje',
+    cardId: 'hoje',
+    category: 'tempo',
+    displayLabel: 'Hoje',
+    image: '/narrative_cards/tempo/hoje.webp',
+    phrases: [
+      '_______ é um dia especial.',
+      '_______ vamos ao cinema.',
+      '_______ está chovendo.',
+      '_______ é meu aniversário.',
+      '_______ aprendi algo novo.'
+    ]
+  },
+  {
+    id: 'amanha',
+    cardId: 'amanha',
+    category: 'tempo',
+    displayLabel: 'Amanhã',
+    image: '/narrative_cards/tempo/amanha.webp',
+    phrases: [
+      '_______ vamos viajar.',
+      '_______ tem aula de educação física.',
+      '_______ é sábado.',
+      'Vejo você _______.',
+      '_______ será um novo dia.'
     ]
   },
   {
@@ -1805,283 +876,253 @@ export const challengesData: Challenge[] = [
     displayLabel: 'Ontem',
     image: '/narrative_cards/tempo/ontem.webp',
     phrases: [
-      '_______ eu brinquei muito no parque com meus amigos.',
-      'Se hoje é quarta-feira, _______ foi terça-feira.',
-      '"Você se lembra do que nós comemos _______ no jantar?"',
-      'A chuva de _______ molhou todo o jardim.',
-      'O dia que já passou se chama _______.'
+      '_______ foi muito divertido.',
+      '_______ choveu o dia todo.',
+      '_______ fui ao parque.',
+      '_______ comi pizza.',
+      '_______ aprendi a andar de bicicleta.'
     ]
   },
   {
-    id: 'agora',
-    cardId: 'agora',
+    id: 'cedo',
+    cardId: 'cedo',
     category: 'tempo',
-    displayLabel: 'Agora',
-    image: '/narrative_cards/tempo/agora.webp',
+    displayLabel: 'Cedo',
+    image: '/narrative_cards/tempo/cedo.webp',
     phrases: [
-      'Não deixe para depois, vamos arrumar os brinquedos _______.',
-      'A mamãe chamou e disse: "Venha jantar _______ mesmo!"',
-      'Antes eu estava com sono, mas _______ estou bem acordado.',
-      'Pare o que está fazendo, é hora de escovar os dentes _______.',
-      '"O que você está fazendo _______?", perguntou o amigo.'
+      'Acordo _______ para ir à escola.',
+      'O galo canta bem _______.',
+      'É bom chegar _______ na festa.',
+      'Saímos _______ de casa.',
+      'Os passarinhos cantam bem _______ .'
     ]
   },
   {
-    id: 'chuva',
-    cardId: 'chuva',
+    id: 'tarde_tempo',
+    cardId: 'tarde_tempo',
     category: 'tempo',
-    displayLabel: 'Chuva',
-    image: '/narrative_cards/tempo/chuva.webp',
+    displayLabel: 'Tarde (tempo)',
+    image: '/narrative_cards/tempo/tarde_tempo.webp',
     phrases: [
-      'Quando começa a _______, eu pego meu guarda-chuva.',
-      'Gosto de ouvir o barulho da _______ caindo na janela.',
-      'Por causa da _______, vamos brincar dentro de casa hoje.',
-      'As plantas no jardim adoram quando a _______ cai.',
-      'Eu coloquei minhas botas para pular nas poças de _______.'
+      'Chegamos _______ na escola.',
+      'Já é _______ , vamos dormir.',
+      'Acordei _______ hoje.',
+      'É _______ demais para brincar.',
+      'Não fique acordado até _______.'
     ]
   },
-  {
-    id: 'ensolarado',
-    cardId: 'ensolarado',
-    category: 'tempo',
-    displayLabel: 'Ensolarado',
-    image: '/narrative_cards/tempo/ensolarado.webp',
-    phrases: [
-      'O dia está _______, perfeito para ir à praia.',
-      'Quando o céu está azul e o sol brilhando, o dia está _______.',
-      '"Não esqueça o protetor solar, o dia está _______!", disse a mamãe.',
-      'Em um dia _______, usamos óculos de sol e boné.',
-      'As roupas no varal secam rapidinho em um dia _______.'
-    ]
-  },
-  {
-    id: 'verao',
-    cardId: 'verao',
-    category: 'tempo',
-    displayLabel: 'Verão',
-    image: '/narrative_cards/tempo/verao.webp',
-    phrases: [
-      'O _______ é a estação mais quente do ano.',
-      'No _______, nós adoramos ir à praia e à piscina.',
-      'No _______, nós tomamos muito sorvete para refrescar.',
-      'As férias escolares mais longas acontecem no _______.',
-      'No _______, usamos roupas leves, como shorts e camisetas.'
-    ]
-  },
-  {
-    id: 'inverno',
-    cardId: 'inverno',
-    category: 'tempo',
-    displayLabel: 'Inverno',
-    image: '/narrative_cards/tempo/inverno.webp',
-    phrases: [
-      'No _______, nós usamos casacos, luvas e gorros.',
-      'A estação mais fria do ano é o _______.',
-      'No _______, é gostoso tomar um chocolate quente.',
-      'Os ursos dormem durante todo o _______.',
-      'As árvores ficam sem folhas no _______.'
-    ]
-  },
-  // Continuando com mais elementos de tempo...
 
   // ========================================
-  // EMOÇÕES (40 cards)
+  // CATEGORIA: EMOÇÕES
   // ========================================
   {
-    id: 'homem_feliz',
+    id: 'feliz',
     cardId: 'homem_feliz',
     category: 'emocoes',
-    displayLabel: 'Homem Feliz',
+    displayLabel: 'Feliz',
     image: '/narrative_cards/emocoes/homem_feliz.webp',
     phrases: [
-      'O _______ sorriu ao receber um presente.',
-      'Ao encontrar os amigos, ele ficou um _______.',
-      'O _______ deu uma gargalhada gostosa com a piada.',
-      '"Hoje é o meu aniversário!", disse o _______.',
-      'O papai ficou um _______ quando eu tirei uma nota boa.'
+      'Estou _______ porque ganhei um presente.',
+      'O cachorro fica _______ quando vê o dono.',
+      'As crianças estão _______ brincando.',
+      'Fico _______ quando como chocolate.',
+      'A mamãe está _______ hoje.'
     ]
   },
   {
-    id: 'homem_triste',
+    id: 'triste',
     cardId: 'homem_triste',
     category: 'emocoes',
-    displayLabel: 'Homem Triste',
+    displayLabel: 'Triste',
     image: '/narrative_cards/emocoes/homem_triste.webp',
     phrases: [
-      'O _______ chorou porque seu time perdeu o jogo.',
-      'O cachorrinho dele fugiu, e ele ficou um _______.',
-      'O _______ ficou de cabeça baixa e não quis brincar.',
-      '"Estou com saudades da vovó", disse o _______.',
-      'O _______ ficou desanimado porque a viagem foi cancelada.'
+      'Fiquei _______ quando perdi meu brinquedo.',
+      'O menino está _______ porque choveu.',
+      'Não fique _______, vou te ajudar.',
+      'O gatinho parece _______.',
+      'Ela chorou porque estava _______.'
     ]
   },
   {
-    id: 'homem_bravo',
+    id: 'bravo',
     cardId: 'homem_bravo',
     category: 'emocoes',
-    displayLabel: 'Homem Bravo',
+    displayLabel: 'Bravo',
     image: '/narrative_cards/emocoes/homem_bravo.webp',
     phrases: [
-      'O _______ ficou com a cara fechada porque o carro quebrou.',
-      'Quando o time dele perdeu, o papai ficou um _______.',
-      'O _______ cruzou os braços e fez um bico.',
-      '"Quem fez essa bagunça?", perguntou o _______.',
-      'O vizinho ficou um _______ por causa do barulho.'
+      'O papai ficou _______ com a bagunça.',
+      'Não fique _______ comigo.',
+      'O leão está _______ e rugindo.',
+      'Ela está _______ porque perdeu o jogo.',
+      'Quando fico _______, respiro fundo.'
     ]
   },
   {
-    id: 'homem_calmo',
-    cardId: 'homem_calmo',
+    id: 'assustado',
+    cardId: 'homem_assustado',
     category: 'emocoes',
-    displayLabel: 'Homem Calmo',
-    image: '/narrative_cards/emocoes/homem_calmo.webp',
+    displayLabel: 'Assustado',
+    image: '/narrative_cards/emocoes/homem_assustado.webp',
     phrases: [
-      'O _______ respirou fundo para relaxar.',
-      'Mesmo com a confusão, o vovô continuou um _______.',
-      'O _______ sentou no sofá para ler um livro em paz.',
-      'Para meditar, é preciso ser um _______.',
-      'Ele esperou sua vez na fila como um _______.'
+      'Fiquei _______ com o trovão.',
+      'O gatinho está _______ com o barulho.',
+      'Não precisa ficar _______.',
+      'Ela ficou _______ no escuro.',
+      'O passarinho está _______ na gaiola.'
     ]
   },
   {
-    id: 'mulher_feliz',
-    cardId: 'mulher_feliz',
+    id: 'cansado',
+    cardId: 'homem_cansado',
     category: 'emocoes',
-    displayLabel: 'Mulher Feliz',
-    image: '/narrative_cards/emocoes/mulher_feliz.webp',
+    displayLabel: 'Cansado',
+    image: '/narrative_cards/emocoes/homem_cansado.webp',
     phrases: [
-      'A _______ deu um sorriso largo ao receber flores.',
-      'A mamãe ficou uma _______ ao ver meu boletim com notas boas.',
-      '"Eu consegui o emprego!", comemorou a _______.',
-      'A _______ riu muito com a palhaçada das crianças.',
-      'Ao rever uma amiga antiga, ela ficou uma _______.'
+      'Estou _______ depois de correr.',
+      'O papai está _______ do trabalho.',
+      'Fico _______ no final do dia.',
+      'O cachorro está _______ de brincar.',
+      'Quando estou _______, vou descansar.'
     ]
   },
   {
-    id: 'mulher_triste',
-    cardId: 'mulher_triste',
-    category: 'emocoes',
-    displayLabel: 'Mulher Triste',
-    image: '/narrative_cards/emocoes/mulher_triste.webp',
-    phrases: [
-      'A _______ chorou ao assistir ao final do filme.',
-      'Ela ficou uma _______ porque seu cachorrinho estava doente.',
-      '"Estou com muitas saudades", disse a _______.',
-      'A _______ ficou desanimada porque não conseguiu viajar nas férias.',
-      'A amiga se mudou para longe, e ela ficou uma _______.'
-    ]
-  },
-  {
-    id: 'mulher_brava',
-    cardId: 'mulher_brava',
-    category: 'emocoes',
-    displayLabel: 'Mulher Brava',
-    image: '/narrative_cards/emocoes/mulher_brava.webp',
-    phrases: [
-      'A _______ ficou de braços cruzados porque fizeram bagunça na sala.',
-      '"Eu já disse para guardar os brinquedos!", falou a _______.',
-      'A mamãe ficou uma _______ porque o filho não obedeceu.',
-      'A _______ franziu a testa e olhou sério para a bagunça.',
-      'A motorista ficou uma _______ quando o outro carro a fechou.'
-    ]
-  },
-  {
-    id: 'mulher_calma',
-    cardId: 'mulher_calma',
-    category: 'emocoes',
-    displayLabel: 'Mulher Calma',
-    image: '/narrative_cards/emocoes/mulher_calma.webp',
-    phrases: [
-      'A _______ respirou fundo e contou até dez para não se irritar.',
-      'A vovó é uma _______ e resolve tudo com paciência.',
-      'Para fazer yoga, é preciso ser uma _______.',
-      'Mesmo com o barulho, a _______ continuou lendo seu livro.',
-      'A professora explicou a lição de novo, como uma _______.'
-    ]
-  },
-  {
-    id: 'homem_surpreso',
+    id: 'surpreso',
     cardId: 'homem_surpreso',
     category: 'emocoes',
-    displayLabel: 'Homem Surpreso',
+    displayLabel: 'Surpreso',
     image: '/narrative_cards/emocoes/homem_surpreso.webp',
     phrases: [
-      'O _______ abriu a boca ao ver o tamanho do presente.',
-      '"Nossa, eu não esperava por isso!", disse o _______.',
-      'Ele ficou um _______ com a festa de aniversário que fizeram para ele.',
-      'Ao ver o mágico, o _______ ficou de olhos arregalados.',
-      'O _______ não acreditou quando viu o amigo que morava longe.'
+      'Fiquei _______ com a festa!',
+      'Que _______! Não esperava isso.',
+      'Ela está _______ com o presente.',
+      'O menino ficou _______ com a notícia.',
+      'Todos ficaram _______ com a mágica.'
     ]
   },
   {
-    id: 'mulher_surpresa',
-    cardId: 'mulher_surpresa',
+    id: 'calmo',
+    cardId: 'homem_calmo',
     category: 'emocoes',
-    displayLabel: 'Mulher Surpresa',
-    image: '/narrative_cards/emocoes/mulher_surpresa.webp',
+    displayLabel: 'Calmo',
+    image: '/narrative_cards/emocoes/homem_calmo.webp',
     phrases: [
-      'A _______ colocou a mão na boca quando gritaram "Surpresa!".',
-      'Ela ficou uma _______ ao receber um pedido de casamento.',
-      '"Eu não posso acreditar!", disse a _______.',
-      'A _______ ficou de olhos arregalados com o tamanho do presente.',
-      'Ela ficou uma _______ ao descobrir que ganhou na loteria.'
+      'Fico _______ quando ouço música.',
+      'O mar está _______ hoje.',
+      'Respire fundo para ficar _______.',
+      'O bebê está _______ dormindo.',
+      'O jardim deixa todos _______.'
     ]
   },
   {
-    id: 'azedo',
-    cardId: 'azedo',
+    id: 'animado',
+    cardId: 'homem_animado',
     category: 'emocoes',
-    displayLabel: 'Azedo',
-    image: '/narrative_cards/emocoes/azedo.webp',
+    displayLabel: 'Animado',
+    image: '/narrative_cards/emocoes/homem_animado.webp',
     phrases: [
-      'O suco de limão sem açúcar tem um gosto _______.',
-      'Eu fiz uma careta engraçada quando provei o abacaxi _______.',
-      'Chupar limão puro deixa a boca com uma sensação _______.',
-      'O iogurte natural às vezes é um pouco _______.',
-      'O sabor daquela bala era tão _______ que meus olhos se fecharam.'
+      'Estou _______ para a festa!',
+      'As crianças estão _______ com o passeio.',
+      'Fico _______ quando vou viajar.',
+      'O cachorro está _______ para passear.',
+      'Todos estão _______ com o jogo.'
     ]
   },
   {
-    id: 'com_sede',
-    cardId: 'com_sede',
+    id: 'orgulhoso',
+    cardId: 'homem_orgulhoso',
     category: 'emocoes',
-    displayLabel: 'Com sede',
-    image: '/narrative_cards/emocoes/com_sede.webp',
+    displayLabel: 'Orgulhoso',
+    image: '/narrative_cards/emocoes/homem_orgulhoso.webp',
     phrases: [
-      'Depois de correr muito, eu fico _______.',
-      'O dia está muito quente, estou _______.',
-      'Se você está _______, precisa beber água.',
-      'Minha garganta está seca, acho que estou _______.',
-      '"Mamãe, posso beber suco? Estou _______!"'
+      'Estou _______ do meu desenho.',
+      'A mamãe está _______ de mim.',
+      'Fico _______ quando acerto tudo.',
+      'O papai está _______ do filho.',
+      'Sinto-me _______ quando ajudo alguém.'
     ]
   },
   {
-    id: 'comida_deliciosa',
-    cardId: 'comida_deliciosa',
+    id: 'envergonhado',
+    cardId: 'homem_envergonhado',
     category: 'emocoes',
-    displayLabel: 'Comida deliciosa',
-    image: '/narrative_cards/emocoes/comida_deliciosa.webp',
+    displayLabel: 'Envergonhado',
+    image: '/narrative_cards/emocoes/homem_envergonhado.webp',
     phrases: [
-      '"Hummm!", eu disse, "essa é uma _______!"',
-      'O bolo da vovó é sempre uma _______.',
-      'O cheirinho que vem da cozinha indica uma _______.',
-      'Meu prato preferido é uma _______.',
-      'Depois de comer, eu disse: "parabéns, era uma _______!"'
-    ]
-  },
-  {
-    id: 'eu_quero',
-    cardId: 'eu_quero',
-    category: 'emocoes',
-    displayLabel: 'Eu quero',
-    image: '/narrative_cards/emocoes/eu_quero.webp',
-    phrases: [
-      'Quando vejo um brinquedo na loja, eu digo: "_______!"',
-      '_______ um sorvete de chocolate, por favor',
-      'Se você deseja algo, pode dizer: "_______"',
-      '_______ brincar com você", disse o menino para a amiga.',
-      'Na hora de escolher, eu aponto e falo: "_______ este aqui".'
+      'Fiquei _______ quando errei.',
+      'Ela está _______ de falar.',
+      'Não precisa ficar _______.',
+      'O menino ficou _______ na apresentação.',
+      'Às vezes fico _______ de pedir ajuda.'
     ]
   }
-  // Continuar com mais emoções se necessário...
 ];
+
+// ========================================
+// FUNÇÕES AUXILIARES
+// ========================================
+
+// Função para embaralhar arrays
+export const shuffleArray = <T>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
+// Função para obter desafios por categoria
+export const getChallengesByCategory = (category: Challenge['category']): Challenge[] => {
+  return challengesData.filter(challenge => challenge.category === category);
+};
+
+// Função para obter um desafio aleatório
+export const getRandomChallenge = (): Challenge => {
+  return challengesData[Math.floor(Math.random() * challengesData.length)];
+};
+
+// Função para obter distratores (cards incorretos)
+export const getDistractors = (correctChallenge: Challenge, count: number = 3): Challenge[] => {
+  const sameCategory = challengesData.filter(
+    c => c.category === correctChallenge.category && c.id !== correctChallenge.id
+  );
+  
+  const otherCategories = challengesData.filter(
+    c => c.category !== correctChallenge.category
+  );
+  
+  // Prioriza distratores da mesma categoria
+  let distractors = [...sameCategory];
+  
+  // Se não houver distratores suficientes da mesma categoria, adiciona de outras
+  if (distractors.length < count) {
+    distractors = [...distractors, ...otherCategories];
+  }
+  
+  return shuffleArray(distractors).slice(0, count);
+};
+
+// Função para obter estatísticas dos dados
+export const getDataStats = () => {
+  const categories = {
+    personagens: getChallengesByCategory('personagens').length,
+    acoes: getChallengesByCategory('acoes').length,
+    lugares: getChallengesByCategory('lugares').length,
+    objetos: getChallengesByCategory('objetos').length,
+    tempo: getChallengesByCategory('tempo').length,
+    emocoes: getChallengesByCategory('emocoes').length
+  };
+  
+  const totalCards = challengesData.length;
+  const totalPhrases = challengesData.reduce((sum, card) => sum + card.phrases.length, 0);
+  
+  return {
+    totalCards,
+    totalPhrases,
+    categories,
+    averagePhrasesPerCard: (totalPhrases / totalCards).toFixed(1)
+  };
+};
+
+// Log das estatísticas para debug
+console.log('📊 Estatísticas do Histórias Épicas:', getDataStats());
