@@ -99,10 +99,10 @@ export const challengesData: Challenge[] = [
   },
   {
     id: 'gato',
-    cardId: 'gato',
+    cardId: 'gatinho',
     category: 'personagens',
     displayLabel: 'Gato',
-    image: '/narrative_cards/personagens/gato.webp',
+    image: '/narrative_cards/personagens/gatinho.webp',
     phrases: [
       'Miau! O _______ está miando na janela.',
       'O _______ gosta de brincar com novelo de lã.',
