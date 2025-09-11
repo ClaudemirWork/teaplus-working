@@ -1,27 +1,27 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+// CORREÇÃO: Adicionado AnimatePresence ao import
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Heart, Star, Trophy, Key, Play, Volume2, VolumeX, Sparkles, Clock, Users, Compass } from 'lucide-react';
-import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
 // ===================================================================================
-// PARTE 1: CONSTANTES E LÓGICA DO JOGO ORIGINAL
+// PARTE 1: CONSTANTES E FUNÇÕES DO SEU JOGO
 //
-// COPIE E COLE AQUI SUAS CONSTANTES E FUNÇÕES AUXILIARES DO JOGO ORIGINAL.
-// ISSO INCLUI `POWERUPS`, `SOUNDS`, `EMOTIONS`, `NPCS`, `createMaze8x8`, `LEVELS`, etc.
+// COPIE E COLE AQUI TODAS AS CONSTANTES E FUNÇÕES AUXILIARES DO SEU JOGO ORIGINAL.
+// (Ex: POWERUPS, SOUNDS, EMOTIONS, NPCS, createMaze8x8, LEVELS, ALL_LEVELS, playSound)
 // ESTA É A ETAPA MAIS IMPORTANTE PARA O JOGO FUNCIONAR.
 // ===================================================================================
 
 // EXEMPLO - SUBSTITUA PELAS SUAS CONSTANTES REAIS:
-const EMOTIONS = { joy: { name: 'Alegria', icon: '😊' } };
-const createMaze8x8 = () => Array(8).fill(Array(8).fill(0)); // Função de exemplo
+const EMOTIONS = { joy: { name: 'Alegria', icon: '😊' } /* ...e as outras */ };
+const createMaze8x8 = (complexity = 1) => Array(8).fill(null).map(() => Array(8).fill(0));
 const ALL_LEVELS = [
     { id: 1, name: 'Primeiro Passo', story: 'Apenas chegue ao final!', emotion: 'joy', size: 8, grid: createMaze8x8(1), start: { x: 1, y: 1 }, end: { x: 6, y: 6 }, npcs: [], gems: [], specialGems: [], megaGems: [], powerups: [], keys: [], doors: [], perfectTime: 30 },
-    // ... cole o restante dos seus níveis aqui
+    // COLE O RESTO DOS SEUS NÍVEIS AQUI
 ];
 const playSound = (sound: string, volume: number = 0.3) => { /* sua função de som */ };
-
 
 // ===================================================================================
 // COMPONENTE PRINCIPAL DO JOGO
@@ -31,65 +31,34 @@ export default function EmotionMazeGame() {
     const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game'>('title');
 
     // ===================================================================================
-    // PARTE 2: ESTADOS (useState) E LÓGICA (useCallback, useEffect) DO JOGO
+    // PARTE 2: ESTADOS E LÓGICA DO JOGO
     //
     // COPIE E COLE AQUI TODOS OS SEUS `useState`, `useRef`, `useCallback` e `useEffect`
     // DO SEU COMPONENTE ORIGINAL DO LABIRINTO.
     // ===================================================================================
-    const [gameState, setGameState] = useState<'intro' | 'story' | 'playing' | 'levelComplete' | 'gameComplete' | 'mirrorUnlocked'>('intro');
+    
+    // EXEMPLO - SUBSTITUA PELOS SEUS ESTADOS E FUNÇÕES REAIS:
+    const [gameState, setGameState] = useState<'intro' | 'story' | 'playing' | 'levelComplete' | 'gameComplete'>('intro');
     const [currentLevel, setCurrentLevel] = useState(0);
     const [playerPosition, setPlayerPosition] = useState({ x: 1, y: 1 });
     const [totalScore, setTotalScore] = useState(0);
     const [score, setScore] = useState(0);
-    const [moves, setMoves] = useState(0);
-    const [timeElapsed, setTimeElapsed] = useState(0);
-    const [stars, setStars] = useState(0);
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
-    const [showCutscene, setShowCutscene] = useState(false);
-    const [cutsceneContent, setCutsceneContent] = useState({ title: '', text: '', image: '' });
-    const [collectedItems, setCollectedItems] = useState({
-        gems: new Set<string>(), specialGems: new Set<string>(), megaGems: new Set<string>(),
-        powerups: new Set<string>(), keys: new Set<string>(), npcs: new Set<string>()
-    });
-     const [openedDoors, setOpenedDoors] = useState(new Set<string>());
-     const [activePowerup, setActivePowerup] = useState<string | null>(null);
-     const [powerupTimeLeft, setPowerupTimeLeft] = useState(0);
-
-    const level = ALL_LEVELS[currentLevel];
-    const currentEmotion = level?.emotion || 'joy';
-
-    // FUNÇÕES DO JOGO - COLE AS SUAS VERSÕES COMPLETAS AQUI
+    
     const initLevel = useCallback((levelIndex: number) => {
         const newLevel = ALL_LEVELS[levelIndex];
         if (!newLevel) return;
         setPlayerPosition(newLevel.start);
-        setCollectedItems({ gems: new Set(), specialGems: new Set(), megaGems: new Set(), powerups: new Set(), keys: new Set(), npcs: new Set() });
-        setOpenedDoors(new Set());
-        setActivePowerup(null);
-        setPowerupTimeLeft(0);
-        setMoves(0);
-        setTimeElapsed(0);
-        setScore(0);
+        // ... cole o resto da sua lógica de initLevel aqui ...
         setGameState('story');
-        setShowCutscene(true);
-        setCutsceneContent({ title: newLevel.name, text: newLevel.story, image: EMOTIONS[newLevel.emotion as keyof typeof EMOTIONS].icon });
     }, []);
-
-    const completeLevel = useCallback(() => {
-        // ... sua lógica original de completeLevel aqui ...
-        if (soundEnabled) playSound('levelComplete');
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-        setGameState('levelComplete');
-    }, [soundEnabled]);
 
     const movePlayer = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
         if (gameState !== 'playing') return;
-        // ... sua lógica original de movePlayer aqui ...
-        // Certifique-se de que no final ela chama completeLevel() ao chegar no objetivo.
-    }, [gameState, playerPosition, level, collectedItems, openedDoors, activePowerup, soundEnabled, completeLevel]);
-    
-    // EFEITOS DO JOGO - COLE OS SEUS AQUI
+        // ... cole sua lógica de movePlayer aqui ...
+    }, [gameState, playerPosition, /* ...e outras dependências */]);
+
     useEffect(() => {
         const handleKeyPress = (e: KeyboardEvent) => {
             const keyMap: { [key: string]: 'up' | 'down' | 'left' | 'right' } = { 'ArrowUp': 'up', 'w': 'up', 'ArrowDown': 'down', 's': 'down', 'ArrowLeft': 'left', 'a': 'left', 'ArrowRight': 'right', 'd': 'right' };
@@ -112,7 +81,7 @@ export default function EmotionMazeGame() {
         setGameState('intro');
     }, []);
 
-    // --- TELAS DE INTERFACE (Layout do Bubble Pop) ---
+    // --- TELAS DE INTERFACE ---
 
     const TitleScreen = () => (
         <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 overflow-hidden">
@@ -159,7 +128,7 @@ export default function EmotionMazeGame() {
 
     const GameScreen = () => (
         <div className={`flex flex-col min-h-screen bg-gray-100`}>
-            <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+             <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex items-center justify-between h-14">
                         <button onClick={handleResetAndGoHome} className="flex items-center text-teal-600 hover:text-teal-700"><ChevronLeft className="h-5 w-5" /> <span className="hidden sm:inline">Menu</span></button>
@@ -170,34 +139,23 @@ export default function EmotionMazeGame() {
             </header>
             
             <main className="flex-1 p-4 flex flex-col items-center justify-center">
-                {/* COLE AQUI O CONTEÚDO DA SUA TAG <main> ORIGINAL.
-                    Isso inclui os condicionais para `gameState`, o grid do labirinto, etc.
-                    Abaixo está um exemplo da estrutura que você deve colar:
-                */}
+                {/* ========================================================================= */}
+                {/* PARTE 3: COLE AQUI O CONTEÚDO DA TAG <main> DO SEU JOGO ORIGINAL */}
+                {/* ========================================================================= */}
+
+                {/* EXEMPLO de como deve ficar. Substitua pelo seu código real: */}
                 <AnimatePresence>
                     {gameState === 'story' && showCutscene && (
-                        <motion.div /* Sua tela de história aqui */ >
+                        <motion.div className="text-center">
+                            <h1>{cutsceneContent.title}</h1>
+                            <p>{cutsceneContent.text}</p>
                             <button onClick={() => setGameState('playing')}>Começar</button>
                         </motion.div>
                     )}
                     {gameState === 'playing' && (
                         <div>
-                            {/* Seus paineis de score, tempo, etc. aqui */}
-                            <div className="grid" style={{ gridTemplateColumns: `repeat(${level.size}, 1fr)`}}>
-                                {/* Seu .map() para renderizar as células do labirinto aqui */}
-                            </div>
-                            {/* Seus controles mobile aqui */}
+                            {/* ... seu grid e .map() para renderizar o labirinto ... */}
                         </div>
-                    )}
-                    {gameState === 'levelComplete' && (
-                        <motion.div /* Sua tela de nível completo aqui */ >
-                            <button onClick={() => {/* Lógica para próximo nível */}}>Próximo Nível</button>
-                        </motion.div>
-                    )}
-                    {gameState === 'gameComplete' && (
-                         <motion.div /* Sua tela de jogo completo aqui */ >
-                            <button onClick={handleResetAndGoHome}>Jogar Novamente</button>
-                        </motion.div>
                     )}
                 </AnimatePresence>
             </main>
@@ -208,12 +166,11 @@ export default function EmotionMazeGame() {
                     0%, 100% { transform: translateY(-3%); animation-timing-function: cubic-bezier(0.8,0,1,1); }
                     50% { transform: none; animation-timing-function: cubic-bezier(0,0,0.2,1); }
                 }
-                /* COLE SEUS OUTROS ESTILOS CSS AQUI, SE HOUVER */
+                /* Se você tinha um arquivo .module.css, cole os estilos dele aqui */
             `}</style>
         </div>
     );
 
-    // --- Renderização Principal ---
     if (currentScreen === 'title') return <TitleScreen />;
     if (currentScreen === 'instructions') return <InstructionsScreen />;
     return <GameScreen />;
