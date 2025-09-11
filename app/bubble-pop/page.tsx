@@ -1556,5 +1556,3 @@ export default function OceanBubblePop() {
   if (currentScreen === 'instructions') return <InstructionsScreen />;
   return <GameScreen />;
 };
-
-export default OceanBubblePop;
