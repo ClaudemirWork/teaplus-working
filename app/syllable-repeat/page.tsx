@@ -2,21 +2,40 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 
-// Sílabas exemplo para o jogo (nomes dos arquivos de áudio em public/audio/syllables)
-const syllables = ['ma', 'pa', 'ba', 'ta', 'da'];
-const audioFolder = '/audio/syllables/';
+// Mapeamento de sílabas essenciais por letra, conforme suas pastas no GitHub
+const syllableMap: { [letter: string]: string[] } = {
+  B: ['ba', 'be', 'bi', 'bo', 'bu'],
+  C: ['ca', 'ce', 'ci', 'co', 'cu'],
+  D: ['da', 'de', 'di', 'do', 'du'],
+  F: ['fa', 'fe', 'fi', 'fo', 'fu'],
+  L: ['la', 'le', 'li', 'lo', 'lu'],
+  M: ['ma', 'me', 'mi', 'mo', 'mu'],
+  N: ['na', 'ne', 'ni', 'no', 'nu'],
+  P: ['pa', 'pe', 'pi', 'po', 'pu'],
+  R: ['ra', 're', 'ri', 'ro', 'ru'],
+  S: ['sa', 'se', 'si', 'so', 'su'],
+  T: ['ta', 'te', 'ti', 'to', 'tu'],
+  V: ['va', 've', 'vi', 'vo', 'vu'],
+};
 
 export default function SyllableRepeat() {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentLetterIndex, setCurrentLetterIndex] = useState(0);
+  const letters = Object.keys(syllableMap);
+  const currentLetter = letters[currentLetterIndex];
+  const syllables = syllableMap[currentLetter];
+  const [currentSyllableIndex, setCurrentSyllableIndex] = useState(0);
   const [listening, setListening] = useState(false);
   const [message, setMessage] = useState('');
+
+  const audioFolder = '/audio/syllables/essenciais/'; // caminho para as pastas no repo
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Referências para o microfone e análise de áudio
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const rafIdRef = useRef<number | null>(null);
 
-  // Inicializa áudio do microfone e Analyser para capturar volume
   useEffect(() => {
     async function setupMic() {
       try {
@@ -31,24 +50,23 @@ export default function SyllableRepeat() {
         dataArrayRef.current = dataArray;
         mediaStreamRef.current = stream;
       } catch {
-        setMessage("Erro ao acessar microfone.");
+        setMessage('Erro ao acessar microfone.');
       }
     }
     setupMic();
 
-    // Limpeza ao desmontar componente
     return () => {
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
       if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(track => track.stop());
     };
   }, []);
 
-  // Função que verifica volume do microfone periodicamente e detecta tentativa vocal
+  // Verifica o volume vinda do microfone para detectar tentativa vocal
   function checkVolume() {
     if (!analyserRef.current || !dataArrayRef.current) return;
     analyserRef.current.getByteFrequencyData(dataArrayRef.current);
     const avgVolume = dataArrayRef.current.reduce((a, b) => a + b, 0) / dataArrayRef.current.length;
-    if (avgVolume > 20) {  // Threshold simples para detectar tentativa
+    if (avgVolume > 20) {
       setMessage('Tentativa detectada! Muito bem!');
       stopListening();
       nextSyllable();
@@ -57,38 +75,48 @@ export default function SyllableRepeat() {
     }
   }
 
-  // Inicia escuta e análise do volume
   function startListening() {
     setMessage('Escutando... tente repetir a sílaba!');
     setListening(true);
     rafIdRef.current = requestAnimationFrame(checkVolume);
   }
 
-  // Para escuta e análise do volume
   function stopListening() {
     setListening(false);
     if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
   }
 
-  // Ao terminar áudio, inicia escuta
   function onAudioEnded() {
     startListening();
   }
 
-  // Avança para próxima sílaba circularmente e limpa mensagem
   function nextSyllable() {
-    setCurrentIndex((prev) => (prev + 1) % syllables.length);
+    if (currentSyllableIndex + 1 < syllables.length) {
+      setCurrentSyllableIndex(currentSyllableIndex + 1);
+    } else if (currentLetterIndex + 1 < letters.length) {
+      setCurrentLetterIndex(currentLetterIndex + 1);
+      setCurrentSyllableIndex(0);
+    } else {
+      setMessage('Parabéns, você completou todas as sílabas!');
+      // Reiniciar ou desativar o jogo aqui se quiser
+      // setCurrentLetterIndex(0);
+      // setCurrentSyllableIndex(0);
+    }
     setMessage('');
   }
+
+  const currentSyllable = syllables[currentSyllableIndex];
+  const audioSrc = `${audioFolder}${currentLetter}/${currentSyllable}.mp3`;
 
   return (
     <main className="p-8 max-w-md mx-auto text-center font-sans">
       <h1 className="text-2xl font-bold mb-4">Jogo de Repetição de Sílabas</h1>
+      <p className="mb-2">Conjunto atual: <b>{currentLetter}</b></p>
       <p className="mb-4">Ouça e repita a sílaba. O microfone detectará sua tentativa!</p>
 
       <audio
         ref={audioRef}
-        src={`${audioFolder}${syllables[currentIndex]}.mp3`}
+        src={audioSrc}
         preload="auto"
         onEnded={onAudioEnded}
         controls
@@ -104,7 +132,7 @@ export default function SyllableRepeat() {
           }}
           className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
-          Ouvir Sílabas {syllables[currentIndex]}
+          Ouvir Sílabas {currentSyllable}
         </button>
       ) : (
         <button
