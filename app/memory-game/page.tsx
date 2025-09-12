@@ -1,44 +1,52 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, Volume2, VolumeX, Save, Star, Trophy, Timer, Target } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '../utils/supabaseClient';
+import Image from 'next/image';
 import confetti from 'canvas-confetti';
-import styles from './memory-game.module.css';
 
 // Avatares organizados por mundo/categoria
 const AVATAR_WORLDS = {
   starter: {
     name: 'Mundo Inicial',
+    emoji: '🌟',
     avatars: [
       'Cartoon_2', 'Funny_1', 'Funny_4', 'Face_1', 'Face_4', 'Pet_2'
     ]
   },
   sports: {
     name: 'Arena dos Campeões',
+    emoji: '⚽',
     avatars: [
       'Basquete_1', 'Basquete_2', 'Futebol_1', 'Futebol_4', 'Chess_1', 'Chess_3'
     ]
   },
   fantasy: {
     name: 'Reino Encantado',
+    emoji: '🏰',
     avatars: [
       'Fada_2', 'Fada_4', 'princesa_1', 'princesa_2', 'Guerreiro_2', 'Guerreiro_3'
     ]
   },
   heroes: {
     name: 'Liga dos Heróis',
+    emoji: '🦸',
     avatars: [
       'Heroi_2', 'Heroi_4', 'Heroi_6', 'Heroi_8', 'Fighting_2', 'Fighting_3'
     ]
   },
   digital: {
     name: 'Mundo Digital',
+    emoji: '🎮',
     avatars: [
       'Minecraft_1', 'Minecraft_3', 'Roblox_2', 'Roblox_3', 'Player_16bits_2', 'Player_16bits_3'
     ]
   },
   multicultural: {
     name: 'Aldeia Global',
+    emoji: '🌍',
     avatars: [
       'menina_brasil_1', 'menino_brasil_2', 'menina_japao_3', 'menino_japao_2', 
       'menina_indigena_2', 'menino_indigena_2'
@@ -46,45 +54,31 @@ const AVATAR_WORLDS = {
   }
 };
 
-// Imagens dos mascotes disponíveis
-const MASCOT_IMAGES = {
-  leo: {
-    intro: 'leo_boas_vindas_resultado',
-    happy: 'leo_feliz_resultado',
-    strong: 'leo_forca_resultado',
-    thumbsUp: 'leo_joinha_resultado',
-    magic: 'leo_mago_resultado',
-    surprised: 'leo_surpreso_resultado',
-    pointing: 'leo_apontando_resultado'
-  },
-  mila: {
-    intro: 'mila_boas_vindas_resultado',
-    strong: 'mila_forca_resultado',
-    thumbsUp: 'mila_joinha_resultado',
-    magic: 'mila_feiticeira_resultado',
-    pointing: 'mila_apontando_resultado'
-  }
-};
-
 // Configurações de dificuldade
 const DIFFICULTY_SETTINGS = {
   easy: {
+    name: 'Fácil',
     pairs: 4,
     gridCols: 4,
     gridRows: 2,
-    time: 60
+    time: 60,
+    emoji: '😊'
   },
   medium: {
+    name: 'Médio',
     pairs: 6,
     gridCols: 4,
     gridRows: 3,
-    time: 90
+    time: 90,
+    emoji: '🎯'
   },
   hard: {
+    name: 'Difícil',
     pairs: 8,
     gridCols: 4,
     gridRows: 4,
-    time: 120
+    time: 120,
+    emoji: '🔥'
   }
 };
 
@@ -95,12 +89,21 @@ interface Card {
   isMatched: boolean;
 }
 
-type GameState = 'intro' | 'playing' | 'victory';
 type Difficulty = 'easy' | 'medium' | 'hard';
-type Mascot = 'leo' | 'mila';
 
 export default function MemoryGame() {
-  const [gameState, setGameState] = useState<GameState>('intro');
+  const router = useRouter();
+  const supabase = createClient();
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  // NOVO: Controle de telas
+  const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game'>('title');
+  
+  // Estados salvos (para mostrar na tela inicial)
+  const [totalPairsFound, setTotalPairsFound] = useState(0);
+  const [bestScore, setBestScore] = useState(0);
+  
+  // Estados do jogo
   const [currentWorld, setCurrentWorld] = useState('starter');
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [cards, setCards] = useState<Card[]>([]);
@@ -112,50 +115,35 @@ export default function MemoryGame() {
   const [maxCombo, setMaxCombo] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
   const [isTimerActive, setIsTimerActive] = useState(false);
-  const [currentMascot, setCurrentMascot] = useState<Mascot>('leo');
-  const [mascotImage, setMascotImage] = useState('intro');
-  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [isSoundOn, setIsSoundOn] = useState(true);
 
-  // Narração dos mascotes
-  const MASCOT_NARRATIONS = {
-    leo: {
-      intro: "Olá, amigo! Eu sou o Leo! As memórias dos habitantes do mundo mágico foram embaralhadas! Vamos ajudá-los encontrando os pares corretos?",
-      start: "Vamos começar! Clique nas cartas para virá-las e encontre os pares iguais!",
-      firstMatch: "Muito bem! Você encontrou o primeiro par! Continue assim!",
-      combo: "Incrível! Você está em sequência!",
-      struggling: "Não desista! Respire fundo e tente lembrar onde viu cada avatar!",
-      halfWay: "Metade do caminho! Você está indo muito bem!",
-      almostThere: "Quase lá! Só faltam poucos pares!",
-      victory: "Parabéns! Você restaurou todas as memórias! Os habitantes agradecem sua ajuda!",
-      timeWarning: "Cuidado! O tempo está acabando!"
-    },
-    mila: {
-      intro: "Oi! Sou a Mila! Que confusão! Todas as memórias se misturaram! Que tal ajudarmos nossos amigos a se reencontrarem?",
-      start: "Preparado? Memorize bem onde está cada avatar e encontre os pares!",
-      firstMatch: "Eba! Primeiro par encontrado! Você tem ótima memória!",
-      combo: "Uau! Sequência perfeita!",
-      struggling: "Calma! Às vezes é bom parar e pensar onde viu cada personagem!",
-      halfWay: "Metade concluída! Está indo super bem!",
-      almostThere: "Falta pouco! Você consegue!",
-      victory: "Fantástico! Todas as memórias foram restauradas! Você é demais!",
-      timeWarning: "Atenção! O tempo está voando!"
-    }
-  };
-
-  // Inicializar AudioContext
   useEffect(() => {
-    audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+    const savedPairs = localStorage.getItem('memoryGame_totalPairs');
+    const savedBest = localStorage.getItem('memoryGame_bestScore');
+    
+    if (savedPairs) setTotalPairsFound(parseInt(savedPairs));
+    if (savedBest) setBestScore(parseInt(savedBest));
+  }, []);
+
+  useEffect(() => {
+    const initAudio = () => {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
+    };
+    document.addEventListener('click', initAudio, { once: true });
+    return () => {
+      document.removeEventListener('click', initAudio);
+      audioContextRef.current?.close();
     };
   }, []);
 
   // Função para criar e tocar sons
-  const playSound = (type: 'flip' | 'match' | 'error' | 'victory') => {
-    if (!isSoundEnabled || !audioContextRef.current) return;
+  const playSound = useCallback((type: 'flip' | 'match' | 'error' | 'victory') => {
+    if (!isSoundOn || !audioContextRef.current) return;
 
     const audioContext = audioContextRef.current;
     const oscillator = audioContext.createOscillator();
@@ -166,7 +154,6 @@ export default function MemoryGame() {
 
     switch (type) {
       case 'flip':
-        // Som de virar carta - suave
         oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
         oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
         gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
@@ -176,7 +163,6 @@ export default function MemoryGame() {
         break;
       
       case 'match':
-        // Som de acerto - alegre
         oscillator.frequency.setValueAtTime(523, audioContext.currentTime);
         oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.1);
         oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.2);
@@ -187,7 +173,6 @@ export default function MemoryGame() {
         break;
       
       case 'error':
-        // Som de erro - suave
         oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
         oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.2);
         gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
@@ -197,7 +182,6 @@ export default function MemoryGame() {
         break;
       
       case 'victory':
-        // Som de vitória - fanfarra
         const notes = [523, 659, 784, 1047];
         notes.forEach((freq, i) => {
           const osc = audioContext.createOscillator();
@@ -212,61 +196,7 @@ export default function MemoryGame() {
         });
         break;
     }
-  };
-
-  // Função para falar o texto
-  const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'pt-BR';
-      utterance.rate = 0.9;
-      utterance.pitch = 1.1;
-      utterance.volume = 1;
-      
-      // Aguardar as vozes carregarem
-      const setVoice = () => {
-        const voices = window.speechSynthesis.getVoices();
-        const ptVoices = voices.filter(voice => voice.lang.includes('pt'));
-        
-        if (ptVoices.length > 0) {
-          if (currentMascot === 'mila') {
-            const femaleVoice = ptVoices.find(voice => 
-              voice.name.toLowerCase().includes('female') || 
-              voice.name.includes('Maria') ||
-              voice.name.includes('Fernanda')
-            );
-            if (femaleVoice) utterance.voice = femaleVoice;
-          } else {
-            const maleVoice = ptVoices.find(voice => 
-              voice.name.toLowerCase().includes('male') || 
-              voice.name.includes('Daniel') ||
-              voice.name.includes('Ricardo')
-            );
-            if (maleVoice) utterance.voice = maleVoice;
-          }
-        }
-      };
-      
-      if (window.speechSynthesis.getVoices().length > 0) {
-        setVoice();
-      } else {
-        window.speechSynthesis.onvoiceschanged = setVoice;
-      }
-      
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  // Falar quando mudar a tela
-  useEffect(() => {
-    if (gameState === 'intro') {
-      setTimeout(() => {
-        speakText(MASCOT_NARRATIONS[currentMascot].intro);
-      }, 500);
-    }
-  }, [gameState, currentMascot]);
+  }, [isSoundOn]);
 
   // Inicializar jogo
   const initializeGame = useCallback(() => {
@@ -311,32 +241,35 @@ export default function MemoryGame() {
     setMaxCombo(0);
     setTimeLeft(settings.time);
     setIsTimerActive(false);
-    
-    const mascot = Math.random() > 0.5 ? 'leo' : 'mila';
-    setCurrentMascot(mascot);
-    setMascotImage('intro');
+    setGameStarted(false);
+    setShowResults(false);
   }, [difficulty, currentWorld]);
+
+  const startActivity = () => {
+    setCurrentScreen('game');
+    initializeGame();
+  };
 
   // Timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (isTimerActive && timeLeft > 0) {
+    if (isTimerActive && timeLeft > 0 && gameStarted) {
       timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-    } else if (timeLeft === 0 && gameState === 'playing') {
+    } else if (timeLeft === 0 && gameStarted) {
       handleGameOver();
     }
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [isTimerActive, timeLeft, gameState]);
+  }, [isTimerActive, timeLeft, gameStarted]);
 
   // Verificar vitória
   useEffect(() => {
     const settings = DIFFICULTY_SETTINGS[difficulty];
-    if (matches === settings.pairs && gameState === 'playing') {
+    if (matches === settings.pairs && gameStarted && !showResults) {
       handleVictory();
     }
-  }, [matches, difficulty, gameState]);
+  }, [matches, difficulty, gameStarted, showResults]);
 
   // Lidar com clique na carta
   const handleCardClick = (cardId: string) => {
@@ -345,13 +278,13 @@ export default function MemoryGame() {
     const card = cards.find(c => c.id === cardId);
     if (!card || card.isFlipped || card.isMatched) return;
     
-    // Som de virar carta
-    playSound('flip');
-    
-    if (!isTimerActive && moves === 0) {
+    // Iniciar timer no primeiro clique
+    if (!gameStarted) {
+      setGameStarted(true);
       setIsTimerActive(true);
-      speakText(MASCOT_NARRATIONS[currentMascot].start);
     }
+    
+    playSound('flip');
     
     const newCards = cards.map(c => 
       c.id === cardId ? { ...c, isFlipped: true } : c
@@ -394,25 +327,6 @@ export default function MemoryGame() {
         setMatches(newMatches);
         setScore(prev => prev + (100 * newCombo));
         setSelectedCards([]);
-        
-        // Narração especial
-        if (matches === 0) {
-          speakText(MASCOT_NARRATIONS[currentMascot].firstMatch);
-          setMascotImage('happy');
-        } else if (newCombo > 2) {
-          speakText(MASCOT_NARRATIONS[currentMascot].combo);
-          setMascotImage('magic');
-        } else {
-          setMascotImage('thumbsUp');
-        }
-        
-        // Verificar progresso
-        const settings = DIFFICULTY_SETTINGS[difficulty];
-        if (newMatches === Math.floor(settings.pairs / 2)) {
-          speakText(MASCOT_NARRATIONS[currentMascot].halfWay);
-        } else if (newMatches === settings.pairs - 1) {
-          speakText(MASCOT_NARRATIONS[currentMascot].almostThere);
-        }
       }, 600);
     } else {
       // Não é par
@@ -426,11 +340,6 @@ export default function MemoryGame() {
         ));
         setCombo(0);
         setSelectedCards([]);
-        
-        if (moves > 10 && matches < 2) {
-          speakText(MASCOT_NARRATIONS[currentMascot].struggling);
-          setMascotImage('strong');
-        }
       }, 1000);
     }
   };
@@ -438,11 +347,19 @@ export default function MemoryGame() {
   // Vitória
   const handleVictory = () => {
     setIsTimerActive(false);
-    setGameState('victory');
-    setMascotImage('happy');
+    setShowResults(true);
     
     playSound('victory');
-    speakText(MASCOT_NARRATIONS[currentMascot].victory);
+    
+    // Salvar recordes
+    const newPairs = totalPairsFound + matches;
+    setTotalPairsFound(newPairs);
+    localStorage.setItem('memoryGame_totalPairs', newPairs.toString());
+    
+    if (score > bestScore) {
+      setBestScore(score);
+      localStorage.setItem('memoryGame_bestScore', score.toString());
+    }
     
     confetti({
       particleCount: 100,
@@ -454,338 +371,531 @@ export default function MemoryGame() {
   // Game Over
   const handleGameOver = () => {
     setIsTimerActive(false);
-    setGameState('victory');
-    setMascotImage('surprised');
-    speakText("O tempo acabou! Mas não desista, você pode tentar novamente!");
+    setShowResults(true);
+    
+    // Salvar recordes mesmo em game over
+    const newPairs = totalPairsFound + matches;
+    setTotalPairsFound(newPairs);
+    localStorage.setItem('memoryGame_totalPairs', newPairs.toString());
+    
+    if (score > bestScore) {
+      setBestScore(score);
+      localStorage.setItem('memoryGame_bestScore', score.toString());
+    }
   };
 
-  // Iniciar jogo
-  const startGame = () => {
-    initializeGame();
-    setGameState('playing');
-    setMascotImage('pointing');
+  const handleSaveSession = async () => {
+    setSalvando(true);
+    
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('Erro ao obter usuário:', userError);
+        alert('Erro: Sessão expirada. Por favor, faça login novamente.');
+        router.push('/login');
+        return;
+      }
+      
+      const { error } = await supabase
+        .from('sessoes')
+        .insert([{
+          usuario_id: user.id,
+          atividade_nome: 'Jogo da Memória',
+          pontuacao_final: score,
+          data_fim: new Date().toISOString()
+        }]);
+
+      if (error) {
+        console.error('Erro ao salvar:', error);
+        alert(`Erro ao salvar: ${error.message}`);
+      } else {
+        alert(`Sessão salva com sucesso!
+
+🧠 Resultado do Jogo da Memória:
+- Mundo: ${AVATAR_WORLDS[currentWorld as keyof typeof AVATAR_WORLDS].name}
+- Dificuldade: ${DIFFICULTY_SETTINGS[difficulty].name}
+- Pares Encontrados: ${matches}/${DIFFICULTY_SETTINGS[difficulty].pairs}
+- Pontuação: ${score} pontos
+- Combo Máximo: ${maxCombo}x`);
+        
+        router.push('/dashboard');
+      }
+    } catch (error: any) {
+      console.error('Erro inesperado:', error);
+      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
+    } finally {
+      setSalvando(false);
+    }
   };
 
-  // Função para obter caminho correto da imagem do mascote
-  const getMascotImagePath = () => {
-    const mascotData = currentMascot === 'leo' ? MASCOT_IMAGES.leo : MASCOT_IMAGES.mila;
-    const imageName = mascotData[mascotImage as keyof typeof mascotData] || mascotData.intro;
-    return `https://raw.githubusercontent.com/ClaudemirWork/teaplus-working/main/public/images/${imageName}.webp`;
+  const voltarInicio = () => {
+    setCurrentScreen('title');
+    setShowResults(false);
+    setGameStarted(false);
+    setCards([]);
+    setSelectedCards([]);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 p-4">
-      <AnimatePresence mode="wait">
-        {/* Tela de Introdução */}
-        {gameState === 'intro' && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="max-w-4xl mx-auto"
+  // TELAS DO JOGO
+  const TitleScreen = () => (
+    <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-indigo-300 via-purple-400 to-pink-400 overflow-hidden">
+      {/* Partículas de memória no fundo */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(25)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute animate-pulse"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${3 + Math.random() * 2}s`
+            }}
           >
-            <div className="bg-white/95 backdrop-blur rounded-3xl p-8 shadow-2xl">
-              <h1 className="text-4xl font-bold text-center mb-6 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                🌟 Portal das Memórias Perdidas 🌟
-              </h1>
-              
-              {/* Mascote e Narração */}
-              <div className="flex items-center justify-center mb-6 relative">
-                <div className="relative">
-                  <img 
-                    src={getMascotImagePath()}
-                    alt={currentMascot}
-                    className="w-32 h-32 rounded-full border-4 border-yellow-400 shadow-lg object-cover"
-                  />
-                  <motion.div
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    className="absolute -bottom-2 -right-2 bg-yellow-400 rounded-full p-2"
-                  >
-                    {currentMascot === 'leo' ? '🦁' : '🦊'}
-                  </motion.div>
+            <div className="w-8 h-8 bg-white/20 rounded-lg rotate-45"></div>
+          </div>
+        ))}
+      </div>
+      
+      <div className="relative z-10 flex flex-col items-center text-center">
+        <div className="mb-6 animate-bounce-slow">
+          <Image 
+            src="/images/mascotes/leo/leo_memoria.webp" 
+            alt="Leo Memória" 
+            width={400} 
+            height={400} 
+            className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl" 
+            priority 
+            style={{ 
+              filter: 'drop-shadow(0 0 20px rgba(79, 70, 229, 0.3))',
+            }}
+          />
+        </div>
+        
+        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white drop-shadow-lg mb-2">
+          Jogo da Memória
+        </h1>
+        <p className="text-xl sm:text-2xl text-white/90 mt-2 mb-6 drop-shadow-md">
+          Encontre todos os pares com Leo!
+        </p>
+        
+        {/* Mostra estatísticas na tela inicial */}
+        {(totalPairsFound > 0 || bestScore > 0) && (
+          <div className="bg-white/90 rounded-2xl p-6 mb-6 shadow-xl backdrop-blur-sm border border-purple-200">
+            <div className="flex items-center gap-6">
+              {totalPairsFound > 0 && (
+                <div className="flex items-center gap-2">
+                  <Star className="w-6 h-6 text-yellow-500" fill="currentColor" />
+                  <span className="font-bold text-purple-800">{totalPairsFound} pares</span>
                 </div>
-                
-                {/* Botão de áudio */}
-                <button
-                  onClick={() => speakText(MASCOT_NARRATIONS[currentMascot].intro)}
-                  className="absolute top-0 right-0 p-2 bg-yellow-400 rounded-full hover:bg-yellow-500 transition-colors"
-                  aria-label="Repetir narração"
-                >
-                  🔊
-                </button>
-              </div>
-              
-              <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl p-4 mb-6">
-                <p className="text-lg text-gray-800 text-center">
-                  {MASCOT_NARRATIONS[currentMascot].intro}
-                </p>
-              </div>
-              
-              {/* Botão de Som */}
-              <div className="flex justify-center mb-4">
-                <button
-                  onClick={() => setIsSoundEnabled(!isSoundEnabled)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                    isSoundEnabled 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-gray-300 text-gray-600'
-                  }`}
-                >
-                  {isSoundEnabled ? '🔊 Som Ligado' : '🔇 Som Desligado'}
-                </button>
-              </div>
-              
-              {/* Seleção de Mundo */}
-              <div className="mb-6">
-                <h3 className="text-xl font-semibold mb-3 text-center">Escolha o Mundo:</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {Object.entries(AVATAR_WORLDS).map(([key, world]) => (
-                    <button
-                      key={key}
-                      onClick={() => setCurrentWorld(key)}
-                      className={`p-3 rounded-xl transition-all ${
-                        currentWorld === key
-                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white scale-105'
-                          : 'bg-gray-100 hover:bg-gray-200'
-                      }`}
-                    >
-                      {world.name}
-                    </button>
-                  ))}
+              )}
+              {bestScore > 0 && (
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-6 h-6 text-yellow-600" />
+                  <span className="font-bold text-purple-800">Recorde: {bestScore}</span>
                 </div>
-              </div>
-              
-              {/* Seleção de Dificuldade */}
-              <div className="mb-6">
-                <h3 className="text-xl font-semibold mb-3 text-center">Dificuldade:</h3>
-                <div className="flex justify-center gap-4">
-                  {(['easy', 'medium', 'hard'] as const).map(level => (
-                    <button
-                      key={level}
-                      onClick={() => setDifficulty(level)}
-                      className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-                        difficulty === level
-                          ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white scale-105'
-                          : 'bg-gray-100 hover:bg-gray-200'
-                      }`}
-                    >
-                      {level === 'easy' ? '😊 Fácil' : level === 'medium' ? '🎯 Médio' : '🔥 Difícil'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Botão Iniciar */}
-              <motion.button
-                onClick={startGame}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-full py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xl font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
-              >
-                🎮 Começar Aventura!
-              </motion.button>
+              )}
             </div>
-          </motion.div>
+          </div>
         )}
-
-        {/* Tela do Jogo */}
-        {gameState === 'playing' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="max-w-5xl mx-auto"
-          >
-            {/* HUD - Informações do Jogo */}
-            <div className="bg-white/90 backdrop-blur rounded-2xl p-4 mb-4 shadow-lg">
-              <div className="flex flex-wrap justify-between items-center gap-2">
-                <div className="flex flex-wrap gap-4">
-                  <span className="text-lg font-semibold">
-                    🎯 Pares: {matches}/{DIFFICULTY_SETTINGS[difficulty].pairs}
-                  </span>
-                  <span className="text-lg font-semibold">
-                    🔄 Movimentos: {moves}
-                  </span>
-                  {combo > 1 && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="text-lg font-bold text-orange-500"
-                    >
-                      🔥 Combo x{combo}
-                    </motion.span>
-                  )}
-                </div>
-                <div className="flex gap-4">
-                  <span className="text-lg font-semibold">
-                    ⭐ Pontos: {score}
-                  </span>
-                  <span className={`text-lg font-bold ${timeLeft < 20 ? 'text-red-500 animate-pulse' : ''}`}>
-                    ⏱️ {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Grade de Cartas */}
-            <div 
-              className="grid gap-3 p-4 bg-white/30 backdrop-blur rounded-2xl"
-              style={{
-                gridTemplateColumns: `repeat(${DIFFICULTY_SETTINGS[difficulty].gridCols}, 1fr)`,
-                maxWidth: '600px',
-                margin: '0 auto'
-              }}
-            >
-              {cards.map((card) => (
-                <motion.div
-                  key={card.id}
-                  whileHover={{ scale: card.isMatched ? 1 : 1.05 }}
-                  whileTap={{ scale: card.isMatched ? 1 : 0.95 }}
-                  className={`${styles.cardContainer} ${card.isMatched ? styles.matched : ''}`}
-                  onClick={() => handleCardClick(card.id)}
-                >
-                  <div className={`${styles.cardInner} ${card.isFlipped || card.isMatched ? styles.flipped : ''}`}>
-                    {/* Verso da Carta */}
-                    <div className={`${styles.cardFace} ${styles.cardBack}`}>
-                      <div className="text-white text-center">
-                        <div className="text-3xl mb-2">✨</div>
-                        <span className="font-bold text-sm">LudiTEA</span>
-                      </div>
-                    </div>
-                    
-                    {/* Frente da Carta */}
-                    <div className={`${styles.cardFace} ${styles.cardFront} ${card.isMatched ? styles.matched : ''}`}>
-                      <img
-                        src={`https://raw.githubusercontent.com/ClaudemirWork/teaplus-working/main/public/images/avatares/${card.avatar}.webp`}
-                        alt="Avatar"
-                        className="w-full h-full object-cover rounded-lg"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = 'https://raw.githubusercontent.com/ClaudemirWork/teaplus-working/main/public/images/avatares/Face_1.webp';
-                        }}
-                      />
-                      {card.isMatched && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute inset-0 flex items-center justify-center bg-green-500/20 rounded-lg"
-                        >
-                          <span className="text-4xl">✅</span>
-                        </motion.div>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Tela de Vitória */}
-        {gameState === 'victory' && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-2xl mx-auto"
-          >
-            <div className="bg-white/95 backdrop-blur rounded-3xl p-8 shadow-2xl text-center">
-              <motion.h2
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 0.5 }}
-                className="text-4xl font-bold mb-6 bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent"
-              >
-                {timeLeft > 0 ? '🎉 Fase Concluída! 🎉' : '⏰ Tempo Esgotado!'}
-              </motion.h2>
-              
-              {/* Mascote comemorando */}
-              <div className="flex justify-center mb-6">
-                <motion.img
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                  src={getMascotImagePath()}
-                  alt={currentMascot}
-                  className="w-40 h-40 rounded-full border-4 border-yellow-400 object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = 'https://raw.githubusercontent.com/ClaudemirWork/teaplus-working/main/public/images/leo_feliz_resultado.webp';
-                  }}
-                />
-              </div>
-              
-              <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-xl p-6 mb-6">
-                <p className="text-xl font-semibold mb-4">
-                  {timeLeft > 0 ? MASCOT_NARRATIONS[currentMascot].victory : "Não foi dessa vez, mas você pode tentar novamente!"}
-                </p>
-                
-                {/* Estatísticas */}
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="bg-white rounded-lg p-3">
-                    <p className="text-gray-600">Movimentos</p>
-                    <p className="text-2xl font-bold">{moves}</p>
-                  </div>
-                  <div className="bg-white rounded-lg p-3">
-                    <p className="text-gray-600">Pontuação</p>
-                    <p className="text-2xl font-bold">{score}</p>
-                  </div>
-                  <div className="bg-white rounded-lg p-3">
-                    <p className="text-gray-600">Pares</p>
-                    <p className="text-2xl font-bold">{matches}/{DIFFICULTY_SETTINGS[difficulty].pairs}</p>
-                  </div>
-                  <div className="bg-white rounded-lg p-3">
-                    <p className="text-gray-600">Combo Máximo</p>
-                    <p className="text-2xl font-bold">x{maxCombo}</p>
-                  </div>
-                </div>
-                
-                {/* Estrelas */}
-                {timeLeft > 0 && (
-                  <div className="flex justify-center gap-2 mt-6">
-                    {[1, 2, 3].map(star => (
-                      <motion.span
-                        key={star}
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{ delay: star * 0.2 }}
-                        className="text-5xl"
-                      >
-                        {star <= Math.min(3, Math.ceil(score / 500)) ? '⭐' : '☆'}
-                      </motion.span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              {/* Botões de Ação */}
-              <div className="flex gap-4">
-                <motion.button
-                  onClick={() => {
-                    initializeGame();
-                    setGameState('playing');
-                  }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-xl"
-                >
-                  🔄 Jogar Novamente
-                </motion.button>
-                
-                <motion.button
-                  onClick={() => {
-                    setGameState('intro');
-                    initializeGame();
-                  }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl"
-                >
-                  🏠 Menu Principal
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        
+        <button 
+          onClick={() => setCurrentScreen('instructions')} 
+          className="text-xl font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-1 hover:shadow-2xl"
+        >
+          Começar Aventura da Memória
+        </button>
+      </div>
     </div>
   );
+
+  const InstructionsScreen = () => (
+    <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-300 via-indigo-300 to-blue-300">
+      <div className="bg-white/95 rounded-3xl p-8 max-w-2xl shadow-2xl text-center backdrop-blur-sm">
+        <h2 className="text-4xl font-bold mb-6 text-indigo-600">Como Jogar</h2>
+        <div className="text-lg text-gray-700 space-y-6 mb-6 text-left">
+          <p className="flex items-center gap-4">
+            <span className="text-4xl">🃏</span>
+            <span><b>Clique nas cartas</b> para virá-las e revelar os avatares!</span>
+          </p>
+          <p className="flex items-center gap-4">
+            <span className="text-4xl">👯</span>
+            <span><b>Encontre os pares</b> - duas cartas com o mesmo avatar!</span>
+          </p>
+          <p className="flex items-center gap-4">
+            <span className="text-4xl">⏰</span>
+            <span><b>Corra contra o tempo</b> para encontrar todos os pares!</span>
+          </p>
+          <p className="flex items-center gap-4">
+            <span className="text-4xl">🔥</span>
+            <span><b>Faça combos</b> encontrando pares consecutivos para mais pontos!</span>
+          </p>
+          <p className="flex items-center gap-4">
+            <span className="text-4xl">🌍</span>
+            <span><b>Explore diferentes mundos</b> com avatares únicos!</span>
+          </p>
+        </div>
+        
+        <button 
+          onClick={startActivity} 
+          className="w-full text-xl font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform"
+        >
+          Vamos Jogar!
+        </button>
+      </div>
+    </div>
+  );
+
+  const GameScreen = () => {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200">
+        <header className="bg-white/90 backdrop-blur-sm border-b border-purple-200 sticky top-0 z-10">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center justify-between h-16">
+              <button
+                onClick={() => setCurrentScreen('title')}
+                className="flex items-center text-indigo-600 hover:text-indigo-700 transition-colors"
+              >
+                <ChevronLeft className="h-6 w-6" />
+                <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
+              </button>
+
+              <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center">
+                Jogo da Memória
+              </h1>
+
+              {showResults ? (
+                <button
+                  onClick={handleSaveSession}
+                  disabled={salvando}
+                  className={`flex items-center space-x-2 px-3 py-2 sm:px-4 rounded-lg font-semibold transition-colors ${
+                    !salvando
+                      ? 'bg-green-500 text-white hover:bg-green-600'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  <Save size={18} />
+                  <span className="hidden sm:inline">{salvando ? 'Salvando...' : 'Salvar'}</span>
+                </button>
+              ) : (
+                <div className="w-24"></div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+          {!showResults ? (
+            <div className="space-y-4">
+              {/* Configurações do jogo */}
+              {!gameStarted && (
+                <div className="bg-white/90 rounded-2xl p-4 shadow-xl border border-purple-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Seleção de Mundo */}
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800 mb-3">Escolha o Mundo:</h3>
+                      <div className="grid grid-cols-2 gap-2">
+                        {Object.entries(AVATAR_WORLDS).map(([key, world]) => (
+                          <button
+                            key={key}
+                            onClick={() => setCurrentWorld(key)}
+                            className={`p-3 rounded-xl text-sm font-medium transition-all ${
+                              currentWorld === key
+                                ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white scale-105'
+                                : 'bg-gray-100 hover:bg-gray-200'
+                            }`}
+                          >
+                            <div className="text-lg mb-1">{world.emoji}</div>
+                            <div className="text-xs">{world.name}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Seleção de Dificuldade */}
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800 mb-3">Dificuldade:</h3>
+                      <div className="space-y-2">
+                        {(['easy', 'medium', 'hard'] as const).map(level => (
+                          <button
+                            key={level}
+                            onClick={() => setDifficulty(level)}
+                            className={`w-full p-3 rounded-xl font-medium transition-all flex items-center justify-between ${
+                              difficulty === level
+                                ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white scale-105'
+                                : 'bg-gray-100 hover:bg-gray-200'
+                            }`}
+                          >
+                            <span>{DIFFICULTY_SETTINGS[level].emoji} {DIFFICULTY_SETTINGS[level].name}</span>
+                            <span className="text-sm">{DIFFICULTY_SETTINGS[level].pairs} pares</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex justify-center">
+                    <button
+                      onClick={() => {
+                        initializeGame();
+                        setGameStarted(true);
+                        setIsTimerActive(true);
+                      }}
+                      className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-lg font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                    >
+                      Começar Jogo!
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Status do jogo */}
+              {gameStarted && (
+                <div className="bg-white/90 rounded-2xl p-3 md:p-4 shadow-xl border border-purple-200">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Target className="w-5 h-5 text-purple-600" />
+                      <div>
+                        <div className="text-xs text-gray-600">Pares</div>
+                        <div className="font-bold text-purple-800">{matches}/{DIFFICULTY_SETTINGS[difficulty].pairs}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-center gap-1">
+                      <div className="w-5 h-5 text-blue-600 flex items-center justify-center">🔄</div>
+                      <div>
+                        <div className="text-xs text-gray-600">Moves</div>
+                        <div className="font-bold text-blue-800">{moves}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-center gap-1">
+                      <Star className="w-5 h-5 text-yellow-500" fill="currentColor" />
+                      <div>
+                        <div className="text-xs text-gray-600">Pontos</div>
+                        <div className="font-bold text-yellow-600">{score}</div>
+                      </div>
+                    </div>
+                    {combo > 1 && (
+                      <div className="flex items-center justify-center gap-1">
+                        <div className="w-5 h-5 text-orange-500 flex items-center justify-center">🔥</div>
+                        <div>
+                          <div className="text-xs text-gray-600">Combo</div>
+                          <div className="font-bold text-orange-500 animate-pulse">x{combo}</div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-center gap-1">
+                      <Timer className={`w-5 h-5 ${timeLeft < 20 ? 'text-red-500' : 'text-green-600'}`} />
+                      <div>
+                        <div className="text-xs text-gray-600">Tempo</div>
+                        <div className={`font-bold ${timeLeft < 20 ? 'text-red-500 animate-pulse' : 'text-green-600'}`}>
+                          {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Botão de som */}
+                  <div className="mt-3 flex justify-center">
+                    <button 
+                      onClick={() => setIsSoundOn(!isSoundOn)} 
+                      className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
+                    >
+                      {isSoundOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Grade de cartas */}
+              {gameStarted && (
+                <div className="bg-white/30 backdrop-blur rounded-2xl p-4">
+                  <div 
+                    className="grid gap-3 max-w-2xl mx-auto"
+                    style={{
+                      gridTemplateColumns: `repeat(${DIFFICULTY_SETTINGS[difficulty].gridCols}, 1fr)`,
+                    }}
+                  >
+                    {cards.map((card) => (
+                      <button
+                        key={card.id}
+                        onClick={() => handleCardClick(card.id)}
+                        disabled={card.isMatched}
+                        className={`aspect-square rounded-xl shadow-lg transition-all duration-300 transform relative overflow-hidden ${
+                          card.isMatched ? 'scale-95 opacity-75' : 'hover:scale-105 active:scale-95'
+                        }`}
+                        style={{ 
+                          perspective: '1000px',
+                        }}
+                      >
+                        <div 
+                          className={`w-full h-full transition-transform duration-600 relative preserve-3d ${
+                            card.isFlipped || card.isMatched ? 'rotate-y-180' : ''
+                          }`}
+                          style={{ 
+                            transformStyle: 'preserve-3d',
+                            transform: card.isFlipped || card.isMatched ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                          }}
+                        >
+                          {/* Verso da carta */}
+                          <div 
+                            className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-400 to-purple-500 rounded-xl flex flex-col items-center justify-center text-white backface-hidden border-2 border-white/20"
+                            style={{ backfaceVisibility: 'hidden' }}
+                          >
+                            <div className="text-2xl mb-1">🧠</div>
+                            <div className="text-xs font-bold">LudiTEA</div>
+                          </div>
+                          
+                          {/* Frente da carta */}
+                          <div 
+                            className={`absolute inset-0 w-full h-full bg-white rounded-xl p-1 rotate-y-180 backface-hidden border-2 ${
+                              card.isMatched ? 'border-green-400' : 'border-gray-200'
+                            }`}
+                            style={{ 
+                              backfaceVisibility: 'hidden',
+                              transform: 'rotateY(180deg)'
+                            }}
+                          >
+                            <img
+                              src={`/images/avatares/${card.avatar}.webp`}
+                              alt="Avatar"
+                              className="w-full h-full object-cover rounded-lg"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = '/images/avatares/Face_1.webp';
+                              }}
+                            />
+                            {card.isMatched && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 rounded-lg">
+                                <span className="text-3xl animate-bounce">✅</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            // Tela de resultados
+            <div className="bg-white/95 rounded-xl shadow-2xl p-6 sm:p-8 backdrop-blur-sm border border-purple-200">
+              <div className="text-center mb-6">
+                <div className="text-5xl sm:text-6xl mb-4 animate-bounce">
+                  {timeLeft > 0 && matches === DIFFICULTY_SETTINGS[difficulty].pairs ? '🏆' : 
+                   timeLeft > 0 ? '🎯' : '⏰'}
+                </div>
+                
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
+                  {timeLeft > 0 && matches === DIFFICULTY_SETTINGS[difficulty].pairs ? 'Parabéns! Você venceu!' : 
+                   timeLeft > 0 ? 'Boa tentativa!' : 'Tempo Esgotado!'}
+                </h3>
+                
+                <p className="text-lg text-indigo-600 font-medium">
+                  Mundo: {AVATAR_WORLDS[currentWorld as keyof typeof AVATAR_WORLDS].name} • 
+                  Dificuldade: {DIFFICULTY_SETTINGS[difficulty].name}
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-lg sm:text-xl font-bold text-purple-800">
+                    {score}
+                  </div>
+                  <div className="text-xs text-purple-600">Pontuação</div>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-lg sm:text-xl font-bold text-green-800">
+                    {matches}/{DIFFICULTY_SETTINGS[difficulty].pairs}
+                  </div>
+                  <div className="text-xs text-green-600">Pares</div>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-lg sm:text-xl font-bold text-blue-800">
+                    {moves}
+                  </div>
+                  <div className="text-xs text-blue-600">Movimentos</div>
+                </div>
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-lg sm:text-xl font-bold text-orange-800">
+                    x{maxCombo}
+                  </div>
+                  <div className="text-xs text-orange-600">Combo Máx</div>
+                </div>
+              </div>
+
+              {/* Performance */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <h4 className="font-bold text-gray-800 mb-3 text-sm sm:text-base">📊 Desempenho:</h4>
+                <div className="flex justify-center gap-2">
+                  {[1, 2, 3].map(star => (
+                    <span
+                      key={star}
+                      className="text-3xl"
+                    >
+                      {star <= Math.min(3, Math.ceil(score / 300)) ? '⭐' : '☆'}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={() => {
+                    initializeGame();
+                    setShowResults(false);
+                    setGameStarted(true);
+                    setIsTimerActive(true);
+                  }}
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-2 px-4 sm:py-3 sm:px-6 rounded-lg transition-all transform hover:scale-105 text-sm sm:text-base"
+                >
+                  🔄 Jogar Novamente
+                </button>
+                
+                <button
+                  onClick={voltarInicio}
+                  className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-2 px-4 sm:py-3 sm:px-6 rounded-lg transition-all transform hover:scale-105 text-sm sm:text-base"
+                >
+                  🏠 Menu Principal
+                </button>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  };
+
+  // Renderização condicional das telas
+  if (currentScreen === 'title') return <TitleScreen />;
+  if (currentScreen === 'instructions') return <InstructionsScreen />;
+  return <GameScreen />;
 }
+
+// CSS customizado para animações 3D
+const customStyles = `
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+  
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+  
+  @keyframes bounce-slow {
+    0%, 100% { 
+      transform: translateY(0);
+    }
+    50% { 
+      transform: translateY(-20px);
+    }
+  }
+  .animate-bounce-slow {
+    animation: bounce-slow 3s ease-in-out infinite;
+  }
+`;
