@@ -55,6 +55,7 @@ export default function MagicTower() {
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [gameMessage, setGameMessage] = useState('');
   const [isCollapsing, setIsCollapsing] = useState(false);
+  const [isMobile, setIsMobile] = useState(false); // << NOVO ESTADO PARA CORRIGIR O BUILD
 
   // Estados do bloco em movimento
   const [movingBlockOffset, setMovingBlockOffset] = useState(0); // -100 (esquerda) a 100 (direita)
@@ -62,7 +63,7 @@ export default function MagicTower() {
   const [blockSpeed, setBlockSpeed] = useState(1.5); // Velocidade inicial do bloco
   const [currentBlockWidth, setCurrentBlockWidth] = useState(INITIAL_BLOCK_WIDTH); // Largura do bloco atual
 
-  // Estados salvos (usando localStorage para simplicidade, pode integrar com Supabase depois)
+  // Estados salvos
   const [bestHeight, setBestHeight] = useState(0);
   const [totalStars, setTotalStars] = useState(0);
 
@@ -74,9 +75,22 @@ export default function MagicTower() {
     if (savedHeight) setBestHeight(parseInt(savedHeight));
     if (savedStars) setTotalStars(parseInt(savedStars));
 
-    // Pré-carregar o som (tenta tocar um som mudo uma vez)
     playSound('silent');
   }, []);
+
+  // << FUNÇÃO ADICIONADA PARA CORRIGIR O BUILD >>
+  // Define se é mobile APENAS no lado do cliente, evitando erro no servidor
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    checkMobile(); // Verifica na primeira montagem
+    window.addEventListener('resize', checkMobile);
+
+    // Limpa o event listener quando o componente é desmontado
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []); // O array vazio [] garante que isso rode apenas uma vez no cliente
+
 
   const startActivity = () => {
     setCurrentScreen('game');
@@ -95,28 +109,27 @@ export default function MagicTower() {
     setTowerLevel(1);
     setIsCollapsing(false);
     setGameMessage('Prepare-se para construir!');
-    setCurrentBlockWidth(INITIAL_BLOCK_WIDTH); // Resetar largura do bloco
-    setMovingBlockOffset(0); // Começa no centro
-    setMovingBlockDirection(1); // Começa movendo para a direita
-    setBlockSpeed(1.5); // Resetar velocidade
+    setCurrentBlockWidth(INITIAL_BLOCK_WIDTH);
+    setMovingBlockOffset(0);
+    setMovingBlockDirection(1);
+    setBlockSpeed(1.5);
 
-    // Adicionar o primeiro bloco (base)
     setBlocks([{ id: Date.now(), widthPercentage: INITIAL_BLOCK_WIDTH, offset: 0, quality: 'perfect', isSpecial: false }]);
   };
 
   const showGameMessage = (message: string, duration: number = 3000) => {
     setGameMessage(message);
     const timer = setTimeout(() => setGameMessage(''), duration);
-    return () => clearTimeout(timer); // Limpa o timer se o componente for desmontado ou message mudar
+    return () => clearTimeout(timer);
   };
 
   const createParticles = useCallback((x: number, y: number, type: string = 'normal', count: number = 8) => {
     const newParticles: Particle[] = [];
-    const colors = type === 'perfect' ? ['#84CC16', '#A3E635'] : // Verde-lima
-                   type === 'good' ? ['#3B82F6', '#60A5FA'] : // Azul vibrante
-                   type === 'poor' ? ['#F59E0B', '#FBBF24'] : // Laranja
-                   type === 'explosion' ? ['#EF4444', '#FCD34D', '#4ADE80'] : // Explosão colorida
-                   ['#E5E7EB', '#D1D5DB']; // Cinza claro (silent)
+    const colors = type === 'perfect' ? ['#84CC16', '#A3E635'] :
+                   type === 'good' ? ['#3B82F6', '#60A5FA'] :
+                   type === 'poor' ? ['#F59E0B', '#FBBF24'] :
+                   type === 'explosion' ? ['#EF4444', '#FCD34D', '#4ADE80'] :
+                   ['#E5E7EB', '#D1D5DB'];
     
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count;
@@ -140,21 +153,21 @@ export default function MagicTower() {
       ...particle,
       x: particle.x + particle.vx,
       y: particle.y + particle.vy,
-      vy: particle.vy + 0.3, // Gravidade
+      vy: particle.vy + 0.3,
       life: particle.life - 0.02,
     })).filter(particle => particle.life > 0));
   }, []);
 
   const playSound = (type: 'perfect' | 'good' | 'poor' | 'collapse' | 'levelup' | 'silent', attempt: number = 0) => {
-    if (attempt > 2) return; // Máximo 3 tentativas para evitar loop infinito
+    if (attempt > 2) return;
     
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       
       if (audioContext.state === 'suspended') {
         audioContext.resume().then(() => {
-          playSound(type, attempt + 1); // Tenta novamente após resumir
-        }).catch(() => {}); // Falha silenciosa
+          playSound(type, attempt + 1);
+        }).catch(() => {});
         return;
       }
       
@@ -216,15 +229,15 @@ export default function MagicTower() {
             osc.stop(audioContext.currentTime + 0.3 + i * 0.1);
           });
           break;
-        case 'silent': // Toca um som inaudível para inicializar o AudioContext
-          oscillator.frequency.value = 1; // Frequência muito baixa
-          gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime); // Volume quase zero
+        case 'silent':
+          oscillator.frequency.value = 1;
+          gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
           oscillator.start();
           oscillator.stop(audioContext.currentTime + 0.001);
           break;
       }
     } catch (e) {
-      // Falha silenciosa se AudioContext não for suportado ou houver erro
+      // Falha silenciosa
     }
   };
 
@@ -234,42 +247,63 @@ export default function MagicTower() {
         particleCount: 80,
         spread: 120,
         origin: { y: 0.6, x: 0.5 },
-        colors: ['#FFD700', '#FF4500', '#ADFF2F', '#1E90FF'], // Cores vibrantes
+        colors: ['#FFD700', '#FF4500', '#ADFF2F', '#1E90FF'],
         scalar: 1.2
       });
     }
   };
 
+  const triggerCollapse = useCallback(() => {
+    setIsCollapsing(true);
+    setIsPlaying(false);
+    playSound('collapse');
+    showGameMessage('💥 TORRE DESMORONOU!', 3000);
+    
+    const gameArea = document.querySelector('.tower-area');
+    if (gameArea) {
+      const rect = gameArea.getBoundingClientRect();
+      blocks.forEach((block, index) => {
+        setTimeout(() => {
+          createParticles(
+            rect.width / 2 + block.offset,
+            rect.height - (index * (isMobile ? 27 : 32)),
+            'explosion',
+            15
+          );
+        }, index * 80);
+      });
+    }
+    
+    setTimeout(() => {
+      endGame();
+    }, 2500 + blocks.length * 80);
+  }, [blocks, createParticles, isMobile, playSound, showGameMessage]);
+
   const handlePlaceBlock = useCallback(() => {
     if (!isPlaying || isCollapsing) return;
 
-    // O último bloco é a base para o encaixe
     const lastBlock = blocks[blocks.length - 1];
-    if (!lastBlock) return; // Não deveria acontecer se o jogo iniciou corretamente
+    if (!lastBlock) return;
 
-    // Calcular o quão alinhado o bloco móvel está com o bloco de baixo
-    const alignmentOffset = movingBlockOffset; // -100 (esquerda) a 100 (direita)
-    const baseBlockWidth = lastBlock.widthPercentage; // Largura do bloco de baixo (100 = largura máxima)
-
+    const alignmentOffset = movingBlockOffset;
     let quality: 'perfect' | 'good' | 'poor';
-    let newBlockOffset = 0; // O bloco novo sempre se "centraliza" ou se ajusta
+    let newBlockOffset = 0;
     let points = 0;
     let newBlockWidth = currentBlockWidth;
 
-    const perfectThreshold = 10; // Quão próximo do centro é "perfect"
-    const goodThreshold = 30; // Quão próximo do centro é "good"
+    const perfectThreshold = 10;
+    const goodThreshold = 30;
 
     const currentBlockAbsoluteOffset = movingBlockRef.current?.offsetLeft || 0;
     const towerArea = document.querySelector('.tower-area');
     const towerAreaRect = towerArea?.getBoundingClientRect();
     const towerCenter = towerAreaRect ? towerAreaRect.width / 2 : 0;
-    const blockVisualOffset = currentBlockAbsoluteOffset - towerCenter; // Offset visual em pixels
+    const blockVisualOffset = currentBlockAbsoluteOffset - towerCenter;
 
     if (Math.abs(alignmentOffset) <= perfectThreshold) {
       quality = 'perfect';
-      points = 150; // Mais pontos para perfeito
-      newBlockOffset = 0; // Perfeito, centraliza
-      // Se for perfeito, recupera um pouco da largura, até o máximo
+      points = 150;
+      newBlockOffset = 0;
       newBlockWidth = Math.min(INITIAL_BLOCK_WIDTH, currentBlockWidth + 5);
       playSound('perfect');
       showGameMessage('✨ PERFEITO! ✨', 1500);
@@ -277,22 +311,19 @@ export default function MagicTower() {
     } else if (Math.abs(alignmentOffset) <= goodThreshold) {
       quality = 'good';
       points = 80;
-      // Calcula o "corte" do bloco
       const overhang = Math.abs(alignmentOffset) - perfectThreshold;
-      newBlockWidth = Math.max(20, currentBlockWidth - (overhang * 0.8)); // Reduz a largura
-      newBlockOffset = alignmentOffset > 0 ? alignmentOffset - (overhang / 2) : alignmentOffset + (overhang / 2); // Ajusta o centro do bloco
+      newBlockWidth = Math.max(20, currentBlockWidth - (overhang * 0.8));
+      newBlockOffset = alignmentOffset > 0 ? alignmentOffset - (overhang / 2) : alignmentOffset + (overhang / 2);
       playSound('good');
       showGameMessage('✅ Bom! ✅', 1500);
       createParticles(towerCenter + blockVisualOffset, 100 + (blocks.length * (isMobile ? 27 : 32)), 'good', 10);
     } else {
       quality = 'poor';
-      points = 0; // Nenhum ponto para erro grave
-      newBlockWidth = Math.max(10, currentBlockWidth - (Math.abs(alignmentOffset) * 0.5)); // Reduz muito a largura
+      points = 0;
+      newBlockWidth = Math.max(10, currentBlockWidth - (Math.abs(alignmentOffset) * 0.5));
       newBlockOffset = alignmentOffset > 0 ? alignmentOffset - (Math.abs(alignmentOffset) / 2) : alignmentOffset + (Math.abs(alignmentOffset) / 2);
       playSound('poor');
-      showGameMessage('❌ ERRO! ❌', 1500);
-      createParticles(towerCenter + blockVisualOffset, 100 + (blocks.length * (isMobile ? 27 : 32)), 'poor', 8);
-
+      
       setLives(prev => {
         const newLives = prev - 1;
         if (newLives <= 0) {
@@ -304,7 +335,7 @@ export default function MagicTower() {
       });
     }
 
-    if (newBlockWidth < 15) { // Se o bloco ficar muito fino, a torre desmorona
+    if (newBlockWidth < 15) {
         triggerCollapse();
         return;
     }
@@ -321,16 +352,11 @@ export default function MagicTower() {
 
     setBlocks(prev => [...prev, newBlock]);
     setScore(prev => prev + Math.round(points * multiplier));
-    setCurrentBlockWidth(newBlockWidth); // Próximo bloco terá a largura ajustada
+    setCurrentBlockWidth(newBlockWidth);
+    setMovingBlockOffset(0);
+    setMovingBlockDirection(Math.random() > 0.5 ? 1 : -1);
+    setBlockSpeed(prev => Math.min(prev + 0.1, 5));
 
-    // Resetar offset do bloco móvel para a próxima rodada
-    setMovingBlockOffset(0); // Sempre começa do centro para a próxima peça
-    setMovingBlockDirection(Math.random() > 0.5 ? 1 : -1); // Alterna a direção inicial
-    
-    // Aumentar a velocidade do bloco gradualmente
-    setBlockSpeed(prev => Math.min(prev + 0.1, 5)); // Aumenta até um máximo
-
-    // Atualizar combos e streaks
     if (quality === 'perfect') {
       setCombo(prev => {
         const newCombo = prev + 1;
@@ -341,10 +367,11 @@ export default function MagicTower() {
         const newStreak = prev + 1;
         setMaxPerfectStreak(max => Math.max(max, newStreak));
 
-        if (newStreak % 5 === 0 && newStreak > 0) { // A cada 5 perfeitos
-          setMultiplier(prev => prev + 0.5); // Aumenta multiplicador
-          setMultiplierTime(5); // Duração do multiplicador
-          showGameMessage(`🔥 Combo Perfeito! Multiplicador x${multiplier + 0.5}!`, 2500);
+        if (newStreak % 5 === 0 && newStreak > 0) {
+          const newMultiplier = multiplier + 0.5;
+          setMultiplier(newMultiplier);
+          setMultiplierTime(5);
+          showGameMessage(`🔥 Combo Perfeito! Multiplicador x${newMultiplier}!`, 2500);
           createCelebrationBurst();
         }
         return newStreak;
@@ -354,7 +381,6 @@ export default function MagicTower() {
       setPerfectStreak(0);
     }
 
-    // Level up da torre a cada 10 blocos (ajustado para a nova mecânica)
     const newHeight = blocks.length + 1;
     if (newHeight > 1 && newHeight % 10 === 0) {
       const newLevel = Math.floor(newHeight / 10) + 1;
@@ -364,55 +390,23 @@ export default function MagicTower() {
       showGameMessage(`🏗️ NÍVEL ${newLevel} ALCANÇADO!`, 3000);
       createCelebrationBurst();
 
-      // Recuperar vida a cada level up
       setLives(prev => Math.min(prev + 1, 3));
-      setCurrentBlockWidth(prev => Math.min(INITIAL_BLOCK_WIDTH, prev + 10)); // Aumenta um pouco a largura do bloco
+      setCurrentBlockWidth(prev => Math.min(INITIAL_BLOCK_WIDTH, prev + 10));
       
       setTimeout(() => setShowLevelUp(false), 3000);
     }
   }, [isPlaying, isCollapsing, blocks, multiplier, isMobile, createParticles, showGameMessage, playSound, currentBlockWidth, triggerCollapse]);
 
-
-  const triggerCollapse = useCallback(() => {
-    setIsCollapsing(true);
-    setIsPlaying(false);
-    playSound('collapse');
-    showGameMessage('💥 TORRE DESMORONOU!', 3000);
-    
-    // Criar explosão de partículas
-    const gameArea = document.querySelector('.tower-area');
-    if (gameArea) {
-      const rect = gameArea.getBoundingClientRect();
-      // Criar partículas de todos os blocos desmoronando
-      blocks.forEach((block, index) => {
-        setTimeout(() => {
-          createParticles(
-            rect.width / 2 + block.offset, // Posição do bloco
-            rect.height - (index * (isMobile ? 27 : 32)), // Altura aproximada do bloco
-            'explosion',
-            15
-          );
-        }, index * 80); // Defasagem para o efeito de desmoronamento
-      });
-    }
-    
-    // Mostrar resultados após animação
-    setTimeout(() => {
-      endGame();
-    }, 2500 + blocks.length * 80); // Ajusta o tempo para a animação de queda
-  }, [blocks, createParticles, isMobile, playSound, showGameMessage]);
-
   const endGame = () => {
     setShowResults(true);
     
-    // Atualizar recordes
     const currentHeight = blocks.length;
     if (currentHeight > bestHeight) {
       setBestHeight(currentHeight);
       localStorage.setItem('magicTower_bestHeight', currentHeight.toString());
     }
     
-    const newStars = totalStars + Math.floor(score / 1500); // Ajustado para nova pontuação
+    const newStars = totalStars + Math.floor(score / 1500);
     setTotalStars(newStars);
     localStorage.setItem('magicTower_totalStars', newStars.toString());
   };
@@ -423,12 +417,9 @@ export default function MagicTower() {
     setIsCollapsing(false);
   };
 
-  // Game loop principal para o bloco em movimento e partículas
   useEffect(() => {
     if (!isPlaying) {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
       return;
     }
 
@@ -438,10 +429,9 @@ export default function MagicTower() {
       const deltaTime = time - lastTime;
       lastTime = time;
 
-      // Movimento do bloco
       setMovingBlockOffset(prev => {
-        let newOffset = prev + (movingBlockDirection * blockSpeed * (deltaTime / 16)); // Ajusta a velocidade pelo deltaTime
-        const maxOffset = 100 - (currentBlockWidth / 2); // Limita o movimento baseado na largura do bloco
+        let newOffset = prev + (movingBlockDirection * blockSpeed * (deltaTime / 16));
+        const maxOffset = 100 - (currentBlockWidth / 2);
 
         if (newOffset > maxOffset) {
           newOffset = maxOffset;
@@ -453,13 +443,12 @@ export default function MagicTower() {
         return newOffset;
       });
 
-      // Atualizar multiplicador
       setMultiplierTime(prev => {
         if (prev <= 0) {
           setMultiplier(1);
           return 0;
         }
-        return prev - (deltaTime / 1000); // Decrementa em segundos
+        return prev - (deltaTime / 1000);
       });
 
       updateParticles();
@@ -469,12 +458,9 @@ export default function MagicTower() {
     animationRef.current = requestAnimationFrame(animate);
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, [isPlaying, movingBlockDirection, blockSpeed, currentBlockWidth, updateParticles]);
-
 
   const handleSaveSession = async () => {
     setSalvando(true);
@@ -488,7 +474,7 @@ export default function MagicTower() {
         return;
       }
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('sessoes')
         .insert([{
           usuario_id: user.id,
@@ -517,9 +503,8 @@ export default function MagicTower() {
       setSalvando(false);
     }
   };
-
+  
   // Calcular dimensões responsivas
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
   const blockHeight = isMobile ? 'h-7' : 'h-9';
   const blockSpacing = isMobile ? 27 : 32;
   const maxVisibleBlocks = isMobile ? 12 : 15;
@@ -552,7 +537,7 @@ export default function MagicTower() {
             alt="Leo Constructor" 
             width={400} 
             height={400} 
-            className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl animate-float" // Nova animação
+            className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl animate-float"
             priority 
           />
         </div>
@@ -634,7 +619,6 @@ export default function MagicTower() {
   );
 
   const GameScreen = () => {
-    // Calculamos o offset da base para simular a torre "subindo"
     const towerOffset = Math.max(0, blocks.length - maxVisibleBlocks) * blockSpacing;
 
     return (
@@ -669,7 +653,7 @@ export default function MagicTower() {
                   <span className="hidden sm:inline">{salvando ? 'Salvando...' : 'Salvar'}</span>
                 </button>
               ) : (
-                <div className="w-24"></div> // Espaçador para manter o layout
+                <div className="w-24"></div>
               )}
             </div>
           </div>
@@ -682,38 +666,25 @@ export default function MagicTower() {
               <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4">
                 <div className="grid grid-cols-5 gap-2">
                   <div className="text-center">
-                    <div className="text-base sm:text-xl font-bold text-purple-800">
-                      {blocks.length}
-                    </div>
+                    <div className="text-base sm:text-xl font-bold text-purple-800">{blocks.length}</div>
                     <div className="text-xs text-purple-600">Altura</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-base sm:text-xl font-bold text-teal-800">
-                      {score}
-                    </div>
+                    <div className="text-base sm:text-xl font-bold text-teal-800">{score}</div>
                     <div className="text-xs text-teal-600">Pontos</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-base sm:text-xl font-bold text-yellow-800">
-                      x{combo}
-                    </div>
+                    <div className="text-base sm:text-xl font-bold text-yellow-800">x{combo}</div>
                     <div className="text-xs text-yellow-600">Combo</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-base sm:text-xl font-bold text-lime-800">
-                      {perfectStreak}
-                    </div>
+                    <div className="text-base sm:text-xl font-bold text-lime-800">{perfectStreak}</div>
                     <div className="text-xs text-lime-600">Perfeitas</div>
                   </div>
                   <div className="text-center">
-                    <div className="flex justify-center gap-1">
+                    <div className="flex justify-center gap-1 items-center h-full">
                       {[1, 2, 3].map(i => (
-                        <div
-                          key={i}
-                          className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
-                            i <= lives ? 'bg-red-500' : 'bg-gray-300'
-                          }`}
-                        />
+                        <div key={i} className={`w-3 h-3 rounded-full transition-colors ${i <= lives ? 'bg-red-500 animate-pulse' : 'bg-gray-300'}`} />
                       ))}
                     </div>
                     <div className="text-xs text-red-600">Vidas</div>
@@ -733,11 +704,10 @@ export default function MagicTower() {
               <div 
                 className="tower-area relative bg-gradient-to-b from-sky-200 to-blue-300 rounded-xl shadow-lg overflow-hidden flex justify-center items-end"
                 style={{ height: gameAreaHeight }}
+                onClick={handlePlaceBlock} // Adicionamos o clique na área toda
               >
-                {/* Linha guia central para ajudar no alinhamento */}
                 <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-yellow-400 opacity-60 z-10 transform -translate-x-0.5 animate-pulse-slow" />
                 
-                {/* Mensagens do jogo */}
                 {gameMessage && (
                   <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-30">
                     <div className="bg-white/90 text-black px-4 py-2 rounded-full font-bold animate-fade-in-out text-center text-sm sm:text-base shadow-md">
@@ -746,7 +716,6 @@ export default function MagicTower() {
                   </div>
                 )}
 
-                {/* Level Up Animation */}
                 {showLevelUp && (
                   <div className="absolute inset-0 flex items-center justify-center z-40 bg-black/50">
                     <div className="bg-white rounded-2xl p-8 text-center animate-pop-in">
@@ -758,81 +727,60 @@ export default function MagicTower() {
                   </div>
                 )}
 
-                {/* Container da Torre */}
                 <div 
                   className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex flex-col items-center transition-transform duration-500 ease-out"
-                  style={{ transform: `translateX(-50%) translateY(${towerOffset}px)` }} // Move a torre para cima
+                  style={{ transform: `translateX(-50%) translateY(${towerOffset}px)` }}
                 >
-                  {/* Blocos da Torre */}
                   {blocks.map((block, index) => (
                     <div
                       key={block.id}
                       className={`relative ${blockHeight} rounded-sm border-2 transition-all duration-100 ${
                         block.quality === 'perfect' ? 'border-green-600' :
-                        block.quality === 'good' ? 'border-blue-600' :
-                        'border-orange-600'
-                      } ${
-                        block.isSpecial ? 'animate-glow-gold' : ''
-                      } ${
-                        isCollapsing ? 'animate-fall-block' : '' // Animação de queda
-                      }`}
+                        block.quality === 'good' ? 'border-blue-600' : 'border-orange-600'
+                      } ${block.isSpecial ? 'animate-glow-gold' : ''} ${isCollapsing ? 'animate-fall-block' : ''}`}
                       style={{
                         width: `${block.widthPercentage}%`,
                         backgroundColor: 
                           block.quality === 'perfect' ? '#4CAF50' :
-                          block.quality === 'good' ? '#2196F3' :
-                          '#FF9800',
-                        // Se o bloco for especial, muda a cor
-                        backgroundImage: block.isSpecial 
-                          ? 'linear-gradient(to right, #FFD700, #FFA500)' 
-                          : '',
+                          block.quality === 'good' ? '#2196F3' : '#FF9800',
+                        backgroundImage: block.isSpecial ? 'linear-gradient(to right, #FFD700, #FFA500)' : '',
                         zIndex: blocks.length - index,
-                        marginBottom: '2px', // Espaçamento entre blocos
-                        transform: `translateX(${block.offset}px)`, // Offset do bloco
+                        marginBottom: '2px',
+                        transform: `translateX(${block.offset}px)`,
                         boxShadow: `0 2px 4px rgba(0,0,0,0.3)${block.isSpecial ? ', 0 0 15px #FFD700' : ''}`
                       }}
                     >
-                      {block.isSpecial && (
-                        <div className="absolute inset-0 flex items-center justify-center text-white text-lg font-bold">
-                          ⭐
-                        </div>
-                      )}
+                      {block.isSpecial && <div className="absolute inset-0 flex items-center justify-center text-white text-lg font-bold">⭐</div>}
                     </div>
                   ))}
                   <div className="w-[150%] h-16 bg-gradient-to-t from-stone-800 to-stone-600 border-t-4 border-stone-900 rounded-b-xl z-10 flex items-center justify-center">
-                    <div className="text-white text-center font-bold text-sm sm:text-base opacity-70">
-                      FUNDAÇÃO
-                    </div>
+                    <div className="text-white text-center font-bold text-sm sm:text-base opacity-70">FUNDAÇÃO</div>
                   </div>
                 </div>
 
-                {/* Bloco em movimento */}
                 {isPlaying && !isCollapsing && (
                   <div
                     ref={movingBlockRef}
                     className={`absolute bottom-0 ${blockHeight} rounded-sm border-2 border-indigo-600 bg-indigo-500 shadow-md transition-opacity duration-300`}
                     style={{
                       width: `${currentBlockWidth}%`,
-                      transform: `translateX(calc(${movingBlockOffset}% - 50%))`, // Movimento horizontal
+                      transform: `translateX(calc(${movingBlockOffset}% - 50%))`,
                       opacity: isPlaying && !isCollapsing ? 1 : 0,
-                      marginBottom: `${blocks.length * blockSpacing + (isMobile ? 27 : 32)}px`, // Posição acima da torre
+                      marginBottom: `${blocks.length * blockSpacing + (isMobile ? 27 : 32)}px`,
                       zIndex: blocks.length + 10,
                     }}
                   >
-                    <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm">
-                      NOVO BLOCO
-                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm">NOVO BLOCO</div>
                   </div>
                 )}
                 
-                {/* Partículas */}
                 {particles.map(particle => (
                   <div
                     key={particle.id}
                     className="absolute w-2 h-2 rounded-full pointer-events-none"
                     style={{
-                      left: `calc(50% + ${particle.x}px - 4px)`, // Centraliza e ajusta o pixel
-                      top: `calc(${gameAreaHeight} - ${particle.y}px - 4px)`, // Inverte o eixo Y para parecer que sobe
+                      left: `calc(50% + ${particle.x}px - 4px)`,
+                      top: `calc(${gameAreaHeight} - ${particle.y}px - 4px)`,
                       backgroundColor: particle.color,
                       opacity: particle.life,
                       zIndex: 50,
@@ -840,30 +788,14 @@ export default function MagicTower() {
                   />
                 ))}
 
-                {/* Indicador de Nível da Torre */}
                 <div className="absolute top-4 right-4 bg-white/80 rounded-lg p-2 text-center shadow-sm">
                   <div className="text-lg font-bold text-indigo-800">Nv.{towerLevel}</div>
                   <div className="text-xs text-indigo-600">Torre</div>
                 </div>
               </div>
-
-              {/* Botão de Construir */}
-              <div className="text-center">
-                <button
-                  onClick={handlePlaceBlock}
-                  disabled={isCollapsing || !isPlaying}
-                  className={`${
-                    isCollapsing || !isPlaying
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 active:scale-95'
-                  } text-white px-8 py-3 sm:px-12 sm:py-4 rounded-xl font-bold text-base sm:text-lg transition-all shadow-lg hover:shadow-xl`}
-                >
-                  {isCollapsing ? '💥 DESMORONANDO...' : '🔨 SOLTAR BLOCO'}
-                </button>
-              </div>
+              
             </div>
           ) : (
-            // Tela de Resultados
             <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 animate-fade-in">
               <div className="text-center mb-6">
                 <div className="text-5xl sm:text-6xl mb-4">
@@ -900,7 +832,6 @@ export default function MagicTower() {
                 </div>
               </div>
 
-              {/* Estatísticas extras */}
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <h4 className="font-bold text-gray-800 mb-3 text-sm sm:text-base">📊 Seus feitos Mágicos:</h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
