@@ -9,18 +9,81 @@ interface Level {
   pattern: number[][];
   specialCell?: { row: number; col: number };
 }
+
 const COLORS = [
-  'bg-gray-200 hover:bg-gray-300 border-gray-300',
-  'bg-blue-500 border-blue-700',
-  'bg-yellow-400 border-yellow-600',
-  'bg-green-500 border-green-700',
-  'bg-red-500 border-red-700',
-  'bg-purple-500 border-purple-700',
+  'bg-gray-200 hover:bg-gray-300 border-gray-300',    // 0
+  'bg-blue-500 border-blue-700',                      // 1
+  'bg-yellow-400 border-yellow-600',                  // 2
+  'bg-green-500 border-green-700',                     // 3
+  'bg-red-500 border-red-700',                         // 4
+  'bg-purple-500 border-purple-700',                   // 5 (Estrela)
+  'bg-teal-400 border-teal-600',                       // 6 (Peixinho)
+  'bg-yellow-300 border-yellow-500',                   // 7 (Sol)
+  'bg-indigo-500 border-indigo-700',                   // 8 (Lua)
+  'bg-pink-400 border-pink-600'                        // 9 (Flor)
 ];
+
 const levels: Level[] = [
-  { name: "Sorriso", pattern: [[0, 1, 0, 1, 0],[0, 0, 0, 0, 0],[1, 0, 0, 0, 1],[0, 1, 1, 1, 0],[0, 0, 0, 0, 0]], specialCell: { row: 3, col: 2 } },
-  { name: "Casa", pattern: [[0, 0, 2, 0, 0],[0, 2, 2, 2, 0],[2, 2, 2, 2, 2],[0, 3, 3, 3, 0],[0, 3, 0, 3, 0]], specialCell: { row: 4, col: 2 } },
-  { name: "Coração", pattern: [[0, 4, 4, 0, 4, 4, 0],[4, 4, 4, 4, 4, 4, 4],[4, 4, 4, 4, 4, 4, 4],[0, 4, 4, 4, 4, 4, 0],[0, 0, 4, 4, 4, 0, 0],[0, 0, 0, 4, 0, 0, 0],[0, 0, 0, 0, 0, 0, 0]], specialCell: { row: 1, col: 3 } },
+  { name: "Sorriso", pattern: [[0,1,0,1,0],[0,0,0,0,0],[1,0,0,0,1],[0,1,1,1,0],[0,0,0,0,0]], specialCell: { row: 3, col: 2 } },
+  { name: "Casa", pattern: [[0,0,2,0,0],[0,2,2,2,0],[2,2,2,2,2],[0,3,3,3,0],[0,3,0,3,0]], specialCell: { row: 4, col: 2 } },
+  { name: "Coração", pattern: [[0,4,4,0,4,4,0],[4,4,4,4,4,4,4],[4,4,4,4,4,4,4],[0,4,4,4,4,4,0],[0,0,4,4,4,0,0],[0,0,0,4,0,0,0],[0,0,0,0,0,0,0]], specialCell: { row: 1, col: 3 } },
+
+  // Novas fases
+  {
+    name: "Estrela",
+    pattern: [
+      [0,0,5,0,0],
+      [0,5,5,5,0],
+      [5,5,5,5,5],
+      [0,5,5,5,0],
+      [0,0,5,0,0]
+    ],
+    specialCell: { row: 2, col: 2 },
+  },
+  {
+    name: "Peixinho",
+    pattern: [
+      [0,0,6,6,0],
+      [0,6,6,6,6],
+      [6,6,6,6,0],
+      [0,6,6,6,6],
+      [0,0,6,6,0]
+    ],
+    specialCell: { row: 2, col: 1 },
+  },
+  {
+    name: "Sol",
+    pattern: [
+      [0,7,0,7,0],
+      [7,7,7,7,7],
+      [0,7,7,7,0],
+      [7,7,7,7,7],
+      [0,7,0,7,0]
+    ],
+    specialCell: { row: 2, col: 2 },
+  },
+  {
+    name: "Lua",
+    pattern: [
+      [0,0,8,8,0],
+      [0,8,8,8,0],
+      [8,8,8,0,0],
+      [0,8,8,8,0],
+      [0,0,8,0,0]
+    ],
+    specialCell: { row: 1, col: 2 },
+  },
+  {
+    name: "Flor",
+    pattern: [
+      [0,9,0,9,0],
+      [9,9,9,9,9],
+      [0,9,9,9,0],
+      [0,0,9,0,0],
+      [0,9,0,9,0]
+    ],
+    specialCell: { row: 1, col: 2 },
+  }
 ];
 
 export default function PatternBuilderGame() {
@@ -165,6 +228,7 @@ export default function PatternBuilderGame() {
     if (!level || playerPattern.length === 0) return <div className="text-center p-8">Carregando nível...</div>;
     const patternSize = level.pattern[0].length;
     const cellSize = isMobile ? (patternSize > 5 ? 'w-10 h-10' : 'w-12 h-12') : 'w-16 h-16';
+
     const renderGrid = (pattern: number[][], isInteractive: boolean) => (
       <div className="bg-white p-2 rounded-lg shadow-md border border-gray-200">
         <div className={`grid gap-1`} style={{gridTemplateColumns: `repeat(${patternSize}, minmax(0, 1fr))`}}>
@@ -180,7 +244,7 @@ export default function PatternBuilderGame() {
                   onClick={() => isInteractive && handleCellClick(rowIndex, colIndex)}
                   onKeyDown={(e) => isInteractive && (e.key === "Enter" || e.key === " ") && handleCellClick(rowIndex, colIndex)}
                 >
-                  {/* Temporariamente removido Sparkles para teste */}
+                  {/* Sparkles removido temporariamente para não bloquear cliques no desktop */}
                 </div>
               );
             })
@@ -244,7 +308,7 @@ export default function PatternBuilderGame() {
   return (
     <div className="w-screen h-screen font-sans">
       {renderScreen()}
-      {/* Partículas desativadas para teste */}
+      {/* Partículas e Sparkles desativadas para teste de performance */}
     </div>
   );
 }
