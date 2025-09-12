@@ -77,14 +77,12 @@ export default function SpeechPracticeGame() {
   const [bestStreak, setBestStreak] = useState(0);
   
   // Referências
-  const audioRef = useRef<HTMLAudioElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const gameAreaRef = useRef<HTMLDivElement>(null);
-
-  const audioFolder = '/audio/syllables/essenciais/';
+  const speechSynthRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Carrega dados salvos
   useEffect(() => {
@@ -510,8 +508,18 @@ export default function SpeechPracticeGame() {
 
   // Tela do jogo
   const GameScreen = () => {
-    const audioSrc = `${audioFolder}${currentLetter}/${currentSyllable}.mp3`;
-    const progress = ((currentLetterIndex * 5 + currentSyllableIndex + 1) / (letters.length * 5)) * 100;
+    // Gerar caminho correto do áudio baseado na estrutura de pastas
+    const getAudioPath = () => {
+      if (currentLetter === 'VOGAIS') {
+        return `/audio/syllables/${currentSyllable}.mp3`;
+      } else {
+        return `/audio/syllables/essenciais/${currentLetter}/${currentSyllable}.mp3`;
+      }
+    };
+    
+    const audioSrc = getAudioPath();
+    const progress = ((currentLetterIndex * syllables.length + currentSyllableIndex + 1) / 
+                     (letters.length * syllables.length)) * 100;
     
     return (
       <div className="min-h-screen bg-gray-50">
@@ -543,7 +551,7 @@ export default function SpeechPracticeGame() {
               <div 
                 ref={gameAreaRef}
                 className="relative bg-gradient-to-br from-purple-100 to-pink-100 rounded-3xl shadow-lg p-8 text-center overflow-hidden"
-                style={{ minHeight: '400px' }}
+                style={{ minHeight: '500px' }}
               >
                 {/* Partículas de celebração */}
                 {particles.map(particle => (
@@ -578,11 +586,32 @@ export default function SpeechPracticeGame() {
                 {/* Conteúdo principal */}
                 <div className="relative z-10">
                   <h2 className="text-2xl font-bold text-purple-800 mb-4">
-                    Letra {currentLetter} - Sílaba {currentSyllableIndex + 1} de {syllables.length}
+                    {currentLetter === 'VOGAIS' ? 'Vogais' : `Letra ${currentLetter}`} - 
+                    Sílaba {currentSyllableIndex + 1} de {syllables.length}
                   </h2>
                   
                   <div className="text-8xl font-bold text-purple-600 mb-6 animate-pulse">
                     {currentSyllable}
+                  </div>
+
+                  {/* Instruções visuais do fluxo */}
+                  <div className="mb-6 bg-white/80 rounded-2xl p-4">
+                    <div className="flex items-center justify-center gap-8 text-sm">
+                      <div className={`flex flex-col items-center ${currentStep === 'waiting' ? 'opacity-100' : 'opacity-50'}`}>
+                        <div className="text-2xl mb-1">👂</div>
+                        <div className="font-bold">1. Escutar</div>
+                      </div>
+                      <div className="text-2xl">→</div>
+                      <div className={`flex flex-col items-center ${currentStep === 'listening' ? 'opacity-100' : 'opacity-50'}`}>
+                        <div className="text-2xl mb-1">🎤</div>
+                        <div className="font-bold">2. Repetir</div>
+                      </div>
+                      <div className="text-2xl">→</div>
+                      <div className="flex flex-col items-center opacity-50">
+                        <div className="text-2xl mb-1">🎉</div>
+                        <div className="font-bold">3. Celebrar</div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Controles de áudio */}
@@ -592,6 +621,12 @@ export default function SpeechPracticeGame() {
                       src={audioSrc}
                       preload="auto"
                       onEnded={onAudioEnded}
+                      onError={(e) => {
+                        console.error('Erro no áudio:', e);
+                        setMessage('Erro ao carregar áudio. Verifique o arquivo.');
+                        setAudioPlaying(false);
+                        setCurrentStep('waiting');
+                      }}
                     />
                     
                     <button
@@ -600,6 +635,8 @@ export default function SpeechPracticeGame() {
                       className={`flex items-center gap-2 px-8 py-4 rounded-full text-xl font-bold transition-all ${
                         audioPlaying || listening
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : currentStep === 'waiting'
+                          ? 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-105 animate-pulse'
                           : 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-105'
                       }`}
                     >
@@ -614,6 +651,7 @@ export default function SpeechPracticeGame() {
                         value={playbackRate}
                         onChange={(e) => setPlaybackRate(parseFloat(e.target.value))}
                         className="px-3 py-1 border border-gray-300 rounded-lg text-sm"
+                        disabled={audioPlaying || listening}
                       >
                         <option value="0.5">0.5x (Muito Lento)</option>
                         <option value="0.75">0.75x (Lento)</option>
@@ -623,32 +661,49 @@ export default function SpeechPracticeGame() {
                     </div>
                   </div>
 
-                  {/* Status do microfone */}
-                  <div className="mb-4">
-                    {listening ? (
+                  {/* Botão do microfone */}
+                  <div className="mb-6">
+                    {!listening ? (
+                      <button
+                        onClick={startListening}
+                        disabled={audioPlaying || currentStep === 'playing'}
+                        className={`flex items-center gap-2 px-8 py-4 rounded-full text-xl font-bold transition-all ${
+                          audioPlaying || currentStep === 'playing'
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : currentStep === 'waiting' && !audioPlaying
+                            ? 'bg-green-500 text-white hover:bg-green-600 hover:scale-105 animate-pulse'
+                            : 'bg-green-500 text-white hover:bg-green-600 hover:scale-105'
+                        }`}
+                      >
+                        <Mic className="w-6 h-6" />
+                        Repetir Sílaba
+                      </button>
+                    ) : (
                       <div className="flex flex-col items-center gap-2">
-                        <div className="flex items-center gap-2 text-green-600">
-                          <Mic className="w-6 h-6 animate-pulse" />
-                          <span className="font-bold">🎤 Escutando...</span>
-                        </div>
                         <button
                           onClick={stopListening}
-                          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                          className="flex items-center gap-2 px-8 py-4 rounded-full text-xl font-bold bg-red-500 text-white hover:bg-red-600 animate-pulse"
+                        >
+                          <Mic className="w-6 h-6 animate-bounce" />
+                          Escutando... Fale agora!
+                        </button>
+                        <button
+                          onClick={stopListening}
+                          className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
                         >
                           Parar
                         </button>
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2 text-gray-600">
-                        <MicOff className="w-6 h-6" />
-                        <span>Microfone pronto</span>
-                      </div>
                     )}
                   </div>
 
-                  {/* Mensagem */}
+                  {/* Mensagem de status */}
                   {message && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-blue-800">
+                    <div className={`rounded-lg p-3 text-lg font-bold ${
+                      currentStep === 'playing' ? 'bg-blue-50 border border-blue-200 text-blue-800' :
+                      currentStep === 'listening' ? 'bg-green-50 border border-green-200 text-green-800' :
+                      'bg-yellow-50 border border-yellow-200 text-yellow-800'
+                    }`}>
                       {message}
                     </div>
                   )}
