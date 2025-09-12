@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { ChevronLeft, Save, Star, Trophy } from 'lucide-react';
 import { createClient } from '../utils/supabaseClient';
 import confetti from 'canvas-confetti';
-import styles from './tower-tapping.module.css';
 import Image from 'next/image';
 
 interface Block {
@@ -144,7 +143,7 @@ export default function TowerTappingInfinite() {
                    '#F59E0B';
       
       newParticles.push({
-        id: Date.now() + i,
+        id: Date.now() + i + Math.random(),
         x,
         y,
         vx: Math.cos(angle) * velocity,
@@ -179,9 +178,8 @@ export default function TowerTappingInfinite() {
       
       switch (type) {
         case 'perfect':
-          // Som harmônico ascendente
-          oscillator.frequency.setValueAtTime(523, audioContext.currentTime); // C5
-          oscillator.frequency.exponentialRampToValueAtTime(659, audioContext.currentTime + 0.1); // E5
+          oscillator.frequency.setValueAtTime(523, audioContext.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(659, audioContext.currentTime + 0.1);
           gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
           gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
           oscillator.start();
@@ -189,7 +187,7 @@ export default function TowerTappingInfinite() {
           break;
           
         case 'good':
-          oscillator.frequency.value = 440; // A4
+          oscillator.frequency.value = 440;
           oscillator.type = 'sine';
           gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
           gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
@@ -198,7 +196,7 @@ export default function TowerTappingInfinite() {
           break;
           
         case 'poor':
-          oscillator.frequency.value = 220; // A3 
+          oscillator.frequency.value = 220;
           oscillator.type = 'sawtooth';
           gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
           gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
@@ -207,22 +205,16 @@ export default function TowerTappingInfinite() {
           break;
           
         case 'collapse':
-          // Som de colapso com ruído
-          const noise = audioContext.createOscillator();
-          const noiseGain = audioContext.createGain();
-          noise.type = 'sawtooth';
-          noise.frequency.setValueAtTime(150, audioContext.currentTime);
-          noise.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 1);
-          noise.connect(noiseGain);
-          noiseGain.connect(audioContext.destination);
-          noiseGain.gain.setValueAtTime(0.5, audioContext.currentTime);
-          noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
-          noise.start();
-          noise.stop(audioContext.currentTime + 1);
+          oscillator.type = 'sawtooth';
+          oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 1);
+          gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 1);
           break;
           
         case 'levelup':
-          // Acorde maior ascendente
           [523, 659, 784].forEach((freq, i) => {
             const osc = audioContext.createOscillator();
             const gain = audioContext.createGain();
@@ -238,7 +230,6 @@ export default function TowerTappingInfinite() {
           break;
           
         case 'powerup':
-          // Escala ascendente rápida
           [262, 294, 330, 349, 392, 440, 494, 523].forEach((freq, i) => {
             const osc = audioContext.createOscillator();
             const gain = audioContext.createGain();
@@ -254,22 +245,21 @@ export default function TowerTappingInfinite() {
           break;
       }
     } catch (e) {
-      // Silently fail
+      console.log('Audio not supported');
     }
   };
 
   const createCelebrationBurst = (x?: number, y?: number) => {
-    const centerX = x || (gameAreaRef.current?.offsetWidth || 400) / 2;
-    const centerY = y || (gameAreaRef.current?.offsetHeight || 400) / 2;
-    
-    confetti({
-      particleCount: 50,
-      spread: 70,
-      origin: { 
-        x: centerX / (gameAreaRef.current?.offsetWidth || 400),
-        y: centerY / (gameAreaRef.current?.offsetHeight || 400)
-      }
-    });
+    if (typeof confetti === 'function') {
+      confetti({
+        particleCount: 50,
+        spread: 70,
+        origin: { 
+          x: x ? x / (gameAreaRef.current?.offsetWidth || 400) : 0.5,
+          y: y ? y / (gameAreaRef.current?.offsetHeight || 400) : 0.5
+        }
+      });
+    }
   };
 
   const activatePowerUp = (type: PowerUp['type']) => {
@@ -306,13 +296,12 @@ export default function TowerTappingInfinite() {
     const blockWidth = isMobile ? 80 : 100;
     const blockHeight = isMobile ? 25 : 30;
     
-    // Calcular posição e pontuação
     const basePoints = quality === 'perfect' ? 100 : quality === 'good' ? 60 : 30;
     const finalPoints = Math.round(basePoints * multiplier);
     const isSpecial = perfectStreak > 0 && perfectStreak % 5 === 0;
     
     const newBlock: Block = {
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       x: (gameArea.width / 2) - (blockWidth / 2) + offset,
       y: gameArea.height - 60 - (blocks.length * (blockHeight + 2)),
       offset,
@@ -339,12 +328,15 @@ export default function TowerTappingInfinite() {
     
     // Atualizar combos e streaks
     if (quality === 'perfect') {
-      setCombo(prev => prev + 1);
+      setCombo(prev => {
+        const newCombo = prev + 1;
+        setMaxCombo(max => Math.max(max, newCombo));
+        return newCombo;
+      });
       setPerfectStreak(prev => {
         const newStreak = prev + 1;
         setMaxPerfectStreak(max => Math.max(max, newStreak));
         
-        // Ativar power-ups baseados na streak
         if (newStreak === 10) {
           activatePowerUp('perfect_streak');
         } else if (newStreak === 20) {
@@ -367,16 +359,19 @@ export default function TowerTappingInfinite() {
           return newLives;
         });
       } else {
-        setCombo(prev => prev + 1);
+        setCombo(prev => {
+          const newCombo = prev + 1;
+          setMaxCombo(max => Math.max(max, newCombo));
+          return newCombo;
+        });
         setPerfectStreak(0);
       }
     }
     
-    setMaxCombo(prev => Math.max(prev, combo + 1));
-    
     // Verificar level up da torre
-    if ((towerHeight + 1) % 25 === 0) {
-      const newLevel = Math.floor((towerHeight + 1) / 25) + 1;
+    const newHeight = towerHeight + 1;
+    if (newHeight % 25 === 0) {
+      const newLevel = Math.floor(newHeight / 25) + 1;
       setTowerLevel(newLevel);
       setShowLevelUp(true);
       playSound('levelup');
@@ -389,7 +384,6 @@ export default function TowerTappingInfinite() {
       setTimeout(() => setShowLevelUp(false), 3000);
     }
     
-    // Sons
     playSound(quality);
   };
 
@@ -427,7 +421,7 @@ export default function TowerTappingInfinite() {
     if (!isPlaying || isCollapsing) return;
     
     const currentTime = Date.now();
-    const newTapHistory = [...tapHistory, currentTime].slice(-10); // Manter últimos 10 taps
+    const newTapHistory = [...tapHistory, currentTime].slice(-10);
     setTapHistory(newTapHistory);
     
     // Calcular BPM target após 3 taps
@@ -437,7 +431,7 @@ export default function TowerTappingInfinite() {
         intervals.push(newTapHistory[i] - newTapHistory[i - 1]);
       }
       const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-      const bpm = 60000 / avgInterval; // Converter para BPM
+      const bpm = 60000 / avgInterval;
       setTargetBPM(Math.round(bpm));
       showGameMessage(`Ritmo estabelecido: ${Math.round(bpm)} BPM`, 2000);
     }
@@ -490,6 +484,8 @@ export default function TowerTappingInfinite() {
 
   // Atualizar power-ups
   useEffect(() => {
+    if (!isPlaying) return;
+    
     if (multiplierTime <= 0) {
       setMultiplier(1);
       return;
@@ -500,7 +496,7 @@ export default function TowerTappingInfinite() {
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, [multiplierTime]);
+  }, [multiplierTime, isPlaying]);
 
   // Game loop para partículas e animações
   useEffect(() => {
@@ -511,11 +507,15 @@ export default function TowerTappingInfinite() {
       
       // Animar blocos caindo durante colapso
       if (isCollapsing) {
-        setBlocks(prev => prev.map(block => ({
-          ...block,
-          y: block.falling ? block.y + 5 : block.y,
-          opacity: block.falling ? Math.max(0, (block.opacity || 1) - 0.02) : block.opacity
-        })).filter(block => (block.opacity || 1) > 0));
+        setBlocks(prev => prev.map(block => {
+          if (!block.falling) return block;
+          
+          return {
+            ...block,
+            y: block.y + 5,
+            opacity: Math.max(0, (block.opacity || 1) - 0.02)
+          };
+        }).filter(block => (block.opacity || 1) > 0));
       }
       
       animationRef.current = requestAnimationFrame(gameLoop);
@@ -597,13 +597,13 @@ export default function TowerTappingInfinite() {
       </div>
       
       <div className="relative z-10 flex flex-col items-center text-center">
-        <div className="mb-4 animate-bounce-slow">
+        <div className="mb-4">
           <Image 
             src="/images/mascotes/leo/leo_torre.webp" 
             alt="Leo Constructor" 
             width={400} 
             height={400} 
-            className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl" 
+            className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl animate-bounce" 
             priority 
           />
         </div>
@@ -793,7 +793,7 @@ export default function TowerTappingInfinite() {
                 style={{ height: isMobile ? '400px' : '500px' }}
               >
                 {/* Linha guia central */}
-                <div className="absolute left-1/2 top-0 bottom-16 w-0.5 bg-red-300 opacity-40 z-10" />
+                <div className="absolute left-1/2 top-0 bottom-16 w-0.5 bg-red-300 opacity-40 z-10 transform -translate-x-0.5" />
                 
                 {/* Mensagens do jogo */}
                 {gameMessage && (
@@ -850,7 +850,7 @@ export default function TowerTappingInfinite() {
                 {particles.map(particle => (
                   <div
                     key={particle.id}
-                    className="absolute w-2 h-2 rounded-full"
+                    className="absolute w-2 h-2 rounded-full pointer-events-none"
                     style={{
                       left: `${particle.x}px`,
                       top: `${particle.y}px`,
@@ -889,7 +889,7 @@ export default function TowerTappingInfinite() {
                   {isCollapsing ? '💥 DESMORONANDO...' : '🔨 ADICIONAR BLOCO'}
                 </button>
                 
-                {targetBPM && (
+                {targetBPM && !isCollapsing && (
                   <div className="text-xs sm:text-sm text-gray-600 mt-2">
                     Mantenha o ritmo de {targetBPM} BPM
                   </div>
