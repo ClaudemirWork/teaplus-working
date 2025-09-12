@@ -39,10 +39,39 @@ export default function PatternBuilderGame() {
   const [showLevelComplete, setShowLevelComplete] = useState(false);
   const [showGameComplete, setShowGameComplete] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  
-  // << ALTERAÇÃO AQUI >> Estado para armazenar o local do último clique para as partículas
   const [lastClickedCell, setLastClickedCell] = useState<{ row: number; col: number; type: 'gem' | 'click' } | null>(null);
-  const playerGridRef = useRef<HTMLDivElement>(null); // Ref para o grid do jogador
+  const playerGridRef = useRef<HTMLDivElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  const playSound = useCallback((type: 'click' | 'error' | 'gem' | 'complete') => {
+    if (!audioContextRef.current || audioContextRef.current.state === 'suspended') return;
+    const context = audioContextRef.current;
+    const oscillator = context.createOscillator();
+    const gainNode = context.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(context.destination);
+    gainNode.gain.setValueAtTime(0.1, context.currentTime);
+    switch(type) {
+      case 'click': oscillator.frequency.setValueAtTime(440, context.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.3); break;
+      case 'error': oscillator.frequency.setValueAtTime(150, context.currentTime); oscillator.type = 'square'; gainNode.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.2); break;
+      case 'gem': oscillator.frequency.setValueAtTime(660, context.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.4); break;
+      case 'complete': oscillator.frequency.setValueAtTime(880, context.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.5); break;
+    }
+    oscillator.start(context.currentTime);
+    oscillator.stop(context.currentTime + 0.3);
+  }, []);
+
+  const initializeAudio = () => {
+    if (!audioContextRef.current) {
+      try {
+        const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioContextRef.current = context;
+      } catch (e) { console.error("Web Audio API not supported."); }
+    }
+    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+  };
 
   const startGame = () => {
     setCurrentLevelIndex(0);
@@ -69,28 +98,7 @@ export default function PatternBuilderGame() {
       setShowGameComplete(true);
     }
   }, [currentLevelIndex]);
-  
-  const playSound = useCallback((type: 'click' | 'error' | 'gem' | 'complete') => {
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      if (audioContext.state === 'suspended') audioContext.resume();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-      switch(type) {
-        case 'click': oscillator.frequency.setValueAtTime(440, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3); break;
-        case 'error': oscillator.frequency.setValueAtTime(150, audioContext.currentTime); oscillator.type = 'square'; gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.2); break;
-        case 'gem': oscillator.frequency.setValueAtTime(660, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.4); break;
-        case 'complete': oscillator.frequency.setValueAtTime(880, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5); break;
-      }
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
-    } catch(e) {}
-  }, []);
 
-  // << ALTERAÇÃO AQUI >> Lógica de partículas agora é separada e mais robusta
   const createParticles = useCallback((element: HTMLElement, type: 'gem' | 'click') => {
     const rect = element.getBoundingClientRect();
     const newParticles = [];
@@ -101,9 +109,9 @@ export default function PatternBuilderGame() {
     }
     setParticles(p => [...p, ...newParticles]);
   }, []);
-  
-  // << ALTERAÇÃO AQUI >> O clique agora apenas armazena a informação
+
   const handleCellClick = (rowIndex: number, colIndex: number) => {
+    initializeAudio();
     if (showLevelComplete || showGameComplete) return;
     const newPattern = playerPattern.map(r => [...r]);
     const currentVal = newPattern[rowIndex][colIndex];
@@ -117,7 +125,7 @@ export default function PatternBuilderGame() {
       setScore(s => s + points);
       setCombo(c => c + 1);
       playSound(isSpecial ? 'gem' : 'click');
-      setLastClickedCell({ row: rowIndex, col: colIndex, type: isSpecial ? 'gem' : 'click' }); // Salva info para o useEffect
+      setLastClickedCell({ row: rowIndex, col: colIndex, type: isSpecial ? 'gem' : 'click' });
     } else {
       setCombo(0);
       playSound('error');
@@ -150,7 +158,6 @@ export default function PatternBuilderGame() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // << ALTERAÇÃO AQUI >> useEffect para criar partículas de forma segura
   useEffect(() => {
     if (lastClickedCell && playerGridRef.current) {
       const { row, col, type } = lastClickedCell;
@@ -158,7 +165,7 @@ export default function PatternBuilderGame() {
       if (cellElement) {
         createParticles(cellElement, type);
       }
-      setLastClickedCell(null); // Limpa após o uso
+      setLastClickedCell(null);
     }
   }, [lastClickedCell, createParticles]);
 
@@ -170,7 +177,7 @@ export default function PatternBuilderGame() {
         </div>
         <h1 className="text-5xl sm:text-6xl font-bold text-white drop-shadow-lg mb-4">Exploradores de Padrões</h1>
         <p className="text-xl text-white/90 mt-2 mb-8 drop-shadow-md">🎨 Construa mosaicos coloridos e divertidos! 🎨</p>
-        <button onClick={() => setCurrentScreen('instructions')} className="text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110">
+        <button onMouseDown={initializeAudio} onClick={() => setCurrentScreen('instructions')} className="text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110">
           Começar a Explorar
         </button>
       </div>
@@ -187,7 +194,7 @@ export default function PatternBuilderGame() {
           <p className="flex items-center gap-4"><span className="text-4xl"><Gem className="text-purple-500 w-10 h-10"/></span><span>Encontre a <b>Gema Especial</b> (marcada com um brilho no modelo) para ganhar mais pontos e um efeito surpresa!</span></p>
           <p className="flex items-center gap-4"><span className="text-4xl">🏆</span><span>Complete todos os mosaicos para se tornar um Mestre Explorador!</span></p>
         </div>
-        <button onClick={startGame} className="w-full text-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform">
+        <button onMouseDown={initializeAudio} onClick={startGame} className="w-full text-xl font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform">
           Vamos Construir! 🚀
         </button>
       </div>
@@ -201,19 +208,28 @@ export default function PatternBuilderGame() {
     const cellSize = isMobile ? (patternSize > 5 ? 'w-10 h-10' : 'w-12 h-12') : 'w-16 h-16';
 
     const renderGrid = (pattern: number[][], isInteractive: boolean) => (
-      <div ref={isInteractive ? playerGridRef : null} className="bg-white p-2 rounded-lg shadow-md border border-gray-200"> {/* << ALTERAÇÃO AQUI >> Adiciona a ref */}
+      <div ref={isInteractive ? playerGridRef : null} className="bg-white p-2 rounded-lg shadow-md border border-gray-200">
         <div className={`grid gap-1`} style={{gridTemplateColumns: `repeat(${patternSize}, minmax(0, 1fr))`}}>
           {pattern.map((row, rowIndex) =>
             row.map((colorIndex, colIndex) => {
               const isSpecial = !isInteractive && level.specialCell?.row === rowIndex && level.specialCell?.col === colIndex;
               return (
+                // --- AQUI ESTÁ A CORREÇÃO FINAL E COMPLETA ---
                 <div
                   key={`${rowIndex}-${colIndex}`}
-                  data-cell-id={`${rowIndex}-${colIndex}`} // << ALTERAÇÃO AQUI >> ID para encontrar a célula
+                  data-cell-id={`${rowIndex}-${colIndex}`}
+                  role="button" // Melhora a acessibilidade
+                  tabIndex={0} // Permite foco pelo teclado
                   className={`relative rounded-md border-2 transition-colors duration-150 ${cellSize} ${COLORS[colorIndex]} ${isInteractive && !showLevelComplete ? 'cursor-pointer' : ''}`}
-                  onClick={() => isInteractive && handleCellClick(rowIndex, colIndex)} // << ALTERAÇÃO AQUI >> Voltamos para onClick e removemos o 'event'
+                  onClick={() => isInteractive && handleCellClick(rowIndex, colIndex)}
+                  onKeyDown={(e) => isInteractive && (e.key === "Enter" || e.key === " ") && handleCellClick(rowIndex, colIndex)}
                 >
-                  {isSpecial && <Sparkles className="absolute inset-0 m-auto w-1/2 h-1/2 text-white/70 animate-pulse-slow"/>}
+                  {isSpecial && (
+                    <Sparkles
+                      // A classe mais importante para resolver o bug do clique no desktop
+                      className="absolute inset-0 m-auto w-1/2 h-1/2 text-white/70 animate-pulse-slow pointer-events-none"
+                    />
+                  )}
                 </div>
               );
             })
