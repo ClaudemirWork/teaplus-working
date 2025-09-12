@@ -1,11 +1,255 @@
 /* emotionrecognition.module.css */
 
+/* ===========================================
+   TELAS DE ABERTURA E NAVEGAÇÃO
+   =========================================== */
+
+/* Tela de Título */
+.titleScreen {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #E3F2FD 0%, #E8F5E9 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.titleContent {
+  text-align: center;
+  max-width: 600px;
+  z-index: 2;
+}
+
+.gameTitle {
+  font-size: 3.5rem;
+  font-weight: bold;
+  color: #2E7D32;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+  animation: titleFloat 3s ease-in-out infinite;
+}
+
+.gameSubtitle {
+  font-size: 1.3rem;
+  color: #4CAF50;
+  margin-bottom: 30px;
+  font-weight: 500;
+}
+
+/* Mascote da Tela Inicial */
+.mascotContainer {
+  margin: 30px 0;
+  position: relative;
+}
+
+.mascotImage {
+  width: 280px;
+  height: 280px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));
+  animation: mascotBreathe 4s ease-in-out infinite;
+}
+
+/* Botões */
+.startButton, .backButton, .nextButton {
+  background: linear-gradient(135deg, #4CAF50, #66BB6A);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 25px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px;
+}
+
+.startButton:hover, .backButton:hover, .nextButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+  background: linear-gradient(135deg, #388E3C, #4CAF50);
+}
+
+.startButton:active, .backButton:active, .nextButton:active {
+  transform: translateY(0);
+}
+
+/* Tela de Instruções */
+.instructionScreen {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #E3F2FD 0%, #E8F5E9 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+}
+
+.instructionContent {
+  max-width: 800px;
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.instructionTitle {
+  font-size: 2.5rem;
+  color: #2E7D32;
+  margin-bottom: 30px;
+  font-weight: bold;
+}
+
+.instructionText {
+  font-size: 1.2rem;
+  color: #424242;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.instructionList {
+  text-align: left;
+  max-width: 600px;
+  margin: 0 auto 30px;
+}
+
+.instructionList li {
+  font-size: 1.1rem;
+  color: #424242;
+  margin-bottom: 15px;
+  padding-left: 10px;
+  position: relative;
+}
+
+.instructionList li:before {
+  content: '✓';
+  color: #4CAF50;
+  font-weight: bold;
+  position: absolute;
+  left: -20px;
+}
+
+.buttonContainer {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+
+/* ===========================================
+   CONTROLES DO JOGO
+   =========================================== */
+
+/* Header do Jogo */
+.gameHeader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.gameInfo {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.scoreDisplay {
+  background: #4CAF50;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.gameControls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.controlButton {
+  background: white;
+  border: 2px solid #4CAF50;
+  color: #4CAF50;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.controlButton:hover {
+  background: #4CAF50;
+  color: white;
+}
+
+/* ===========================================
+   JOGO PRINCIPAL
+   =========================================== */
+
 /* Container Principal - COR SUAVE PASTEL */
 .gameContainer {
   min-height: 100vh;
-  background: linear-gradient(135deg, #E3F2FD 0%, #E8F5E9 100%); /* Azul e verde suaves */
+  background: linear-gradient(135deg, #E3F2FD 0%, #E8F5E9 100%);
   position: relative;
   overflow: hidden;
+  padding-top: 80px; /* Espaço para o header */
+}
+
+/* Área do Jogo */
+.gameArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  min-height: calc(100vh - 80px);
+}
+
+/* Pergunta/Instrução */
+.questionDisplay {
+  background: white;
+  padding: 20px 40px;
+  border-radius: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.questionText {
+  font-size: 1.5rem;
+  color: #2E7D32;
+  font-weight: bold;
+  margin: 0;
+}
+
+/* Grid de Emoções */
+.emotionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 /* Cards de Emoção - SEM TEXTO */
@@ -22,6 +266,7 @@
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   position: relative;
   padding: 10px;
+  justify-self: center;
 }
 
 .emotionCard:hover {
@@ -38,13 +283,13 @@
 /* Feedback de Acerto/Erro */
 .cardCorrect {
   animation: correctPulse 0.5s ease;
-  background: #C8E6C9 !important; /* Verde suave */
+  background: #C8E6C9 !important;
   border: 3px solid #4CAF50;
 }
 
 .cardWrong {
   animation: wrongShake 0.5s ease;
-  background: #FFCDD2 !important; /* Vermelho suave */
+  background: #FFCDD2 !important;
   border: 3px solid #F44336;
 }
 
@@ -59,6 +304,10 @@
   25% { transform: translateX(-5px); }
   75% { transform: translateX(5px); }
 }
+
+/* ===========================================
+   EFEITOS E ANIMAÇÕES
+   =========================================== */
 
 /* EXPLOSÃO DE PONTOS */
 .pointsExplosion {
@@ -161,19 +410,6 @@
   animation: rainFall 4s linear forwards;
 }
 
-/* Mobile */
-@media (max-width: 768px) {
-  .emotionCard {
-    width: 100px;
-    height: 100px;
-  }
-  
-  .liberationMessage {
-    font-size: 24px !important;
-    padding: 20px;
-  }
-}
-
 /* Partículas */
 .starParticle {
   position: fixed;
@@ -184,6 +420,20 @@
   pointer-events: none;
   z-index: 9997;
   animation: starFall 3s ease-out forwards;
+}
+
+/* ===========================================
+   ANIMAÇÕES GLOBAIS
+   =========================================== */
+
+@keyframes titleFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes mascotBreathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
 @keyframes starFall {
@@ -227,4 +477,141 @@
     transform: translate(-50%, -50%) scale(1) rotate(0deg);
     opacity: 0;
   }
+}
+
+/* ===========================================
+   RESPONSIVIDADE
+   =========================================== */
+
+/* Mobile */
+@media (max-width: 768px) {
+  .gameTitle {
+    font-size: 2.5rem;
+  }
+  
+  .gameSubtitle {
+    font-size: 1.1rem;
+  }
+  
+  .mascotImage {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .emotionCard {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .emotionsGrid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 15px;
+  }
+  
+  .liberationMessage {
+    font-size: 24px !important;
+    padding: 20px;
+  }
+  
+  .instructionContent {
+    padding: 20px;
+  }
+  
+  .instructionTitle {
+    font-size: 2rem;
+  }
+  
+  .questionText {
+    font-size: 1.2rem;
+  }
+  
+  .gameHeader {
+    padding: 10px 15px;
+  }
+  
+  .buttonContainer {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .startButton, .backButton, .nextButton {
+    width: 200px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .gameTitle {
+    font-size: 2rem;
+  }
+  
+  .mascotImage {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .emotionCard {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .instructionTitle {
+    font-size: 1.5rem;
+  }
+  
+  .instructionText {
+    font-size: 1rem;
+  }
+}
+
+/* ===========================================
+   ESTADOS DE CARREGAMENTO
+   =========================================== */
+
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.fadeIn {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fadeOut {
+  animation: fadeOut 0.5s ease-out forwards;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-20px); }
+}
+
+/* ===========================================
+   CORREÇÕES DE CONFLITOS
+   =========================================== */
+
+/* Garante que não há conflitos com outros estilos */
+.titleScreen *, 
+.instructionScreen *, 
+.gameContainer * {
+  box-sizing: border-box;
+}
+
+/* Remove transições bruscas */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Previne flickering */
+.emotionCard, .startButton, .backButton, .nextButton {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
