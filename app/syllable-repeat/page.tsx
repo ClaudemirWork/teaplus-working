@@ -1,22 +1,25 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Save, Star, Trophy, Volume2, Mic, MicOff } from 'lucide-react';
+import { ChevronLeft, Volume2, Mic, MicOff, Star, Trophy } from 'lucide-react';
 
-// Mapeamento de sílabas essenciais por letra
+// Mapeamento das sílabas conforme os arquivos existentes
 const syllableMap: { [letter: string]: string[] } = {
-  B: ['ba', 'be', 'bi', 'bo', 'bu'],
-  C: ['ca', 'ce', 'ci', 'co', 'cu'],
-  D: ['da', 'de', 'di', 'do', 'du'],
+  A: ['a', 'e', 'i', 'o', 'u'], // Vogais primeiro
+  B: ['ba', 'bê', 'bi', 'bó', 'bu', 'bô'],
+  C: ['ca', 'cê', 'ci', 'co', 'cu'],
+  D: ['da', 'dê', 'di', 'dó', 'du', 'dô'],
   F: ['fa', 'fe', 'fi', 'fo', 'fu'],
-  L: ['la', 'le', 'li', 'lo', 'lu'],
+  G: ['ga', 'ge', 'gi', 'go', 'gu'],
+  J: ['já', 'jê', 'ji', 'jó', 'ju', 'jô'],
+  L: ['la', 'le', 'li', 'ló', 'lu', 'lé'],
   M: ['ma', 'me', 'mi', 'mo', 'mu'],
-  N: ['na', 'ne', 'ni', 'no', 'nu'],
-  P: ['pa', 'pe', 'pi', 'po', 'pu'],
+  N: ['na', 'né', 'ni', 'nó', 'nu', 'nê'],
+  P: ['pa', 'pê', 'pi', 'pó', 'pu'],
   R: ['ra', 're', 'ri', 'ro', 'ru'],
-  S: ['sa', 'se', 'si', 'so', 'su'],
-  T: ['ta', 'te', 'ti', 'to', 'tu'],
-  V: ['va', 've', 'vi', 'vo', 'vu'],
+  S: ['sa', 'se', 'si', 'so', 'su', 'sô'],
+  T: ['ta', 'tê', 'ti', 'tó', 'tu', 'tô'],
+  V: ['va', 'vê', 'vi', 'vó', 'vu', 'vô'],
 };
 
 interface GameStats {
@@ -26,17 +29,6 @@ interface GameStats {
   streak: number;
   maxStreak: number;
   starsEarned: number;
-}
-
-interface Particle {
-  id: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  color: string;
-  life: number;
-  type: 'star' | 'heart' | 'sparkle';
 }
 
 export default function SpeechPracticeGame() {
@@ -49,11 +41,11 @@ export default function SpeechPracticeGame() {
   const [currentLetterIndex, setCurrentLetterIndex] = useState(0);
   const [currentSyllableIndex, setCurrentSyllableIndex] = useState(0);
   const letters = Object.keys(syllableMap);
-  const currentLetter = letters[currentLetterIndex];
+  const currentLetter = letters[currentLetterIndex] || 'A';
   const syllables = syllableMap[currentLetter] || [];
-  const currentSyllable = syllables[currentSyllableIndex];
+  const currentSyllable = syllables[currentSyllableIndex] || 'a';
   
-  // Estados de áudio e microfone
+  // Estados de áudio
   const [listening, setListening] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [message, setMessage] = useState('');
@@ -70,19 +62,17 @@ export default function SpeechPracticeGame() {
   });
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationMessage, setCelebrationMessage] = useState('');
-  const [particles, setParticles] = useState<Particle[]>([]);
   
   // Estados salvos
   const [totalStarsCollected, setTotalStarsCollected] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   
   // Referências
+  const audioRef = useRef<HTMLAudioElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const rafIdRef = useRef<number | null>(null);
-  const gameAreaRef = useRef<HTMLDivElement>(null);
-  const speechSynthRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Carrega dados salvos
   useEffect(() => {
@@ -102,7 +92,6 @@ export default function SpeechPracticeGame() {
         const source = audioCtx.createMediaStreamSource(stream);
         const analyser = audioCtx.createAnalyser();
         
-        // Configurações mais sensíveis para detecção de fala
         analyser.fftSize = 2048;
         analyser.smoothingTimeConstant = 0.8;
         
@@ -128,19 +117,16 @@ export default function SpeechPracticeGame() {
     };
   }, []);
 
-  // Detecção melhorada de fala
   const checkSpeech = () => {
     if (!analyserRef.current || !dataArrayRef.current) return;
     
     analyserRef.current.getByteFrequencyData(dataArrayRef.current);
     
-    // Análise mais sofisticada
     const dataArray = dataArrayRef.current;
     let totalVolume = 0;
     let peakVolume = 0;
     let speechFrequencies = 0;
     
-    // Foca nas frequências de fala humana (85-255 Hz e 255-2000 Hz)
     for (let i = 10; i < 100; i++) {
       totalVolume += dataArray[i];
       if (dataArray[i] > peakVolume) peakVolume = dataArray[i];
@@ -150,7 +136,6 @@ export default function SpeechPracticeGame() {
     const avgVolume = totalVolume / 90;
     const speechRatio = speechFrequencies / 90;
     
-    // Critérios mais rigorosos para detecção de fala
     if (avgVolume > 25 && peakVolume > 50 && speechRatio > 0.3) {
       handleSpeechDetected();
     } else {
@@ -162,8 +147,7 @@ export default function SpeechPracticeGame() {
     setListening(false);
     if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     
-    // Feedback positivo imediato
-    const points = calculatePoints();
+    const points = 10 + (gameStats.streak * 5) + (playbackRate < 1 ? 5 : 0);
     
     setGameStats(prev => ({
       ...prev,
@@ -175,16 +159,12 @@ export default function SpeechPracticeGame() {
       starsEarned: prev.starsEarned + Math.floor(points / 20)
     }));
     
-    // Mensagens de celebração baseadas no desempenho
     if (gameStats.streak >= 4) {
       setCelebrationMessage('🔥 INCRÍVEL! Sequência perfeita!');
-      createCelebrationParticles('star');
     } else if (gameStats.streak >= 2) {
       setCelebrationMessage('✨ Muito bem! Continue assim!');
-      createCelebrationParticles('heart');
     } else {
       setCelebrationMessage('👏 Ótimo! Você conseguiu!');
-      createCelebrationParticles('sparkle');
     }
     
     setShowCelebration(true);
@@ -196,71 +176,6 @@ export default function SpeechPracticeGame() {
     }, 2000);
   };
 
-  const calculatePoints = () => {
-    const basePoints = 10;
-    const streakBonus = gameStats.streak * 5;
-    const speedBonus = playbackRate < 1 ? 5 : 0; // Bônus por velocidade reduzida
-    return basePoints + streakBonus + speedBonus;
-  };
-
-  const createCelebrationParticles = (type: 'star' | 'heart' | 'sparkle') => {
-    if (!gameAreaRef.current) return;
-    
-    const rect = gameAreaRef.current.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    
-    const colors = {
-      star: ['#FFD700', '#FFA500', '#FF6347'],
-      heart: ['#FF69B4', '#FF1493', '#DC143C'],
-      sparkle: ['#00CED1', '#1E90FF', '#9370DB']
-    };
-    
-    const newParticles: Particle[] = [];
-    const particleCount = type === 'star' ? 20 : 15;
-    
-    for (let i = 0; i < particleCount; i++) {
-      const angle = (Math.PI * 2 * i) / particleCount;
-      const velocity = Math.random() * 4 + 2;
-      
-      newParticles.push({
-        id: Date.now() + i,
-        x: centerX,
-        y: centerY,
-        vx: Math.cos(angle) * velocity,
-        vy: Math.sin(angle) * velocity,
-        color: colors[type][Math.floor(Math.random() * colors[type].length)],
-        life: 1,
-        type: type
-      });
-    }
-    
-    setParticles(prev => [...prev, ...newParticles]);
-  };
-
-  const updateParticles = () => {
-    setParticles(prev => prev.map(particle => ({
-      ...particle,
-      x: particle.x + particle.vx,
-      y: particle.y + particle.vy,
-      vy: particle.vy + 0.1, // Gravidade
-      life: particle.life - 0.02
-    })).filter(particle => particle.life > 0));
-  };
-
-  // Loop de animação para partículas
-  useEffect(() => {
-    if (particles.length === 0) return;
-    
-    const animationLoop = () => {
-      updateParticles();
-      requestAnimationFrame(animationLoop);
-    };
-    
-    const rafId = requestAnimationFrame(animationLoop);
-    return () => cancelAnimationFrame(rafId);
-  }, [particles.length > 0]);
-
   const playSuccessSound = () => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -270,10 +185,9 @@ export default function SpeechPracticeGame() {
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
       
-      // Som alegre de sucesso
-      oscillator.frequency.setValueAtTime(523, audioContext.currentTime); // C5
-      oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.1); // E5
-      oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.2); // G5
+      oscillator.frequency.setValueAtTime(523, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(659, audioContext.currentTime + 0.1);
+      oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.2);
       
       oscillator.type = 'sine';
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
@@ -293,7 +207,7 @@ export default function SpeechPracticeGame() {
     }
     
     setListening(true);
-    setMessage('🎤 Escutando... Repita a sílaba!');
+    setMessage('🎤 Agora é sua vez! Repita a sílaba!');
     rafIdRef.current = requestAnimationFrame(checkSpeech);
   };
 
@@ -309,15 +223,18 @@ export default function SpeechPracticeGame() {
     if (!audioRef.current || audioPlaying) return;
     
     setAudioPlaying(true);
+    setMessage('🔊 Escute com atenção...');
     audioRef.current.playbackRate = playbackRate;
-    audioRef.current.play();
+    audioRef.current.play().catch(error => {
+      console.error('Erro ao reproduzir áudio:', error);
+      setMessage('Erro ao reproduzir áudio. Tente novamente.');
+      setAudioPlaying(false);
+    });
   };
 
   const onAudioEnded = () => {
     setAudioPlaying(false);
-    setTimeout(() => {
-      startListening();
-    }, 500);
+    setMessage('✨ Perfeito! Agora clique no microfone e repita!');
   };
 
   const nextSyllable = () => {
@@ -327,7 +244,6 @@ export default function SpeechPracticeGame() {
       setCurrentLetterIndex(currentLetterIndex + 1);
       setCurrentSyllableIndex(0);
       
-      // Bonus por completar uma letra
       setGameStats(prev => ({
         ...prev,
         score: prev.score + 50,
@@ -338,7 +254,6 @@ export default function SpeechPracticeGame() {
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 2000);
     } else {
-      // Jogo completo!
       completeGame();
     }
     
@@ -349,7 +264,6 @@ export default function SpeechPracticeGame() {
     setIsPlaying(false);
     setShowResults(true);
     
-    // Salva recordes
     const newStars = totalStarsCollected + gameStats.starsEarned;
     setTotalStarsCollected(newStars);
     localStorage.setItem('speechGame_totalStars', newStars.toString());
@@ -357,11 +271,6 @@ export default function SpeechPracticeGame() {
     if (gameStats.maxStreak > bestStreak) {
       setBestStreak(gameStats.maxStreak);
       localStorage.setItem('speechGame_bestStreak', gameStats.maxStreak.toString());
-    }
-    
-    // Celebração final
-    for (let i = 0; i < 5; i++) {
-      setTimeout(() => createCelebrationParticles('star'), i * 200);
     }
   };
 
@@ -393,10 +302,18 @@ export default function SpeechPracticeGame() {
     stopListening();
   };
 
+  // Gerar caminho do áudio
+  const getAudioPath = () => {
+    if (currentLetter === 'A') {
+      return `/audio/syllables/${currentSyllable}.mp3`;
+    } else {
+      return `/audio/syllables/essenciais/${currentLetter}/${currentSyllable}.mp3`;
+    }
+  };
+
   // Tela do título
   const TitleScreen = () => (
     <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-pink-300 via-purple-300 to-indigo-400 overflow-hidden">
-      {/* Estrelas de fundo */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(15)].map((_, i) => (
           <div
@@ -431,7 +348,6 @@ export default function SpeechPracticeGame() {
           🗣️ Pratique sílabas de forma divertida! 🎯
         </p>
         
-        {/* Estatísticas */}
         {(totalStarsCollected > 0 || bestStreak > 0) && (
           <div className="bg-white/80 rounded-2xl p-4 mb-6 shadow-xl">
             <div className="flex items-center gap-4">
@@ -508,15 +424,6 @@ export default function SpeechPracticeGame() {
 
   // Tela do jogo
   const GameScreen = () => {
-    // Gerar caminho correto do áudio baseado na estrutura de pastas
-    const getAudioPath = () => {
-      if (currentLetter === 'VOGAIS') {
-        return `/audio/syllables/${currentSyllable}.mp3`;
-      } else {
-        return `/audio/syllables/essenciais/${currentLetter}/${currentSyllable}.mp3`;
-      }
-    };
-    
     const audioSrc = getAudioPath();
     const progress = ((currentLetterIndex * syllables.length + currentSyllableIndex + 1) / 
                      (letters.length * syllables.length)) * 100;
@@ -548,28 +455,8 @@ export default function SpeechPracticeGame() {
           {!showResults ? (
             <div className="space-y-6">
               {/* Área do jogo principal */}
-              <div 
-                ref={gameAreaRef}
-                className="relative bg-gradient-to-br from-purple-100 to-pink-100 rounded-3xl shadow-lg p-8 text-center overflow-hidden"
-                style={{ minHeight: '500px' }}
-              >
-                {/* Partículas de celebração */}
-                {particles.map(particle => (
-                  <div
-                    key={particle.id}
-                    className="absolute pointer-events-none"
-                    style={{
-                      left: `${particle.x}px`,
-                      top: `${particle.y}px`,
-                      width: particle.type === 'star' ? '12px' : '8px',
-                      height: particle.type === 'star' ? '12px' : '8px',
-                      backgroundColor: particle.color,
-                      borderRadius: '50%',
-                      opacity: particle.life,
-                      transform: particle.type === 'star' ? 'rotate(45deg)' : 'none'
-                    }}
-                  />
-                ))}
+              <div className="relative bg-gradient-to-br from-purple-100 to-pink-100 rounded-3xl shadow-lg p-8 text-center overflow-hidden"
+                   style={{ minHeight: '500px' }}>
 
                 {/* Celebração */}
                 {showCelebration && (
@@ -594,20 +481,20 @@ export default function SpeechPracticeGame() {
                     {currentSyllable}
                   </div>
 
-                  {/* Instruções visuais do fluxo */}
+                  {/* Instruções visuais */}
                   <div className="mb-6 bg-white/80 rounded-2xl p-4">
                     <div className="flex items-center justify-center gap-8 text-sm">
-                      <div className={`flex flex-col items-center ${currentStep === 'waiting' ? 'opacity-100' : 'opacity-50'}`}>
+                      <div className="flex flex-col items-center">
                         <div className="text-2xl mb-1">👂</div>
                         <div className="font-bold">1. Escutar</div>
                       </div>
                       <div className="text-2xl">→</div>
-                      <div className={`flex flex-col items-center ${currentStep === 'listening' ? 'opacity-100' : 'opacity-50'}`}>
+                      <div className="flex flex-col items-center">
                         <div className="text-2xl mb-1">🎤</div>
                         <div className="font-bold">2. Repetir</div>
                       </div>
                       <div className="text-2xl">→</div>
-                      <div className="flex flex-col items-center opacity-50">
+                      <div className="flex flex-col items-center">
                         <div className="text-2xl mb-1">🎉</div>
                         <div className="font-bold">3. Celebrar</div>
                       </div>
@@ -621,12 +508,6 @@ export default function SpeechPracticeGame() {
                       src={audioSrc}
                       preload="auto"
                       onEnded={onAudioEnded}
-                      onError={(e) => {
-                        console.error('Erro no áudio:', e);
-                        setMessage('Erro ao carregar áudio. Verifique o arquivo.');
-                        setAudioPlaying(false);
-                        setCurrentStep('waiting');
-                      }}
                     />
                     
                     <button
@@ -635,9 +516,7 @@ export default function SpeechPracticeGame() {
                       className={`flex items-center gap-2 px-8 py-4 rounded-full text-xl font-bold transition-all ${
                         audioPlaying || listening
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : currentStep === 'waiting'
-                          ? 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-105 animate-pulse'
-                          : 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-105'
+                          : 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-105 animate-pulse'
                       }`}
                     >
                       <Volume2 className="w-6 h-6" />
@@ -666,13 +545,11 @@ export default function SpeechPracticeGame() {
                     {!listening ? (
                       <button
                         onClick={startListening}
-                        disabled={audioPlaying || currentStep === 'playing'}
+                        disabled={audioPlaying}
                         className={`flex items-center gap-2 px-8 py-4 rounded-full text-xl font-bold transition-all ${
-                          audioPlaying || currentStep === 'playing'
+                          audioPlaying
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            : currentStep === 'waiting' && !audioPlaying
-                            ? 'bg-green-500 text-white hover:bg-green-600 hover:scale-105 animate-pulse'
-                            : 'bg-green-500 text-white hover:bg-green-600 hover:scale-105'
+                            : 'bg-green-500 text-white hover:bg-green-600 hover:scale-105 animate-pulse'
                         }`}
                       >
                         <Mic className="w-6 h-6" />
@@ -699,11 +576,7 @@ export default function SpeechPracticeGame() {
 
                   {/* Mensagem de status */}
                   {message && (
-                    <div className={`rounded-lg p-3 text-lg font-bold ${
-                      currentStep === 'playing' ? 'bg-blue-50 border border-blue-200 text-blue-800' :
-                      currentStep === 'listening' ? 'bg-green-50 border border-green-200 text-green-800' :
-                      'bg-yellow-50 border border-yellow-200 text-yellow-800'
-                    }`}>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-lg font-bold text-blue-800">
                       {message}
                     </div>
                   )}
