@@ -620,32 +620,28 @@ export default function EmotionMazeGame(): JSX.Element {
         </AnimatePresence>
       </main>
 
-      {/* Controles móveis - SEM FLASH */}
+      {/* Controles móveis - CORRIGIDO */}
       {gameState === 'playing' && (
         <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white/90 rounded-xl p-3 shadow-lg">
           <div className="grid grid-cols-3 gap-1 w-32">
             <div></div>
             <button 
-              onMouseDown={() => movePlayer('up')} 
-              onTouchStart={(e) => { e.preventDefault(); movePlayer('up'); }}
+              onPointerDown={() => movePlayer('up')} 
               className="bg-blue-500 text-white p-3 rounded-lg font-bold text-xl select-none" 
-              style={{ touchAction: 'manipulation', transition: 'none' }}>↑</button>
+              style={{ touchAction: 'none', transition: 'none', userSelect: 'none' }}>↑</button>
             <div></div>
             <button 
-              onMouseDown={() => movePlayer('left')} 
-              onTouchStart={(e) => { e.preventDefault(); movePlayer('left'); }}
+              onPointerDown={() => movePlayer('left')} 
               className="bg-blue-500 text-white p-3 rounded-lg font-bold text-xl select-none" 
-              style={{ touchAction: 'manipulation', transition: 'none' }}>←</button>
+              style={{ touchAction: 'none', transition: 'none', userSelect: 'none' }}>←</button>
             <button 
-              onMouseDown={() => movePlayer('down')} 
-              onTouchStart={(e) => { e.preventDefault(); movePlayer('down'); }}
+              onPointerDown={() => movePlayer('down')} 
               className="bg-blue-500 text-white p-3 rounded-lg font-bold text-xl select-none" 
-              style={{ touchAction: 'manipulation', transition: 'none' }}>↓</button>
+              style={{ touchAction: 'none', transition: 'none', userSelect: 'none' }}>↓</button>
             <button 
-              onMouseDown={() => movePlayer('right')} 
-              onTouchStart={(e) => { e.preventDefault(); movePlayer('right'); }}
+              onPointerDown={() => movePlayer('right')} 
               className="bg-blue-500 text-white p-3 rounded-lg font-bold text-xl select-none" 
-              style={{ touchAction: 'manipulation', transition: 'none' }}>→</button>
+              style={{ touchAction: 'none', transition: 'none', userSelect: 'none' }}>→</button>
           </div>
         </div>
       )}
