@@ -586,7 +586,7 @@ export default function SpeechPracticeGame() {
                 {/* Conteúdo principal */}
                 <div className="relative z-10">
                   <h2 className="text-2xl font-bold text-purple-800 mb-4">
-                    {currentLetter === 'VOGAIS' ? 'Vogais' : `Letra ${currentLetter}`} - 
+                    {currentLetter === 'A' ? 'Vogais' : `Letra ${currentLetter}`} - 
                     Sílaba {currentSyllableIndex + 1} de {syllables.length}
                   </h2>
                   
