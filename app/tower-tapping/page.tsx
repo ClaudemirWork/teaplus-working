@@ -44,6 +44,7 @@ export default function TowerTappingInfinite() {
   const router = useRouter();
   const supabase = createClient();
   const gameAreaRef = useRef<HTMLDivElement>(null);
+  const towerContainerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>();
   
   // Controle de telas
@@ -74,10 +75,20 @@ export default function TowerTappingInfinite() {
   const [totalTaps, setTotalTaps] = useState(0);
   const [isCollapsing, setIsCollapsing] = useState(false);
   const [powerUps, setPowerUps] = useState<PowerUp[]>([]);
+  const [cameraOffset, setCameraOffset] = useState(0);
 
   // Estados salvos
   const [bestHeight, setBestHeight] = useState(0);
   const [totalStars, setTotalStars] = useState(0);
+
+  // Configurações responsivas
+  const [gameConfig, setGameConfig] = useState({
+    blockWidth: 100,
+    blockHeight: 30,
+    blockSpacing: 32,
+    gameAreaHeight: 500,
+    baseHeight: 60
+  });
 
   useEffect(() => {
     const savedHeight = localStorage.getItem('towerTapping_bestHeight');
@@ -86,11 +97,22 @@ export default function TowerTappingInfinite() {
     if (savedHeight) setBestHeight(parseInt(savedHeight));
     if (savedStars) setTotalStars(parseInt(savedStars));
     
-    setIsMobile(window.innerWidth < 640);
+    const updateConfig = () => {
+      const mobile = window.innerWidth < 640;
+      setIsMobile(mobile);
+      
+      setGameConfig({
+        blockWidth: mobile ? 80 : 100,
+        blockHeight: mobile ? 25 : 30,
+        blockSpacing: mobile ? 27 : 32,
+        gameAreaHeight: mobile ? 400 : 500,
+        baseHeight: mobile ? 50 : 60
+      });
+    };
     
-    const handleResize = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    updateConfig();
+    window.addEventListener('resize', updateConfig);
+    return () => window.removeEventListener('resize', updateConfig);
   }, []);
 
   const blockColors = {
@@ -121,6 +143,7 @@ export default function TowerTappingInfinite() {
     setTotalTaps(0);
     setIsCollapsing(false);
     setPowerUps([]);
+    setCameraOffset(0);
     setGameMessage('Comece a construir sua torre!');
   };
 
@@ -129,6 +152,19 @@ export default function TowerTappingInfinite() {
     setTimeout(() => {
       if (isPlaying) setGameMessage('');
     }, duration);
+  };
+
+  // Sistema de câmera que acompanha a torre
+  const updateCamera = (newHeight: number) => {
+    if (!gameAreaRef.current) return;
+    
+    const visibleBlocks = Math.floor((gameConfig.gameAreaHeight - gameConfig.baseHeight) / gameConfig.blockSpacing);
+    
+    if (newHeight > visibleBlocks - 3) {
+      // Começar a mover a câmera quando restam apenas 3 blocos visíveis
+      const offset = (newHeight - (visibleBlocks - 3)) * gameConfig.blockSpacing;
+      setCameraOffset(offset);
+    }
   };
 
   const createParticles = (x: number, y: number, type: string = 'spark', count: number = 10) => {
@@ -293,35 +329,43 @@ export default function TowerTappingInfinite() {
     if (!gameAreaRef.current) return;
     
     const gameArea = gameAreaRef.current.getBoundingClientRect();
-    const blockWidth = isMobile ? 80 : 100;
-    const blockHeight = isMobile ? 25 : 30;
+    const centerX = gameArea.width / 2;
     
     const basePoints = quality === 'perfect' ? 100 : quality === 'good' ? 60 : 30;
     const finalPoints = Math.round(basePoints * multiplier);
     const isSpecial = perfectStreak > 0 && perfectStreak % 5 === 0;
     
+    // Calcular posição Y baseada no índice dos blocos existentes
+    const blockIndex = blocks.length;
+    const blockY = gameConfig.gameAreaHeight - gameConfig.baseHeight - ((blockIndex + 1) * gameConfig.blockSpacing);
+    
     const newBlock: Block = {
       id: Date.now() + Math.random(),
-      x: (gameArea.width / 2) - (blockWidth / 2) + offset,
-      y: gameArea.height - 60 - (blocks.length * (blockHeight + 2)),
+      x: centerX - (gameConfig.blockWidth / 2) + offset, // Centralizado + offset do ritmo
+      y: blockY,
       offset,
       quality,
       isSpecial,
       color: blockColors[quality].color,
       points: finalPoints,
-      width: blockWidth,
+      width: gameConfig.blockWidth,
       opacity: 1
     };
     
     setBlocks(prev => [...prev, newBlock]);
-    setTowerHeight(prev => prev + 1);
+    
+    const newHeight = towerHeight + 1;
+    setTowerHeight(newHeight);
     setScore(prev => prev + finalPoints);
     setTotalTaps(prev => prev + 1);
     
+    // Atualizar câmera
+    updateCamera(newHeight);
+    
     // Criar partículas
     createParticles(
-      newBlock.x + blockWidth / 2, 
-      newBlock.y + blockHeight / 2, 
+      newBlock.x + gameConfig.blockWidth / 2, 
+      newBlock.y + gameConfig.blockHeight / 2, 
       quality,
       quality === 'perfect' ? 15 : quality === 'good' ? 10 : 5
     );
@@ -369,7 +413,6 @@ export default function TowerTappingInfinite() {
     }
     
     // Verificar level up da torre
-    const newHeight = towerHeight + 1;
     if (newHeight % 25 === 0) {
       const newLevel = Math.floor(newHeight / 25) + 1;
       setTowerLevel(newLevel);
@@ -439,7 +482,7 @@ export default function TowerTappingInfinite() {
     // Calcular qualidade do tap
     let quality: 'perfect' | 'good' | 'poor' = 'perfect';
     let offset = 0;
-    const maxOffset = isMobile ? 40 : 50;
+    const maxOffset = gameConfig.blockWidth * 0.4; // 40% da largura do bloco
     
     if (targetBPM && newTapHistory.length >= 2) {
       const lastInterval = currentTime - newTapHistory[newTapHistory.length - 2];
@@ -786,90 +829,111 @@ export default function TowerTappingInfinite() {
                 )}
               </div>
 
-              {/* Área da Torre */}
+              {/* Área da Torre com Sistema de Câmera */}
               <div 
                 ref={gameAreaRef}
                 className="relative bg-gradient-to-b from-sky-200 to-sky-100 rounded-xl shadow-lg overflow-hidden"
-                style={{ height: isMobile ? '400px' : '500px' }}
+                style={{ height: `${gameConfig.gameAreaHeight}px` }}
               >
-                {/* Linha guia central */}
-                <div className="absolute left-1/2 top-0 bottom-16 w-0.5 bg-red-300 opacity-40 z-10 transform -translate-x-0.5" />
-                
-                {/* Mensagens do jogo */}
-                {gameMessage && (
-                  <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
-                    <div className="bg-white/90 text-black px-4 py-2 rounded-full font-bold animate-bounce text-center text-sm sm:text-base">
-                      {gameMessage}
-                    </div>
-                  </div>
-                )}
-
-                {/* Level Up Animation */}
-                {showLevelUp && (
-                  <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/50">
-                    <div className="bg-white rounded-2xl p-8 text-center animate-pulse">
-                      <div className="text-6xl mb-4">🏗️</div>
-                      <div className="text-2xl font-bold text-orange-600">
-                        NÍVEL {towerLevel}!
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Blocos da Torre */}
-                {blocks.map((block, index) => (
-                  <div
-                    key={block.id}
-                    className={`absolute transition-all duration-200 ${
-                      block.isSpecial ? 'animate-pulse' : ''
-                    } ${isCollapsing && block.falling ? 'animate-bounce' : ''}`}
+                {/* Container da Torre com Transform para Câmera */}
+                <div 
+                  ref={towerContainerRef}
+                  className="absolute inset-0"
+                  style={{ 
+                    transform: `translateY(${cameraOffset}px)`,
+                    transition: 'transform 0.5s ease-out'
+                  }}
+                >
+                  {/* Linha guia central - FIXA */}
+                  <div 
+                    className="absolute top-0 w-0.5 bg-red-300 opacity-40 z-10" 
                     style={{
-                      left: `${block.x}px`,
-                      bottom: `${60 + index * 32}px`,
-                      width: `${block.width}px`,
-                      height: '30px',
-                      background: block.isSpecial 
-                        ? 'linear-gradient(45deg, #FFD700, #FFA500)' 
-                        : `linear-gradient(135deg, ${block.color}, ${blockColors[block.quality].glow})`,
-                      borderRadius: '4px',
-                      border: `2px solid ${block.isSpecial ? '#FF8C00' : blockColors[block.quality].glow}`,
-                      boxShadow: `0 4px 8px rgba(0,0,0,0.3), 0 0 ${block.isSpecial ? '20px' : '10px'} ${blockColors[block.quality].glow}`,
-                      opacity: block.opacity || 1,
-                      transform: block.falling ? `translateY(${Math.random() * 200}px) rotate(${Math.random() * 360}deg)` : 'none'
-                    }}
-                  >
-                    {block.isSpecial && (
-                      <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm">
-                        ⭐
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* Partículas */}
-                {particles.map(particle => (
-                  <div
-                    key={particle.id}
-                    className="absolute w-2 h-2 rounded-full pointer-events-none"
-                    style={{
-                      left: `${particle.x}px`,
-                      top: `${particle.y}px`,
-                      backgroundColor: particle.color,
-                      opacity: particle.life,
-                      transform: particle.type === 'star' ? 'rotate(45deg)' : 'none'
+                      left: '50%',
+                      transform: 'translateX(-0.5px)',
+                      height: `${Math.max(gameConfig.gameAreaHeight, (blocks.length + 10) * gameConfig.blockSpacing)}px`,
+                      bottom: `${gameConfig.baseHeight}px`
                     }}
                   />
-                ))}
+                  
+                  {/* Mensagens do jogo */}
+                  {gameMessage && (
+                    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+                      <div className="bg-white/90 text-black px-4 py-2 rounded-full font-bold animate-bounce text-center text-sm sm:text-base">
+                        {gameMessage}
+                      </div>
+                    </div>
+                  )}
 
-                {/* Base da Torre */}
-                <div className="absolute bottom-0 w-full h-16 bg-gradient-to-t from-stone-800 to-stone-600 border-t-4 border-stone-900">
-                  <div className="text-white text-center font-bold pt-4 text-sm sm:text-base">
-                    FUNDAÇÃO
+                  {/* Level Up Animation */}
+                  {showLevelUp && (
+                    <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/50">
+                      <div className="bg-white rounded-2xl p-8 text-center animate-pulse">
+                        <div className="text-6xl mb-4">🏗️</div>
+                        <div className="text-2xl font-bold text-orange-600">
+                          NÍVEL {towerLevel}!
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Blocos da Torre */}
+                  {blocks.map((block, index) => (
+                    <div
+                      key={block.id}
+                      className={`absolute transition-all duration-200 ${
+                        block.isSpecial ? 'animate-pulse' : ''
+                      } ${isCollapsing && block.falling ? 'animate-bounce' : ''}`}
+                      style={{
+                        left: `${block.x}px`,
+                        bottom: `${gameConfig.baseHeight + index * gameConfig.blockSpacing}px`,
+                        width: `${block.width}px`,
+                        height: `${gameConfig.blockHeight}px`,
+                        background: block.isSpecial 
+                          ? 'linear-gradient(45deg, #FFD700, #FFA500)' 
+                          : `linear-gradient(135deg, ${block.color}, ${blockColors[block.quality].glow})`,
+                        borderRadius: '4px',
+                        border: `2px solid ${block.isSpecial ? '#FF8C00' : blockColors[block.quality].glow}`,
+                        boxShadow: `0 4px 8px rgba(0,0,0,0.3), 0 0 ${block.isSpecial ? '20px' : '10px'} ${blockColors[block.quality].glow}`,
+                        opacity: block.opacity || 1,
+                        transform: block.falling ? `translateY(${Math.random() * 200}px) rotate(${Math.random() * 360}deg)` : 'none'
+                      }}
+                    >
+                      {block.isSpecial && (
+                        <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm">
+                          ⭐
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Partículas */}
+                  {particles.map(particle => (
+                    <div
+                      key={particle.id}
+                      className="absolute w-2 h-2 rounded-full pointer-events-none"
+                      style={{
+                        left: `${particle.x}px`,
+                        bottom: `${particle.y}px`,
+                        backgroundColor: particle.color,
+                        opacity: particle.life,
+                        transform: particle.type === 'star' ? 'rotate(45deg)' : 'none'
+                      }}
+                    />
+                  ))}
+
+                  {/* Base da Torre - FIXA */}
+                  <div 
+                    className="absolute bottom-0 w-full bg-gradient-to-t from-stone-800 to-stone-600 border-t-4 border-stone-900"
+                    style={{ height: `${gameConfig.baseHeight}px` }}
+                  >
+                    <div className="text-white text-center font-bold pt-4 text-sm sm:text-base">
+                      FUNDAÇÃO
+                    </div>
                   </div>
                 </div>
 
-                {/* Indicador de Nível da Torre */}
-                <div className="absolute top-4 right-4 bg-white/80 rounded-lg p-2 text-center">
+                {/* Indicador de Nível da Torre - FIXO */}
+                <div className="absolute top-4 right-4 bg-white/80 rounded-lg p-2 text-center z-30">
                   <div className="text-lg font-bold text-orange-800">Nv.{towerLevel}</div>
                   <div className="text-xs text-orange-600">Torre</div>
                 </div>
