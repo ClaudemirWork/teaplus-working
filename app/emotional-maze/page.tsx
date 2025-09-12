@@ -2,20 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Heart, Star, Play, Volume2, VolumeX, Sparkles, Trophy, Compass } from 'lucide-react';
+import { ChevronLeft, Heart, Star, Play, Volume2, VolumeX, Sparkles, Trophy, Compass, Clock, Gem, Key, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import styles from './emotionmaze.module.css';
-
-/**
- * Código unificado:
- * - Dados / níveis / lógica principal: restaurado a partir do arquivo funcional enviado. (fonte: docx). 
- * - Layout/Telas (title, instructions, HUD): adaptado a partir do layout novo que você colou no chat.
- *
- * Observações rápidas:
- * - Garanta assets: /images/mascotes/leo/jogo do labirinto tela.webp, /sounds/* e emotionmaze.module.css.
- * - Se quiser que eu gere o CSS padrão (estilos básicos presentes no docx), falo e envio também.
- */
 
 /* ===========================
    CONSTANTES (POWERUPS, SONS, EMOTIONS, NPCS)
@@ -61,7 +51,7 @@ const NPCS = [
 ];
 
 /* ===========================
-   HELPERS: criar labirinto 8x8 (restaurado do docx)
+   HELPERS: criar labirinto 8x8
    =========================== */
 const createMaze8x8 = (complexity: number = 1): number[][] => {
   const maze = Array(8).fill(null).map(() => Array(8).fill(1));
@@ -78,8 +68,7 @@ const createMaze8x8 = (complexity: number = 1): number[][] => {
 };
 
 /* ===========================
-   NÍVEIS (BASE RESTAURADA DO DOCX) - eu recriei os 20 do primeiro + mirror para 30
-   (respeitei a estrutura do docx para garantir jogo íntegro). Fonte: docx. 
+   NÍVEIS COMPLETOS (30 NÍVEIS)
    =========================== */
 type Level = any;
 const LEVELS: Level[] = [
@@ -94,7 +83,7 @@ const LEVELS: Level[] = [
   { id: 9, name: 'Desafio Completo', story: 'Use tudo que aprendeu!', emotion: 'sadness', size: 8, grid: createMaze8x8(3), start: { x: 1, y: 1 }, end: { x: 6, y: 6 }, npcs: [{ type: NPCS[5], x: 3, y: 4 }], gems: [{ x: 2, y: 1, type: 'normal' }, { x: 4, y: 2, type: 'normal' }, { x: 5, y: 5, type: 'normal' }], specialGems: [{ x: 1, y: 3, type: 'special' }], megaGems: [{ x: 6, y: 2, type: 'mega' }], powerups: [{ x: 3, y: 1, type: 'doublePoints' }, { x: 5, y: 3, type: 'wallPass' }], keys: [], doors: [], perfectTime: 70 },
   { id: 10, name: 'Teste Final', story: 'Complete o primeiro mundo!', emotion: 'fear', size: 8, grid: createMaze8x8(3), start: { x: 1, y: 1 }, end: { x: 6, y: 6 }, npcs: [{ type: NPCS[6], x: 4, y: 3 }], gems: [{ x: 2, y: 2, type: 'normal' }, { x: 3, y: 5, type: 'normal' }, { x: 5, y: 1, type: 'normal' }, { x: 6, y: 4, type: 'normal' }], specialGems: [{ x: 1, y: 4, type: 'special' }, { x: 4, y: 6, type: 'special' }], megaGems: [{ x: 3, y: 3, type: 'mega' }], powerups: [{ x: 1, y: 2, type: 'wallPass' }, { x: 6, y: 5, type: 'doublePoints' }], keys: [{ x: 2, y: 6, id: 'key1' }], doors: [{ x: 5, y: 4, keyId: 'key1' }], perfectTime: 80 },
 
-  /* MUNDO 2 (11-20) - mantive a progressão do docx para consistência */
+  // MUNDO 2 (11-20)
   { id: 11, name: 'Novo Desafio', story: 'O segundo mundo começa!', emotion: 'joy', size: 8, grid: createMaze8x8(2), start: { x: 1, y: 1 }, end: { x: 6, y: 6 }, npcs: [{ type: NPCS[7], x: 3, y: 3 }], gems: [{ x: 2, y: 3, type: 'normal' }, { x: 4, y: 2, type: 'normal' }, { x: 5, y: 5, type: 'normal' }], specialGems: [{ x: 1, y: 5, type: 'special' }], megaGems: [], powerups: [{ x: 6, y: 1, type: 'reveal' }], keys: [], doors: [], perfectTime: 70 },
   { id: 12, name: 'Dupla Porta', story: 'Duas portas, duas chaves!', emotion: 'calm', size: 8, grid: (() => { const m = createMaze8x8(2); m[3][1] = 0; m[3][2] = 0; m[3][4] = 0; m[3][5] = 0; m[3][6] = 0; return m; })(), start: { x: 1, y: 1 }, end: { x: 6, y: 6 }, npcs: [{ type: NPCS[8], x: 4, y: 4 }], gems: [{ x: 2, y: 2, type: 'normal' }, { x: 5, y: 3, type: 'normal' }, { x: 3, y: 5, type: 'normal' }], specialGems: [{ x: 6, y: 2, type: 'special' }], megaGems: [{ x: 1, y: 6, type: 'mega' }], powerups: [{ x: 4, y: 1, type: 'doublePoints' }], keys: [{ x: 1, y: 2, id: 'key1' }, { x: 6, y: 5, id: 'key2' }], doors: [{ x: 3, y: 2, keyId: 'key1' }, { x: 3, y: 5, keyId: 'key2' }], perfectTime: 80 },
   { id: 13, name: 'Labirinto Secreto', story: 'Descubra os segredos escondidos!', emotion: 'courage', size: 8, grid: createMaze8x8(3), start: { x: 1, y: 1 }, end: { x: 6, y: 6 }, npcs: [{ type: NPCS[9], x: 5, y: 4 }], gems: [{ x: 2, y: 1, type: 'normal' }, { x: 3, y: 4, type: 'normal' }, { x: 5, y: 2, type: 'normal' }, { x: 4, y: 5, type: 'normal' }], specialGems: [{ x: 1, y: 3, type: 'special' }, { x: 6, y: 3, type: 'special' }], megaGems: [], powerups: [{ x: 2, y: 5, type: 'wallPass' }, { x: 5, y: 1, type: 'reveal' }], keys: [], doors: [], perfectTime: 85 },
@@ -107,7 +96,7 @@ const LEVELS: Level[] = [
   { id: 20, name: 'Grande Final', story: 'O último desafio antes do mundo espelhado!', emotion: 'fear', size: 8, grid: createMaze8x8(3), start: { x: 1, y: 1 }, end: { x: 6, y: 6 }, npcs: [{ type: NPCS[6], x: 4, y: 3 }], gems: [{ x: 1, y: 2, type: 'normal' }, { x: 2, y: 4, type: 'normal' }, { x: 3, y: 1, type: 'normal' }, { x: 4, y: 5, type: 'normal' }, { x: 5, y: 3, type: 'normal' }, { x: 6, y: 4, type: 'normal' }], specialGems: [{ x: 2, y: 6, type: 'special' }, { x: 3, y: 2, type: 'special' }, { x: 5, y: 1, type: 'special' }, { x: 6, y: 5, type: 'special' }], megaGems: [{ x: 2, y: 2, type: 'mega' }, { x: 3, y: 3, type: 'mega' }, { x: 5, y: 5, type: 'mega' }], powerups: [{ x: 1, y: 3, type: 'wallPass' }, { x: 2, y: 5, type: 'doublePoints' }, { x: 6, y: 2, type: 'reveal' }], keys: [{ x: 1, y: 5, id: 'key1' }, { x: 6, y: 1, id: 'key2' }, { x: 1, y: 6, id: 'key3' }], doors: [{ x: 2, y: 3, keyId: 'key1' }, { x: 4, y: 2, keyId: 'key2' }, { x: 5, y: 4, keyId: 'key3' }], perfectTime: 150 }
 ];
 
-// Criar níveis espelhados (21-30) — mesma lógica do docx
+// Criar níveis espelhados (21-30)
 const mirrorLevel = (level: Level, newId: number): Level => {
   const mirrored = JSON.parse(JSON.stringify(level));
   mirrored.id = newId;
@@ -133,7 +122,7 @@ const MIRROR_LEVELS = LEVELS.slice(0, 10).map((lvl, idx) => mirrorLevel(lvl, 21 
 const ALL_LEVELS = [...LEVELS, ...MIRROR_LEVELS];
 
 /* ===========================
-   PLAY SOUND (pequena proteção)
+   PLAY SOUND
    =========================== */
 const playSound = (soundName: keyof typeof SOUNDS, volume: number = 0.3) => {
   try {
@@ -141,12 +130,12 @@ const playSound = (soundName: keyof typeof SOUNDS, volume: number = 0.3) => {
     audio.volume = volume;
     audio.play().catch(() => {});
   } catch (e) {
-    // silencioso — ambiente sem som
+    // silencioso
   }
 };
 
 /* ===========================
-   COMPONENTE PRINCIPAL UNIFICADO
+   COMPONENTE PRINCIPAL
    =========================== */
 export default function EmotionMazeGame(): JSX.Element {
   const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game'>('title');
@@ -239,14 +228,26 @@ export default function EmotionMazeGame(): JSX.Element {
     setGameState('playing');
   };
 
-  /* Função de explosão de mega gema (visual) */
+  /* Função de explosão de mega gema */
   const createMegaGemExplosion = () => {
     if (soundEnabled) playSound('megaGem', 0.5);
     confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 } });
-    // efeitos DOM extras podem ser adicionados via styles (no CSS)
+    
+    const message = MOTIVATIONAL_MESSAGES[Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)];
+    const messageEl = document.createElement('div');
+    messageEl.className = styles.motivationalMessage || '';
+    messageEl.textContent = message;
+    messageEl.style.cssText = `
+      position: fixed; top: 30%; left: 50%; transform: translateX(-50%); 
+      z-index: 9999; font-size: 2rem; font-weight: bold; color: #FFD700;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8); pointer-events: none;
+      animation: fadeInOut 2s ease-in-out;
+    `;
+    document.body.appendChild(messageEl);
+    setTimeout(() => { if (messageEl.parentNode) messageEl.parentNode.removeChild(messageEl); }, 2000);
   };
 
-  /* Movimento do jogador (unificado e restaurado) */
+  /* Movimento do jogador */
   const movePlayer = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
     if (gameState !== 'playing') return;
     const newPos = { ...playerPosition };
@@ -292,7 +293,7 @@ export default function EmotionMazeGame(): JSX.Element {
       setCollectedItems(prev => ({ ...prev, specialGems: new Set(prev.specialGems).add(posKey) }));
       const points = activePowerup === 'doublePoints' ? 1000 : 500;
       setScore(prev => prev + points);
-      if (soundEnabled) playSound('gem', 0.4 as any);
+      if (soundEnabled) playSound('gem', 0.4);
       confetti({ particleCount: 30, spread: 50, origin: { y: 0.5 } });
     }
 
@@ -330,7 +331,7 @@ export default function EmotionMazeGame(): JSX.Element {
       setCollectedItems(prev => ({ ...prev, npcs: new Set(prev.npcs).add(posKey) }));
       const points = activePowerup === 'doublePoints' ? 200 : 100;
       setScore(prev => prev + points);
-      if (soundEnabled) playSound('gem', 0.5 as any);
+      if (soundEnabled) playSound('gem', 0.5);
     }
 
     // fim de nível
@@ -396,7 +397,7 @@ export default function EmotionMazeGame(): JSX.Element {
     return () => window.removeEventListener('keydown', handleKey);
   }, [movePlayer]);
 
-  /* renderCell: usa classes do module CSS (mantive a estrutura do docx) */
+  /* renderCell */
   const renderCell = (x: number, y: number) => {
     const isWall = level.grid[y][x] === 1;
     const isPlayer = playerPosition.x === x && playerPosition.y === y;
@@ -420,7 +421,20 @@ export default function EmotionMazeGame(): JSX.Element {
     const fontSize = isMobile ? '16px' : '20px';
 
     return (
-      <div key={`${x}-${y}`} className={className} style={{ width: cellSize, height: cellSize, fontSize, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', backgroundColor: door && !doorIsOpen ? '#8B4513' : undefined, opacity: door && doorIsOpen ? 0.5 : 1 }}>
+      <div 
+        key={`${x}-${y}`} 
+        className={className} 
+        style={{ 
+          width: cellSize, 
+          height: cellSize, 
+          fontSize, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          position: 'relative', 
+          backgroundColor: door && !doorIsOpen ? '#8B4513' : undefined, 
+          opacity: door && doorIsOpen ? 0.5 : 1 
+        }}>
         {isPlayer && <span className={styles.player} style={{ fontSize }}>🧑</span>}
         {isEnd && !isPlayer && <span style={{ fontSize }}>🎯</span>}
         {npc && !isPlayer && <span className={styles.npc} style={{ fontSize }}>{npc.type?.emoji ?? '🐾'}</span>}
@@ -434,11 +448,15 @@ export default function EmotionMazeGame(): JSX.Element {
     );
   };
 
-  /* --- Telas (layout novo adaptado) --- */
+  /* --- TELAS --- */
   const TitleScreen = () => (
     <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (<div key={i} className="absolute animate-pulse" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 3}s`, animationDuration: `${3 + Math.random() * 2}s` }}><Star className="w-6 h-6 text-white opacity-20" fill="currentColor" /></div>))}
+        {[...Array(20)].map((_, i) => (
+          <div key={i} className="absolute animate-pulse" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 3}s`, animationDuration: `${3 + Math.random() * 2}s` }}>
+            <Star className="w-6 h-6 text-white opacity-20" fill="currentColor" />
+          </div>
+        ))}
       </div>
       <div className="relative z-10 flex flex-col items-center text-center">
         <motion.div initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.2, type: 'spring', stiffness: 100 }} className="mb-4">
@@ -447,7 +465,12 @@ export default function EmotionMazeGame(): JSX.Element {
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.4, type: 'spring', stiffness: 100 }}>
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white drop-shadow-lg mb-2">Labirinto das Emoções</h1>
           <p className="text-xl sm:text-2xl text-white/90 mt-2 mb-6 drop-shadow-md">🧭 Ajude Léo a encontrar os tesouros e amigos perdidos!</p>
-          <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-4 mb-6 shadow-xl max-w-xs mx-auto"><div className="flex items-center justify-center gap-2"><Trophy className="w-6 h-6 text-yellow-100" /><span className="font-bold text-white">30 Níveis de Aventura</span></div></div>
+          <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-4 mb-6 shadow-xl max-w-xs mx-auto">
+            <div className="flex items-center justify-center gap-2">
+              <Trophy className="w-6 h-6 text-yellow-100" />
+              <span className="font-bold text-white">30 Níveis de Aventura</span>
+            </div>
+          </div>
           <button onClick={() => setCurrentScreen('instructions')} className="text-xl font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-1">Começar Aventura</button>
         </motion.div>
       </div>
@@ -470,61 +493,151 @@ export default function EmotionMazeGame(): JSX.Element {
   );
 
   const GameScreen = () => (
-    <div className={`flex flex-col min-h-screen bg-gray-100`}>
+    <div className={`${styles.gameContainer || ''} ${styles[`theme${currentEmotion.charAt(0).toUpperCase() + currentEmotion.slice(1)}`] || ''}`} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-14">
             <button onClick={() => { setCurrentScreen('title'); setGameState('intro'); }} className="flex items-center text-teal-600 hover:text-teal-700">
               <ChevronLeft className="h-5 w-5" /> <span className="hidden sm:inline">Menu</span>
             </button>
-            <h1 className="text-base sm:text-xl font-bold text-gray-800 flex items-center gap-2"><Compass className="text-blue-500 h-5 w-5" /><span>Nível {currentLevel + 1}</span></h1>
-            <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-2 rounded-lg bg-white/50">
+            <h1 className="text-base sm:text-xl font-bold text-gray-800 flex items-center gap-2">
+              <Heart className="text-red-500 h-5 w-5" />
+              <span>Nível {currentLevel + 1}</span>
+            </h1>
+            <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-2 rounded-lg bg-white/50" style={{ touchAction: 'manipulation' }}>
               {soundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
             </button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 p-4 flex flex-col items-center justify-center">
+      {gameState === 'playing' && (
+        <>
+          <div className="bg-white/90 rounded-lg px-3 py-1 m-2 inline-block">
+            <span className="text-sm font-bold text-gray-800">
+              {emotionTheme.icon} {emotionTheme.name}
+            </span>
+          </div>
+          {activePowerup && (
+            <div className="bg-purple-600 text-white rounded-lg px-3 py-1 m-2 inline-block">
+              <span className="text-sm font-bold">
+                {POWERUPS[activePowerup as keyof typeof POWERUPS].icon} {powerupTimeLeft}s
+              </span>
+            </div>
+          )}
+        </>
+      )}
+
+      <main className="flex-1 p-4 flex flex-col" style={{ paddingBottom: isMobile ? '150px' : '20px' }}>
         <AnimatePresence>
           {gameState === 'story' && showCutscene && (
-            <motion.div key="cutscene" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-center bg-white/80 p-8 rounded-2xl shadow-lg max-w-md">
-              <div className="text-5xl mb-4">{cutsceneContent.image}</div>
-              <h2 className="text-2xl font-bold mb-3 text-gray-800">{cutsceneContent.title}</h2>
-              <p className="text-md text-gray-700 mb-6">{cutsceneContent.text}</p>
-              <button onClick={() => { setGameState('playing'); setShowCutscene(false); }} className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-600 transition-colors">Começar</button>
+            <motion.div key="cutscene" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center justify-center flex-1">
+              <div className="bg-white/90 rounded-2xl p-6 max-w-md">
+                <div className="text-5xl mb-4 text-center">{cutsceneContent.image}</div>
+                <h2 className="text-xl font-bold mb-3 text-gray-800 text-center">{cutsceneContent.title}</h2>
+                <p className="text-sm text-gray-700 mb-4 text-center">{cutsceneContent.text}</p>
+                {level.keys && level.keys.length > 0 && (
+                  <div className="bg-yellow-100 rounded p-2 mb-3">
+                    <p className="text-xs font-bold text-center">🗝️ Pegue as chaves para abrir as 🚪 portas!</p>
+                  </div>
+                )}
+                {level.powerups?.some((p: any) => p.type === 'wallPass') && (
+                  <div className="bg-purple-100 rounded p-2 mb-3">
+                    <p className="text-xs font-bold text-center">🕐 Use o poder para atravessar paredes!</p>
+                  </div>
+                )}
+                <button onClick={startLevel} className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg font-bold" style={{ touchAction: 'manipulation' }}>Vamos lá!</button>
+              </div>
             </motion.div>
           )}
 
           {gameState === 'playing' && level && (
             <motion.div key="gameplay" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="grid" style={{ gridTemplateColumns: `repeat(${level.size}, 1fr)` }}>
-                {level.grid.map((row: any[], y: number) => row.map((cell: any, x: number) => renderCell(x, y)))}
+              {/* HUD com pontuação */}
+              <div className="flex flex-wrap justify-center gap-2 mb-2">
+                <div className="bg-white/90 px-2 py-1 rounded text-xs font-bold text-gray-800">⭐ {score}</div>
+                <div className="bg-white/90 px-2 py-1 rounded text-xs text-gray-800">💎 {collectedItems.gems.size + collectedItems.specialGems.size + collectedItems.megaGems.size}/{(level.gems?.length || 0) + (level.specialGems?.length || 0) + (level.megaGems?.length || 0)}</div>
+                {level.npcs && level.npcs.length > 0 && (
+                  <div className="bg-white/90 px-2 py-1 rounded text-xs text-gray-800">🐾 {collectedItems.npcs.size}/{level.npcs.length}</div>
+                )}
+                {level.keys && level.keys.length > 0 && (
+                  <div className="bg-white/90 px-2 py-1 rounded text-xs text-gray-800">🗝️ {collectedItems.keys.size}/{level.keys.length}</div>
+                )}
+              </div>
+
+              {/* Grid do labirinto */}
+              <div className="flex justify-center items-center flex-1">
+                <div className={styles.mazeGrid || ''} style={{ gridTemplateColumns: 'repeat(8, 1fr)' }}>
+                  {level.grid.map((row: any[], y: number) => row.map((cell: any, x: number) => renderCell(x, y)))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {gameState === 'mirrorUnlocked' && (
+            <motion.div key="mirrorUnlocked" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center justify-center flex-1">
+              <div className="bg-white/90 rounded-2xl p-6 max-w-md text-center">
+                <Sparkles className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold mb-3 text-purple-600">MUNDO ESPELHADO!</h2>
+                <p className="text-gray-700 mb-4">10 níveis espelhados desbloqueados!</p>
+                <button onClick={() => setGameState('levelComplete')} className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold" style={{ touchAction: 'manipulation' }}>Continuar!</button>
               </div>
             </motion.div>
           )}
 
           {gameState === 'levelComplete' && (
-            <motion.div key="levelComplete" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center bg-white/80 p-8 rounded-2xl shadow-lg max-w-md">
-              <h2 className="text-3xl font-bold mb-4 text-green-600">Nível Completo!</h2>
-              <p>Pontos: {score}</p>
-              <button onClick={nextLevel} className="w-full mt-4 bg-green-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-600 transition-colors">Próximo Nível</button>
+            <motion.div key="levelComplete" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center justify-center flex-1">
+              <div className="bg-white/90 rounded-2xl p-6 max-w-md text-center">
+                <h2 className="text-2xl font-bold mb-3 text-gray-800">Nível Completo!</h2>
+                <div className="flex justify-center gap-2 mb-3">
+                  {[1, 2, 3].map(i => (
+                    <Star key={i} className={`w-10 h-10 ${i <= stars ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />
+                  ))}
+                </div>
+                <div className="text-sm text-gray-700 space-y-1 mb-4">
+                  <p>Movimentos: {moves}</p>
+                  <p>Tempo: {Math.floor(timeElapsed / 60)}:{(timeElapsed % 60).toString().padStart(2, '0')}</p>
+                  <p className="text-xl font-bold text-gray-800">Pontos: {score}</p>
+                </div>
+                <button onClick={nextLevel} className="bg-green-500 text-white px-6 py-3 rounded-lg font-bold w-full" style={{ touchAction: 'manipulation' }}>
+                  {currentLevel === 19 ? 'Mundo Espelhado!' : 'Próximo Nível'}
+                </button>
+              </div>
             </motion.div>
           )}
 
           {gameState === 'gameComplete' && (
-            <motion.div key="gameComplete" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center bg-white/80 p-8 rounded-2xl shadow-lg max-w-md">
-              <h2 className="text-3xl font-bold mb-4 text-yellow-500">Jogo Concluído!</h2>
-              <p>Pontuação Final: {totalScore}</p>
-              <button onClick={() => { setCurrentLevel(0); initLevel(0); setGameState('intro'); setCurrentScreen('title'); }} className="w-full mt-4 bg-purple-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-purple-600 transition-colors">Jogar Novamente</button>
+            <motion.div key="gameComplete" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center justify-center flex-1">
+              <div className="bg-white/90 rounded-2xl p-6 max-w-md text-center">
+                <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+                <h2 className="text-3xl font-bold mb-3 text-purple-600">VOCÊ VENCEU!</h2>
+                <p className="text-lg text-gray-700 mb-4">Completou todos os 30 níveis!</p>
+                <p className="text-2xl font-bold text-gray-800 mb-4">Pontuação Total: {totalScore}</p>
+                <button onClick={() => window.location.reload()} className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold w-full" style={{ touchAction: 'manipulation' }}>Jogar Novamente</button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
+      {/* Controles móveis - RESTAURADOS */}
+      {gameState === 'playing' && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white/90 rounded-xl p-3 shadow-lg">
+          <div className="grid grid-cols-3 gap-1 w-32">
+            <div></div>
+            <button onClick={() => movePlayer('up')} className={`bg-blue-500 text-white p-3 rounded-lg active:bg-blue-600 ${styles.controlButton || ''}`} style={{ touchAction: 'manipulation' }}>↑</button>
+            <div></div>
+            <button onClick={() => movePlayer('left')} className={`bg-blue-500 text-white p-3 rounded-lg active:bg-blue-600 ${styles.controlButton || ''}`} style={{ touchAction: 'manipulation' }}>←</button>
+            <button onClick={() => movePlayer('down')} className={`bg-blue-500 text-white p-3 rounded-lg active:bg-blue-600 ${styles.controlButton || ''}`} style={{ touchAction: 'manipulation' }}>↓</button>
+            <button onClick={() => movePlayer('right')} className={`bg-blue-500 text-white p-3 rounded-lg active:bg-blue-600 ${styles.controlButton || ''}`} style={{ touchAction: 'manipulation' }}>→</button>
+          </div>
+        </div>
+      )}
+
       <style jsx global>{`
         .animate-bounce-slow { animation: bounce-slow 4s ease-in-out infinite; }
         @keyframes bounce-slow { 0%, 100% { transform: translateY(-4%); } 50% { transform: translateY(0); } }
+        @keyframes fadeInOut { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
       `}</style>
     </div>
   );
