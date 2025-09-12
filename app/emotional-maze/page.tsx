@@ -493,7 +493,7 @@ export default function EmotionMazeGame(): JSX.Element {
   );
 
   const GameScreen = () => (
-    <div className={`${styles.gameContainer || ''} ${styles[`theme${currentEmotion.charAt(0).toUpperCase() + currentEmotion.slice(1)}`] || ''}`} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="flex flex-col min-h-screen bg-gray-100">
       <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-14">
