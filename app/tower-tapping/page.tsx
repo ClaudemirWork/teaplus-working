@@ -10,16 +10,9 @@ import Image from 'next/image';
 
 interface Block {
   id: number;
-  x: number;
-  y: number;
   offset: number;
   quality: 'perfect' | 'good' | 'poor';
   isSpecial: boolean;
-  color: string;
-  points: number;
-  width: number;
-  falling?: boolean;
-  opacity?: number;
 }
 
 interface Particle {
@@ -30,32 +23,21 @@ interface Particle {
   vy: number;
   color: string;
   life: number;
-  type?: 'star' | 'spark' | 'dust';
-}
-
-interface PowerUp {
-  type: 'perfect_streak' | 'rhythm_master' | 'tower_boost' | 'golden_block';
-  active: boolean;
-  duration?: number;
-  message: string;
 }
 
 export default function TowerTappingInfinite() {
   const router = useRouter();
   const supabase = createClient();
-  const gameAreaRef = useRef<HTMLDivElement>(null);
-  const towerContainerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>();
   
   // Controle de telas
   const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game'>('title');
   
-  // Estados do jogo
+  // Estados do jogo - SIMPLIFICADOS
   const [isPlaying, setIsPlaying] = useState(false);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [score, setScore] = useState(0);
-  const [towerHeight, setTowerHeight] = useState(0);
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
   const [lives, setLives] = useState(3);
@@ -69,26 +51,14 @@ export default function TowerTappingInfinite() {
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [gameMessage, setGameMessage] = useState('');
   const [targetBPM, setTargetBPM] = useState<number | null>(null);
-  const [lastTapTime, setLastTapTime] = useState<number | null>(null);
   const [tapHistory, setTapHistory] = useState<number[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const [totalTaps, setTotalTaps] = useState(0);
   const [isCollapsing, setIsCollapsing] = useState(false);
-  const [powerUps, setPowerUps] = useState<PowerUp[]>([]);
-  const [cameraOffset, setCameraOffset] = useState(0);
 
   // Estados salvos
   const [bestHeight, setBestHeight] = useState(0);
   const [totalStars, setTotalStars] = useState(0);
-
-  // Configurações responsivas
-  const [gameConfig, setGameConfig] = useState({
-    blockWidth: 100,
-    blockHeight: 30,
-    blockSpacing: 32,
-    gameAreaHeight: 500,
-    baseHeight: 60
-  });
 
   useEffect(() => {
     const savedHeight = localStorage.getItem('towerTapping_bestHeight');
@@ -97,29 +67,11 @@ export default function TowerTappingInfinite() {
     if (savedHeight) setBestHeight(parseInt(savedHeight));
     if (savedStars) setTotalStars(parseInt(savedStars));
     
-    const updateConfig = () => {
-      const mobile = window.innerWidth < 640;
-      setIsMobile(mobile);
-      
-      setGameConfig({
-        blockWidth: mobile ? 80 : 100,
-        blockHeight: mobile ? 25 : 30,
-        blockSpacing: mobile ? 27 : 32,
-        gameAreaHeight: mobile ? 400 : 500,
-        baseHeight: mobile ? 50 : 60
-      });
-    };
-    
-    updateConfig();
-    window.addEventListener('resize', updateConfig);
-    return () => window.removeEventListener('resize', updateConfig);
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  const blockColors = {
-    perfect: { color: '#10B981', glow: '#34D399' }, // Verde
-    good: { color: '#3B82F6', glow: '#60A5FA' },    // Azul
-    poor: { color: '#F59E0B', glow: '#FBBF24' }     // Laranja
-  };
 
   const startActivity = () => {
     setCurrentScreen('game');
@@ -127,7 +79,6 @@ export default function TowerTappingInfinite() {
     setBlocks([]);
     setParticles([]);
     setScore(0);
-    setTowerHeight(0);
     setCombo(0);
     setMaxCombo(0);
     setLives(3);
@@ -138,55 +89,35 @@ export default function TowerTappingInfinite() {
     setMultiplierTime(0);
     setTowerLevel(1);
     setTargetBPM(null);
-    setLastTapTime(null);
     setTapHistory([]);
     setTotalTaps(0);
     setIsCollapsing(false);
-    setPowerUps([]);
-    setCameraOffset(0);
     setGameMessage('Comece a construir sua torre!');
   };
 
   const showGameMessage = (message: string, duration: number = 3000) => {
     setGameMessage(message);
-    setTimeout(() => {
-      if (isPlaying) setGameMessage('');
-    }, duration);
+    setTimeout(() => setGameMessage(''), duration);
   };
 
-  // Sistema de câmera que acompanha a torre
-  const updateCamera = (newHeight: number) => {
-    if (!gameAreaRef.current) return;
-    
-    const visibleBlocks = Math.floor((gameConfig.gameAreaHeight - gameConfig.baseHeight) / gameConfig.blockSpacing);
-    
-    if (newHeight > visibleBlocks - 3) {
-      // Começar a mover a câmera quando restam apenas 3 blocos visíveis
-      const offset = (newHeight - (visibleBlocks - 3)) * gameConfig.blockSpacing;
-      setCameraOffset(offset);
-    }
-  };
-
-  const createParticles = (x: number, y: number, type: string = 'spark', count: number = 10) => {
+  const createParticles = (x: number, y: number, type: string = 'normal', count: number = 8) => {
     const newParticles: Particle[] = [];
+    const colors = type === 'perfect' ? ['#10B981', '#34D399'] : 
+                  type === 'good' ? ['#3B82F6', '#60A5FA'] : 
+                  type === 'explosion' ? ['#FF6B6B', '#FFD93D', '#6BCF7F'] :
+                  ['#F59E0B', '#FBBF24'];
     
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count;
-      const velocity = Math.random() * 4 + 2;
-      const color = type === 'perfect' ? '#10B981' : 
-                   type === 'good' ? '#3B82F6' : 
-                   type === 'explosion' ? ['#FF6B6B', '#FFD93D', '#6BCF7F'][Math.floor(Math.random() * 3)] :
-                   '#F59E0B';
-      
+      const velocity = Math.random() * 3 + 2;
       newParticles.push({
         id: Date.now() + i + Math.random(),
         x,
         y,
         vx: Math.cos(angle) * velocity,
-        vy: Math.sin(angle) * velocity - Math.random() * 2,
-        color,
-        life: 1,
-        type: type as any
+        vy: Math.sin(angle) * velocity - 2,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        life: 1
       });
     }
     
@@ -203,9 +134,22 @@ export default function TowerTappingInfinite() {
     })).filter(particle => particle.life > 0));
   };
 
-  const playSound = (type: 'perfect' | 'good' | 'poor' | 'collapse' | 'levelup' | 'powerup') => {
+  const playSound = (type: 'perfect' | 'good' | 'poor' | 'collapse' | 'levelup', attempt: number = 0) => {
+    if (attempt > 2) return; // Máximo 3 tentativas
+    
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Verificar se precisa de interação do usuário
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().then(() => {
+          playSound(type, attempt + 1);
+        }).catch(() => {
+          // Falha silenciosa
+        });
+        return;
+      }
+      
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
@@ -216,38 +160,38 @@ export default function TowerTappingInfinite() {
         case 'perfect':
           oscillator.frequency.setValueAtTime(523, audioContext.currentTime);
           oscillator.frequency.exponentialRampToValueAtTime(659, audioContext.currentTime + 0.1);
-          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-          oscillator.start();
-          oscillator.stop(audioContext.currentTime + 0.2);
-          break;
-          
-        case 'good':
-          oscillator.frequency.value = 440;
-          oscillator.type = 'sine';
           gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
           gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
           oscillator.start();
           oscillator.stop(audioContext.currentTime + 0.15);
           break;
           
-        case 'poor':
-          oscillator.frequency.value = 220;
-          oscillator.type = 'sawtooth';
+        case 'good':
+          oscillator.frequency.value = 440;
+          oscillator.type = 'sine';
           gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
           gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
           oscillator.start();
           oscillator.stop(audioContext.currentTime + 0.1);
           break;
           
+        case 'poor':
+          oscillator.frequency.value = 220;
+          oscillator.type = 'sawtooth';
+          gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.08);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.08);
+          break;
+          
         case 'collapse':
           oscillator.type = 'sawtooth';
           oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
-          oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 1);
-          gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+          oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.8);
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
           oscillator.start();
-          oscillator.stop(audioContext.currentTime + 1);
+          oscillator.stop(audioContext.currentTime + 0.8);
           break;
           
         case 'levelup':
@@ -258,206 +202,26 @@ export default function TowerTappingInfinite() {
             gain.connect(audioContext.destination);
             osc.frequency.value = freq;
             osc.type = 'sine';
-            gain.gain.setValueAtTime(0.2, audioContext.currentTime + i * 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4 + i * 0.1);
+            gain.gain.setValueAtTime(0.15, audioContext.currentTime + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3 + i * 0.1);
             osc.start(audioContext.currentTime + i * 0.1);
-            osc.stop(audioContext.currentTime + 0.4 + i * 0.1);
-          });
-          break;
-          
-        case 'powerup':
-          [262, 294, 330, 349, 392, 440, 494, 523].forEach((freq, i) => {
-            const osc = audioContext.createOscillator();
-            const gain = audioContext.createGain();
-            osc.connect(gain);
-            gain.connect(audioContext.destination);
-            osc.frequency.value = freq;
-            osc.type = 'sine';
-            gain.gain.setValueAtTime(0.15, audioContext.currentTime + i * 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1 + i * 0.05);
-            osc.start(audioContext.currentTime + i * 0.05);
-            osc.stop(audioContext.currentTime + 0.1 + i * 0.05);
+            osc.stop(audioContext.currentTime + 0.3 + i * 0.1);
           });
           break;
       }
     } catch (e) {
-      console.log('Audio not supported');
+      // Falha silenciosa - audio não suportado
     }
   };
 
-  const createCelebrationBurst = (x?: number, y?: number) => {
+  const createCelebrationBurst = () => {
     if (typeof confetti === 'function') {
       confetti({
         particleCount: 50,
         spread: 70,
-        origin: { 
-          x: x ? x / (gameAreaRef.current?.offsetWidth || 400) : 0.5,
-          y: y ? y / (gameAreaRef.current?.offsetHeight || 400) : 0.5
-        }
+        origin: { y: 0.6 }
       });
     }
-  };
-
-  const activatePowerUp = (type: PowerUp['type']) => {
-    const powerUpMessages = {
-      perfect_streak: 'SEQUÊNCIA PERFEITA! +Multiplicador',
-      rhythm_master: 'MESTRE DO RITMO! +Bônus',
-      tower_boost: 'IMPULSO DA TORRE! +Velocidade', 
-      golden_block: 'BLOCO DOURADO! +Pontos Extras'
-    };
-
-    const newPowerUp: PowerUp = {
-      type,
-      active: true,
-      duration: type === 'perfect_streak' ? 15 : 10,
-      message: powerUpMessages[type]
-    };
-
-    setPowerUps(prev => [...prev.filter(p => p.type !== type), newPowerUp]);
-    showGameMessage(newPowerUp.message, 2000);
-    playSound('powerup');
-    
-    if (type === 'perfect_streak') {
-      setMultiplier(prev => Math.min(prev + 1, 5));
-      setMultiplierTime(15);
-    }
-    
-    createCelebrationBurst();
-  };
-
-  const addBlock = (quality: 'perfect' | 'good' | 'poor', offset: number) => {
-    if (!gameAreaRef.current) return;
-    
-    const gameArea = gameAreaRef.current.getBoundingClientRect();
-    const centerX = gameArea.width / 2;
-    
-    const basePoints = quality === 'perfect' ? 100 : quality === 'good' ? 60 : 30;
-    const finalPoints = Math.round(basePoints * multiplier);
-    const isSpecial = perfectStreak > 0 && perfectStreak % 5 === 0;
-    
-    // Calcular posição Y baseada no índice dos blocos existentes
-    const blockIndex = blocks.length;
-    const blockY = gameConfig.gameAreaHeight - gameConfig.baseHeight - ((blockIndex + 1) * gameConfig.blockSpacing);
-    
-    const newBlock: Block = {
-      id: Date.now() + Math.random(),
-      x: centerX - (gameConfig.blockWidth / 2) + offset, // Centralizado + offset do ritmo
-      y: blockY,
-      offset,
-      quality,
-      isSpecial,
-      color: blockColors[quality].color,
-      points: finalPoints,
-      width: gameConfig.blockWidth,
-      opacity: 1
-    };
-    
-    setBlocks(prev => [...prev, newBlock]);
-    
-    const newHeight = towerHeight + 1;
-    setTowerHeight(newHeight);
-    setScore(prev => prev + finalPoints);
-    setTotalTaps(prev => prev + 1);
-    
-    // Atualizar câmera
-    updateCamera(newHeight);
-    
-    // Criar partículas
-    createParticles(
-      newBlock.x + gameConfig.blockWidth / 2, 
-      newBlock.y + gameConfig.blockHeight / 2, 
-      quality,
-      quality === 'perfect' ? 15 : quality === 'good' ? 10 : 5
-    );
-    
-    // Atualizar combos e streaks
-    if (quality === 'perfect') {
-      setCombo(prev => {
-        const newCombo = prev + 1;
-        setMaxCombo(max => Math.max(max, newCombo));
-        return newCombo;
-      });
-      setPerfectStreak(prev => {
-        const newStreak = prev + 1;
-        setMaxPerfectStreak(max => Math.max(max, newStreak));
-        
-        if (newStreak === 10) {
-          activatePowerUp('perfect_streak');
-        } else if (newStreak === 20) {
-          activatePowerUp('rhythm_master');
-        }
-        
-        return newStreak;
-      });
-    } else {
-      if (quality === 'poor') {
-        setCombo(0);
-        setPerfectStreak(0);
-        setLives(prev => {
-          const newLives = prev - 1;
-          if (newLives <= 0) {
-            triggerCollapse();
-          } else {
-            showGameMessage(`Cuidado! ${newLives} vidas restantes`, 2000);
-          }
-          return newLives;
-        });
-      } else {
-        setCombo(prev => {
-          const newCombo = prev + 1;
-          setMaxCombo(max => Math.max(max, newCombo));
-          return newCombo;
-        });
-        setPerfectStreak(0);
-      }
-    }
-    
-    // Verificar level up da torre
-    if (newHeight % 25 === 0) {
-      const newLevel = Math.floor(newHeight / 25) + 1;
-      setTowerLevel(newLevel);
-      setShowLevelUp(true);
-      playSound('levelup');
-      showGameMessage(`NÍVEL ${newLevel} DA TORRE ALCANÇADO!`, 3000);
-      createCelebrationBurst();
-      
-      // Recuperar uma vida a cada level up
-      setLives(prev => Math.min(prev + 1, 3));
-      
-      setTimeout(() => setShowLevelUp(false), 3000);
-    }
-    
-    playSound(quality);
-  };
-
-  const triggerCollapse = () => {
-    setIsCollapsing(true);
-    setIsPlaying(false);
-    playSound('collapse');
-    showGameMessage('TORRE DESMORONOU!', 3000);
-    
-    // Animar blocos caindo
-    setBlocks(prev => prev.map(block => ({
-      ...block,
-      falling: true
-    })));
-    
-    // Criar explosão de partículas
-    blocks.forEach((block, index) => {
-      setTimeout(() => {
-        createParticles(
-          block.x + block.width / 2,
-          block.y + 15,
-          'explosion',
-          20
-        );
-      }, index * 50);
-    });
-    
-    // Após animação, mostrar resultados
-    setTimeout(() => {
-      endGame();
-    }, 3000);
   };
 
   const handleTap = () => {
@@ -474,25 +238,25 @@ export default function TowerTappingInfinite() {
         intervals.push(newTapHistory[i] - newTapHistory[i - 1]);
       }
       const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-      const bpm = 60000 / avgInterval;
-      setTargetBPM(Math.round(bpm));
-      showGameMessage(`Ritmo estabelecido: ${Math.round(bpm)} BPM`, 2000);
+      const bpm = Math.round(60000 / avgInterval);
+      setTargetBPM(bpm);
+      showGameMessage(`Ritmo estabelecido: ${bpm} BPM`, 2000);
     }
     
-    // Calcular qualidade do tap
+    // Calcular qualidade do tap baseado no ritmo
     let quality: 'perfect' | 'good' | 'poor' = 'perfect';
     let offset = 0;
-    const maxOffset = gameConfig.blockWidth * 0.4; // 40% da largura do bloco
+    const maxOffset = isMobile ? 30 : 40;
     
     if (targetBPM && newTapHistory.length >= 2) {
       const lastInterval = currentTime - newTapHistory[newTapHistory.length - 2];
       const targetInterval = 60000 / targetBPM;
       const deviation = Math.abs(lastInterval - targetInterval) / targetInterval;
       
-      if (deviation < 0.1) {
+      if (deviation < 0.12) {
         quality = 'perfect';
         offset = (Math.random() - 0.5) * (maxOffset * 0.2);
-      } else if (deviation < 0.25) {
+      } else if (deviation < 0.28) {
         quality = 'good'; 
         offset = (Math.random() - 0.5) * (maxOffset * 0.6);
       } else {
@@ -501,17 +265,128 @@ export default function TowerTappingInfinite() {
       }
     }
     
-    setLastTapTime(currentTime);
-    addBlock(quality, offset);
+    // Adicionar bloco
+    const basePoints = quality === 'perfect' ? 100 : quality === 'good' ? 60 : 30;
+    const finalPoints = Math.round(basePoints * multiplier);
+    const isSpecial = blocks.length > 0 && (blocks.length + 1) % 10 === 0;
+    
+    const newBlock: Block = {
+      id: Date.now() + Math.random(),
+      offset,
+      quality,
+      isSpecial
+    };
+    
+    setBlocks(prev => [...prev, newBlock]);
+    setScore(prev => prev + finalPoints);
+    setTotalTaps(prev => prev + 1);
+    
+    // Criar partículas na posição do novo bloco
+    const gameArea = document.querySelector('.tower-area');
+    if (gameArea) {
+      const rect = gameArea.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const blockY = 100 + (blocks.length * (isMobile ? 27 : 32));
+      createParticles(centerX + offset, blockY, quality, quality === 'perfect' ? 12 : 8);
+    }
+    
+    // Atualizar combos e streaks
+    if (quality === 'perfect') {
+      setCombo(prev => {
+        const newCombo = prev + 1;
+        setMaxCombo(max => Math.max(max, newCombo));
+        return newCombo;
+      });
+      setPerfectStreak(prev => {
+        const newStreak = prev + 1;
+        setMaxPerfectStreak(max => Math.max(max, newStreak));
+        
+        if (newStreak === 10) {
+          setMultiplier(2);
+          setMultiplierTime(10);
+          showGameMessage('🔥 SEQUÊNCIA PERFEITA! Multiplicador x2!', 2500);
+          createCelebrationBurst();
+        }
+        
+        return newStreak;
+      });
+    } else {
+      if (quality === 'poor') {
+        setCombo(0);
+        setPerfectStreak(0);
+        setLives(prev => {
+          const newLives = prev - 1;
+          if (newLives <= 0) {
+            triggerCollapse();
+          } else {
+            showGameMessage(`⚠️ Cuidado! ${newLives} vidas restantes`, 2000);
+          }
+          return newLives;
+        });
+      } else {
+        setCombo(prev => {
+          const newCombo = prev + 1;
+          setMaxCombo(max => Math.max(max, newCombo));
+          return newCombo;
+        });
+        setPerfectStreak(0);
+      }
+    }
+    
+    // Level up da torre a cada 25 blocos
+    const newHeight = blocks.length + 1;
+    if (newHeight % 25 === 0) {
+      const newLevel = Math.floor(newHeight / 25) + 1;
+      setTowerLevel(newLevel);
+      setShowLevelUp(true);
+      playSound('levelup');
+      showGameMessage(`🏗️ NÍVEL ${newLevel} ALCANÇADO!`, 3000);
+      createCelebrationBurst();
+      
+      // Recuperar vida a cada level up
+      setLives(prev => Math.min(prev + 1, 3));
+      
+      setTimeout(() => setShowLevelUp(false), 3000);
+    }
+    
+    playSound(quality);
+  };
+
+  const triggerCollapse = () => {
+    setIsCollapsing(true);
+    setIsPlaying(false);
+    playSound('collapse');
+    showGameMessage('💥 TORRE DESMORONOU!', 3000);
+    
+    // Criar explosão de partículas
+    const gameArea = document.querySelector('.tower-area');
+    if (gameArea) {
+      const rect = gameArea.getBoundingClientRect();
+      blocks.forEach((_, index) => {
+        setTimeout(() => {
+          createParticles(
+            rect.width / 2 + Math.random() * 100 - 50,
+            200 + index * 20,
+            'explosion',
+            15
+          );
+        }, index * 100);
+      });
+    }
+    
+    // Mostrar resultados após animação
+    setTimeout(() => {
+      endGame();
+    }, 2500);
   };
 
   const endGame = () => {
     setShowResults(true);
     
     // Atualizar recordes
-    if (towerHeight > bestHeight) {
-      setBestHeight(towerHeight);
-      localStorage.setItem('towerTapping_bestHeight', towerHeight.toString());
+    if (blocks.length > bestHeight) {
+      setBestHeight(blocks.length);
+      localStorage.setItem('towerTapping_bestHeight', blocks.length.toString());
     }
     
     const newStars = totalStars + Math.floor(score / 1000);
@@ -525,10 +400,8 @@ export default function TowerTappingInfinite() {
     setIsCollapsing(false);
   };
 
-  // Atualizar power-ups
+  // Atualizar multiplicador
   useEffect(() => {
-    if (!isPlaying) return;
-    
     if (multiplierTime <= 0) {
       setMultiplier(1);
       return;
@@ -539,28 +412,14 @@ export default function TowerTappingInfinite() {
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, [multiplierTime, isPlaying]);
+  }, [multiplierTime]);
 
-  // Game loop para partículas e animações
+  // Game loop simples apenas para partículas
   useEffect(() => {
     if (!isPlaying && !isCollapsing) return;
     
     const gameLoop = () => {
       updateParticles();
-      
-      // Animar blocos caindo durante colapso
-      if (isCollapsing) {
-        setBlocks(prev => prev.map(block => {
-          if (!block.falling) return block;
-          
-          return {
-            ...block,
-            y: block.y + 5,
-            opacity: Math.max(0, (block.opacity || 1) - 0.02)
-          };
-        }).filter(block => (block.opacity || 1) > 0));
-      }
-      
       animationRef.current = requestAnimationFrame(gameLoop);
     };
     
@@ -580,7 +439,6 @@ export default function TowerTappingInfinite() {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
-        console.error('Erro ao obter usuário:', userError);
         alert('Erro: Sessão expirada. Por favor, faça login novamente.');
         router.push('/login');
         return;
@@ -596,13 +454,12 @@ export default function TowerTappingInfinite() {
         }]);
 
       if (error) {
-        console.error('Erro ao salvar:', error);
         alert(`Erro ao salvar: ${error.message}`);
       } else {
         alert(`Sessão salva com sucesso!
         
 🏗️ Torre Construída:
-- Altura: ${towerHeight} blocos
+- Altura: ${blocks.length} blocos
 - Nível da Torre: ${towerLevel}
 - Sequência Perfeita Máxima: ${maxPerfectStreak}
 - Combo Máximo: ${maxCombo}
@@ -611,17 +468,22 @@ export default function TowerTappingInfinite() {
         router.push('/dashboard');
       }
     } catch (error: any) {
-      console.error('Erro inesperado:', error);
       alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setSalvando(false);
     }
   };
 
+  // Calcular dimensões responsivas
+  const blockWidth = isMobile ? 'w-16' : 'w-24';
+  const blockHeight = isMobile ? 'h-6' : 'h-8';
+  const blockSpacing = isMobile ? 27 : 32;
+  const maxVisibleBlocks = isMobile ? 12 : 15;
+  const gameAreaHeight = isMobile ? '400px' : '500px';
+
   // TELAS DO JOGO
   const TitleScreen = () => (
     <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-orange-300 via-red-400 to-purple-500 overflow-hidden">
-      {/* Estrelas de fundo */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(15)].map((_, i) => (
           <div
@@ -657,7 +519,6 @@ export default function TowerTappingInfinite() {
           🏗️ Construa até o céu! 🎵
         </p>
         
-        {/* Estatísticas */}
         {(totalStars > 0 || bestHeight > 0) && (
           <div className="bg-white/80 rounded-2xl p-4 mb-4 shadow-xl">
             <div className="flex items-center gap-4">
@@ -714,7 +575,7 @@ export default function TowerTappingInfinite() {
           </p>
           <p className="flex items-center gap-4">
             <span className="text-4xl">💔</span>
-            <span><b>Muitos erros</b> fazem a torre desmoronar!</span>
+            <span><b>3 erros</b> fazem a torre desmoronar!</span>
           </p>
         </div>
         
@@ -775,7 +636,7 @@ export default function TowerTappingInfinite() {
                 <div className="grid grid-cols-5 gap-2">
                   <div className="text-center">
                     <div className="text-base sm:text-xl font-bold text-orange-800">
-                      {towerHeight}
+                      {blocks.length}
                     </div>
                     <div className="text-xs text-orange-600">Altura</div>
                   </div>
@@ -829,111 +690,98 @@ export default function TowerTappingInfinite() {
                 )}
               </div>
 
-              {/* Área da Torre com Sistema de Câmera */}
+              {/* Área da Torre - SIMPLIFICADA */}
               <div 
-                ref={gameAreaRef}
-                className="relative bg-gradient-to-b from-sky-200 to-sky-100 rounded-xl shadow-lg overflow-hidden"
-                style={{ height: `${gameConfig.gameAreaHeight}px` }}
+                className="tower-area relative bg-gradient-to-b from-sky-200 to-sky-100 rounded-xl shadow-lg overflow-hidden"
+                style={{ height: gameAreaHeight }}
               >
-                {/* Container da Torre com Transform para Câmera */}
-                <div 
-                  ref={towerContainerRef}
-                  className="absolute inset-0"
-                  style={{ 
-                    transform: `translateY(${cameraOffset}px)`,
-                    transition: 'transform 0.5s ease-out'
-                  }}
-                >
-                  {/* Linha guia central - FIXA */}
-                  <div 
-                    className="absolute top-0 w-0.5 bg-red-300 opacity-40 z-10" 
-                    style={{
-                      left: '50%',
-                      transform: 'translateX(-0.5px)',
-                      height: `${Math.max(gameConfig.gameAreaHeight, (blocks.length + 10) * gameConfig.blockSpacing)}px`,
-                      bottom: `${gameConfig.baseHeight}px`
-                    }}
-                  />
-                  
-                  {/* Mensagens do jogo */}
-                  {gameMessage && (
-                    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
-                      <div className="bg-white/90 text-black px-4 py-2 rounded-full font-bold animate-bounce text-center text-sm sm:text-base">
-                        {gameMessage}
+                {/* Linha guia central */}
+                <div className="absolute left-1/2 top-0 bottom-16 w-0.5 bg-red-300 opacity-40 z-10 transform -translate-x-0.5" />
+                
+                {/* Mensagens do jogo */}
+                {gameMessage && (
+                  <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+                    <div className="bg-white/90 text-black px-4 py-2 rounded-full font-bold animate-bounce text-center text-sm sm:text-base">
+                      {gameMessage}
+                    </div>
+                  </div>
+                )}
+
+                {/* Level Up Animation */}
+                {showLevelUp && (
+                  <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/50">
+                    <div className="bg-white rounded-2xl p-8 text-center animate-pulse">
+                      <div className="text-6xl mb-4">🏗️</div>
+                      <div className="text-2xl font-bold text-orange-600">
+                        NÍVEL {towerLevel}!
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {/* Level Up Animation */}
-                  {showLevelUp && (
-                    <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/50">
-                      <div className="bg-white rounded-2xl p-8 text-center animate-pulse">
-                        <div className="text-6xl mb-4">🏗️</div>
-                        <div className="text-2xl font-bold text-orange-600">
-                          NÍVEL {towerLevel}!
+                {/* Container da Torre - USANDO ABORDAGEM ORIGINAL */}
+                <div className="absolute bottom-16 left-0 right-0" style={{ height: `calc(${gameAreaHeight} - 64px)` }}>
+                  <div className="relative h-full flex flex-col-reverse items-center overflow-hidden">
+                    {/* Blocos da Torre - SIMPLIFICADOS */}
+                    {blocks.slice(-maxVisibleBlocks).map((block, index) => (
+                      <div
+                        key={block.id}
+                        className={`absolute transition-all duration-300 ${
+                          block.isSpecial ? 'animate-pulse' : ''
+                        }`}
+                        style={{
+                          bottom: `${index * blockSpacing}px`,
+                          left: `calc(50% + ${block.offset}px)`,
+                          transform: 'translateX(-50%)',
+                          zIndex: blocks.length - index
+                        }}
+                      >
+                        <div
+                          className={`${blockWidth} ${blockHeight} rounded-sm border-2 flex items-center justify-center ${
+                            block.quality === 'perfect' 
+                              ? 'bg-gradient-to-r from-green-400 to-green-500 border-green-600' 
+                              : block.quality === 'good'
+                              ? 'bg-gradient-to-r from-blue-400 to-blue-500 border-blue-600'
+                              : 'bg-gradient-to-r from-orange-400 to-orange-500 border-orange-600'
+                          } ${block.isSpecial ? 'bg-gradient-to-r from-yellow-400 to-orange-400 border-yellow-600' : ''}`}
+                          style={{
+                            boxShadow: `0 2px 4px rgba(0,0,0,0.3)${block.isSpecial ? ', 0 0 15px #FFD700' : ''}`
+                          }}
+                        >
+                          {block.isSpecial && (
+                            <div className="text-white text-xs sm:text-sm font-bold">
+                              ⭐
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Blocos da Torre */}
-                  {blocks.map((block, index) => (
-                    <div
-                      key={block.id}
-                      className={`absolute transition-all duration-200 ${
-                        block.isSpecial ? 'animate-pulse' : ''
-                      } ${isCollapsing && block.falling ? 'animate-bounce' : ''}`}
-                      style={{
-                        left: `${block.x}px`,
-                        bottom: `${gameConfig.baseHeight + index * gameConfig.blockSpacing}px`,
-                        width: `${block.width}px`,
-                        height: `${gameConfig.blockHeight}px`,
-                        background: block.isSpecial 
-                          ? 'linear-gradient(45deg, #FFD700, #FFA500)' 
-                          : `linear-gradient(135deg, ${block.color}, ${blockColors[block.quality].glow})`,
-                        borderRadius: '4px',
-                        border: `2px solid ${block.isSpecial ? '#FF8C00' : blockColors[block.quality].glow}`,
-                        boxShadow: `0 4px 8px rgba(0,0,0,0.3), 0 0 ${block.isSpecial ? '20px' : '10px'} ${blockColors[block.quality].glow}`,
-                        opacity: block.opacity || 1,
-                        transform: block.falling ? `translateY(${Math.random() * 200}px) rotate(${Math.random() * 360}deg)` : 'none'
-                      }}
-                    >
-                      {block.isSpecial && (
-                        <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm">
-                          ⭐
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {/* Partículas */}
-                  {particles.map(particle => (
-                    <div
-                      key={particle.id}
-                      className="absolute w-2 h-2 rounded-full pointer-events-none"
-                      style={{
-                        left: `${particle.x}px`,
-                        bottom: `${particle.y}px`,
-                        backgroundColor: particle.color,
-                        opacity: particle.life,
-                        transform: particle.type === 'star' ? 'rotate(45deg)' : 'none'
-                      }}
-                    />
-                  ))}
-
-                  {/* Base da Torre - FIXA */}
-                  <div 
-                    className="absolute bottom-0 w-full bg-gradient-to-t from-stone-800 to-stone-600 border-t-4 border-stone-900"
-                    style={{ height: `${gameConfig.baseHeight}px` }}
-                  >
-                    <div className="text-white text-center font-bold pt-4 text-sm sm:text-base">
-                      FUNDAÇÃO
-                    </div>
+                    ))}
                   </div>
                 </div>
 
-                {/* Indicador de Nível da Torre - FIXO */}
-                <div className="absolute top-4 right-4 bg-white/80 rounded-lg p-2 text-center z-30">
+                {/* Partículas */}
+                {particles.map(particle => (
+                  <div
+                    key={particle.id}
+                    className="absolute w-2 h-2 rounded-full pointer-events-none"
+                    style={{
+                      left: `${particle.x}px`,
+                      top: `${particle.y}px`,
+                      backgroundColor: particle.color,
+                      opacity: particle.life
+                    }}
+                  />
+                ))}
+
+                {/* Base da Torre */}
+                <div className="absolute bottom-0 w-full h-16 bg-gradient-to-t from-stone-800 to-stone-600 border-t-4 border-stone-900">
+                  <div className="text-white text-center font-bold pt-4 text-sm sm:text-base">
+                    FUNDAÇÃO
+                  </div>
+                </div>
+
+                {/* Indicador de Nível da Torre */}
+                <div className="absolute top-4 right-4 bg-white/80 rounded-lg p-2 text-center">
                   <div className="text-lg font-bold text-orange-800">Nv.{towerLevel}</div>
                   <div className="text-xs text-orange-600">Torre</div>
                 </div>
@@ -965,23 +813,23 @@ export default function TowerTappingInfinite() {
             <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
               <div className="text-center mb-6">
                 <div className="text-5xl sm:text-6xl mb-4">
-                  {towerHeight > 100 ? '🏆' : towerHeight > 50 ? '🎉' : '💪'}
+                  {blocks.length > 100 ? '🏆' : blocks.length > 50 ? '🎉' : '💪'}
                 </div>
                 
                 <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
-                  Torre de {towerHeight} blocos!
+                  Torre de {blocks.length} blocos!
                 </h3>
                 
                 <p className="text-sm sm:text-base text-gray-600">
-                  {towerHeight > bestHeight ? 'NOVO RECORDE!' : 
-                   towerHeight > 50 ? 'Torre impressionante!' : 
+                  {blocks.length > bestHeight ? 'NOVO RECORDE!' : 
+                   blocks.length > 50 ? 'Torre impressionante!' : 
                    'Continue praticando!'}
                 </p>
               </div>
               
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 sm:p-3 text-center">
-                  <div className="text-lg sm:text-xl font-bold text-orange-800">{towerHeight}</div>
+                  <div className="text-lg sm:text-xl font-bold text-orange-800">{blocks.length}</div>
                   <div className="text-xs text-orange-600">Altura</div>
                 </div>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 text-center">
@@ -1024,7 +872,6 @@ export default function TowerTappingInfinite() {
     );
   };
 
-  // Renderização das telas
   if (currentScreen === 'title') return <TitleScreen />;
   if (currentScreen === 'instructions') return <InstructionsScreen />;
   return <GameScreen />;
