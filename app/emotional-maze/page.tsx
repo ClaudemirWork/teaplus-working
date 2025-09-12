@@ -11,7 +11,7 @@ import styles from './emotionmaze.module.css';
 const POWERUPS = {
   wallPass: {
     name: 'Atravessador',
-    icon: '',
+    icon: '🕐',
     duration: 30,
     color: '#9C27B0',
     description: 'Atravesse paredes!'
@@ -72,22 +72,22 @@ const EMOTIONS = {
   calm: { name: 'Calma', icon: '😌', color: '#B2DFDB' },
   courage: { name: 'Coragem', icon: '💪', color: '#7E57C2' },
   sadness: { name: 'Tristeza', icon: '😢', color: '#64B5F6' },
-  fear: { name: 'Medo', icon: '', color: '#757575' },
-  mirror: { name: 'Espelho', icon: '', color: '#E91E63' }
+  fear: { name: 'Medo', icon: '😰', color: '#757575' },
+  mirror: { name: 'Espelho', icon: '🪞', color: '#E91E63' }
 };
 
 // NPCs
 const NPCS = [
   { id: 'bunny', emoji: '🐰', name: 'Coelhinho' },
   { id: 'bird', emoji: '🐦', name: 'Passarinho' },
-  { id: 'cat', emoji: '', name: 'Gatinho' },
+  { id: 'cat', emoji: '🐱', name: 'Gatinho' },
   { id: 'dog', emoji: '🐶', name: 'Cachorrinho' },
-  { id: 'butterfly', emoji: '', name: 'Borboleta' },
-  { id: 'turtle', emoji: '', name: 'Tartaruga' },
-  { id: 'panda', emoji: '', name: 'Panda' },
+  { id: 'butterfly', emoji: '🦋', name: 'Borboleta' },
+  { id: 'turtle', emoji: '🐢', name: 'Tartaruga' },
+  { id: 'panda', emoji: '🐼', name: 'Panda' },
   { id: 'fox', emoji: '🦊', name: 'Raposa' },
-  { id: 'owl', emoji: '', name: 'Coruja' },
-  { id: 'penguin', emoji: '', name: 'Pinguim' }
+  { id: 'owl', emoji: '🦉', name: 'Coruja' },
+  { id: 'penguin', emoji: '🐧', name: 'Pinguim' }
 ];
 
 // Função para criar labirinto 8x8 básico
@@ -780,7 +780,8 @@ const ALL_LEVELS = [...LEVELS, ...MIRROR_LEVELS];
 
 // COMPONENTE PRINCIPAL
 export default function EmotionMaze() {
-  const [gameState, setGameState] = useState<'intro' | 'story' | 'playing' | 'levelComplete' | 'gameComplete' | 'mirrorUnlocked'>('intro');
+  // ESTADOS - mantém estrutura original
+  const [gameState, setGameState] = useState<'intro' | 'instructions' | 'story' | 'playing' | 'levelComplete' | 'gameComplete' | 'mirrorUnlocked'>('intro');
   const [currentLevel, setCurrentLevel] = useState(0);
   const [playerPosition, setPlayerPosition] = useState({ x: 1, y: 1 });
   const [collectedItems, setCollectedItems] = useState({
@@ -807,7 +808,7 @@ export default function EmotionMaze() {
   const level = ALL_LEVELS[currentLevel];
   const currentEmotion = level?.emotion || 'joy';
 
-  // Detectar mobile
+  // Detectar mobile - original
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -817,7 +818,7 @@ export default function EmotionMaze() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Timer
+  // Timer - original
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (gameState === 'playing') {
@@ -828,7 +829,7 @@ export default function EmotionMaze() {
     return () => clearInterval(interval);
   }, [gameState]);
 
-  // Power-up timer
+  // Power-up timer - original
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (activePowerup && powerupTimeLeft > 0) {
@@ -845,7 +846,7 @@ export default function EmotionMaze() {
     return () => clearInterval(interval);
   }, [activePowerup, powerupTimeLeft]);
 
-  // Inicializar nível
+  // Inicializar nível - original
   const initLevel = useCallback((levelIndex: number) => {
     const newLevel = ALL_LEVELS[levelIndex];
     setPlayerPosition(newLevel.start);
@@ -865,8 +866,12 @@ export default function EmotionMaze() {
     setScore(0);
   }, []);
 
-  // Começar jogo
+  // Começar jogo - modificado apenas para incluir tela de instruções
   const startGame = () => {
+    setGameState('instructions');
+  };
+
+  const startGameFromInstructions = () => {
     setCurrentLevel(0);
     initLevel(0);
     setTotalScore(0);
@@ -880,13 +885,13 @@ export default function EmotionMaze() {
     setShowCutscene(true);
   };
 
-  // Começar nível
+  // Começar nível - original
   const startLevel = () => {
     setShowCutscene(false);
     setGameState('playing');
   };
 
-  // Criar explosão de mega gema
+  // Criar explosão de mega gema - original
   const createMegaGemExplosion = () => {
     if (soundEnabled) playSound('megaGem', 0.5);
     
@@ -940,7 +945,7 @@ export default function EmotionMaze() {
     });
   };
 
-  // Mover jogador - CORRIGIDO
+  // Mover jogador - ORIGINAL COMPLETO
   const movePlayer = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
     if (gameState !== 'playing') return;
 
@@ -1079,7 +1084,7 @@ export default function EmotionMaze() {
     }
   }, [gameState, playerPosition, level, collectedItems, openedDoors, activePowerup, soundEnabled]);
 
-  // Completar nível
+  // Completar nível - original
   const completeLevel = () => {
     const timeBonus = Math.max(0, level.perfectTime - timeElapsed) * 5;
     const finalScore = score + timeBonus;
@@ -1119,7 +1124,7 @@ export default function EmotionMaze() {
     }
   };
 
-  // Próximo nível
+  // Próximo nível - original
   const nextLevel = () => {
     if (currentLevel < ALL_LEVELS.length - 1) {
       const nextLevelIndex = currentLevel + 1;
@@ -1144,7 +1149,7 @@ export default function EmotionMaze() {
     }
   };
 
-  // Controles do teclado
+  // Controles do teclado - original
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       const keyMap: { [key: string]: 'up' | 'down' | 'left' | 'right' } = {
@@ -1165,7 +1170,7 @@ export default function EmotionMaze() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [movePlayer]);
 
-  // Renderizar célula
+  // Renderizar célula - original
   const renderCell = (x: number, y: number) => {
     const isWall = level.grid[y][x] === 1;
     const isPlayer = playerPosition.x === x && playerPosition.y === y;
@@ -1273,41 +1278,50 @@ export default function EmotionMaze() {
       )}
 
       <main className="flex-1 p-4 flex flex-col" style={{ paddingBottom: isMobile ? '150px' : '20px' }}>
+        
+        {/* NOVA TELA INICIAL COM LAYOUT MODERNO */}
         {gameState === 'intro' && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center space-y-4"
-          >
-            <div className="bg-white/90 backdrop-blur rounded-2xl p-6 shadow-xl max-w-3xl mx-auto">
-              <h1 className="text-2xl sm:text-4xl font-bold mb-4 text-gray-800">
-                O Labirinto das Emoções
-              </h1>
-              
-              <div className="flex justify-center gap-4 mb-4">
-                <div className="text-5xl">🦁</div>
-                <div className="text-5xl">🦄</div>
-              </div>
-              
-              <p className="text-sm sm:text-lg text-gray-700 mb-4">
-                30 níveis de aventura! Colete gemas e ajude os amigos!
-              </p>
-              
-              <div className="bg-yellow-100 rounded-lg p-3 mb-4">
-                <p className="text-sm font-bold text-gray-800">🌟 MEGA GEMAS = 1000 pontos!</p>
-                <p className="text-xs text-gray-700">Procure por elas em cada nível!</p>
-              </div>
-              
-              <button
-                onClick={startGame}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl text-lg font-bold"
-                style={{ touchAction: 'manipulation' }}
-              >
-                <Play className="inline mr-2" />
-                Começar
-              </button>
+          <div className="relative w-full h-full flex justify-center items-center p-4 bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 overflow-hidden" style={{ minHeight: 'calc(100vh - 200px)' }}>
+            <div className="absolute inset-0 overflow-hidden">
+              {[...Array(20)].map((_, i) => (
+                <div key={i} className="absolute animate-pulse" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 3}s`, animationDuration: `${3 + Math.random() * 2}s` }}>
+                  <Star className="w-6 h-6 text-white opacity-20" fill="currentColor" />
+                </div>
+              ))}
             </div>
-          </motion.div>
+            <div className="relative z-10 flex flex-col items-center text-center">
+              <motion.div initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.2, type: 'spring', stiffness: 100 }} className="mb-4">
+                <img src="/images/mascotes/leo/jogo do labirinto tela.webp" alt="Mascote Léo no Labirinto" className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl animate-bounce-slow" />
+              </motion.div>
+              <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.4, type: 'spring', stiffness: 100 }}>
+                <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white drop-shadow-lg mb-2">Labirinto das Emoções</h1>
+                <p className="text-xl sm:text-2xl text-white/90 mt-2 mb-6 drop-shadow-md">🧭 Ajude Léo a encontrar os tesouros e amigos perdidos!</p>
+                <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-4 mb-6 shadow-xl max-w-xs mx-auto">
+                  <div className="flex items-center justify-center gap-2">
+                    <Trophy className="w-6 h-6 text-yellow-100" />
+                    <span className="font-bold text-white">30 Níveis de Aventura</span>
+                  </div>
+                </div>
+                <button onClick={startGame} className="text-xl font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-1">Começar Aventura</button>
+              </motion.div>
+            </div>
+          </div>
+        )}
+
+        {/* NOVA TELA DE INSTRUÇÕES */}
+        {gameState === 'instructions' && (
+          <div className="relative w-full h-full flex justify-center items-center p-4 bg-gradient-to-br from-blue-200 via-green-200 to-yellow-200" style={{ minHeight: 'calc(100vh - 200px)' }}>
+            <div className="bg-white/95 rounded-3xl p-8 max-w-2xl shadow-2xl text-center">
+              <h2 className="text-4xl font-bold mb-6 text-purple-600">Como Jogar</h2>
+              <div className="text-lg text-gray-700 space-y-6 mb-6 text-left">
+                <p className="flex items-center gap-4"><span className="text-4xl">🧭</span><span><b>Explore o labirinto</b> usando as setas ou os controles.</span></p>
+                <p className="flex items-center gap-4"><span className="text-4xl">💎</span><span><b>Colete todas as gemas</b> e encontre os amigos.</span></p>
+                <p className="flex items-center gap-4"><span className="text-4xl">🗝️</span><span>Pegue as <b>chaves</b> para abrir as <b>portas</b> trancadas.</span></p>
+                <p className="flex items-center gap-4"><span className="text-4xl">✨</span><span>Use <b>poderes especiais</b> para atravessar paredes!</span></p>
+              </div>
+              <button onClick={startGameFromInstructions} className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform">Vamos jogar! 🚀</button>
+            </div>
+          </div>
         )}
 
         {showCutscene && (
@@ -1384,31 +1398,31 @@ export default function EmotionMaze() {
               <div className="grid grid-cols-3 gap-1 w-32">
                 <div></div>
                 <button
-                  onClick={() => movePlayer('up')}
-                  className={`bg-blue-500 text-white p-3 rounded-lg active:bg-blue-600 ${styles.controlButton}`}
-                  style={{ touchAction: 'manipulation' }}
+                  onPointerDown={() => movePlayer('up')}
+                  className="bg-blue-500 text-white p-3 rounded-lg font-bold text-xl"
+                  style={{ touchAction: 'none' }}
                 >
                   ↑
                 </button>
                 <div></div>
                 <button
-                  onClick={() => movePlayer('left')}
-                  className={`bg-blue-500 text-white p-3 rounded-lg active:bg-blue-600 ${styles.controlButton}`}
-                  style={{ touchAction: 'manipulation' }}
+                  onPointerDown={() => movePlayer('left')}
+                  className="bg-blue-500 text-white p-3 rounded-lg font-bold text-xl"
+                  style={{ touchAction: 'none' }}
                 >
                   ←
                 </button>
                 <button
-                  onClick={() => movePlayer('down')}
-                  className={`bg-blue-500 text-white p-3 rounded-lg active:bg-blue-600 ${styles.controlButton}`}
-                  style={{ touchAction: 'manipulation' }}
+                  onPointerDown={() => movePlayer('down')}
+                  className="bg-blue-500 text-white p-3 rounded-lg font-bold text-xl"
+                  style={{ touchAction: 'none' }}
                 >
                   ↓
                 </button>
                 <button
-                  onClick={() => movePlayer('right')}
-                  className={`bg-blue-500 text-white p-3 rounded-lg active:bg-blue-600 ${styles.controlButton}`}
-                  style={{ touchAction: 'manipulation' }}
+                  onPointerDown={() => movePlayer('right')}
+                  className="bg-blue-500 text-white p-3 rounded-lg font-bold text-xl"
+                  style={{ touchAction: 'none' }}
                 >
                   →
                 </button>
@@ -1506,6 +1520,11 @@ export default function EmotionMaze() {
           </div>
         )}
       </main>
+
+      <style jsx global>{`
+        .animate-bounce-slow { animation: bounce-slow 4s ease-in-out infinite; }
+        @keyframes bounce-slow { 0%, 100% { transform: translateY(-4%); } 50% { transform: translateY(0); } }
+      `}</style>
     </div>
   );
 }
