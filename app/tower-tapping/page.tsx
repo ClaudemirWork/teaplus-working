@@ -2,204 +2,173 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link'
-import { ChevronLeft, Save } from 'lucide-react';
-import { createClient } from '../utils/supabaseClient'
-
-// Componente do Cabeçalho Padrão
-const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: any) => (
-    <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <div className="flex items-center justify-between h-16">
-                <Link
-                    href="/dashboard"
-                    className="flex items-center text-teal-600 hover:text-teal-700 transition-colors"
-                >
-                    <ChevronLeft className="h-6 w-6" />
-                    <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
-                </Link>
-
-                <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex items-center gap-2">
-                    {icon}
-                    <span>{title}</span>
-                </h1>
-
-                {showSaveButton && onSave ? (
-                    <button
-                        onClick={onSave}
-                        disabled={isSaveDisabled}
-                        className={`flex items-center space-x-2 px-3 py-2 sm:px-4 rounded-lg font-semibold transition-colors ${
-                            !isSaveDisabled
-                                ? 'bg-green-500 text-white hover:bg-green-600'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                    >
-                        <Save size={18} />
-                        <span className="hidden sm:inline">{isSaveDisabled ? 'Salvando...' : 'Salvar'}</span>
-                    </button>
-                ) : (
-                    <div className="w-24"></div>
-                )}
-            </div>
-        </div>
-    </header>
-);
+import Link from 'next/link';
+import { ChevronLeft, Save, Star, Trophy } from 'lucide-react';
+import { createClient } from '../utils/supabaseClient';
+import confetti from 'canvas-confetti';
+import styles from './tower-tapping.module.css';
+import Image from 'next/image';
 
 interface Block {
   id: number;
+  x: number;
+  y: number;
   offset: number;
   quality: 'perfect' | 'good' | 'poor';
   isSpecial: boolean;
+  color: string;
+  points: number;
+  width: number;
+  falling?: boolean;
+  opacity?: number;
 }
 
-export default function TowerTapping() {
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  color: string;
+  life: number;
+  type?: 'star' | 'spark' | 'dust';
+}
+
+interface PowerUp {
+  type: 'perfect_streak' | 'rhythm_master' | 'tower_boost' | 'golden_block';
+  active: boolean;
+  duration?: number;
+  message: string;
+}
+
+export default function TowerTappingInfinite() {
   const router = useRouter();
   const supabase = createClient();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const gameAreaRef = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<number>();
   
-  const [selectedLevel, setSelectedLevel] = useState(1);
+  // Controle de telas
+  const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game'>('title');
+  
+  // Estados do jogo
   const [isPlaying, setIsPlaying] = useState(false);
-  const [taps, setTaps] = useState<number[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
-  const [startTime, setStartTime] = useState<number>(0);
-  const [timeLeft, setTimeLeft] = useState(10);
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const [score, setScore] = useState(0);
+  const [towerHeight, setTowerHeight] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [maxCombo, setMaxCombo] = useState(0);
+  const [lives, setLives] = useState(3);
   const [showResults, setShowResults] = useState(false);
-  const [jogoIniciado, setJogoIniciado] = useState(false);
   const [salvando, setSalvando] = useState(false);
-  const [pontuacao, setPontuacao] = useState(0);
-  const [currentTowerLevel, setCurrentTowerLevel] = useState(1);
+  const [perfectStreak, setPerfectStreak] = useState(0);
+  const [maxPerfectStreak, setMaxPerfectStreak] = useState(0);
+  const [multiplier, setMultiplier] = useState(1);
+  const [multiplierTime, setMultiplierTime] = useState(0);
+  const [towerLevel, setTowerLevel] = useState(1);
   const [showLevelUp, setShowLevelUp] = useState(false);
-  const [motivationalMessage, setMotivationalMessage] = useState('');
-  const [targetInterval, setTargetInterval] = useState<number | null>(null);
+  const [gameMessage, setGameMessage] = useState('');
+  const [targetBPM, setTargetBPM] = useState<number | null>(null);
   const [lastTapTime, setLastTapTime] = useState<number | null>(null);
+  const [tapHistory, setTapHistory] = useState<number[]>([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [totalTaps, setTotalTaps] = useState(0);
+  const [isCollapsing, setIsCollapsing] = useState(false);
+  const [powerUps, setPowerUps] = useState<PowerUp[]>([]);
 
-  // Detectar se é mobile
+  // Estados salvos
+  const [bestHeight, setBestHeight] = useState(0);
+  const [totalStars, setTotalStars] = useState(0);
+
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    const savedHeight = localStorage.getItem('towerTapping_bestHeight');
+    const savedStars = localStorage.getItem('towerTapping_totalStars');
+    
+    if (savedHeight) setBestHeight(parseInt(savedHeight));
+    if (savedStars) setTotalStars(parseInt(savedStars));
+    
+    setIsMobile(window.innerWidth < 640);
+    
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const levels = [
-    { id: 1, name: 'Nível 1', duration: 30, description: 'Iniciante (30s)' },
-    { id: 2, name: 'Nível 2', duration: 40, description: 'Básico (40s)' },
-    { id: 3, name: 'Nível 3', duration: 50, description: 'Intermediário (50s)' },
-    { id: 4, name: 'Nível 4', duration: 60, description: 'Avançado (60s)' },
-    { id: 5, name: 'Nível 5', duration: 90, description: 'Expert (90s)' }
-  ];
+  const blockColors = {
+    perfect: { color: '#10B981', glow: '#34D399' }, // Verde
+    good: { color: '#3B82F6', glow: '#60A5FA' },    // Azul
+    poor: { color: '#F59E0B', glow: '#FBBF24' }     // Laranja
+  };
 
   const startActivity = () => {
-    const duration = levels[selectedLevel - 1].duration;
-    setTimeLeft(duration);
+    setCurrentScreen('game');
     setIsPlaying(true);
-    setTaps([]);
     setBlocks([]);
-    setStartTime(Date.now());
+    setParticles([]);
+    setScore(0);
+    setTowerHeight(0);
+    setCombo(0);
+    setMaxCombo(0);
+    setLives(3);
     setShowResults(false);
-    setJogoIniciado(true);
-    setPontuacao(0);
-    setCurrentTowerLevel(1);
-    setTargetInterval(null);
+    setPerfectStreak(0);
+    setMaxPerfectStreak(0);
+    setMultiplier(1);
+    setMultiplierTime(0);
+    setTowerLevel(1);
+    setTargetBPM(null);
     setLastTapTime(null);
-    setMotivationalMessage('Comece a construir!');
+    setTapHistory([]);
+    setTotalTaps(0);
+    setIsCollapsing(false);
+    setPowerUps([]);
+    setGameMessage('Comece a construir sua torre!');
   };
 
-  const showMotivation = (message: string) => {
-    setMotivationalMessage(message);
+  const showGameMessage = (message: string, duration: number = 3000) => {
+    setGameMessage(message);
     setTimeout(() => {
-      if (isPlaying) {
-        setMotivationalMessage('');
-      }
-    }, 2000);
+      if (isPlaying) setGameMessage('');
+    }, duration);
   };
 
-  const handleTap = () => {
-    if (!isPlaying || showResults) return;
+  const createParticles = (x: number, y: number, type: string = 'spark', count: number = 10) => {
+    const newParticles: Particle[] = [];
     
-    const currentTime = Date.now();
-    const tapTime = currentTime - startTime;
-    const newTaps = [...taps, tapTime];
-    setTaps(newTaps);
-    
-    // Calcular intervalo desde último toque
-    let currentInterval = 0;
-    if (lastTapTime !== null) {
-      currentInterval = currentTime - lastTapTime;
-    }
-    setLastTapTime(currentTime);
-    
-    // Estabelecer ritmo alvo após 3 toques
-    if (newTaps.length === 3 && targetInterval === null) {
-      const intervals = [];
-      for (let i = 1; i < newTaps.length; i++) {
-        intervals.push(newTaps[i] - newTaps[i - 1]);
-      }
-      const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-      setTargetInterval(avgInterval);
-      showMotivation('Ritmo estabelecido! Mantenha!');
-    }
-    
-    // Calcular qualidade do bloco - AJUSTADO PARA MOBILE
-    let offset = 0;
-    let quality: 'perfect' | 'good' | 'poor' = 'perfect';
-    const maxOffset = isMobile ? 30 : 60; // Menor offset no mobile
-    
-    if (targetInterval && currentInterval > 0) {
-      const deviation = Math.abs(currentInterval - targetInterval) / targetInterval;
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count;
+      const velocity = Math.random() * 4 + 2;
+      const color = type === 'perfect' ? '#10B981' : 
+                   type === 'good' ? '#3B82F6' : 
+                   type === 'explosion' ? ['#FF6B6B', '#FFD93D', '#6BCF7F'][Math.floor(Math.random() * 3)] :
+                   '#F59E0B';
       
-      if (deviation < 0.15) {
-        quality = 'perfect';
-        offset = (Math.random() - 0.5) * (maxOffset * 0.1);
-        setPontuacao(prev => prev + 30);
-        if (newTaps.length % 5 === 0) showMotivation('🔥 Ritmo Perfeito!');
-      } else if (deviation < 0.3) {
-        quality = 'good';
-        offset = (Math.random() - 0.5) * (maxOffset * 0.5);
-        setPontuacao(prev => prev + 20);
-        if (currentInterval < targetInterval) {
-          showMotivation('⚡ Muito rápido!');
-        } else {
-          showMotivation('🐌 Acelere um pouco!');
-        }
-      } else {
-        quality = 'poor';
-        offset = (Math.random() - 0.5) * maxOffset;
-        setPontuacao(prev => prev + 10);
-        showMotivation('⚠️ Ajuste o ritmo!');
-      }
-    } else {
-      // Primeiros toques sempre centralizados
-      setPontuacao(prev => prev + 30);
+      newParticles.push({
+        id: Date.now() + i,
+        x,
+        y,
+        vx: Math.cos(angle) * velocity,
+        vy: Math.sin(angle) * velocity - Math.random() * 2,
+        color,
+        life: 1,
+        type: type as any
+      });
     }
     
-    // Adicionar novo bloco
-    const newBlock: Block = {
-      id: newTaps.length,
-      offset: offset,
-      quality: quality,
-      isSpecial: newTaps.length % 10 === 0
-    };
-    
-    setBlocks(prev => [...prev, newBlock]);
-    
-    // Mudança de nível da torre a cada 15 blocos
-    if (newTaps.length % 15 === 0 && newTaps.length > 0) {
-      const newLevel = Math.floor(newTaps.length / 15) + 1;
-      setCurrentTowerLevel(newLevel);
-      setShowLevelUp(true);
-      showMotivation(`🎉 Torre Nível ${newLevel}!`);
-      setTimeout(() => setShowLevelUp(false), 3000);
-    }
-    
-    // Som de construção
-    playBuildSound();
+    setParticles(prev => [...prev, ...newParticles]);
   };
 
-  const playBuildSound = () => {
+  const updateParticles = () => {
+    setParticles(prev => prev.map(particle => ({
+      ...particle,
+      x: particle.x + particle.vx,
+      y: particle.y + particle.vy,
+      vy: particle.vy + 0.3,
+      life: particle.life - 0.02
+    })).filter(particle => particle.life > 0));
+  };
+
+  const playSound = (type: 'perfect' | 'good' | 'poor' | 'collapse' | 'levelup' | 'powerup') => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
@@ -208,60 +177,360 @@ export default function TowerTapping() {
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
       
-      oscillator.frequency.value = 600;
-      oscillator.type = 'sine';
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.05);
+      switch (type) {
+        case 'perfect':
+          // Som harmônico ascendente
+          oscillator.frequency.setValueAtTime(523, audioContext.currentTime); // C5
+          oscillator.frequency.exponentialRampToValueAtTime(659, audioContext.currentTime + 0.1); // E5
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.2);
+          break;
+          
+        case 'good':
+          oscillator.frequency.value = 440; // A4
+          oscillator.type = 'sine';
+          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.15);
+          break;
+          
+        case 'poor':
+          oscillator.frequency.value = 220; // A3 
+          oscillator.type = 'sawtooth';
+          gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.1);
+          break;
+          
+        case 'collapse':
+          // Som de colapso com ruído
+          const noise = audioContext.createOscillator();
+          const noiseGain = audioContext.createGain();
+          noise.type = 'sawtooth';
+          noise.frequency.setValueAtTime(150, audioContext.currentTime);
+          noise.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 1);
+          noise.connect(noiseGain);
+          noiseGain.connect(audioContext.destination);
+          noiseGain.gain.setValueAtTime(0.5, audioContext.currentTime);
+          noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+          noise.start();
+          noise.stop(audioContext.currentTime + 1);
+          break;
+          
+        case 'levelup':
+          // Acorde maior ascendente
+          [523, 659, 784].forEach((freq, i) => {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.2, audioContext.currentTime + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4 + i * 0.1);
+            osc.start(audioContext.currentTime + i * 0.1);
+            osc.stop(audioContext.currentTime + 0.4 + i * 0.1);
+          });
+          break;
+          
+        case 'powerup':
+          // Escala ascendente rápida
+          [262, 294, 330, 349, 392, 440, 494, 523].forEach((freq, i) => {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.15, audioContext.currentTime + i * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1 + i * 0.05);
+            osc.start(audioContext.currentTime + i * 0.05);
+            osc.stop(audioContext.currentTime + 0.1 + i * 0.05);
+          });
+          break;
+      }
     } catch (e) {
-      // Silently fail if audio doesn't work
+      // Silently fail
     }
   };
 
-  useEffect(() => {
-    if (isPlaying && timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (timeLeft === 0 && isPlaying) {
-      setIsPlaying(false);
-      setShowResults(true);
-      setMotivationalMessage('');
-    }
-  }, [isPlaying, timeLeft]);
+  const createCelebrationBurst = (x?: number, y?: number) => {
+    const centerX = x || (gameAreaRef.current?.offsetWidth || 400) / 2;
+    const centerY = y || (gameAreaRef.current?.offsetHeight || 400) / 2;
+    
+    confetti({
+      particleCount: 50,
+      spread: 70,
+      origin: { 
+        x: centerX / (gameAreaRef.current?.offsetWidth || 400),
+        y: centerY / (gameAreaRef.current?.offsetHeight || 400)
+      }
+    });
+  };
 
-  const calcularMetricas = () => {
-    if (taps.length < 2) return { avgInterval: 0, consistency: 0, stability: 0 };
-    
-    const intervals = [];
-    for (let i = 1; i < taps.length; i++) {
-      intervals.push(taps[i] - taps[i - 1]);
-    }
-    
-    const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-    const variance = intervals.reduce((sum, interval) => 
-      sum + Math.pow(interval - avgInterval, 2), 0) / intervals.length;
-    const consistency = Math.max(0, 100 - (Math.sqrt(variance) / avgInterval * 100));
-    
-    const avgOffset = blocks.reduce((sum, block) => sum + Math.abs(block.offset), 0) / blocks.length;
-    const stability = Math.max(0, 100 - avgOffset * 2);
-    
-    return { 
-      avgInterval: Math.round(avgInterval), 
-      consistency: Math.round(consistency),
-      stability: Math.round(stability)
+  const activatePowerUp = (type: PowerUp['type']) => {
+    const powerUpMessages = {
+      perfect_streak: 'SEQUÊNCIA PERFEITA! +Multiplicador',
+      rhythm_master: 'MESTRE DO RITMO! +Bônus',
+      tower_boost: 'IMPULSO DA TORRE! +Velocidade', 
+      golden_block: 'BLOCO DOURADO! +Pontos Extras'
     };
+
+    const newPowerUp: PowerUp = {
+      type,
+      active: true,
+      duration: type === 'perfect_streak' ? 15 : 10,
+      message: powerUpMessages[type]
+    };
+
+    setPowerUps(prev => [...prev.filter(p => p.type !== type), newPowerUp]);
+    showGameMessage(newPowerUp.message, 2000);
+    playSound('powerup');
+    
+    if (type === 'perfect_streak') {
+      setMultiplier(prev => Math.min(prev + 1, 5));
+      setMultiplierTime(15);
+    }
+    
+    createCelebrationBurst();
   };
 
-  const metrics = calcularMetricas();
+  const addBlock = (quality: 'perfect' | 'good' | 'poor', offset: number) => {
+    if (!gameAreaRef.current) return;
+    
+    const gameArea = gameAreaRef.current.getBoundingClientRect();
+    const blockWidth = isMobile ? 80 : 100;
+    const blockHeight = isMobile ? 25 : 30;
+    
+    // Calcular posição e pontuação
+    const basePoints = quality === 'perfect' ? 100 : quality === 'good' ? 60 : 30;
+    const finalPoints = Math.round(basePoints * multiplier);
+    const isSpecial = perfectStreak > 0 && perfectStreak % 5 === 0;
+    
+    const newBlock: Block = {
+      id: Date.now(),
+      x: (gameArea.width / 2) - (blockWidth / 2) + offset,
+      y: gameArea.height - 60 - (blocks.length * (blockHeight + 2)),
+      offset,
+      quality,
+      isSpecial,
+      color: blockColors[quality].color,
+      points: finalPoints,
+      width: blockWidth,
+      opacity: 1
+    };
+    
+    setBlocks(prev => [...prev, newBlock]);
+    setTowerHeight(prev => prev + 1);
+    setScore(prev => prev + finalPoints);
+    setTotalTaps(prev => prev + 1);
+    
+    // Criar partículas
+    createParticles(
+      newBlock.x + blockWidth / 2, 
+      newBlock.y + blockHeight / 2, 
+      quality,
+      quality === 'perfect' ? 15 : quality === 'good' ? 10 : 5
+    );
+    
+    // Atualizar combos e streaks
+    if (quality === 'perfect') {
+      setCombo(prev => prev + 1);
+      setPerfectStreak(prev => {
+        const newStreak = prev + 1;
+        setMaxPerfectStreak(max => Math.max(max, newStreak));
+        
+        // Ativar power-ups baseados na streak
+        if (newStreak === 10) {
+          activatePowerUp('perfect_streak');
+        } else if (newStreak === 20) {
+          activatePowerUp('rhythm_master');
+        }
+        
+        return newStreak;
+      });
+    } else {
+      if (quality === 'poor') {
+        setCombo(0);
+        setPerfectStreak(0);
+        setLives(prev => {
+          const newLives = prev - 1;
+          if (newLives <= 0) {
+            triggerCollapse();
+          } else {
+            showGameMessage(`Cuidado! ${newLives} vidas restantes`, 2000);
+          }
+          return newLives;
+        });
+      } else {
+        setCombo(prev => prev + 1);
+        setPerfectStreak(0);
+      }
+    }
+    
+    setMaxCombo(prev => Math.max(prev, combo + 1));
+    
+    // Verificar level up da torre
+    if ((towerHeight + 1) % 25 === 0) {
+      const newLevel = Math.floor((towerHeight + 1) / 25) + 1;
+      setTowerLevel(newLevel);
+      setShowLevelUp(true);
+      playSound('levelup');
+      showGameMessage(`NÍVEL ${newLevel} DA TORRE ALCANÇADO!`, 3000);
+      createCelebrationBurst();
+      
+      // Recuperar uma vida a cada level up
+      setLives(prev => Math.min(prev + 1, 3));
+      
+      setTimeout(() => setShowLevelUp(false), 3000);
+    }
+    
+    // Sons
+    playSound(quality);
+  };
 
-  const handleSaveSession = async () => {
-    if (taps.length === 0) {
-      alert('Complete pelo menos algumas tentativas antes de salvar.');
+  const triggerCollapse = () => {
+    setIsCollapsing(true);
+    setIsPlaying(false);
+    playSound('collapse');
+    showGameMessage('TORRE DESMORONOU!', 3000);
+    
+    // Animar blocos caindo
+    setBlocks(prev => prev.map(block => ({
+      ...block,
+      falling: true
+    })));
+    
+    // Criar explosão de partículas
+    blocks.forEach((block, index) => {
+      setTimeout(() => {
+        createParticles(
+          block.x + block.width / 2,
+          block.y + 15,
+          'explosion',
+          20
+        );
+      }, index * 50);
+    });
+    
+    // Após animação, mostrar resultados
+    setTimeout(() => {
+      endGame();
+    }, 3000);
+  };
+
+  const handleTap = () => {
+    if (!isPlaying || isCollapsing) return;
+    
+    const currentTime = Date.now();
+    const newTapHistory = [...tapHistory, currentTime].slice(-10); // Manter últimos 10 taps
+    setTapHistory(newTapHistory);
+    
+    // Calcular BPM target após 3 taps
+    if (newTapHistory.length >= 3 && !targetBPM) {
+      const intervals = [];
+      for (let i = 1; i < newTapHistory.length; i++) {
+        intervals.push(newTapHistory[i] - newTapHistory[i - 1]);
+      }
+      const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      const bpm = 60000 / avgInterval; // Converter para BPM
+      setTargetBPM(Math.round(bpm));
+      showGameMessage(`Ritmo estabelecido: ${Math.round(bpm)} BPM`, 2000);
+    }
+    
+    // Calcular qualidade do tap
+    let quality: 'perfect' | 'good' | 'poor' = 'perfect';
+    let offset = 0;
+    const maxOffset = isMobile ? 40 : 50;
+    
+    if (targetBPM && newTapHistory.length >= 2) {
+      const lastInterval = currentTime - newTapHistory[newTapHistory.length - 2];
+      const targetInterval = 60000 / targetBPM;
+      const deviation = Math.abs(lastInterval - targetInterval) / targetInterval;
+      
+      if (deviation < 0.1) {
+        quality = 'perfect';
+        offset = (Math.random() - 0.5) * (maxOffset * 0.2);
+      } else if (deviation < 0.25) {
+        quality = 'good'; 
+        offset = (Math.random() - 0.5) * (maxOffset * 0.6);
+      } else {
+        quality = 'poor';
+        offset = (Math.random() - 0.5) * maxOffset;
+      }
+    }
+    
+    setLastTapTime(currentTime);
+    addBlock(quality, offset);
+  };
+
+  const endGame = () => {
+    setShowResults(true);
+    
+    // Atualizar recordes
+    if (towerHeight > bestHeight) {
+      setBestHeight(towerHeight);
+      localStorage.setItem('towerTapping_bestHeight', towerHeight.toString());
+    }
+    
+    const newStars = totalStars + Math.floor(score / 1000);
+    setTotalStars(newStars);
+    localStorage.setItem('towerTapping_totalStars', newStars.toString());
+  };
+
+  const restartGame = () => {
+    setCurrentScreen('title');
+    setShowResults(false);
+    setIsCollapsing(false);
+  };
+
+  // Atualizar power-ups
+  useEffect(() => {
+    if (multiplierTime <= 0) {
+      setMultiplier(1);
       return;
     }
+    
+    const timer = setTimeout(() => {
+      setMultiplierTime(prev => prev - 1);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [multiplierTime]);
 
+  // Game loop para partículas e animações
+  useEffect(() => {
+    if (!isPlaying && !isCollapsing) return;
+    
+    const gameLoop = () => {
+      updateParticles();
+      
+      // Animar blocos caindo durante colapso
+      if (isCollapsing) {
+        setBlocks(prev => prev.map(block => ({
+          ...block,
+          y: block.falling ? block.y + 5 : block.y,
+          opacity: block.falling ? Math.max(0, (block.opacity || 1) - 0.02) : block.opacity
+        })).filter(block => (block.opacity || 1) > 0));
+      }
+      
+      animationRef.current = requestAnimationFrame(gameLoop);
+    };
+    
+    animationRef.current = requestAnimationFrame(gameLoop);
+    
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isPlaying, isCollapsing]);
+
+  const handleSaveSession = async () => {
     setSalvando(true);
     
     try {
@@ -278,8 +547,8 @@ export default function TowerTapping() {
         .from('sessoes')
         .insert([{
           usuario_id: user.id,
-          atividade_nome: 'Torre do Ritmo',
-          pontuacao_final: pontuacao,
+          atividade_nome: 'Torre do Ritmo Infinita',
+          pontuacao_final: score,
           data_fim: new Date().toISOString()
         }]);
 
@@ -290,11 +559,11 @@ export default function TowerTapping() {
         alert(`Sessão salva com sucesso!
         
 🏗️ Torre Construída:
-- Altura: ${blocks.length} blocos
-- Estabilidade: ${metrics.stability}%
-- Consistência: ${metrics.consistency}%
-- Nível da Torre: ${currentTowerLevel}
-- ${pontuacao} pontos`);
+- Altura: ${towerHeight} blocos
+- Nível da Torre: ${towerLevel}
+- Sequência Perfeita Máxima: ${maxPerfectStreak}
+- Combo Máximo: ${maxCombo}
+- Pontuação: ${score} pontos`);
         
         router.push('/dashboard');
       }
@@ -306,256 +575,393 @@ export default function TowerTapping() {
     }
   };
 
-  const voltarInicio = () => {
-    setJogoIniciado(false);
-    setShowResults(false);
-    setIsPlaying(false);
-  };
-
-  // Calcular dimensões responsivas
-  const blockWidth = isMobile ? 'w-16' : 'w-24'; // 64px mobile, 96px desktop
-  const blockHeight = isMobile ? 'h-8' : 'h-11'; // 32px mobile, 44px desktop
-  const blockSpacing = isMobile ? 10 : 13; // Menor espaçamento no mobile
-  const maxVisibleBlocks = isMobile ? 20 : 25; // Menos blocos visíveis no mobile
-  const gameAreaHeight = isMobile ? '350px' : '400px';
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <GameHeader 
-        title="Torre do Ritmo"
-        icon="🏗️"
-        onSave={handleSaveSession}
-        isSaveDisabled={salvando}
-        showSaveButton={showResults}
-      />
-
-      <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
-        {!jogoIniciado ? (
-          // Tela inicial
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">🎯 Objetivo:</h3>
-                  <p className="text-xs sm:text-sm text-gray-600">
-                    Construa uma torre mantendo ritmo constante. Torre reta = ritmo bom!
-                  </p>
-                </div>
-                
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">🕹️ Como Jogar:</h3>
-                  <ul className="list-disc list-inside text-xs sm:text-sm text-gray-600 space-y-1">
-                    <li>Toque no botão com ritmo constante</li>
-                    <li>Blocos alinhados = ritmo bom</li>
-                    <li>Blocos tortos = ajuste o ritmo</li>
-                  </ul>
-                </div>
-                
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">⭐ Avaliação:</h3>
-                  <p className="text-xs sm:text-sm text-gray-600">
-                    A cada 15 blocos você sobe de nível. Mantenha o ritmo para pontos extras!
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-4">Selecione o Tempo de Construção</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
-                {levels.map((level) => (
-                  <button
-                    key={level.id}
-                    onClick={() => setSelectedLevel(level.id)}
-                    className={`p-3 sm:p-4 rounded-lg font-medium transition-colors ${
-                      selectedLevel === level.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
-                  >
-                    <div className="text-xl sm:text-2xl mb-1">🏗️</div>
-                    <div className="text-xs sm:text-sm">{level.name}</div>
-                    <div className="text-xs opacity-80">{level.description}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="text-center">
-              <button
-                onClick={startActivity}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 sm:py-4 sm:px-8 rounded-lg text-base sm:text-lg transition-colors"
-              >
-                🚀 Iniciar Construção
-              </button>
-            </div>
+  // TELAS DO JOGO
+  const TitleScreen = () => (
+    <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-orange-300 via-red-400 to-purple-500 overflow-hidden">
+      {/* Estrelas de fundo */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(15)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute animate-pulse"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${3 + Math.random() * 2}s`
+            }}
+          >
+            <Star className="w-6 h-6 text-white opacity-30" fill="currentColor" />
           </div>
-        ) : !showResults ? (
-          // Área de jogo - Torre RESPONSIVA
-          <div className="space-y-3 sm:space-y-4">
-            {/* Status */}
-            <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4">
-              <div className="grid grid-cols-4 gap-2 sm:gap-4">
-                <div className="text-center">
-                  <div className="text-lg sm:text-2xl font-bold text-orange-800">{blocks.length}</div>
-                  <div className="text-xs text-orange-600">Blocos</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg sm:text-2xl font-bold text-blue-800">{timeLeft}s</div>
-                  <div className="text-xs text-blue-600">Tempo</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg sm:text-2xl font-bold text-green-800">{currentTowerLevel}</div>
-                  <div className="text-xs text-green-600">Nível</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg sm:text-2xl font-bold text-purple-800">{pontuacao}</div>
-                  <div className="text-xs text-purple-600">Pontos</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Área da Torre RESPONSIVA */}
-            <div className="bg-gradient-to-b from-blue-100 to-blue-50 rounded-xl shadow-lg overflow-hidden relative" 
-                 style={{ height: gameAreaHeight }}>
-              
-              {/* Mensagem Motivacional DENTRO da tela do jogo */}
-              {motivationalMessage && (
-                <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-20 animate-pulse">
-                  <div className="bg-yellow-400/90 backdrop-blur-sm text-black px-3 py-1 sm:px-4 sm:py-2 rounded-lg font-bold shadow-lg text-xs sm:text-base">
-                    {motivationalMessage}
-                  </div>
+        ))}
+      </div>
+      
+      <div className="relative z-10 flex flex-col items-center text-center">
+        <div className="mb-4 animate-bounce-slow">
+          <Image 
+            src="/images/mascotes/leo/leo_torre.webp" 
+            alt="Leo Constructor" 
+            width={400} 
+            height={400} 
+            className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl" 
+            priority 
+          />
+        </div>
+        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white drop-shadow-lg mb-4">
+          Torre do Ritmo
+        </h1>
+        <p className="text-xl sm:text-2xl text-white/90 mt-2 mb-4 drop-shadow-md">
+          🏗️ Construa até o céu! 🎵
+        </p>
+        
+        {/* Estatísticas */}
+        {(totalStars > 0 || bestHeight > 0) && (
+          <div className="bg-white/80 rounded-2xl p-4 mb-4 shadow-xl">
+            <div className="flex items-center gap-4">
+              {totalStars > 0 && (
+                <div className="flex items-center gap-2">
+                  <Star className="w-6 h-6 text-yellow-500" fill="currentColor" />
+                  <span className="font-bold text-orange-800">{totalStars} estrelas</span>
                 </div>
               )}
-              
-              {/* Linha guia central */}
-              <div className="absolute left-1/2 top-0 bottom-12 w-0.5 bg-red-300 opacity-50" />
-              
-              {/* Container da Torre */}
-              <div className="absolute bottom-12 left-0 right-0" style={{ height: `calc(${gameAreaHeight} - 48px)` }}>
-                <div className="relative h-full flex flex-col-reverse items-center overflow-hidden">
-                  {/* Blocos da Torre RESPONSIVOS */}
-                  {blocks.slice(-maxVisibleBlocks).map((block, index) => (
-                    <div
-                      key={block.id}
-                      className={`absolute transition-all duration-300 ${
-                        block.isSpecial ? 'animate-pulse' : ''
-                      }`}
-                      style={{
-                        bottom: `${index * blockSpacing}px`,
-                        left: `calc(50% + ${block.offset}px)`,
-                        transform: 'translateX(-50%)',
-                        zIndex: blocks.length - index
-                      }}
-                    >
-                      <div
-                        className={`${blockWidth} ${blockHeight} rounded-sm border-2 flex items-center justify-center ${
-                          block.quality === 'perfect' 
-                            ? 'bg-gradient-to-r from-green-400 to-green-500 border-green-600' 
-                            : block.quality === 'good'
-                            ? 'bg-gradient-to-r from-blue-400 to-blue-500 border-blue-600'
-                            : 'bg-gradient-to-r from-gray-400 to-gray-500 border-gray-600'
-                        } ${block.isSpecial ? 'bg-gradient-to-r from-yellow-400 to-orange-400 border-yellow-600' : ''}`}
-                        style={{
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                        }}
-                      >
-                        {block.isSpecial && (
-                          <div className="text-white text-xs sm:text-sm font-bold">
-                            ⭐
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Plataforma Base */}
-              <div className="absolute bottom-0 w-full h-12 bg-gradient-to-t from-gray-800 to-gray-600 border-t-4 border-gray-900">
-                <div className="text-white text-center font-bold pt-2 text-sm sm:text-base">
-                  FUNDAÇÃO
-                </div>
-              </div>
-
-              {/* Medidor de Estabilidade */}
-              <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-black/70 text-white p-1.5 sm:p-2 rounded-lg">
-                <div className="text-xs mb-1">Estabilidade</div>
-                <div className="w-20 sm:w-32 h-1.5 sm:h-2 bg-gray-600 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full transition-all duration-500 ${
-                      metrics.stability > 70 ? 'bg-green-500' : 
-                      metrics.stability > 40 ? 'bg-yellow-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${metrics.stability}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Botão de Construir RESPONSIVO */}
-            <div className="text-center">
-              <button
-                onClick={handleTap}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-95 text-white px-8 py-3 sm:px-12 sm:py-4 rounded-xl font-bold text-base sm:text-lg transition-all shadow-lg hover:shadow-xl"
-              >
-                🔨 ADICIONAR BLOCO
-              </button>
-              {targetInterval && (
-                <div className="text-xs sm:text-sm text-gray-600 mt-2">
-                  Ritmo ideal: {(targetInterval / 1000).toFixed(1)}s entre toques
+              {bestHeight > 0 && (
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-6 h-6 text-yellow-600" />
+                  <span className="font-bold text-orange-800">Recorde: {bestHeight} blocos</span>
                 </div>
               )}
-            </div>
-          </div>
-        ) : (
-          // Tela de resultados RESPONSIVA
-          <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
-            <div className="text-center mb-6">
-              <div className="text-5xl sm:text-6xl mb-4">
-                {blocks.length > 40 ? '🏆' : blocks.length > 25 ? '🎉' : '💪'}
-              </div>
-              
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
-                Torre de {blocks.length} blocos!
-              </h3>
-              
-              <p className="text-sm sm:text-base text-gray-600">
-                {metrics.stability > 70 ? 'Construção muito estável!' : 
-                 metrics.stability > 40 ? 'Boa estabilidade!' : 'Torre precisa de mais firmeza!'}
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 sm:p-3 text-center">
-                <div className="text-lg sm:text-xl font-bold text-purple-800">{blocks.length}</div>
-                <div className="text-xs text-purple-600">Altura Total</div>
-              </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 text-center">
-                <div className="text-lg sm:text-xl font-bold text-blue-800">{metrics.stability}%</div>
-                <div className="text-xs text-blue-600">Estabilidade</div>
-              </div>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3 text-center">
-                <div className="text-lg sm:text-xl font-bold text-green-800">{metrics.consistency}%</div>
-                <div className="text-xs text-green-600">Consistência</div>
-              </div>
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 sm:p-3 text-center">
-                <div className="text-lg sm:text-xl font-bold text-orange-800">{pontuacao}</div>
-                <div className="text-xs text-orange-600">Pontos</div>
-              </div>
-            </div>
-            
-            <div className="flex justify-center space-x-4">
-              <button
-                onClick={voltarInicio}
-                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 sm:py-3 sm:px-6 rounded-lg transition-colors text-sm sm:text-base"
-              >
-                🔄 Construir Novamente
-              </button>
             </div>
           </div>
         )}
-      </main>
+        
+        <button 
+          onClick={() => setCurrentScreen('instructions')} 
+          className="text-xl font-bold text-white bg-gradient-to-r from-red-500 to-orange-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-1"
+        >
+          Começar Construção
+        </button>
+      </div>
     </div>
   );
+
+  const InstructionsScreen = () => (
+    <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-red-300 via-orange-300 to-yellow-300">
+      <div className="bg-white/95 rounded-3xl p-8 max-w-2xl shadow-2xl text-center">
+        <h2 className="text-4xl font-bold mb-6 text-orange-600">Como Construir</h2>
+        <div className="text-lg text-gray-700 space-y-6 mb-6 text-left">
+          <p className="flex items-center gap-4">
+            <span className="text-4xl">🔨</span>
+            <span><b>Toque no botão</b> para adicionar blocos à torre!</span>
+          </p>
+          <p className="flex items-center gap-4">
+            <span className="text-4xl">🎵</span>
+            <span><b>Mantenha o ritmo</b> - blocos alinhados = ritmo perfeito!</span>
+          </p>
+          <p className="flex items-center gap-4">
+            <span className="text-4xl">💚</span>
+            <span><b>Blocos verdes</b> = toque perfeito (+100 pontos)</span>
+          </p>
+          <p className="flex items-center gap-4">
+            <span className="text-4xl">💙</span>
+            <span><b>Blocos azuis</b> = bom toque (+60 pontos)</span>
+          </p>
+          <p className="flex items-center gap-4">
+            <span className="text-4xl">🧡</span>
+            <span><b>Blocos laranja</b> = ajuste o ritmo (+30 pontos)</span>
+          </p>
+          <p className="flex items-center gap-4">
+            <span className="text-4xl">💔</span>
+            <span><b>Muitos erros</b> fazem a torre desmoronar!</span>
+          </p>
+        </div>
+        
+        <button 
+          onClick={startActivity} 
+          className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform"
+        >
+          Construir Torre! 🚀
+        </button>
+      </div>
+    </div>
+  );
+
+  const GameScreen = () => {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center justify-between h-16">
+              <button
+                onClick={() => setCurrentScreen('title')}
+                className="flex items-center text-orange-600 hover:text-orange-700 transition-colors"
+              >
+                <ChevronLeft className="h-6 w-6" />
+                <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
+              </button>
+
+              <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex items-center gap-2">
+                🏗️
+                <span>Torre do Ritmo</span>
+              </h1>
+
+              {showResults ? (
+                <button
+                  onClick={handleSaveSession}
+                  disabled={salvando}
+                  className={`flex items-center space-x-2 px-3 py-2 sm:px-4 rounded-lg font-semibold transition-colors ${
+                    !salvando
+                      ? 'bg-green-500 text-white hover:bg-green-600'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  <Save size={18} />
+                  <span className="hidden sm:inline">{salvando ? 'Salvando...' : 'Salvar'}</span>
+                </button>
+              ) : (
+                <div className="w-24"></div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
+          {!showResults ? (
+            <div className="space-y-4">
+              {/* Status */}
+              <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4">
+                <div className="grid grid-cols-5 gap-2">
+                  <div className="text-center">
+                    <div className="text-base sm:text-xl font-bold text-orange-800">
+                      {towerHeight}
+                    </div>
+                    <div className="text-xs text-orange-600">Altura</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-base sm:text-xl font-bold text-blue-800">
+                      {score}
+                    </div>
+                    <div className="text-xs text-blue-600">Pontos</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-base sm:text-xl font-bold text-green-800">
+                      x{combo}
+                    </div>
+                    <div className="text-xs text-green-600">Combo</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-base sm:text-xl font-bold text-purple-800">
+                      {perfectStreak}
+                    </div>
+                    <div className="text-xs text-purple-600">Perfeitas</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex justify-center gap-1">
+                      {[1, 2, 3].map(i => (
+                        <div
+                          key={i}
+                          className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
+                            i <= lives ? 'bg-red-500' : 'bg-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <div className="text-xs text-red-600">Vidas</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BPM e Multiplicador */}
+              <div className="flex gap-2">
+                {targetBPM && (
+                  <div className="bg-white rounded-lg shadow p-2 flex-1 text-center">
+                    <div className="font-bold text-indigo-800">{targetBPM} BPM</div>
+                    <div className="text-xs text-indigo-600">Ritmo</div>
+                  </div>
+                )}
+                {multiplier > 1 && (
+                  <div className="bg-yellow-100 border border-yellow-300 rounded-lg shadow p-2 flex-1 text-center">
+                    <div className="font-bold text-yellow-800">x{multiplier} ({multiplierTime}s)</div>
+                    <div className="text-xs text-yellow-600">Multiplicador</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Área da Torre */}
+              <div 
+                ref={gameAreaRef}
+                className="relative bg-gradient-to-b from-sky-200 to-sky-100 rounded-xl shadow-lg overflow-hidden"
+                style={{ height: isMobile ? '400px' : '500px' }}
+              >
+                {/* Linha guia central */}
+                <div className="absolute left-1/2 top-0 bottom-16 w-0.5 bg-red-300 opacity-40 z-10" />
+                
+                {/* Mensagens do jogo */}
+                {gameMessage && (
+                  <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+                    <div className="bg-white/90 text-black px-4 py-2 rounded-full font-bold animate-bounce text-center text-sm sm:text-base">
+                      {gameMessage}
+                    </div>
+                  </div>
+                )}
+
+                {/* Level Up Animation */}
+                {showLevelUp && (
+                  <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/50">
+                    <div className="bg-white rounded-2xl p-8 text-center animate-pulse">
+                      <div className="text-6xl mb-4">🏗️</div>
+                      <div className="text-2xl font-bold text-orange-600">
+                        NÍVEL {towerLevel}!
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Blocos da Torre */}
+                {blocks.map((block, index) => (
+                  <div
+                    key={block.id}
+                    className={`absolute transition-all duration-200 ${
+                      block.isSpecial ? 'animate-pulse' : ''
+                    } ${isCollapsing && block.falling ? 'animate-bounce' : ''}`}
+                    style={{
+                      left: `${block.x}px`,
+                      bottom: `${60 + index * 32}px`,
+                      width: `${block.width}px`,
+                      height: '30px',
+                      background: block.isSpecial 
+                        ? 'linear-gradient(45deg, #FFD700, #FFA500)' 
+                        : `linear-gradient(135deg, ${block.color}, ${blockColors[block.quality].glow})`,
+                      borderRadius: '4px',
+                      border: `2px solid ${block.isSpecial ? '#FF8C00' : blockColors[block.quality].glow}`,
+                      boxShadow: `0 4px 8px rgba(0,0,0,0.3), 0 0 ${block.isSpecial ? '20px' : '10px'} ${blockColors[block.quality].glow}`,
+                      opacity: block.opacity || 1,
+                      transform: block.falling ? `translateY(${Math.random() * 200}px) rotate(${Math.random() * 360}deg)` : 'none'
+                    }}
+                  >
+                    {block.isSpecial && (
+                      <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm">
+                        ⭐
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Partículas */}
+                {particles.map(particle => (
+                  <div
+                    key={particle.id}
+                    className="absolute w-2 h-2 rounded-full"
+                    style={{
+                      left: `${particle.x}px`,
+                      top: `${particle.y}px`,
+                      backgroundColor: particle.color,
+                      opacity: particle.life,
+                      transform: particle.type === 'star' ? 'rotate(45deg)' : 'none'
+                    }}
+                  />
+                ))}
+
+                {/* Base da Torre */}
+                <div className="absolute bottom-0 w-full h-16 bg-gradient-to-t from-stone-800 to-stone-600 border-t-4 border-stone-900">
+                  <div className="text-white text-center font-bold pt-4 text-sm sm:text-base">
+                    FUNDAÇÃO
+                  </div>
+                </div>
+
+                {/* Indicador de Nível da Torre */}
+                <div className="absolute top-4 right-4 bg-white/80 rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-orange-800">Nv.{towerLevel}</div>
+                  <div className="text-xs text-orange-600">Torre</div>
+                </div>
+              </div>
+
+              {/* Botão de Construir */}
+              <div className="text-center">
+                <button
+                  onClick={handleTap}
+                  disabled={isCollapsing}
+                  className={`${
+                    isCollapsing 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:scale-95'
+                  } text-white px-8 py-3 sm:px-12 sm:py-4 rounded-xl font-bold text-base sm:text-lg transition-all shadow-lg hover:shadow-xl`}
+                >
+                  {isCollapsing ? '💥 DESMORONANDO...' : '🔨 ADICIONAR BLOCO'}
+                </button>
+                
+                {targetBPM && (
+                  <div className="text-xs sm:text-sm text-gray-600 mt-2">
+                    Mantenha o ritmo de {targetBPM} BPM
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            // Tela de Resultados
+            <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+              <div className="text-center mb-6">
+                <div className="text-5xl sm:text-6xl mb-4">
+                  {towerHeight > 100 ? '🏆' : towerHeight > 50 ? '🎉' : '💪'}
+                </div>
+                
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
+                  Torre de {towerHeight} blocos!
+                </h3>
+                
+                <p className="text-sm sm:text-base text-gray-600">
+                  {towerHeight > bestHeight ? 'NOVO RECORDE!' : 
+                   towerHeight > 50 ? 'Torre impressionante!' : 
+                   'Continue praticando!'}
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-lg sm:text-xl font-bold text-orange-800">{towerHeight}</div>
+                  <div className="text-xs text-orange-600">Altura</div>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-lg sm:text-xl font-bold text-blue-800">{score}</div>
+                  <div className="text-xs text-blue-600">Pontuação</div>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-lg sm:text-xl font-bold text-green-800">{maxPerfectStreak}</div>
+                  <div className="text-xs text-green-600">Seq. Perfeita</div>
+                </div>
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 sm:p-3 text-center">
+                  <div className="text-lg sm:text-xl font-bold text-purple-800">{maxCombo}</div>
+                  <div className="text-xs text-purple-600">Combo Máx</div>
+                </div>
+              </div>
+
+              {/* Estatísticas extras */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <h4 className="font-bold text-gray-800 mb-3 text-sm sm:text-base">📊 Estatísticas da Construção:</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>🎯 Nível da Torre: <span className="font-bold">{towerLevel}</span></div>
+                  <div>🎵 BPM Final: <span className="font-bold">{targetBPM || 'N/A'}</span></div>
+                  <div>🏗️ Total de Toques: <span className="font-bold">{totalTaps}</span></div>
+                  <div>⭐ Taxa de Perfeição: <span className="font-bold">{totalTaps ? Math.round((maxPerfectStreak / totalTaps) * 100) : 0}%</span></div>
+                </div>
+              </div>
+              
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={restartGame}
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-2 px-4 sm:py-3 sm:px-6 rounded-lg transition-all transform hover:scale-105 text-sm sm:text-base"
+                >
+                  🔄 Nova Torre
+                </button>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  };
+
+  // Renderização das telas
+  if (currentScreen === 'title') return <TitleScreen />;
+  if (currentScreen === 'instructions') return <InstructionsScreen />;
+  return <GameScreen />;
 }
