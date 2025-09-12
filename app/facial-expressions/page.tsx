@@ -1,84 +1,98 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Volume2, VolumeX, Trophy, ArrowLeft } from 'lucide-react';
+import { Volume2, VolumeX, Trophy, ArrowLeft, Star } from 'lucide-react';
 
-// --- EFEITO DE CONFETE ---
-const confetti = (opts) => {
-    const canvas = document.createElement('canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    canvas.style.position = 'fixed';
-    canvas.style.top = '0';
-    canvas.style.left = '0';
-    canvas.style.width = '100vw';
-    canvas.style.height = '100vh';
-    canvas.style.zIndex = '9999';
-    canvas.style.pointerEvents = 'none';
-    document.body.appendChild(canvas);
+// --- EFEITO DE CONFETE CORRIGIDO ---
+const confetti = (opts = {}) => {
+    try {
+        const canvas = document.createElement('canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.zIndex = '9999';
+        canvas.style.pointerEvents = 'none';
+        document.body.appendChild(canvas);
 
-    const W = canvas.width = window.innerWidth;
-    const H = canvas.height = window.innerHeight;
+        const W = canvas.width = window.innerWidth;
+        const H = canvas.height = window.innerHeight;
 
-    const COLORS = ['#FFC107', '#FF9800', '#FF5722', '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B'];
-    const particles = [];
-    const particleCount = opts.particleCount || 150;
-    const origin = opts.origin || { x: 0.5, y: 0.5 };
-    const spread = opts.spread || 90;
-    const startVelocity = opts.startVelocity || 45;
-    const decay = opts.decay || 0.92;
-    const gravity = opts.gravity || 0.7;
+        const COLORS = ['#FFC107', '#FF9800', '#FF5722', '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B'];
+        const particles = [];
+        const particleCount = opts.particleCount || 150;
+        const origin = opts.origin || { x: 0.5, y: 0.5 };
+        const spread = opts.spread || 90;
 
-    const randomRange = (min, max) => Math.random() * (max - min) + min;
-
-    class Particle {
-        constructor() {
-            this.x = W * origin.x;
-            this.y = H * origin.y;
-            this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
-            this.size = randomRange(5, 12);
-            this.velocity = { x: randomRange(-spread / 2, spread / 2), y: randomRange(-startVelocity, -startVelocity / 2) };
-            this.gravity = gravity;
-            this.friction = decay;
-            this.rotation = Math.random() * 360;
-            this.rotationSpeed = randomRange(-5, 5);
-            this.opacity = 1;
+        class Particle {
+            constructor() {
+                this.x = W * origin.x;
+                this.y = H * origin.y;
+                this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+                this.size = Math.random() * 8 + 4;
+                this.velocity = { 
+                    x: (Math.random() - 0.5) * spread, 
+                    y: Math.random() * -50 - 10 
+                };
+                this.gravity = 0.7;
+                this.friction = 0.92;
+                this.opacity = 1;
+            }
+            
+            update() {
+                this.velocity.y += this.gravity;
+                this.velocity.x *= this.friction;
+                this.velocity.y *= this.friction;
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.opacity -= 0.01;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+                ctx.restore();
+            }
         }
-        update() {
-            this.velocity.y += this.gravity;
-            this.velocity.x *= this.friction;
-            this.velocity.y *= this.friction;
-            this.x += this.velocity.x;
-            this.y += this.velocity.y;
-            this.rotation += this.rotationSpeed;
-            this.opacity -= 0.01;
+
+        const animate = () => {
+            ctx.clearRect(0, 0, W, H);
+            particles.forEach((particle, i) => {
+                if (particle.opacity > 0) { 
+                    particle.update(); 
+                    particle.draw(); 
+                } else { 
+                    particles.splice(i, 1); 
+                }
+            });
+            if (particles.length > 0) { 
+                requestAnimationFrame(animate); 
+            } else { 
+                try {
+                    if (document.body.contains(canvas)) { 
+                        document.body.removeChild(canvas); 
+                    }
+                } catch (e) {
+                    console.log('Canvas cleanup error:', e);
+                }
+            }
+        };
+
+        for (let i = 0; i < particleCount; i++) { 
+            particles.push(new Particle()); 
         }
-        draw() {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            ctx.rotate(this.rotation * Math.PI / 180);
-            ctx.globalAlpha = this.opacity;
-            ctx.fillStyle = this.color;
-            ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
-            ctx.restore();
-        }
+        animate();
+    } catch (error) {
+        console.log('Confetti error:', error);
     }
-
-    const animate = () => {
-        ctx.clearRect(0, 0, W, H);
-        particles.forEach((particle, i) => {
-            if (particle.opacity > 0) { particle.update(); particle.draw(); } 
-            else { particles.splice(i, 1); }
-        });
-        if (particles.length > 0) { requestAnimationFrame(animate); } 
-        else { if (document.body.contains(canvas)) { document.body.removeChild(canvas); } }
-    };
-
-    for (let i = 0; i < particleCount; i++) { particles.push(new Particle()); }
-    animate();
 };
 
 const ConfettiEffect = () => {
@@ -104,7 +118,13 @@ const Card = ({ emotion, onClick, isCorrect, isWrong, isDisabled }) => (
         layout
     >
         <div className="card-image-wrapper">
-            <img src={emotion.path} alt={emotion.label} onError={(e) => e.currentTarget.src = 'https://placehold.co/150x150/EBF4FA/333?text=?'} />
+            <img 
+                src={emotion.path} 
+                alt={emotion.label} 
+                onError={(e) => {
+                    e.currentTarget.src = 'https://placehold.co/150x150/EBF4FA/333?text=?';
+                }}
+            />
         </div>
         <span className="card-label">{emotion.label}</span>
     </motion.button>
@@ -113,21 +133,30 @@ const Card = ({ emotion, onClick, isCorrect, isWrong, isDisabled }) => (
 const ProgressBar = ({ current, total }) => {
     const progress = total > 0 ? (current / total) * 100 : 0;
     return (
-        <div className="progressBar"><div className="progressFill" style={{ width: `${progress}%` }}>{Math.round(progress)}%</div></div>
+        <div className="progressBar">
+            <div className="progressFill" style={{ width: `${progress}%` }}>
+                {Math.round(progress)}%
+            </div>
+        </div>
     );
 };
 
 // --- CONFIGURAÇÕES E DADOS DO JOGO ---
 const SOUNDS = {
-    // **CORREÇÃO APLICADA:** Links de áudio trocados por fontes que permitem acesso direto.
-    correct: 'https://freesound.org/data/previews/391/391715_5674468-lq.mp3',
-    wrong: 'https://freesound.org/data/previews/174/174414_3229994-lq.mp3',
-    levelComplete: 'https://freesound.org/data/previews/270/270333_5123851-lq.mp3'
+    correct: '/sounds/coin.wav',
+    wrong: '/sounds/error.wav', 
+    levelComplete: '/sounds/sucess.wav'
 };
 
-const playSound = (soundName) => {
-    try { new Audio(SOUNDS[soundName]).play().catch(() => {}); } 
-    catch (error) { console.error('Falha ao tocar som:', error); }
+const playSound = (soundName, enabled = true) => {
+    if (!enabled) return;
+    try { 
+        const audio = new Audio(SOUNDS[soundName]);
+        audio.volume = 0.3;
+        audio.play().catch(() => {}); 
+    } catch (error) { 
+        console.log('Som não encontrado:', error); 
+    }
 };
 
 const IMAGE_BASE_PATH = '/images/cards/emocoes/';
@@ -176,18 +205,23 @@ export default function FacialExpressionsGame() {
     const introMessages = [
         "Olá! Eu sou o Leo. Vamos aprender sobre as emoções juntos?",
         "É bem fácil! Eu vou falar uma emoção, como 'Feliz' ou 'Triste'.",
-        "Você só precisa de clicar na imagem certa que aparece no ecrã.",
+        "Você só precisa clicar na imagem certa que aparece na tela.",
         "A cada fase, mais emoções aparecem! Vamos começar a diversão?"
     ];
 
     const leoSpeak = useCallback((message) => {
         setLeoMessage(message);
         if (soundEnabled && 'speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(message);
-            utterance.lang = 'pt-BR';
-            utterance.rate = 1.1;
-            window.speechSynthesis.speak(utterance);
+            try {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(message);
+                utterance.lang = 'pt-BR';
+                utterance.rate = 1.1;
+                utterance.onerror = () => {};
+                window.speechSynthesis.speak(utterance);
+            } catch (error) {
+                console.log('Speech synthesis error:', error);
+            }
         }
     }, [soundEnabled]);
 
@@ -207,22 +241,26 @@ export default function FacialExpressionsGame() {
     };
     
     const preparePhase = useCallback((phaseIndex) => {
-        const phaseConfig = GAME_PHASES[phaseIndex];
-        const shuffledAllCards = shuffleArray(EMOTION_CARDS);
-        const cardsToDisplay = shuffledAllCards.slice(0, phaseConfig.numCards);
-        
-        let sequence = [];
-        for (let i = 0; i < phaseConfig.numRounds; i++) {
-            sequence.push(cardsToDisplay[Math.floor(Math.random() * cardsToDisplay.length)]);
+        try {
+            const phaseConfig = GAME_PHASES[phaseIndex];
+            const shuffledAllCards = shuffleArray(EMOTION_CARDS);
+            const cardsToDisplay = shuffledAllCards.slice(0, phaseConfig.numCards);
+            
+            let sequence = [];
+            for (let i = 0; i < phaseConfig.numRounds; i++) {
+                sequence.push(cardsToDisplay[Math.floor(Math.random() * cardsToDisplay.length)]);
+            }
+            
+            setCardsForPhase(cardsToDisplay);
+            setTargetSequence(sequence);
+            setCurrentTargetIndex(0);
+            setFeedback(null);
+            setSelectedCardId(null);
+            setIsDisabled(false);
+            leoSpeak(sequence[0].label);
+        } catch (error) {
+            console.log('Prepare phase error:', error);
         }
-        
-        setCardsForPhase(cardsToDisplay);
-        setTargetSequence(sequence);
-        setCurrentTargetIndex(0);
-        setFeedback(null);
-        setSelectedCardId(null);
-        setIsDisabled(false);
-        leoSpeak(sequence[0].label);
     }, [leoSpeak]);
 
     const startGame = () => {
@@ -249,7 +287,7 @@ export default function FacialExpressionsGame() {
         if (isCorrect) {
             setFeedback('correct');
             setTotalScore(prev => prev + GAME_PHASES[currentPhaseIndex].points);
-            if (soundEnabled) playSound('correct');
+            playSound('correct', soundEnabled);
 
             setTimeout(() => {
                 const nextTargetIndex = currentTargetIndex + 1;
@@ -260,13 +298,13 @@ export default function FacialExpressionsGame() {
                     setIsDisabled(false);
                     leoSpeak(targetSequence[nextTargetIndex].label);
                 } else {
-                    if (soundEnabled) playSound('levelComplete');
+                    playSound('levelComplete', soundEnabled);
                     setGameState('phaseComplete');
                 }
             }, 1200);
         } else {
             setFeedback('wrong');
-            if (soundEnabled) playSound('wrong');
+            playSound('wrong', soundEnabled);
             setTimeout(() => {
                 setFeedback(null);
                 setSelectedCardId(null);
@@ -288,15 +326,46 @@ export default function FacialExpressionsGame() {
     // --- RENDERIZAÇÃO ---
     const renderTitleScreen = () => (
         <div className="screen-center">
-            <div className="stars-bg"></div>
-             <motion.div className="animate-float" style={{zIndex: 10}}>
-                <img src="/images/mascotes/leo/leo_boas_vindas_resultado.webp" alt="Leo Mago" className="intro-mascot title-mascot" />
+            <div className="stars-bg">
+                {[...Array(20)].map((_, i) => (
+                    <div key={i} className="star" style={{ 
+                        left: `${Math.random() * 100}%`, 
+                        top: `${Math.random() * 100}%`,
+                        animationDelay: `${Math.random() * 3}s`
+                    }}>
+                        <Star className="w-6 h-6 text-white opacity-20" fill="currentColor" />
+                    </div>
+                ))}
+            </div>
+            <motion.div 
+                className="animate-float" 
+                style={{zIndex: 10}}
+                initial={{ opacity: 0, y: -30 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ duration: 0.7, delay: 0.2 }}
+            >
+                <img 
+                    src="/images/mascotes/leo/Leo_emocoes_espelho.webp" 
+                    alt="Leo Emoções" 
+                    className="intro-mascot title-mascot" 
+                />
             </motion.div>
-            <h1 className="intro-main-title">Expressões Faciais</h1>
-            <p className="intro-main-subtitle">Aprenda e divirta-se com as emoções!</p>
-            <motion.button onClick={handleStartIntro} className="intro-start-button" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                Começar Aventura
-            </motion.button>
+            <motion.div
+                initial={{ opacity: 0, y: 30 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ duration: 0.7, delay: 0.4 }}
+            >
+                <h1 className="intro-main-title">Expressões Faciais</h1>
+                <p className="intro-main-subtitle">Aprenda e divirta-se com as emoções!</p>
+                <motion.button 
+                    onClick={handleStartIntro} 
+                    className="intro-start-button" 
+                    whileHover={{ scale: 1.05 }} 
+                    whileTap={{ scale: 0.95 }}
+                >
+                    Começar Aventura
+                </motion.button>
+            </motion.div>
         </div>
     );
 
@@ -304,12 +373,14 @@ export default function FacialExpressionsGame() {
         <div className="screen-center intro-explanation">
             <div className="intro-content-wrapper">
                 <div className="intro-mascot-container">
-                     <img src="/images/mascotes/leo/Leo_apoio.webp" alt="Leo" className="intro-mascot" />
+                    <img src="/images/mascotes/leo/Leo_apoio.webp" alt="Leo" className="intro-mascot" />
                 </div>
-                <div className="speech-bubble"><p>{leoMessage}</p></div>
+                <div className="speech-bubble">
+                    <p>{leoMessage}</p>
+                </div>
             </div>
             <button onClick={handleIntroNext} className="intro-next-button">
-                 {introStep < introMessages.length - 1 ? 'Próximo →' : 'Vamos Começar!'}
+                {introStep < introMessages.length - 1 ? 'Próximo →' : 'Vamos Começar!'}
             </button>
         </div>
     );
@@ -320,12 +391,17 @@ export default function FacialExpressionsGame() {
             <div className="game-area">
                 <div className="instruction-container">
                     <img src="/images/mascotes/leo/leo_rosto_resultado.webp" alt="Leo" className="instruction-mascot"/>
-                    <div className="instruction-box"><h2>{leoMessage}</h2></div>
+                    <div className="instruction-box">
+                        <h2>{leoMessage}</h2>
+                    </div>
                 </div>
                 <div className={`cards-grid cols-${Math.ceil(cardsForPhase.length / 2)}`}>
                     <AnimatePresence>
                         {cardsForPhase.map((card) => (
-                            <Card key={card.id} emotion={card} onClick={() => selectCard(card)} 
+                            <Card 
+                                key={card.id} 
+                                emotion={card} 
+                                onClick={() => selectCard(card)} 
                                 isCorrect={feedback === 'correct' && card.id === selectedCardId} 
                                 isWrong={feedback === 'wrong' && card.id === selectedCardId} 
                                 isDisabled={isDisabled} 
@@ -340,23 +416,35 @@ export default function FacialExpressionsGame() {
     const renderPhaseCompleteScreen = () => (
         <div className="screen-center">
             <ConfettiEffect />
-            <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className="modal-container">
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.7 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                className="modal-container"
+            >
                 <h2 className="modal-title">Fase {GAME_PHASES[currentPhaseIndex].phase} Completa!</h2>
                 <div className="modal-icon">🎉</div>
                 <p>Pontuação: <span className="total-score-highlight">{totalScore}</span></p>
-                <button onClick={nextPhase} className="modal-button next-level">Próxima Fase</button>
+                <button onClick={nextPhase} className="modal-button next-level">
+                    Próxima Fase
+                </button>
             </motion.div>
         </div>
     );
 
     const renderGameCompleteScreen = () => (
-         <div className="screen-center">
+        <div className="screen-center">
             <ConfettiEffect />
-            <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className="modal-container">
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.7 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                className="modal-container"
+            >
                 <Trophy className="modal-trophy" />
                 <h2 className="modal-title congrats">PARABÉNS!</h2>
                 <p className="final-score">Pontuação Final: {totalScore}</p>
-                <button onClick={startGame} className="modal-button play-again">Jogar Novamente</button>
+                <button onClick={startGame} className="modal-button play-again">
+                    Jogar Novamente
+                </button>
             </motion.div>
         </div>
     );
@@ -371,88 +459,94 @@ export default function FacialExpressionsGame() {
             default: return renderTitleScreen();
         }
     };
-    
-    const cssStyles = `
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
-        .game-container { font-family: 'Nunito', sans-serif; min-height: 100vh; background: linear-gradient(135deg, #a8e0ff 0%, #c4f5c7 100%); position: relative; overflow: hidden; color: #333; }
-        .game-header { position: sticky; top: 10px; left: 50%; transform: translateX(-50%); z-index: 50; padding: 10px 20px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 20px; display: flex; justify-content: space-between; align-items: center; max-width: 95%; width: 600px; margin: 0 auto; }
-        .header-button { background: none; border: none; padding: 8px; border-radius: 50%; cursor: pointer; transition: background-color 0.2s; color: #555; }
-        .header-button:hover { background-color: rgba(0,0,0,0.1); }
-        .game-title { font-size: 1.5rem; font-weight: 900; color: #00796B; display:flex; align-items:center; gap: 8px; }
-        .header-score { font-size: 1.2rem; font-weight: 900; color: #004D40; }
-        
-        /* ESTILOS DA TELA DE TÍTULO E INTRO */
-        .game-container.intro-mode { background: linear-gradient(160deg, #1d2b64 0%, #3f51b5 100%); }
-        .game-container.intro-mode .game-header { display: none; }
-        .stars-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(1px 1px at 20% 30%, white, transparent), radial-gradient(1px 1px at 80% 10%, white, transparent), radial-gradient(1px 1px at 50% 50%, white, transparent), radial-gradient(2px 2px at 90% 70%, white, transparent), radial-gradient(2px 2px at 30% 90%, white, transparent); background-repeat: repeat; background-size: 300px 300px; opacity: 0.8; animation: zoom 40s infinite; }
-        @keyframes zoom { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        .intro-mascot { max-width: 60vw; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3)); }
-        .title-mascot { width: 300px; margin-bottom: -20px; }
-        .intro-main-title { font-size: clamp(2.5rem, 10vw, 4.5rem); font-weight: 900; color: #ffeb3b; text-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4); margin-bottom: 0.5rem; }
-        .intro-main-subtitle { font-size: clamp(1rem, 4vw, 1.25rem); color: #e3f2fd; margin-bottom: 2.5rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
-        .intro-start-button { background-image: linear-gradient(45deg, #ffeb3b, #fbc02d); color: #3f2a14; font-size: 1.5rem; font-weight: 700; padding: 15px 40px; border-radius: 50px; border: none; box-shadow: 0 5px 20px rgba(251, 192, 45, 0.4); cursor: pointer; transition: all 0.3s ease; animation: introPulse 2.5s infinite; }
-        .intro-explanation { background: linear-gradient(135deg, #a8e0ff 0%, #c4f5c7 100%); }
-        .intro-content-wrapper { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
-        .intro-mascot-container { width: 180px; }
-        .speech-bubble { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; max-width: 400px; text-align: center; font-size: 1.2rem; color: #333; }
-        .speech-bubble::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 15px; border-style: solid; border-color: white transparent transparent transparent; }
-        .intro-next-button { margin-top: 2rem; background: #4CAF50; color: white; padding: 12px 30px; border-radius: 30px; font-size: 1.2rem; font-weight: 700; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-        @keyframes introPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        .animate-float { animation: float 4s ease-in-out infinite; }
-        .screen-center { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; }
-        
-        /* ESTILOS DO JOGO */
-        .progressBar { position: sticky; top: 85px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 500px; height: 25px; background: rgba(255,255,255,0.8); border-radius: 15px; overflow: hidden; z-index: 40; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 2px solid white; margin-bottom: 1rem; }
-        .progressFill { height: 100%; background: linear-gradient(90deg, #81C784, #4CAF50); transition: width 0.5s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; }
-        .instruction-container { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 2rem; }
-        .instruction-mascot { width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .instruction-box { background: rgba(255, 255, 255, 0.9); border-radius: 20px; padding: 15px 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .instruction-box h2 { font-size: 2rem; font-weight: 900; color: #00796B; text-transform: capitalize; }
-        .game-area { padding: 10px; max-width: 900px; margin: auto; }
-        .cards-grid { display: grid; gap: 15px; justify-content: center; }
-        .cols-1 { grid-template-columns: repeat(2, 1fr); }
-        .cols-2 { grid-template-columns: repeat(2, 1fr); }
-        .cols-3 { grid-template-columns: repeat(3, 1fr); }
-        .cols-4 { grid-template-columns: repeat(4, 1fr); }
-        @media (max-width: 600px) { .cols-3, .cols-4 { grid-template-columns: repeat(2, 1fr); } }
-        
-        /* CARDS */
-        .emotionCard { border-radius: 20px; background: white; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 4px solid transparent; display: flex; flex-direction: column; padding: 8px; align-items: center; justify-content: center; aspect-ratio: 1 / 1; }
-        .emotionCard:not([disabled]):hover { transform: translateY(-8px) scale(1.05); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
-        .card-image-wrapper { width: 70%; height: 70%; }
-        .emotionCard img { width: 100%; height: 100%; object-fit: contain; }
-        .card-label { margin-top: 8px; font-weight: 700; color: #333; font-size: 1rem; text-transform: capitalize; }
-        .cardCorrect { animation: correctPulse 0.5s ease; border-color: #4CAF50; background: #C8E6C9; }
-        .cardWrong { animation: wrongShake 0.5s ease; border-color: #F44336; background: #FFCDD2; }
-        @keyframes correctPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        @keyframes wrongShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-8px); } 80% { translateX(8px); } }
-
-        /* MODAIS */
-        .modal-container { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(15px); border-radius: 30px; padding: 30px 40px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); border: 3px solid white; text-align: center;}
-        .modal-title { font-size: 2.5rem; font-weight: 900; margin-bottom: 1rem; color: #004D40; }
-        .modal-title.congrats { color: #FFA000; }
-        .modal-icon { font-size: 5rem; margin-bottom: 1rem; }
-        .modal-trophy { width: 80px; height: 80px; color: #FFC107; margin: 0 auto 1rem auto; animation: trophyBounce 2s infinite; }
-        .total-score-highlight, .final-score { font-size: 2rem; font-weight: 900; color: #00796B; margin-bottom: 1.5rem; display: block; }
-        .modal-button { color: white; font-size: 1.2rem; font-weight: 700; padding: 12px 30px; border-radius: 50px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; transition: all 0.3s ease; transform: scale(1); }
-        .modal-button:hover { transform: scale(1.05); }
-        .modal-button.next-level { background-image: linear-gradient(45deg, #66BB6A, #4CAF50); }
-        .modal-button.play-again { background-image: linear-gradient(45deg, #26C6DA, #00ACC1); }
-        @keyframes trophyBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-    `;
 
     return (
         <div className={`game-container ${gameState === 'titleScreen' || gameState === 'intro' ? 'intro-mode' : ''}`}>
-            <style>{cssStyles}</style>
+            <style jsx>{`
+                @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+                .game-container { font-family: 'Nunito', sans-serif; min-height: 100vh; background: linear-gradient(135deg, #a8e0ff 0%, #c4f5c7 100%); position: relative; overflow: hidden; color: #333; }
+                .game-header { position: sticky; top: 10px; left: 50%; transform: translateX(-50%); z-index: 50; padding: 10px 20px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 20px; display: flex; justify-content: space-between; align-items: center; max-width: 95%; width: 600px; margin: 0 auto; }
+                .header-button { background: none; border: none; padding: 8px; border-radius: 50%; cursor: pointer; transition: background-color 0.2s; color: #555; }
+                .header-button:hover { background-color: rgba(0,0,0,0.1); }
+                .game-title { font-size: 1.5rem; font-weight: 900; color: #00796B; display: flex; align-items: center; gap: 8px; }
+                .header-score { font-size: 1.2rem; font-weight: 900; color: #004D40; }
+                
+                /* ESTILOS DA TELA DE TÍTULO E INTRO */
+                .game-container.intro-mode { background: linear-gradient(160deg, #1d2b64 0%, #3f51b5 100%); }
+                .game-container.intro-mode .game-header { display: none; }
+                .stars-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+                .star { position: absolute; animation: twinkle 3s infinite; }
+                @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+                .intro-mascot { max-width: 60vw; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3)); }
+                .title-mascot { width: 400px; margin-bottom: -20px; }
+                .intro-main-title { font-size: clamp(2.5rem, 10vw, 4.5rem); font-weight: 900; color: #ffeb3b; text-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4); margin-bottom: 0.5rem; }
+                .intro-main-subtitle { font-size: clamp(1rem, 4vw, 1.25rem); color: #e3f2fd; margin-bottom: 2.5rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+                .intro-start-button { background-image: linear-gradient(45deg, #ffeb3b, #fbc02d); color: #3f2a14; font-size: 1.5rem; font-weight: 700; padding: 15px 40px; border-radius: 50px; border: none; box-shadow: 0 5px 20px rgba(251, 192, 45, 0.4); cursor: pointer; transition: all 0.3s ease; animation: introPulse 2.5s infinite; }
+                .intro-explanation { background: linear-gradient(135deg, #a8e0ff 0%, #c4f5c7 100%); }
+                .intro-content-wrapper { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+                .intro-mascot-container { width: 180px; }
+                .speech-bubble { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; max-width: 400px; text-align: center; font-size: 1.2rem; color: #333; }
+                .speech-bubble::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 15px; border-style: solid; border-color: white transparent transparent transparent; }
+                .intro-next-button { margin-top: 2rem; background: #4CAF50; color: white; padding: 12px 30px; border-radius: 30px; font-size: 1.2rem; font-weight: 700; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; }
+                @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+                @keyframes introPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+                .animate-float { animation: float 4s ease-in-out infinite; }
+                .screen-center { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; }
+                
+                /* ESTILOS DO JOGO */
+                .progressBar { position: sticky; top: 85px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 500px; height: 25px; background: rgba(255,255,255,0.8); border-radius: 15px; overflow: hidden; z-index: 40; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 2px solid white; margin-bottom: 1rem; }
+                .progressFill { height: 100%; background: linear-gradient(90deg, #81C784, #4CAF50); transition: width 0.5s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; }
+                .instruction-container { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 2rem; }
+                .instruction-mascot { width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+                .instruction-box { background: rgba(255, 255, 255, 0.9); border-radius: 20px; padding: 15px 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+                .instruction-box h2 { font-size: 2rem; font-weight: 900; color: #00796B; text-transform: capitalize; }
+                .game-area { padding: 10px; max-width: 900px; margin: auto; }
+                .cards-grid { display: grid; gap: 15px; justify-content: center; }
+                .cols-1 { grid-template-columns: repeat(2, 1fr); }
+                .cols-2 { grid-template-columns: repeat(2, 1fr); }
+                .cols-3 { grid-template-columns: repeat(3, 1fr); }
+                .cols-4 { grid-template-columns: repeat(4, 1fr); }
+                @media (max-width: 600px) { .cols-3, .cols-4 { grid-template-columns: repeat(2, 1fr); } }
+                
+                /* CARDS */
+                .emotionCard { border-radius: 20px; background: white; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 4px solid transparent; display: flex; flex-direction: column; padding: 8px; align-items: center; justify-content: center; aspect-ratio: 1 / 1; }
+                .emotionCard:not([disabled]):hover { transform: translateY(-8px) scale(1.05); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+                .card-image-wrapper { width: 70%; height: 70%; }
+                .emotionCard img { width: 100%; height: 100%; object-fit: contain; }
+                .card-label { margin-top: 8px; font-weight: 700; color: #333; font-size: 1rem; text-transform: capitalize; }
+                .cardCorrect { animation: correctPulse 0.5s ease; border-color: #4CAF50; background: #C8E6C9; }
+                .cardWrong { animation: wrongShake 0.5s ease; border-color: #F44336; background: #FFCDD2; }
+                @keyframes correctPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+                @keyframes wrongShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-8px); } 80% { transform: translateX(8px); } }
+
+                /* MODAIS */
+                .modal-container { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(15px); border-radius: 30px; padding: 30px 40px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); border: 3px solid white; text-align: center; }
+                .modal-title { font-size: 2.5rem; font-weight: 900; margin-bottom: 1rem; color: #004D40; }
+                .modal-title.congrats { color: #FFA000; }
+                .modal-icon { font-size: 5rem; margin-bottom: 1rem; }
+                .modal-trophy { width: 80px; height: 80px; color: #FFC107; margin: 0 auto 1rem auto; animation: trophyBounce 2s infinite; }
+                .total-score-highlight, .final-score { font-size: 2rem; font-weight: 900; color: #00796B; margin-bottom: 1.5rem; display: block; }
+                .modal-button { color: white; font-size: 1.2rem; font-weight: 700; padding: 12px 30px; border-radius: 50px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; transition: all 0.3s ease; }
+                .modal-button:hover { transform: scale(1.05); }
+                .modal-button.next-level { background-image: linear-gradient(45deg, #66BB6A, #4CAF50); }
+                .modal-button.play-again { background-image: linear-gradient(45deg, #26C6DA, #00ACC1); }
+                @keyframes trophyBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+            `}</style>
+
             <header className="game-header">
-                <a href="/dashboard" className="header-button"><ArrowLeft size={24} /></a>
+                <a href="/dashboard" className="header-button">
+                    <ArrowLeft size={24} />
+                </a>
                 <h1 className="game-title">😊 Expressões</h1>
                 <div className="header-score">🏆 {totalScore}</div>
-                <button onClick={() => setSoundEnabled(!soundEnabled)} className="header-button">
+                <button 
+                    onClick={() => setSoundEnabled(!soundEnabled)} 
+                    className="header-button"
+                >
                     {soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
                 </button>
             </header>
+
             <main>
                 <AnimatePresence mode="wait">
                     {renderContent()}
@@ -461,5 +555,3 @@ export default function FacialExpressionsGame() {
         </div>
     );
 }
-
-
