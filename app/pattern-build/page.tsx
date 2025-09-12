@@ -196,6 +196,9 @@ export default function PatternBuilderGame() {
 
   // Verificação de conclusão e animação de partículas
   useEffect(() => {
+    // Evita a verificação se o playerPattern ainda não foi inicializado para o nível atual
+    if (playerPattern.length === 0) return;
+
     const playerGridString = JSON.stringify(playerPattern);
     const modelGridString = JSON.stringify(levels[currentLevelIndex].pattern);
 
@@ -268,8 +271,8 @@ export default function PatternBuilderGame() {
 
   const GameScreen = () => {
     const level = levels[currentLevelIndex];
-    if (!level) return <div className="text-center p-8">Carregando nível...</div>;
-    const patternSize = level.pattern[0].length; // Assumimos que todos os grids são quadrados
+    if (!level || playerPattern.length === 0) return <div className="text-center p-8">Carregando nível...</div>;
+    const patternSize = level.pattern[0].length;
     const cellSize = isMobile ? (patternSize > 5 ? 'w-10 h-10' : 'w-12 h-12') : 'w-16 h-16';
 
     const renderGrid = (pattern: number[][], isInteractive: boolean) => (
@@ -282,7 +285,8 @@ export default function PatternBuilderGame() {
                 <div
                   key={`${rowIndex}-${colIndex}`}
                   className={`relative rounded-md border-2 transition-colors duration-150 ${cellSize} ${COLORS[colorIndex]} ${isInteractive && !showLevelComplete ? 'cursor-pointer' : ''}`}
-                  onClick={(e) => isInteractive && handleCellClick(rowIndex, colIndex, e)}
+                  // AQUI ESTÁ A CORREÇÃO PRINCIPAL
+                  onMouseDown={(e) => isInteractive && handleCellClick(rowIndex, colIndex, e)}
                 >
                   {isSpecial && <Sparkles className="absolute inset-0 m-auto w-1/2 h-1/2 text-white/70 animate-pulse-slow"/>}
                 </div>
@@ -309,7 +313,6 @@ export default function PatternBuilderGame() {
 
     return (
       <div className="w-full h-full flex flex-col p-4">
-        {/* Header do Jogo */}
         <div className="flex justify-between items-center bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-md mb-4">
           <div><span className="font-bold">Nível:</span> {currentLevelIndex + 1}/{levels.length} ({level.name})</div>
           <div><span className="font-bold">Pontuação:</span> {score}</div>
@@ -317,19 +320,16 @@ export default function PatternBuilderGame() {
         </div>
 
         <div className={`flex-1 flex items-center justify-center gap-8 ${isMobile ? 'flex-col' : 'flex-row'}`}>
-          {/* Grid do Modelo */}
           <div className="text-center">
             <h2 className="text-2xl font-semibold text-gray-700 mb-2">Modelo</h2>
             {renderGrid(level.pattern, false)}
           </div>
-          {/* Grid do Jogador */}
           <div className="text-center">
             <h2 className="text-2xl font-semibold text-gray-700 mb-2">Seu Mosaico</h2>
             {renderGrid(playerPattern, true)}
           </div>
         </div>
 
-        {/* Overlay de Nível Completo */}
         {showLevelComplete && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
                 <div className="bg-white p-8 rounded-xl shadow-2xl text-center animate-pop-in">
@@ -342,7 +342,6 @@ export default function PatternBuilderGame() {
     );
   };
   
-  // Renderiza a tela atual
   const renderScreen = () => {
     switch (currentScreen) {
       case 'title':
@@ -359,7 +358,6 @@ export default function PatternBuilderGame() {
   return (
     <div className="w-screen h-screen font-sans">
       {renderScreen()}
-      {/* Container para as Partículas */}
       {particles.map(p => (
         <div key={p.id} className="absolute rounded-full pointer-events-none" style={{
           left: p.x,
