@@ -1,76 +1,35 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ChevronLeft, Save, Star, Trophy, Sparkles, Gem } from 'lucide-react';
-import { createClient } from '../utils/supabaseClient';
+import { Sparkles, Gem, Trophy } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 // --- ESTRUTURA DOS NÍVEIS ---
 interface Level {
   name: string;
   pattern: number[][];
-  specialCell?: { row: number; col: number }; // Coordenada da "Gema Especial"
+  specialCell?: { row: number; col: number };
 }
 
-// Paleta de cores. O índice 0 é sempre o "vazio".
 const COLORS = [
-  'bg-gray-200 hover:bg-gray-300 border-gray-300',      // 0: Vazio
-  'bg-blue-500 border-blue-700',                       // 1: Azul
-  'bg-yellow-400 border-yellow-600',                   // 2: Amarelo
-  'bg-green-500 border-green-700',                     // 3: Verde
-  'bg-red-500 border-red-700',                         // 4: Vermelho
-  'bg-purple-500 border-purple-700',                   // 5: Roxo
+  'bg-gray-200 hover:bg-gray-300 border-gray-300',
+  'bg-blue-500 border-blue-700',
+  'bg-yellow-400 border-yellow-600',
+  'bg-green-500 border-green-700',
+  'bg-red-500 border-red-700',
+  'bg-purple-500 border-purple-700',
 ];
 
-// Níveis do Jogo - FÁCIL DE ADICIONAR NOVOS!
 const levels: Level[] = [
-  {
-    name: "Sorriso",
-    pattern: [
-      [0, 1, 0, 1, 0],
-      [0, 0, 0, 0, 0],
-      [1, 0, 0, 0, 1],
-      [0, 1, 1, 1, 0],
-      [0, 0, 0, 0, 0],
-    ],
-    specialCell: { row: 3, col: 2 } // O centro do sorriso é especial
-  },
-  {
-    name: "Casa",
-    pattern: [
-      [0, 0, 2, 0, 0],
-      [0, 2, 2, 2, 0],
-      [2, 2, 2, 2, 2],
-      [0, 3, 3, 3, 0],
-      [0, 3, 0, 3, 0],
-    ],
-    specialCell: { row: 4, col: 2 } // A porta é especial
-  },
-  {
-    name: "Coração",
-    pattern: [
-      [0, 4, 4, 0, 4, 4, 0],
-      [4, 4, 4, 4, 4, 4, 4],
-      [4, 4, 4, 4, 4, 4, 4],
-      [0, 4, 4, 4, 4, 4, 0],
-      [0, 0, 4, 4, 4, 0, 0],
-      [0, 0, 0, 4, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0],
-    ],
-    specialCell: { row: 1, col: 3 }
-  },
+  { name: "Sorriso", pattern: [[0, 1, 0, 1, 0],[0, 0, 0, 0, 0],[1, 0, 0, 0, 1],[0, 1, 1, 1, 0],[0, 0, 0, 0, 0]], specialCell: { row: 3, col: 2 } },
+  { name: "Casa", pattern: [[0, 0, 2, 0, 0],[0, 2, 2, 2, 0],[2, 2, 2, 2, 2],[0, 3, 3, 3, 0],[0, 3, 0, 3, 0]], specialCell: { row: 4, col: 2 } },
+  { name: "Coração", pattern: [[0, 4, 4, 0, 4, 4, 0],[4, 4, 4, 4, 4, 4, 4],[4, 4, 4, 4, 4, 4, 4],[0, 4, 4, 4, 4, 4, 0],[0, 0, 4, 4, 4, 0, 0],[0, 0, 0, 4, 0, 0, 0],[0, 0, 0, 0, 0, 0, 0]], specialCell: { row: 1, col: 3 } },
 ];
-
 
 // --- COMPONENTE PRINCIPAL ---
 export default function PatternBuilderGame() {
-  const router = useRouter();
-  const supabase = createClient();
   const animationRef = useRef<number>();
-
-  // Estados do Jogo
   const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game'>('title');
   const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
   const [playerPattern, setPlayerPattern] = useState<number[][]>([]);
@@ -80,8 +39,11 @@ export default function PatternBuilderGame() {
   const [showLevelComplete, setShowLevelComplete] = useState(false);
   const [showGameComplete, setShowGameComplete] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // << ALTERAÇÃO AQUI >> Estado para armazenar o local do último clique para as partículas
+  const [lastClickedCell, setLastClickedCell] = useState<{ row: number; col: number; type: 'gem' | 'click' } | null>(null);
+  const playerGridRef = useRef<HTMLDivElement>(null); // Ref para o grid do jogador
 
-  // Inicializa o jogo
   const startGame = () => {
     setCurrentLevelIndex(0);
     setScore(0);
@@ -90,19 +52,15 @@ export default function PatternBuilderGame() {
     setShowGameComplete(false);
     setCurrentScreen('game');
   };
-  
-  // Configura um nível específico
+
   const setupLevel = (levelIndex: number) => {
     const level = levels[levelIndex];
-    const initialPattern = Array(level.pattern.length)
-      .fill(0)
-      .map(() => Array(level.pattern[0].length).fill(0));
+    const initialPattern = Array(level.pattern.length).fill(0).map(() => Array(level.pattern[0].length).fill(0));
     setPlayerPattern(initialPattern);
     setShowLevelComplete(false);
   };
-  
-  // Avança para o próximo nível
-  const nextLevel = () => {
+
+  const nextLevel = useCallback(() => {
     const nextIndex = currentLevelIndex + 1;
     if (nextIndex < levels.length) {
       setCurrentLevelIndex(nextIndex);
@@ -110,122 +68,79 @@ export default function PatternBuilderGame() {
     } else {
       setShowGameComplete(true);
     }
-  };
+  }, [currentLevelIndex]);
   
-  // Efeitos e Sons (gerados por código, sem arquivos externos)
   const playSound = useCallback((type: 'click' | 'error' | 'gem' | 'complete') => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       if (audioContext.state === 'suspended') audioContext.resume();
-      
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-
       gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-
       switch(type) {
-        case 'click':
-          oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
-          break;
-        case 'error':
-          oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
-          oscillator.type = 'square';
-          gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.2);
-          break;
-        case 'gem':
-          oscillator.frequency.setValueAtTime(660, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.4);
-          break;
-        case 'complete':
-          oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
-          break;
+        case 'click': oscillator.frequency.setValueAtTime(440, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3); break;
+        case 'error': oscillator.frequency.setValueAtTime(150, audioContext.currentTime); oscillator.type = 'square'; gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.2); break;
+        case 'gem': oscillator.frequency.setValueAtTime(660, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.4); break;
+        case 'complete': oscillator.frequency.setValueAtTime(880, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5); break;
       }
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.3);
-    } catch(e) {
-      // Falha silenciosa se o AudioContext não for suportado
-    }
+    } catch(e) {}
   }, []);
 
+  // << ALTERAÇÃO AQUI >> Lógica de partículas agora é separada e mais robusta
   const createParticles = useCallback((element: HTMLElement, type: 'gem' | 'click') => {
     const rect = element.getBoundingClientRect();
     const newParticles = [];
     const count = type === 'gem' ? 30 : 5;
     const colors = type === 'gem' ? ['#fde047', '#f97316', '#ec4899'] : ['#a78bfa'];
-
     for (let i = 0; i < count; i++) {
-      newParticles.push({
-        id: Math.random(),
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        life: 1,
-      });
+      newParticles.push({ id: Math.random(), x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, color: colors[Math.floor(Math.random() * colors.length)], life: 1 });
     }
     setParticles(p => [...p, ...newParticles]);
   }, []);
-
-  // Lógica de clique na célula
-  const handleCellClick = (rowIndex: number, colIndex: number, event: React.MouseEvent<HTMLDivElement>) => {
+  
+  // << ALTERAÇÃO AQUI >> O clique agora apenas armazena a informação
+  const handleCellClick = (rowIndex: number, colIndex: number) => {
     if (showLevelComplete || showGameComplete) return;
-
     const newPattern = playerPattern.map(r => [...r]);
     const currentVal = newPattern[rowIndex][colIndex];
     const nextVal = (currentVal + 1) % COLORS.length;
     newPattern[rowIndex][colIndex] = nextVal;
     setPlayerPattern(newPattern);
-
     const modelVal = levels[currentLevelIndex].pattern[rowIndex][colIndex];
-    
     if (nextVal === modelVal && modelVal !== 0) {
       const isSpecial = levels[currentLevelIndex].specialCell?.row === rowIndex && levels[currentLevelIndex].specialCell?.col === colIndex;
       const points = isSpecial ? 100 + (combo * 10) : 10 + (combo * 2);
       setScore(s => s + points);
       setCombo(c => c + 1);
       playSound(isSpecial ? 'gem' : 'click');
-      createParticles(event.currentTarget, isSpecial ? 'gem' : 'click');
+      setLastClickedCell({ row: rowIndex, col: colIndex, type: isSpecial ? 'gem' : 'click' }); // Salva info para o useEffect
     } else {
       setCombo(0);
       playSound('error');
     }
   };
 
-  // Verificação de conclusão e animação de partículas
   useEffect(() => {
-    // Evita a verificação se o playerPattern ainda não foi inicializado para o nível atual
     if (playerPattern.length === 0) return;
-
-    const playerGridString = JSON.stringify(playerPattern);
-    const modelGridString = JSON.stringify(levels[currentLevelIndex].pattern);
-
-    if (playerGridString === modelGridString) {
+    if (JSON.stringify(playerPattern) === JSON.stringify(levels[currentLevelIndex].pattern)) {
       setShowLevelComplete(true);
       playSound('complete');
       confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
-      setTimeout(nextLevel, 2500); // Avança para o próximo nível após um tempo
+      setTimeout(nextLevel, 2500);
     }
-  }, [playerPattern, currentLevelIndex, playSound]);
+  }, [playerPattern, currentLevelIndex, playSound, nextLevel]);
 
   useEffect(() => {
     const animateParticles = () => {
-      setParticles(currentParticles => 
-        currentParticles.map(p => ({
-          ...p,
-          x: p.x + (Math.random() - 0.5) * 4,
-          y: p.y + (Math.random() - 0.5) * 4 - 2,
-          life: p.life - 0.03,
-        })).filter(p => p.life > 0)
-      );
+      setParticles(currentParticles => currentParticles.map(p => ({ ...p, x: p.x + (Math.random() - 0.5) * 4, y: p.y + (Math.random() - 0.5) * 4 - 2, life: p.life - 0.03 })).filter(p => p.life > 0));
       animationRef.current = requestAnimationFrame(animateParticles);
     };
     animationRef.current = requestAnimationFrame(animateParticles);
-    return () => {
-      if(animationRef.current) cancelAnimationFrame(animationRef.current);
-    };
+    return () => { if(animationRef.current) cancelAnimationFrame(animationRef.current); };
   }, []);
 
   useEffect(() => {
@@ -235,7 +150,17 @@ export default function PatternBuilderGame() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // --- TELAS DO JOGO ---
+  // << ALTERAÇÃO AQUI >> useEffect para criar partículas de forma segura
+  useEffect(() => {
+    if (lastClickedCell && playerGridRef.current) {
+      const { row, col, type } = lastClickedCell;
+      const cellElement = playerGridRef.current.querySelector(`[data-cell-id="${row}-${col}"]`) as HTMLElement;
+      if (cellElement) {
+        createParticles(cellElement, type);
+      }
+      setLastClickedCell(null); // Limpa após o uso
+    }
+  }, [lastClickedCell, createParticles]);
 
   const TitleScreen = () => (
     <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-teal-200 via-cyan-300 to-sky-400 overflow-hidden">
@@ -276,7 +201,7 @@ export default function PatternBuilderGame() {
     const cellSize = isMobile ? (patternSize > 5 ? 'w-10 h-10' : 'w-12 h-12') : 'w-16 h-16';
 
     const renderGrid = (pattern: number[][], isInteractive: boolean) => (
-      <div className="bg-white p-2 rounded-lg shadow-md border border-gray-200">
+      <div ref={isInteractive ? playerGridRef : null} className="bg-white p-2 rounded-lg shadow-md border border-gray-200"> {/* << ALTERAÇÃO AQUI >> Adiciona a ref */}
         <div className={`grid gap-1`} style={{gridTemplateColumns: `repeat(${patternSize}, minmax(0, 1fr))`}}>
           {pattern.map((row, rowIndex) =>
             row.map((colorIndex, colIndex) => {
@@ -284,9 +209,9 @@ export default function PatternBuilderGame() {
               return (
                 <div
                   key={`${rowIndex}-${colIndex}`}
+                  data-cell-id={`${rowIndex}-${colIndex}`} // << ALTERAÇÃO AQUI >> ID para encontrar a célula
                   className={`relative rounded-md border-2 transition-colors duration-150 ${cellSize} ${COLORS[colorIndex]} ${isInteractive && !showLevelComplete ? 'cursor-pointer' : ''}`}
-                  // AQUI ESTÁ A CORREÇÃO PRINCIPAL
-                  onMouseDown={(e) => isInteractive && handleCellClick(rowIndex, colIndex, e)}
+                  onClick={() => isInteractive && handleCellClick(rowIndex, colIndex)} // << ALTERAÇÃO AQUI >> Voltamos para onClick e removemos o 'event'
                 >
                   {isSpecial && <Sparkles className="absolute inset-0 m-auto w-1/2 h-1/2 text-white/70 animate-pulse-slow"/>}
                 </div>
@@ -298,17 +223,7 @@ export default function PatternBuilderGame() {
     );
     
     if (showGameComplete) {
-      return (
-        <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
-            <Trophy className="w-24 h-24 text-yellow-400 animate-bounce"/>
-            <h2 className="text-4xl font-bold text-gray-800 mt-4">Parabéns, Mestre Explorador!</h2>
-            <p className="text-xl text-gray-600 mt-2">Você completou todos os desafios!</p>
-            <div className="text-3xl font-bold mt-4">Pontuação Final: <span className="text-blue-600">{score}</span></div>
-            <button onClick={() => setCurrentScreen('title')} className="mt-8 text-lg font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full px-8 py-4 shadow-xl transition-all duration-300 hover:scale-110">
-              Jogar Novamente
-            </button>
-        </div>
-      )
+      return ( <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center"> <Trophy className="w-24 h-24 text-yellow-400 animate-bounce"/> <h2 className="text-4xl font-bold text-gray-800 mt-4">Parabéns, Mestre Explorador!</h2> <p className="text-xl text-gray-600 mt-2">Você completou todos os desafios!</p> <div className="text-3xl font-bold mt-4">Pontuação Final: <span className="text-blue-600">{score}</span></div> <button onClick={() => setCurrentScreen('title')} className="mt-8 text-lg font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full px-8 py-4 shadow-xl transition-all duration-300 hover:scale-110"> Jogar Novamente </button> </div> )
     }
 
     return (
@@ -318,58 +233,28 @@ export default function PatternBuilderGame() {
           <div><span className="font-bold">Pontuação:</span> {score}</div>
           <div><span className="font-bold">Combo:</span> x{combo}</div>
         </div>
-
         <div className={`flex-1 flex items-center justify-center gap-8 ${isMobile ? 'flex-col' : 'flex-row'}`}>
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold text-gray-700 mb-2">Modelo</h2>
-            {renderGrid(level.pattern, false)}
-          </div>
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold text-gray-700 mb-2">Seu Mosaico</h2>
-            {renderGrid(playerPattern, true)}
-          </div>
+          <div className="text-center"> <h2 className="text-2xl font-semibold text-gray-700 mb-2">Modelo</h2> {renderGrid(level.pattern, false)} </div>
+          <div className="text-center"> <h2 className="text-2xl font-semibold text-gray-700 mb-2">Seu Mosaico</h2> {renderGrid(playerPattern, true)} </div>
         </div>
-
-        {showLevelComplete && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                <div className="bg-white p-8 rounded-xl shadow-2xl text-center animate-pop-in">
-                    <h2 className="text-3xl font-bold text-green-600">Nível Completo!</h2>
-                    <p className="mt-2 text-gray-600">Preparando próximo desafio...</p>
-                </div>
-            </div>
-        )}
+        {showLevelComplete && ( <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10"> <div className="bg-white p-8 rounded-xl shadow-2xl text-center animate-pop-in"> <h2 className="text-3xl font-bold text-green-600">Nível Completo!</h2> <p className="mt-2 text-gray-600">Preparando próximo desafio...</p> </div> </div> )}
       </div>
     );
   };
   
   const renderScreen = () => {
     switch (currentScreen) {
-      case 'title':
-        return <TitleScreen />;
-      case 'instructions':
-        return <InstructionsScreen />;
-      case 'game':
-        return <GameScreen />;
-      default:
-        return <TitleScreen />;
+      case 'title': return <TitleScreen />;
+      case 'instructions': return <InstructionsScreen />;
+      case 'game': return <GameScreen />;
+      default: return <TitleScreen />;
     }
   };
 
   return (
     <div className="w-screen h-screen font-sans">
       {renderScreen()}
-      {particles.map(p => (
-        <div key={p.id} className="absolute rounded-full pointer-events-none" style={{
-          left: p.x,
-          top: p.y,
-          width: 10,
-          height: 10,
-          backgroundColor: p.color,
-          opacity: p.life,
-          transform: `translate(-50%, -50%) scale(${1 + (1 - p.life)})`,
-          zIndex: 9999,
-        }}/>
-      ))}
+      {particles.map(p => ( <div key={p.id} className="absolute rounded-full pointer-events-none" style={{ left: p.x, top: p.y, width: 10, height: 10, backgroundColor: p.color, opacity: p.life, transform: `translate(-50%, -50%) scale(${1 + (1 - p.life)})`, zIndex: 9999 }}/> ))}
     </div>
   );
 }
