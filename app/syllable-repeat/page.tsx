@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronLeft, Volume2, Mic, Star, Trophy, Play } from 'lucide-react';
+import { ChevronLeft, Volume2, Mic, Star, Trophy, Play, LoaderCircle } from 'lucide-react';
 
 // Mapeamento das sílabas (mantido)
 const syllableMap: { [letter: string]: string[] } = {
@@ -34,8 +34,8 @@ export default function SpeechPracticeGame() {
     const [showCelebration, setCelebrationMessage] = useState('');
     const [showResults, setShowResults] = useState(false);
     
-    // NOVO: Estados para gravação
-    const [isRecording, setIsRecording] = useState(false);
+    // << ALTERAÇÃO AQUI >> Novo estado para gerenciar o status da gravação e eliminar o delay
+    const [recordingStatus, setRecordingStatus] = useState<'idle' | 'initializing' | 'recording'>('idle');
     const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
     const [audioPlaying, setAudioPlaying] = useState<'model' | 'user' | null>(null);
     const [micPermission, setMicPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
@@ -54,46 +54,36 @@ export default function SpeechPracticeGame() {
     const syllables = syllableMap[currentLetter] || [];
     const currentSyllable = syllables[currentSyllableIndex] || 'a';
 
-    // Pede permissão para o microfone
     const requestMicPermission = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach(track => track.stop()); // Apenas para permissão, não usamos o stream agora
+            stream.getTracks().forEach(track => track.stop());
             setMicPermission('granted');
             setMessage('Microfone pronto!');
+            return true;
         } catch (error) {
             setMicPermission('denied');
             setMessage('Microfone negado. A gravação não funcionará.');
+            return false;
         }
     };
 
-    // Função para tocar o áudio do modelo (SEU MP3)
     const playModelAudio = useCallback(async () => {
         if (audioPlaying) return;
-
-        let audioSrc = '';
-        if (currentLetter === 'A') {
-            audioSrc = `/audio/syllables/vogais/${currentSyllable}.mp3`;
-        } else {
-            audioSrc = `/audio/syllables/essenciais/${currentLetter}/${currentSyllable}.mp3`;
-        }
+        let audioSrc = currentLetter === 'A' ? `/audio/syllables/vogais/${currentSyllable}.mp3` : `/audio/syllables/essenciais/${currentLetter}/${currentSyllable}.mp3`;
         
         try {
             setAudioPlaying('model');
             setMessage('🔊 Escute com atenção...');
-            if (!modelAudioRef.current) {
-                modelAudioRef.current = new Audio();
-            }
+            if (!modelAudioRef.current) modelAudioRef.current = new Audio();
             modelAudioRef.current.src = audioSrc;
             await modelAudioRef.current.play();
         } catch (error) {
             console.error("Erro ao tocar MP3, tentando voz sintética:", error);
-            // Fallback para voz sintética se o MP3 falhar
             const utterance = new SpeechSynthesisUtterance(currentSyllable);
             utterance.lang = 'pt-BR';
             window.speechSynthesis.speak(utterance);
         } finally {
-             // Adiciona um listener para quando o áudio terminar
              if(modelAudioRef.current) {
                 modelAudioRef.current.onended = () => {
                     setAudioPlaying(null);
@@ -103,19 +93,24 @@ export default function SpeechPracticeGame() {
         }
     }, [audioPlaying, currentSyllable, currentLetter]);
 
-    // Lógica de Gravação
+    // << ALTERAÇÃO AQUI >> Lógica de gravação atualizada para dar feedback instantâneo
     const startRecording = async () => {
-        if (isRecording || micPermission !== 'granted') {
-            if (micPermission === 'prompt') requestMicPermission();
-            return;
+        if (recordingStatus !== 'idle' || !!audioPlaying) return;
+
+        if (micPermission !== 'granted') {
+            const granted = await requestMicPermission();
+            if (!granted) return;
         }
+
+        setRecordingStatus('initializing');
+        setMessage('🎙️ Preparando o microfone...');
+        setRecordedAudioUrl(null);
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorderRef.current = new MediaRecorder(stream);
             audioChunksRef.current = [];
 
-            // Visualizador de áudio
             if (!audioContextRef.current) audioContextRef.current = new AudioContext();
             const source = audioContextRef.current.createMediaStreamSource(stream);
             analyserRef.current = audioContextRef.current.createAnalyser();
@@ -132,32 +127,29 @@ export default function SpeechPracticeGame() {
             };
             draw();
 
-            mediaRecorderRef.current.ondataavailable = (event) => {
-                audioChunksRef.current.push(event.data);
-            };
-
+            mediaRecorderRef.current.ondataavailable = (event) => audioChunksRef.current.push(event.data);
             mediaRecorderRef.current.onstop = () => {
                 const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
                 const audioUrl = URL.createObjectURL(audioBlob);
                 setRecordedAudioUrl(audioUrl);
-                stream.getTracks().forEach(track => track.stop()); // Desliga o microfone
+                stream.getTracks().forEach(track => track.stop());
                 if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
                 setAudioLevel(0);
             };
 
             mediaRecorderRef.current.start();
-            setIsRecording(true);
-            setRecordedAudioUrl(null);
+            setRecordingStatus('recording');
             setMessage('🎤 Gravando... Fale a sílaba agora!');
         } catch (error) {
             setMessage('Não foi possível iniciar a gravação.');
+            setRecordingStatus('idle');
         }
     };
 
     const stopRecording = () => {
-        if (mediaRecorderRef.current && isRecording) {
+        if (mediaRecorderRef.current && recordingStatus === 'recording') {
             mediaRecorderRef.current.stop();
-            setIsRecording(false);
+            setRecordingStatus('idle');
             setMessage('Gravação concluída! Ouça e confirme.');
         }
     };
@@ -171,7 +163,6 @@ export default function SpeechPracticeGame() {
         }
     };
 
-    // Lógica do jogo
     const handleConfirm = () => {
         const points = 10 + (streak * 2);
         setScore(prev => prev + points);
@@ -194,15 +185,13 @@ export default function SpeechPracticeGame() {
             setCurrentLetterIndex(prev => prev + 1);
             setCurrentSyllableIndex(0);
         } else {
-            setShowResults(true); // Fim do jogo
+            setShowResults(true);
         }
         setMessage('');
     };
     
     const startGameFlow = () => {
-        if (micPermission === 'prompt') {
-            requestMicPermission();
-        }
+        if (micPermission === 'prompt') requestMicPermission();
         setCurrentScreen('game');
         setCurrentLetterIndex(0);
         setCurrentSyllableIndex(0);
@@ -213,8 +202,6 @@ export default function SpeechPracticeGame() {
         setMessage('Clique em "Ouvir Sílaba" para começar!');
         setShowResults(false);
     };
-
-    // --- TELAS ---
     
     const TitleScreen = () => (
       <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-pink-300 via-purple-300 to-indigo-400">
@@ -275,38 +262,34 @@ export default function SpeechPracticeGame() {
                             </h2>
                             <div className="text-8xl font-bold text-purple-600 mb-6 drop-shadow-md">{currentSyllable}</div>
 
-                            {/* --- PAINEL DE AÇÕES --- */}
                             <div className="space-y-4">
-                                {/* OUVIR MODELO */}
-                                <button onClick={playModelAudio} disabled={!!audioPlaying} className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-full text-xl font-bold transition-all ${!audioPlaying ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-400 text-gray-600'}`}>
+                                <button onClick={playModelAudio} disabled={!!audioPlaying || recordingStatus !== 'idle'} className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-full text-xl font-bold transition-all ${!audioPlaying && recordingStatus === 'idle' ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-400 text-gray-600 cursor-not-allowed'}`}>
                                     <Volume2 className="w-6 h-6" /> {audioPlaying === 'model' ? 'Reproduzindo...' : 'Ouvir Sílaba'}
                                 </button>
                                 
-                                {/* GRAVAR / PARAR */}
-                                {!isRecording ? (
-                                    <button onClick={startRecording} disabled={!!audioPlaying || micPermission !== 'granted'} className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-full text-xl font-bold transition-all ${micPermission !== 'granted' ? 'bg-yellow-500 text-white' : !audioPlaying ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-400 text-gray-600'}`}>
-                                        <Mic className="w-6 h-6" /> {micPermission === 'prompt' ? 'Permitir Microfone' : micPermission === 'denied' ? 'Microfone Negado' : 'Gravar Minha Voz'}
-                                    </button>
-                                ) : (
-                                    <button onClick={stopRecording} className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-full text-xl font-bold bg-red-500 text-white animate-pulse">
-                                        <Mic className="w-6 h-6" /> Parar Gravação
-                                    </button>
-                                )}
+                                {/* << ALTERAÇÃO AQUI >> Lógica do botão de gravação com 3 estados */}
+                                <button onClick={recordingStatus === 'recording' ? stopRecording : startRecording} disabled={!!audioPlaying} className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-full text-xl font-bold transition-all ${!!audioPlaying ? 'bg-gray-400 text-gray-600 cursor-not-allowed' :
+                                    recordingStatus === 'recording' ? 'bg-red-500 text-white animate-pulse' :
+                                    recordingStatus === 'initializing' ? 'bg-yellow-500 text-white' :
+                                    'bg-green-500 text-white hover:bg-green-600'
+                                }`}>
+                                    {recordingStatus === 'recording' ? <><Mic className="w-6 h-6" /> Parar Gravação</> :
+                                     recordingStatus === 'initializing' ? <><LoaderCircle className="w-6 h-6 animate-spin" /> Iniciando...</> :
+                                     <><Mic className="w-6 h-6" /> Gravar Minha Voz</>}
+                                </button>
 
-                                {/* VISUALIZADOR DE ÁUDIO */}
-                                {isRecording && (
+                                {recordingStatus === 'recording' && (
                                     <div className="w-full h-12 bg-white/50 rounded-lg overflow-hidden flex items-center justify-center">
-                                        <div className="bg-green-400 h-full transition-all duration-100" style={{ width: `${audioLevel * 2}%` }}></div>
+                                        <div className="bg-green-400 h-full transition-all duration-100" style={{ width: `${Math.min(100, audioLevel * 2)}%` }}></div>
                                     </div>
                                 )}
                                 
-                                {/* OUVIR GRAVAÇÃO E CONFIRMAR */}
                                 {recordedAudioUrl && (
                                     <div className="bg-white/60 p-4 rounded-2xl space-y-3 animate-fade-in">
                                         <button onClick={playRecording} disabled={!!audioPlaying} className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-full text-lg font-bold transition-all ${!audioPlaying ? 'bg-purple-500 text-white hover:bg-purple-600' : 'bg-gray-400 text-gray-600'}`}>
                                             <Play className="w-5 h-5" /> {audioPlaying === 'user' ? 'Reproduzindo...' : 'Ouvir Minha Gravação'}
                                         </button>
-                                        <button onClick={handleConfirm} className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-full text-lg font-bold bg-teal-500 text-white hover:bg-teal-600">
+                                        <button onClick={handleConfirm} disabled={!!audioPlaying} className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-full text-lg font-bold bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-400">
                                             ✅ Confirmar e Avançar
                                         </button>
                                     </div>
@@ -316,7 +299,6 @@ export default function SpeechPracticeGame() {
                             {message && <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-blue-800 font-bold">{message}</div>}
                         </div>
                         
-                        {/* PAINEL DE PONTOS */}
                         <div className="bg-white rounded-xl shadow-lg p-4">
                             <div className="grid grid-cols-3 gap-4 text-center">
                                 <div><div className="text-2xl font-bold text-purple-600">{score}</div><div className="text-xs text-gray-500">Pontos</div></div>
