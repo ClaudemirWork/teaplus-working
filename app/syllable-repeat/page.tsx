@@ -219,17 +219,67 @@ export default function SpeechPracticeGame() {
     }
   };
 
-  const playAudio = () => {
+  const playAudio = async () => {
     if (!audioRef.current || audioPlaying) return;
+    
+    const audioPath = getAudioPath();
+    console.log('Tentando carregar áudio:', audioPath);
+    
+    // Testa se o arquivo existe
+    const fileExists = await testAudioFile(audioPath);
+    console.log('Arquivo existe?', fileExists);
+    
+    if (!fileExists) {
+      // Tenta caminhos alternativos
+      const alternativePaths = [
+        `/audio/${currentSyllable}.mp3`,
+        `/public/audio/syllables/${currentSyllable}.mp3`,
+        `/assets/audio/syllables/${currentSyllable}.mp3`
+      ];
+      
+      let workingPath = null;
+      for (const altPath of alternativePaths) {
+        if (await testAudioFile(altPath)) {
+          workingPath = altPath;
+          break;
+        }
+      }
+      
+      if (workingPath) {
+        console.log('Usando caminho alternativo:', workingPath);
+        audioRef.current.src = workingPath;
+      } else {
+        setMessage('❌ Arquivo de áudio não encontrado. Verifique se os arquivos estão na pasta public/audio/syllables/');
+        console.error('Nenhum arquivo de áudio encontrado para:', currentSyllable);
+        return;
+      }
+    }
     
     setAudioPlaying(true);
     setMessage('🔊 Escute com atenção...');
     audioRef.current.playbackRate = playbackRate;
-    audioRef.current.play().catch(error => {
+    
+    try {
+      await audioRef.current.play();
+    } catch (error) {
       console.error('Erro ao reproduzir áudio:', error);
-      setMessage('Erro ao reproduzir áudio. Tente novamente.');
+      setMessage('❌ Erro ao reproduzir áudio. Tente usar o botão novamente.');
       setAudioPlaying(false);
-    });
+      
+      // Fallback: usar síntese de voz
+      if ('speechSynthesis' in window) {
+        setMessage('🤖 Usando voz sintética como alternativa...');
+        const utterance = new SpeechSynthesisUtterance(currentSyllable);
+        utterance.lang = 'pt-BR';
+        utterance.rate = playbackRate;
+        utterance.onend = () => {
+          setAudioPlaying(false);
+          setMessage('✨ Perfeito! Agora clique no microfone e repita!');
+        };
+        window.speechSynthesis.speak(utterance);
+        setAudioPlaying(true);
+      }
+    }
   };
 
   const onAudioEnded = () => {
@@ -305,8 +355,10 @@ export default function SpeechPracticeGame() {
   // Gerar caminho do áudio
   const getAudioPath = () => {
     if (currentLetter === 'A') {
-      return `/audio/syllables/${currentSyllable}.mp3`;
+      // Vogais estão na subpasta vogais
+      return `/audio/syllables/vogais/${currentSyllable}.mp3`;
     } else {
+      // Consoantes estão nas pastas essenciais
       return `/audio/syllables/essenciais/${currentLetter}/${currentSyllable}.mp3`;
     }
   };
