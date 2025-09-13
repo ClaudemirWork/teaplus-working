@@ -1,0 +1,79 @@
+/* Animação para o pop-up de recompensa */
+.rewardPopup {
+    animation: pop-in-out 2s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+}
+
+@keyframes pop-in-out {
+    0% {
+        transform: translate(-50%, -50%) scale(0.3);
+        opacity: 0;
+    }
+    15%, 75% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(0.3);
+        opacity: 0;
+    }
+}
+
+/* Animação para o botão de confirmar */
+.confirmButton {
+    animation: throb 1.5s infinite ease-in-out;
+}
+
+@keyframes throb {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* --- EFEITO DE EXPLOSÃO DE ESTRELAS --- */
+.starBurstContainer {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none; /* Garante que não interfere com cliques */
+    z-index: 50;
+    width: 200px;
+    height: 200px;
+}
+
+.star {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background-color: #ffcc00;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    opacity: 0;
+    animation: sparkle-and-fade 0.8s ease-out forwards;
+}
+
+@keyframes sparkle-and-fade {
+    0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.5) rotate(180deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Posições e delays para cada estrela da explosão */
+.star1 { top: 50%; left: 50%; animation-delay: 0s; background: #ffcc00; }
+.star2 { top: 20%; left: 30%; animation-delay: 0.1s; background: #ff6699; }
+.star3 { top: 80%; left: 70%; animation-delay: 0.15s; background: #66ccff; }
+.star4 { top: 30%; left: 80%; animation-delay: 0.2s; background: #99ff66; }
+.star5 { top: 70%; left: 20%; animation-delay: 0.25s; background: #ff9933; }
+.star6 { top: 40%; left: 10%; animation-delay: 0.3s; background: #cc66ff; }
+.star7 { top: 60%; left: 90%; animation-delay: 0.35s; background: #66ffcc; }
