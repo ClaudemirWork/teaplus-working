@@ -1,6 +1,6 @@
 'use client';
 
-import React,- { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronLeft, Volume2, Mic, Star, Trophy, Play } from 'lucide-react';
 
 // Mapeamento das sílabas (mantido)
