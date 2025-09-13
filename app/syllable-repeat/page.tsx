@@ -533,98 +533,115 @@ export default function SpeechPracticeGame() {
                     {currentSyllable}
                   </div>
 
-                  {/* Instruções visuais */}
+                  {/* Instruções visuais do fluxo */}
                   <div className="mb-6 bg-white/80 rounded-2xl p-4">
                     <div className="flex items-center justify-center gap-8 text-sm">
-                      <div className="flex flex-col items-center">
+                      <div className={`flex flex-col items-center ${gameStep === 'listen' ? 'opacity-100 scale-110' : 'opacity-50'}`}>
                         <div className="text-2xl mb-1">👂</div>
                         <div className="font-bold">1. Escutar</div>
                       </div>
                       <div className="text-2xl">→</div>
-                      <div className="flex flex-col items-center">
+                      <div className={`flex flex-col items-center ${gameStep === 'ready' ? 'opacity-100 scale-110' : 'opacity-50'}`}>
                         <div className="text-2xl mb-1">🎤</div>
-                        <div className="font-bold">2. Repetir</div>
+                        <div className="font-bold">2. Gravar</div>
                       </div>
                       <div className="text-2xl">→</div>
-                      <div className="flex flex-col items-center">
+                      <div className={`flex flex-col items-center ${gameStep === 'recording' ? 'opacity-100 scale-110 animate-pulse' : 'opacity-50'}`}>
                         <div className="text-2xl mb-1">🎉</div>
                         <div className="font-bold">3. Celebrar</div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Controles de áudio */}
-                  <div className="flex flex-col items-center gap-4 mb-6">
-                    <audio
-                      ref={audioRef}
-                      src={audioSrc}
-                      preload="auto"
-                      onEnded={onAudioEnded}
-                    />
-                    
-                    <button
-                      onClick={playAudio}
-                      disabled={audioPlaying || listening}
-                      className={`flex items-center gap-2 px-8 py-4 rounded-full text-xl font-bold transition-all ${
-                        audioPlaying || listening
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-105 animate-pulse'
-                      }`}
-                    >
-                      <Volume2 className="w-6 h-6" />
-                      {audioPlaying ? 'Reproduzindo...' : 'Ouvir Sílaba'}
-                    </button>
-
-                    {/* Controle de velocidade */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-600">Velocidade:</span>
-                      <select
-                        value={playbackRate}
-                        onChange={(e) => setPlaybackRate(parseFloat(e.target.value))}
-                        className="px-3 py-1 border border-gray-300 rounded-lg text-sm"
-                        disabled={audioPlaying || listening}
-                      >
-                        <option value="0.5">0.5x (Muito Lento)</option>
-                        <option value="0.75">0.75x (Lento)</option>
-                        <option value="1.0">1.0x (Normal)</option>
-                        <option value="1.25">1.25x (Rápido)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Botão do microfone */}
-                  <div className="mb-6">
-                    {!listening ? (
+                  {/* Controles de áudio - PASSO 1: ESCUTAR */}
+                  {gameStep === 'listen' && (
+                    <div className="flex flex-col items-center gap-4 mb-6">
+                      <audio
+                        ref={audioRef}
+                        src={getAudioPath()}
+                        preload="auto"
+                        onEnded={onAudioEnded}
+                      />
+                      
                       <button
-                        onClick={startListening}
+                        onClick={playAudio}
                         disabled={audioPlaying}
                         className={`flex items-center gap-2 px-8 py-4 rounded-full text-xl font-bold transition-all ${
                           audioPlaying
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            : 'bg-green-500 text-white hover:bg-green-600 hover:scale-105 animate-pulse'
+                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                            : 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-105 animate-pulse shadow-lg'
                         }`}
                       >
-                        <Mic className="w-6 h-6" />
-                        Repetir Sílaba
+                        <Volume2 className="w-6 h-6" />
+                        {audioPlaying ? 'Reproduzindo...' : 'Ouvir Sílaba'}
                       </button>
-                    ) : (
+
+                      {/* Controle de velocidade */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-600">Velocidade:</span>
+                        <select
+                          value={playbackRate}
+                          onChange={(e) => setPlaybackRate(parseFloat(e.target.value))}
+                          className="px-3 py-1 border border-gray-300 rounded-lg text-sm"
+                          disabled={audioPlaying}
+                        >
+                          <option value="0.5">0.5x (Muito Lento)</option>
+                          <option value="0.75">0.75x (Lento)</option>
+                          <option value="1.0">1.0x (Normal)</option>
+                          <option value="1.25">1.25x (Rápido)</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PASSO 2: GRAVAR */}
+                  {gameStep === 'ready' && (
+                    <div className="flex flex-col items-center gap-4 mb-6">
+                      <button
+                        onClick={startListening}
+                        className="flex items-center gap-2 px-8 py-4 rounded-full text-xl font-bold bg-green-500 text-white hover:bg-green-600 hover:scale-105 animate-pulse shadow-lg"
+                      >
+                        <Mic className="w-6 h-6" />
+                        Gravar Minha Voz
+                      </button>
+                      
+                      <button
+                        onClick={() => setGameStep('listen')}
+                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 text-sm"
+                      >
+                        Escutar Novamente
+                      </button>
+                    </div>
+                  )}
+
+                  {/* PASSO 3: GRAVANDO */}
+                  {gameStep === 'recording' && (
+                    <div className="flex flex-col items-center gap-4 mb-6">
                       <div className="flex flex-col items-center gap-2">
                         <button
                           onClick={stopListening}
-                          className="flex items-center gap-2 px-8 py-4 rounded-full text-xl font-bold bg-red-500 text-white hover:bg-red-600 animate-pulse"
+                          className="flex items-center gap-2 px-8 py-4 rounded-full text-xl font-bold bg-red-500 text-white hover:bg-red-600 animate-pulse shadow-lg"
                         >
                           <Mic className="w-6 h-6 animate-bounce" />
                           Escutando... Fale agora!
                         </button>
+                        
+                        {/* Indicador visual de gravação */}
+                        <div className="flex items-center gap-2 text-red-500">
+                          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                          <span className="font-bold">GRAVANDO</span>
+                          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                        </div>
+                        
                         <button
                           onClick={stopListening}
                           className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
                         >
-                          Parar
+                          Parar Gravação
                         </button>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Mensagem de status */}
                   {message && (
