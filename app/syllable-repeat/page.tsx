@@ -1,9 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronLeft, Volume2, Mic, Star, Trophy, Play, LoaderCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ChevronLeft, Save, Volume2, Mic, Star, Trophy, Play, Sparkles, Crown, Gift } from 'lucide-react';
+import { createClient } from '../utils/supabaseClient';
+import confetti from 'canvas-confetti';
+import Image from 'next/image';
 
-// Mapeamento das sílabas (mantido)
+// Mapeamento das sílabas
 const syllableMap: { [letter: string]: string[] } = {
     A: ['a', 'e', 'i', 'o', 'u'],
     B: ['ba', 'bê', 'bi', 'bó', 'bu', 'bô'],
@@ -23,6 +27,9 @@ const syllableMap: { [letter: string]: string[] } = {
 };
 
 export default function SpeechPracticeGame() {
+    const router = useRouter();
+    const supabase = createClient();
+    
     const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game'>('title');
     const [currentLetterIndex, setCurrentLetterIndex] = useState(0);
     const [currentSyllableIndex, setCurrentSyllableIndex] = useState(0);
@@ -30,23 +37,25 @@ export default function SpeechPracticeGame() {
     const [streak, setStreak] = useState(0);
     const [maxStreak, setMaxStreak] = useState(0);
     const [starsEarned, setStarsEarned] = useState(0);
+    const [gemsEarned, setGemsEarned] = useState(0);
     const [message, setMessage] = useState('');
     const [showCelebration, setCelebrationMessage] = useState('');
     const [showResults, setShowResults] = useState(false);
+    const [salvando, setSalvando] = useState(false);
     
-    // << ALTERAÇÃO AQUI >> Novo estado para gerenciar o status da gravação e eliminar o delay
-    const [recordingStatus, setRecordingStatus] = useState<'idle' | 'initializing' | 'recording'>('idle');
+    // Estados otimizados para áudio
+    const [isRecording, setIsRecording] = useState(false);
     const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
     const [audioPlaying, setAudioPlaying] = useState<'model' | 'user' | null>(null);
     const [micPermission, setMicPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
-    const [audioLevel, setAudioLevel] = useState(0);
+    
+    // Estados para gamificação
+    const [showSpecialEffect, setShowSpecialEffect] = useState<'star' | 'gem' | 'crown' | null>(null);
+    const [totalStarsCollected, setTotalStarsCollected] = useState(0);
+    const [bestScore, setBestScore] = useState(0);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const analyserRef = useRef<AnalyserNode | null>(null);
-    const dataArrayRef = useRef<Uint8Array | null>(null);
-    const rafIdRef = useRef<number | null>(null);
     const modelAudioRef = useRef<HTMLAudioElement | null>(null);
 
     const letters = Object.keys(syllableMap);
@@ -54,103 +63,141 @@ export default function SpeechPracticeGame() {
     const syllables = syllableMap[currentLetter] || [];
     const currentSyllable = syllables[currentSyllableIndex] || 'a';
 
+    // Carregar estatísticas salvas
+    useEffect(() => {
+        const savedStars = localStorage.getItem('speechGame_totalStars');
+        const savedBest = localStorage.getItem('speechGame_bestScore');
+        
+        if (savedStars) setTotalStarsCollected(parseInt(savedStars));
+        if (savedBest) setBestScore(parseInt(savedBest));
+    }, []);
+
+    // Otimização: Solicitar permissão do microfone sem delay
     const requestMicPermission = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: { 
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100
+                } 
+            });
             stream.getTracks().forEach(track => track.stop());
             setMicPermission('granted');
-            setMessage('Microfone pronto!');
+            setMessage('🎤 Microfone pronto para usar!');
             return true;
         } catch (error) {
             setMicPermission('denied');
-            setMessage('Microfone negado. A gravação não funcionará.');
+            setMessage('❌ Microfone negado. A gravação não funcionará.');
             return false;
         }
     };
 
     const playModelAudio = useCallback(async () => {
         if (audioPlaying) return;
-        let audioSrc = currentLetter === 'A' ? `/audio/syllables/vogais/${currentSyllable}.mp3` : `/audio/syllables/essenciais/${currentLetter}/${currentSyllable}.mp3`;
+        
+        const audioSrc = currentLetter === 'A' 
+            ? `/audio/syllables/vogais/${currentSyllable}.mp3` 
+            : `/audio/syllables/essenciais/${currentLetter}/${currentSyllable}.mp3`;
         
         try {
             setAudioPlaying('model');
             setMessage('🔊 Escute com atenção...');
+            
             if (!modelAudioRef.current) modelAudioRef.current = new Audio();
             modelAudioRef.current.src = audioSrc;
+            
             await modelAudioRef.current.play();
+            
+            modelAudioRef.current.onended = () => {
+                setAudioPlaying(null);
+                setMessage('✨ Agora clique em "Gravar" e repita a sílaba!');
+            };
         } catch (error) {
-            console.error("Erro ao tocar MP3, tentando voz sintética:", error);
+            console.error("Erro ao tocar MP3, usando voz sintética:", error);
             const utterance = new SpeechSynthesisUtterance(currentSyllable);
             utterance.lang = 'pt-BR';
+            utterance.rate = 0.8;
+            utterance.pitch = 1.2;
+            
+            utterance.onend = () => {
+                setAudioPlaying(null);
+                setMessage('✨ Agora clique em "Gravar" e repita a sílaba!');
+            };
+            
             window.speechSynthesis.speak(utterance);
-        } finally {
-             if(modelAudioRef.current) {
-                modelAudioRef.current.onended = () => {
-                    setAudioPlaying(null);
-                    setMessage('✨ Agora clique em "Gravar Minha Voz" e repita!');
-                };
-             }
         }
     }, [audioPlaying, currentSyllable, currentLetter]);
 
-    // << ALTERAÇÃO AQUI >> Lógica de gravação atualizada para dar feedback instantâneo
+    // Otimização: Gravação simplificada e mais rápida
     const startRecording = async () => {
-        if (recordingStatus !== 'idle' || !!audioPlaying) return;
+        if (isRecording || audioPlaying) return;
 
         if (micPermission !== 'granted') {
             const granted = await requestMicPermission();
             if (!granted) return;
         }
 
-        setRecordingStatus('initializing');
-        setMessage('🎙️ Preparando o microfone...');
         setRecordedAudioUrl(null);
+        setMessage('🎤 Gravando... Fale a sílaba agora!');
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorderRef.current = new MediaRecorder(stream);
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: { 
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100
+                } 
+            });
+
+            // Configuração otimizada do MediaRecorder
+            const options = { mimeType: 'audio/webm;codecs=opus' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options.mimeType = 'audio/webm';
+            }
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options.mimeType = 'audio/wav';
+            }
+
+            mediaRecorderRef.current = new MediaRecorder(stream, options);
             audioChunksRef.current = [];
 
-            if (!audioContextRef.current) audioContextRef.current = new AudioContext();
-            const source = audioContextRef.current.createMediaStreamSource(stream);
-            analyserRef.current = audioContextRef.current.createAnalyser();
-            analyserRef.current.fftSize = 512;
-            source.connect(analyserRef.current);
-            dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
-            
-            const draw = () => {
-                if (!analyserRef.current || !dataArrayRef.current) return;
-                analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-                const avg = dataArrayRef.current.reduce((a, b) => a + b) / dataArrayRef.current.length;
-                setAudioLevel(avg);
-                rafIdRef.current = requestAnimationFrame(draw);
+            mediaRecorderRef.current.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
             };
-            draw();
 
-            mediaRecorderRef.current.ondataavailable = (event) => audioChunksRef.current.push(event.data);
             mediaRecorderRef.current.onstop = () => {
-                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+                const audioBlob = new Blob(audioChunksRef.current, { 
+                    type: mediaRecorderRef.current?.mimeType || 'audio/wav' 
+                });
                 const audioUrl = URL.createObjectURL(audioBlob);
                 setRecordedAudioUrl(audioUrl);
+                setMessage('✅ Gravação concluída! Ouça e confirme se ficou bom.');
                 stream.getTracks().forEach(track => track.stop());
-                if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
-                setAudioLevel(0);
             };
 
             mediaRecorderRef.current.start();
-            setRecordingStatus('recording');
-            setMessage('🎤 Gravando... Fale a sílaba agora!');
+            setIsRecording(true);
+
+            // Auto-parar após 3 segundos
+            setTimeout(() => {
+                if (mediaRecorderRef.current && isRecording) {
+                    stopRecording();
+                }
+            }, 3000);
+
         } catch (error) {
-            setMessage('Não foi possível iniciar a gravação.');
-            setRecordingStatus('idle');
+            console.error('Erro na gravação:', error);
+            setMessage('❌ Não foi possível iniciar a gravação.');
         }
     };
 
     const stopRecording = () => {
-        if (mediaRecorderRef.current && recordingStatus === 'recording') {
+        if (mediaRecorderRef.current && isRecording) {
             mediaRecorderRef.current.stop();
-            setRecordingStatus('idle');
-            setMessage('Gravação concluída! Ouça e confirme.');
+            setIsRecording(false);
         }
     };
 
@@ -163,19 +210,78 @@ export default function SpeechPracticeGame() {
         }
     };
 
+    // Sistema de gamificação aprimorado
+    const createCelebrationBurst = (type: 'normal' | 'streak' | 'perfect' = 'normal') => {
+        const colors = type === 'streak' 
+            ? ['#FFD700', '#FFA500', '#FF69B4']
+            : type === 'perfect'
+            ? ['#9D4EDD', '#C77DFF', '#E0AAFF']
+            : ['#06D6A0', '#118AB2', '#073B4C'];
+
+        confetti({
+            particleCount: type === 'perfect' ? 150 : type === 'streak' ? 100 : 50,
+            spread: type === 'perfect' ? 100 : 70,
+            origin: { y: 0.6 },
+            colors: colors
+        });
+
+        if (type === 'perfect') {
+            setTimeout(() => {
+                confetti({
+                    particleCount: 100,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: colors
+                });
+                confetti({
+                    particleCount: 100,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: colors
+                });
+            }, 300);
+        }
+    };
+
     const handleConfirm = () => {
-        const points = 10 + (streak * 2);
+        const basePoints = 10;
+        const streakBonus = streak * 2;
+        const points = basePoints + streakBonus;
+        
         setScore(prev => prev + points);
         setStreak(prev => prev + 1);
         setMaxStreak(prev => Math.max(prev, streak + 1));
         setStarsEarned(prev => prev + 1);
+        
+        // Sistema de recompensas aprimorado
+        if (streak > 0 && (streak + 1) % 10 === 0) {
+            // A cada 10 acertos consecutivos = coroa
+            setGemsEarned(prev => prev + 5);
+            setShowSpecialEffect('crown');
+            setCelebrationMessage('👑 SEQUÊNCIA REAL! +5 Gemas Mágicas!');
+            createCelebrationBurst('perfect');
+        } else if (streak > 0 && (streak + 1) % 5 === 0) {
+            // A cada 5 acertos consecutivos = gema especial
+            setGemsEarned(prev => prev + 2);
+            setShowSpecialEffect('gem');
+            setCelebrationMessage('💎 SEQUÊNCIA ESPECIAL! +2 Gemas!');
+            createCelebrationBurst('streak');
+        } else {
+            // Acerto normal = estrela
+            setShowSpecialEffect('star');
+            setCelebrationMessage(`⭐ Perfeito! +${points} pontos!`);
+            createCelebrationBurst('normal');
+        }
+        
         setRecordedAudioUrl(null);
-        setCelebrationMessage('👏 Ótimo! Você conseguiu!');
         
         setTimeout(() => {
             setCelebrationMessage('');
+            setShowSpecialEffect(null);
             nextSyllable();
-        }, 1500);
+        }, 2000);
     };
 
     const nextSyllable = () => {
@@ -184,10 +290,19 @@ export default function SpeechPracticeGame() {
         } else if (currentLetterIndex + 1 < letters.length) {
             setCurrentLetterIndex(prev => prev + 1);
             setCurrentSyllableIndex(0);
+            
+            // Celebração especial ao completar uma letra
+            setMessage(`🎉 Letra ${currentLetter} completa! Próxima: ${letters[currentLetterIndex + 1]}`);
+            createCelebrationBurst('streak');
+            
+            setTimeout(() => {
+                setMessage('Clique em "Ouvir Sílaba" para continuar!');
+            }, 2000);
         } else {
+            // Fim do jogo
+            createCelebrationBurst('perfect');
             setShowResults(true);
         }
-        setMessage('');
     };
     
     const startGameFlow = () => {
@@ -199,133 +314,442 @@ export default function SpeechPracticeGame() {
         setStreak(0);
         setMaxStreak(0);
         setStarsEarned(0);
-        setMessage('Clique em "Ouvir Sílaba" para começar!');
+        setGemsEarned(0);
+        setMessage('🎯 Clique em "Ouvir Sílaba" para começar!');
+        setShowResults(false);
+    };
+
+    const handleSaveSession = async () => {
+        setSalvando(true);
+        
+        try {
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            
+            if (userError || !user) {
+                alert('Erro: Sessão expirada. Por favor, faça login novamente.');
+                router.push('/login');
+                return;
+            }
+
+            // Salvar recordes localmente
+            const newStars = totalStarsCollected + starsEarned;
+            setTotalStarsCollected(newStars);
+            localStorage.setItem('speechGame_totalStars', newStars.toString());
+            
+            if (score > bestScore) {
+                setBestScore(score);
+                localStorage.setItem('speechGame_bestScore', score.toString());
+            }
+            
+            const { data, error } = await supabase
+                .from('sessoes')
+                .insert([{
+                    usuario_id: user.id,
+                    atividade_nome: 'Minha Fala - Prática de Pronúncia',
+                    pontuacao_final: score,
+                    data_fim: new Date().toISOString()
+                }]);
+
+            if (error) {
+                console.error('Erro ao salvar:', error);
+                alert(`Erro ao salvar: ${error.message}`);
+            } else {
+                alert(`Sessão salva com sucesso!
+                
+🗣️ Resultado da Prática de Fala:
+- Pontuação Final: ${score} pontos
+- Melhor Sequência: ${maxStreak} acertos
+- Estrelas Ganhas: ${starsEarned}
+- Gemas Mágicas: ${gemsEarned}
+- Total de Estrelas: ${newStars}`);
+                
+                router.push('/dashboard');
+            }
+        } catch (error: any) {
+            console.error('Erro inesperado:', error);
+            alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
+        } finally {
+            setSalvando(false);
+        }
+    };
+
+    const voltarInicio = () => {
+        setCurrentScreen('title');
         setShowResults(false);
     };
     
     const TitleScreen = () => (
-      <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-pink-300 via-purple-300 to-indigo-400">
-        <div className="relative z-10 flex flex-col items-center text-center">
-            <div className="mb-6">
-                <img src="/images/mascotes/Leo_mila_conversa.webp" alt="Leo e Mila conversando" className="w-[280px] h-auto rounded-full shadow-2xl"/>
+        <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-pink-300 via-purple-400 to-indigo-500 overflow-hidden">
+            {/* Estrelas de fundo animadas */}
+            <div className="absolute inset-0 overflow-hidden">
+                {[...Array(15)].map((_, i) => (
+                    <div
+                        key={i}
+                        className="absolute animate-pulse"
+                        style={{
+                            left: `${Math.random() * 100}%`,
+                            top: `${Math.random() * 100}%`,
+                            animationDelay: `${Math.random() * 3}s`,
+                            animationDuration: `${3 + Math.random() * 2}s`
+                        }}
+                    >
+                        <Star className="w-6 h-6 text-white opacity-30" fill="currentColor" />
+                    </div>
+                ))}
             </div>
-            <h1 className="text-5xl sm:text-6xl font-bold text-white mb-4 drop-shadow-lg">Minha Fala</h1>
-            <p className="text-xl text-white/90 mb-6">🗣️ Pratique sílabas de forma divertida! 🎯</p>
-            <button onClick={() => setCurrentScreen('instructions')} className="text-xl font-bold text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-full px-12 py-5 shadow-xl hover:scale-105 transition-transform">
-                Vamos Praticar!
-            </button>
+            
+            <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="mb-4 animate-bounce-slow">
+                    <Image 
+                        src="/images/mascotes/Leo_mila_conversa.webp" 
+                        alt="Leo e Mila conversando" 
+                        width={400} 
+                        height={400} 
+                        className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl rounded-full" 
+                        priority 
+                    />
+                </div>
+                <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white drop-shadow-lg mb-4">
+                    Minha Fala
+                </h1>
+                <p className="text-xl sm:text-2xl text-white/90 mt-2 mb-4 drop-shadow-md">
+                    🗣️ Pratique sílabas de forma divertida! 🎯
+                </p>
+                
+                {/* Estatísticas na tela inicial */}
+                {(totalStarsCollected > 0 || bestScore > 0) && (
+                    <div className="bg-white/80 rounded-2xl p-4 mb-4 shadow-xl">
+                        <div className="flex items-center gap-4">
+                            {totalStarsCollected > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <Star className="w-6 h-6 text-yellow-500" fill="currentColor" />
+                                    <span className="font-bold text-purple-800">{totalStarsCollected} estrelas</span>
+                                </div>
+                            )}
+                            {bestScore > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <Trophy className="w-6 h-6 text-yellow-600" />
+                                    <span className="font-bold text-purple-800">Recorde: {bestScore}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+                
+                <button 
+                    onClick={() => setCurrentScreen('instructions')} 
+                    className="text-xl font-bold text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-1"
+                >
+                    Vamos Praticar!
+                </button>
+            </div>
         </div>
-      </div>
     );
 
     const InstructionsScreen = () => (
-      <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-300 via-pink-300 to-orange-300">
-        <div className="bg-white/95 rounded-3xl p-8 max-w-2xl shadow-2xl text-center">
-            <h2 className="text-4xl font-bold mb-6 text-purple-600">Como Funciona</h2>
-            <div className="text-lg text-gray-700 space-y-6 mb-6 text-left">
-                <p className="flex items-center gap-4"><span className="text-4xl">🔊</span><span><b>1. Ouça a sílaba</b> - Clique para escutar a pronúncia correta.</span></p>
-                <p className="flex items-center gap-4"><span className="text-4xl">🎤</span><span><b>2. Grave sua voz</b> - Clique no microfone e repita a sílaba em voz alta.</span></p>
-                <p className="flex items-center gap-4"><span className="text-4xl">👂</span><span><b>3. Ouça sua gravação</b> - Compare sua pronúncia com a do modelo.</span></p>
-                <p className="flex items-center gap-4"><span className="text-4xl">✅</span><span><b>4. Confirme</b> - Se estiver satisfeito, confirme para ganhar pontos e avançar!</span></p>
+        <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-300 via-pink-300 to-orange-300">
+            <div className="bg-white/95 rounded-3xl p-8 max-w-2xl shadow-2xl text-center">
+                <h2 className="text-4xl font-bold mb-6 text-purple-600">Como Funciona</h2>
+                <div className="text-lg text-gray-700 space-y-6 mb-6 text-left">
+                    <p className="flex items-center gap-4">
+                        <span className="text-4xl">🔊</span>
+                        <span><b>1. Ouça a sílaba</b> - Clique para escutar a pronúncia correta</span>
+                    </p>
+                    <p className="flex items-center gap-4">
+                        <span className="text-4xl">🎤</span>
+                        <span><b>2. Grave sua voz</b> - Clique no microfone e repita a sílaba</span>
+                    </p>
+                    <p className="flex items-center gap-4">
+                        <span className="text-4xl">👂</span>
+                        <span><b>3. Ouça sua gravação</b> - Compare sua pronúncia com o modelo</span>
+                    </p>
+                    <p className="flex items-center gap-4">
+                        <span className="text-4xl">⭐</span>
+                        <span><b>4. Ganhe recompensas!</b> - Estrelas, gemas mágicas e coroas!</span>
+                    </p>
+                </div>
+                
+                <button 
+                    onClick={startGameFlow} 
+                    className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform"
+                >
+                    Começar Prática! 🚀
+                </button>
             </div>
-            <button onClick={startGameFlow} className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform">
-                Começar Prática! 🚀
-            </button>
         </div>
-      </div>
     );
     
     const GameScreen = () => (
         <div className="min-h-screen bg-gray-50">
-            <header className="bg-white border-b sticky top-0 z-10">
-                <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-                    <button onClick={() => setCurrentScreen('title')} className="flex items-center text-purple-600 hover:text-purple-700">
-                        <ChevronLeft className="h-6 w-6" /><span className="ml-1 font-medium">Voltar</span>
-                    </button>
-                    <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">🗣️ Minha Fala</h1>
-                    <div className="w-24"></div>
+            <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6">
+                    <div className="flex items-center justify-between h-16">
+                        <button
+                            onClick={() => setCurrentScreen('title')}
+                            className="flex items-center text-purple-600 hover:text-purple-700 transition-colors"
+                        >
+                            <ChevronLeft className="h-6 w-6" />
+                            <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
+                        </button>
+
+                        <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex items-center gap-2">
+                            🗣️
+                            <span>Minha Fala</span>
+                        </h1>
+
+                        {showResults ? (
+                            <button
+                                onClick={handleSaveSession}
+                                disabled={salvando}
+                                className={`flex items-center space-x-2 px-3 py-2 sm:px-4 rounded-lg font-semibold transition-colors ${
+                                    !salvando
+                                        ? 'bg-green-500 text-white hover:bg-green-600'
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                }`}
+                            >
+                                <Save size={18} />
+                                <span className="hidden sm:inline">{salvando ? 'Salvando...' : 'Salvar'}</span>
+                            </button>
+                        ) : (
+                            <div className="w-24"></div>
+                        )}
+                    </div>
                 </div>
             </header>
 
-            <main className="p-4 max-w-2xl mx-auto">
+            <main className="p-4 sm:p-6 max-w-4xl mx-auto w-full">
                 {!showResults ? (
-                    <div className="space-y-6">
-                        <div className="bg-gradient-to-br from-purple-100 to-pink-100 rounded-3xl p-6 text-center relative overflow-hidden">
+                    <div className="space-y-4">
+                        {/* Status com gamificação */}
+                        <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4">
+                            <div className="grid grid-cols-5 gap-2">
+                                <div className="text-center">
+                                    <div className="text-base sm:text-xl font-bold text-purple-800">
+                                        {currentLetter}
+                                    </div>
+                                    <div className="text-xs text-purple-600">Letra</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-base sm:text-xl font-bold text-blue-800">
+                                        {score}
+                                    </div>
+                                    <div className="text-xs text-blue-600">Pontos</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-base sm:text-xl font-bold text-orange-800">
+                                        {streak}
+                                    </div>
+                                    <div className="text-xs text-orange-600">Sequência</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-base sm:text-xl font-bold text-yellow-800">
+                                        {starsEarned}
+                                    </div>
+                                    <div className="text-xs text-yellow-600">⭐ Estrelas</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-base sm:text-xl font-bold text-pink-800">
+                                        {gemsEarned}
+                                    </div>
+                                    <div className="text-xs text-pink-600">💎 Gemas</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Área principal do jogo */}
+                        <div className="bg-gradient-to-br from-purple-100 via-pink-100 to-indigo-100 rounded-3xl p-6 text-center relative overflow-hidden shadow-xl">
+                            {/* Efeitos especiais de celebração */}
                             {showCelebration && (
                                 <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-20">
-                                    <div className="bg-white rounded-3xl p-6 shadow-2xl animate-bounce text-lg font-bold text-purple-600">🎉 {showCelebration} 🎉</div>
+                                    <div className="bg-white rounded-3xl p-6 shadow-2xl animate-bounce text-lg font-bold">
+                                        {showSpecialEffect === 'crown' && (
+                                            <div className="text-6xl mb-2">👑</div>
+                                        )}
+                                        {showSpecialEffect === 'gem' && (
+                                            <div className="text-6xl mb-2">💎</div>
+                                        )}
+                                        {showSpecialEffect === 'star' && (
+                                            <div className="text-6xl mb-2">⭐</div>
+                                        )}
+                                        <div className="text-purple-600">{showCelebration}</div>
+                                    </div>
                                 </div>
                             )}
 
-                            <h2 className="text-2xl font-bold text-purple-800 mb-4">
-                                {currentLetter === 'A' ? 'Vogais' : `Letra ${currentLetter}`} - Sílaba {currentSyllableIndex + 1} de {syllables.length}
-                            </h2>
-                            <div className="text-8xl font-bold text-purple-600 mb-6 drop-shadow-md">{currentSyllable}</div>
+                            {/* Progresso da letra atual */}
+                            <div className="mb-4">
+                                <h2 className="text-lg sm:text-2xl font-bold text-purple-800 mb-2">
+                                    {currentLetter === 'A' ? 'Vogais' : `Letra ${currentLetter}`}
+                                </h2>
+                                <div className="text-sm text-purple-600">
+                                    Sílaba {currentSyllableIndex + 1} de {syllables.length}
+                                </div>
+                                
+                                {/* Barra de progresso */}
+                                <div className="w-full bg-purple-200 rounded-full h-2 mt-2">
+                                    <div 
+                                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                                        style={{ width: `${((currentSyllableIndex + 1) / syllables.length) * 100}%` }}
+                                    ></div>
+                                </div>
+                            </div>
 
-                            <div className="space-y-4">
-                                <button onClick={playModelAudio} disabled={!!audioPlaying || recordingStatus !== 'idle'} className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-full text-xl font-bold transition-all ${!audioPlaying && recordingStatus === 'idle' ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-400 text-gray-600 cursor-not-allowed'}`}>
-                                    <Volume2 className="w-6 h-6" /> {audioPlaying === 'model' ? 'Reproduzindo...' : 'Ouvir Sílaba'}
+                            {/* Sílaba atual com destaque */}
+                            <div className="bg-white/80 rounded-2xl p-8 mb-6 shadow-inner">
+                                <div className="text-6xl sm:text-8xl font-bold text-purple-600 mb-2 drop-shadow-lg animate-pulse">
+                                    {currentSyllable}
+                                </div>
+                                <div className="text-lg text-purple-700 font-medium">
+                                    Repita esta sílaba
+                                </div>
+                            </div>
+
+                            {/* Controles de áudio otimizados */}
+                            <div className="space-y-3">
+                                <button 
+                                    onClick={playModelAudio} 
+                                    disabled={!!audioPlaying || isRecording} 
+                                    className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${
+                                        !audioPlaying && !isRecording 
+                                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg hover:shadow-xl' 
+                                            : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                                    }`}
+                                >
+                                    <Volume2 className="w-6 h-6" />
+                                    {audioPlaying === 'model' ? 'Reproduzindo modelo...' : 'Ouvir Sílaba'}
                                 </button>
                                 
-                                {/* << ALTERAÇÃO AQUI >> Lógica do botão de gravação com 3 estados */}
-                                <button onClick={recordingStatus === 'recording' ? stopRecording : startRecording} disabled={!!audioPlaying} className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-full text-xl font-bold transition-all ${!!audioPlaying ? 'bg-gray-400 text-gray-600 cursor-not-allowed' :
-                                    recordingStatus === 'recording' ? 'bg-red-500 text-white animate-pulse' :
-                                    recordingStatus === 'initializing' ? 'bg-yellow-500 text-white' :
-                                    'bg-green-500 text-white hover:bg-green-600'
-                                }`}>
-                                    {recordingStatus === 'recording' ? <><Mic className="w-6 h-6" /> Parar Gravação</> :
-                                     recordingStatus === 'initializing' ? <><LoaderCircle className="w-6 h-6 animate-spin" /> Iniciando...</> :
-                                     <><Mic className="w-6 h-6" /> Gravar Minha Voz</>}
+                                <button 
+                                    onClick={isRecording ? stopRecording : startRecording} 
+                                    disabled={!!audioPlaying} 
+                                    className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${
+                                        !!audioPlaying 
+                                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed' :
+                                            isRecording 
+                                            ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse shadow-lg' :
+                                            'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg hover:shadow-xl'
+                                    }`}
+                                >
+                                    <Mic className="w-6 h-6" />
+                                    {isRecording ? '🔴 Gravando... (Clique para parar)' : 'Gravar Minha Voz'}
                                 </button>
 
-                                {recordingStatus === 'recording' && (
-                                    <div className="w-full h-12 bg-white/50 rounded-lg overflow-hidden flex items-center justify-center">
-                                        <div className="bg-green-400 h-full transition-all duration-100" style={{ width: `${Math.min(100, audioLevel * 2)}%` }}></div>
-                                    </div>
-                                )}
-                                
+                                {/* Visualização da gravação */}
                                 {recordedAudioUrl && (
-                                    <div className="bg-white/60 p-4 rounded-2xl space-y-3 animate-fade-in">
-                                        <button onClick={playRecording} disabled={!!audioPlaying} className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-full text-lg font-bold transition-all ${!audioPlaying ? 'bg-purple-500 text-white hover:bg-purple-600' : 'bg-gray-400 text-gray-600'}`}>
-                                            <Play className="w-5 h-5" /> {audioPlaying === 'user' ? 'Reproduzindo...' : 'Ouvir Minha Gravação'}
+                                    <div className="bg-white/80 p-4 rounded-2xl space-y-3 animate-slide-up shadow-inner">
+                                        <button 
+                                            onClick={playRecording} 
+                                            disabled={!!audioPlaying} 
+                                            className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-full text-lg font-bold transition-all ${
+                                                !audioPlaying 
+                                                    ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:scale-105 shadow-lg' 
+                                                    : 'bg-gray-400 text-gray-600'
+                                            }`}
+                                        >
+                                            <Play className="w-5 h-5" />
+                                            {audioPlaying === 'user' ? 'Reproduzindo...' : 'Ouvir Minha Gravação'}
                                         </button>
-                                        <button onClick={handleConfirm} disabled={!!audioPlaying} className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-full text-lg font-bold bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-400">
-                                            ✅ Confirmar e Avançar
+                                        
+                                        <button 
+                                            onClick={handleConfirm} 
+                                            disabled={!!audioPlaying} 
+                                            className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-full text-lg font-bold bg-gradient-to-r from-teal-500 to-green-500 text-white hover:scale-105 transition-all shadow-lg disabled:bg-gray-400"
+                                        >
+                                            <Sparkles className="w-6 h-6" />
+                                            Confirmar e Ganhar Estrela!
                                         </button>
                                     </div>
                                 )}
                             </div>
 
-                            {message && <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-blue-800 font-bold">{message}</div>}
+                            {/* Mensagens do jogo */}
+                            {message && (
+                                <div className="mt-4 bg-blue-50/80 border-2 border-blue-300 rounded-xl p-3 text-blue-800 font-bold shadow-inner">
+                                    {message}
+                                </div>
+                            )}
                         </div>
                         
-                        <div className="bg-white rounded-xl shadow-lg p-4">
-                            <div className="grid grid-cols-3 gap-4 text-center">
-                                <div><div className="text-2xl font-bold text-purple-600">{score}</div><div className="text-xs text-gray-500">Pontos</div></div>
-                                <div><div className="text-2xl font-bold text-green-600">{streak}</div><div className="text-xs text-gray-500">Sequência</div></div>
-                                <div><div className="text-2xl font-bold text-yellow-600">{starsEarned}</div><div className="text-xs text-gray-500">Estrelas</div></div>
-                            </div>
+                        {/* Progresso geral das letras */}
+                        <div className="flex justify-center gap-1 flex-wrap">
+                            {letters.map((letter, index) => (
+                                <div
+                                    key={letter}
+                                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-all
+                                        ${index < currentLetterIndex ? 'bg-green-500 text-white shadow-lg' :
+                                          index === currentLetterIndex ? 'bg-purple-400 text-white animate-pulse shadow-lg' :
+                                          'bg-gray-300 text-gray-600'}`}
+                                >
+                                    {letter}
+                                </div>
+                            ))}
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-                        <div className="text-6xl mb-4">🏆</div>
-                        <h3 className="text-3xl font-bold text-purple-600 mb-4">Parabéns!</h3>
-                        <p className="text-lg text-gray-600 mb-6">Você completou todas as sílabas!</p>
-                        <div className="grid grid-cols-2 gap-4 mb-8">
-                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4"><div className="text-2xl font-bold text-purple-600">{score}</div><div className="text-sm text-purple-500">Pontos Totais</div></div>
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4"><div className="text-2xl font-bold text-green-600">{maxStreak}</div><div className="text-sm text-green-500">Melhor Sequência</div></div>
+                    // Tela de resultados com gamificação completa
+                    <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                        <div className="text-center mb-6">
+                            <div className="text-6xl mb-4 animate-bounce">🏆</div>
+                            <h3 className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">
+                                Parabéns, Campeão da Fala!
+                            </h3>
+                            <p className="text-lg text-purple-500">
+                                Você completou todas as sílabas com maestria!
+                            </p>
                         </div>
-                        <div className="flex justify-center gap-4">
-                            <button onClick={startGameFlow} className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg hover:scale-105 transition-transform">🔄 Praticar Novamente</button>
-                            <button onClick={() => setCurrentScreen('title')} className="bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600">🏠 Início</button>
+                        
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 sm:p-3 text-center">
+                                <div className="text-lg sm:text-xl font-bold text-purple-800">{score}</div>
+                                <div className="text-xs text-purple-600">Pontuação</div>
+                            </div>
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 sm:p-3 text-center">
+                                <div className="text-lg sm:text-xl font-bold text-orange-800">{maxStreak}</div>
+                                <div className="text-xs text-orange-600">Melhor Sequência</div>
+                            </div>
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 sm:p-3 text-center">
+                                <div className="text-lg sm:text-xl font-bold text-yellow-800">{starsEarned}</div>
+                                <div className="text-xs text-yellow-600">⭐ Estrelas</div>
+                            </div>
+                            <div className="bg-pink-50 border border-pink-200 rounded-lg p-2 sm:p-3 text-center">
+                                <div className="text-lg sm:text-xl font-bold text-pink-800">{gemsEarned}</div>
+                                <div className="text-xs text-pink-600">💎 Gemas</div>
+                            </div>
+                        </div>
+
+                        {/* Conquistas especiais */}
+                        {gemsEarned > 0 && (
+                            <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-4 mb-6 border border-purple-200">
+                                <h4 className="font-bold text-purple-800 mb-3 flex items-center gap-2">
+                                    <Crown className="w-5 h-5" />
+                                    Conquistas Especiais
+                                </h4>
+                                <div className="text-sm text-purple-700 space-y-1">
+                                    {Math.floor(gemsEarned / 5) > 0 && (
+                                        <div>👑 {Math.floor(gemsEarned / 5)} Sequência(s) Real(is) - 10+ acertos consecutivos!</div>
+                                    )}
+                                    {Math.floor((gemsEarned % 5) / 2) > 0 && (
+                                        <div>💎 {Math.floor((gemsEarned % 5) / 2)} Sequência(s) Especial(is) - 5+ acertos consecutivos!</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="flex justify-center space-x-4">
+                            <button
+                                onClick={voltarInicio}
+                                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-2 px-4 sm:py-3 sm:px-6 rounded-lg transition-all transform hover:scale-105 text-sm sm:text-base"
+                            >
+                                🔄 Nova Prática
+                            </button>
                         </div>
                     </div>
                 )}
             </main>
         </div>
     );
-    
+
+    // Renderização condicional das telas
     if (currentScreen === 'title') return <TitleScreen />;
     if (currentScreen === 'instructions') return <InstructionsScreen />;
     return <GameScreen />;
