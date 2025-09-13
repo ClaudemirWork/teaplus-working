@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronLeft, Volume2, Mic, Star, Trophy, Play, LoaderCircle, Gem } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
+import styles from './syllable-repeat.module.css';
 
 const syllableMap: { [letter: string]: string[] } = {
     A: ['a', 'e', 'i', 'o', 'u'], B: ['ba', 'bê', 'bi', 'bó', 'bu'], C: ['ca', 'ce', 'ci', 'co', 'cu'],
@@ -35,6 +35,7 @@ export default function SpeechPracticeGame() {
     const [micPermission, setMicPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
     const [audioLevel, setAudioLevel] = useState(0);
     const [lastReward, setLastReward] = useState<{ points: number, stars: number, gems: number } | null>(null);
+    const [showStarBurst, setShowStarBurst] = useState(false);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
@@ -48,7 +49,6 @@ export default function SpeechPracticeGame() {
     const currentSyllableData = gameMode === 'syllables' ? {
         letter: letters[currentLevelIndex],
         syllables: syllableMap[letters[currentLevelIndex]],
-        // Roda as sílabas da letra atual de forma aleatória para não ser previsível
         index: Math.floor(Math.random() * (syllableMap[letters[currentLevelIndex]]?.length || 1)),
     } : null;
     const currentSequenceData = gameMode === 'sequences' ? sequenceLevels[currentLevelIndex] : null;
@@ -166,24 +166,27 @@ export default function SpeechPracticeGame() {
         setStars(s => s + newStars);
         setGems(g => g + newGems);
         setLastReward({ points, stars: newStars, gems: newGems });
+        setShowStarBurst(true);
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
         setRecordedAudioUrl(null);
         setTimeout(() => {
             setLastReward(null);
             nextLevel();
         }, 2000);
+        setTimeout(() => setShowStarBurst(false), 1000);
     };
 
     const nextLevel = () => {
         setRecordedAudioUrl(null);
         setMessage('');
         if (gameMode === 'syllables') {
-            const nextIndex = (currentLevelIndex + 1) % letters.length;
-            setCurrentLevelIndex(nextIndex);
-            if(nextIndex === 0 && currentLevelIndex > 0) {
-                 setGameMode('sequences');
-                 setCurrentLevelIndex(0);
-                 setMessage('DESAFIO FINAL: Juntando os sons!');
+            const nextIndex = currentLevelIndex + 1;
+            if (nextIndex >= letters.length) {
+                setGameMode('sequences');
+                setCurrentLevelIndex(0);
+                setMessage('DESAFIO FINAL: Juntando os sons!');
+            } else {
+                setCurrentLevelIndex(nextIndex);
             }
         } else if (gameMode === 'sequences') {
             const nextIndex = currentLevelIndex + 1;
@@ -207,6 +210,18 @@ export default function SpeechPracticeGame() {
         setMessage('Clique em "Ouvir" para começar!');
         setShowResults(false);
     };
+    
+    const StarBurstEffect = () => (
+        <div className={styles.starBurstContainer}>
+            <div className={`${styles.star} ${styles.star1}`}></div>
+            <div className={`${styles.star} ${styles.star2}`}></div>
+            <div className={`${styles.star} ${styles.star3}`}></div>
+            <div className={`${styles.star} ${styles.star4}`}></div>
+            <div className={`${styles.star} ${styles.star5}`}></div>
+            <div className={`${styles.star} ${styles.star6}`}></div>
+            <div className={`${styles.star} ${styles.star7}`}></div>
+        </div>
+    );
     
     const TitleScreen = () => (
         <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-pink-300 via-purple-300 to-indigo-400">
@@ -243,35 +258,30 @@ export default function SpeechPracticeGame() {
                     <div className="w-24"></div>
                 </div>
             </header>
-
             <main className="p-4 max-w-2xl mx-auto">
                 {!showResults ? (
                     <div className="space-y-6">
                         <div className="bg-gradient-to-br from-purple-100 to-pink-100 rounded-3xl p-6 text-center relative overflow-hidden min-h-[500px]">
-                            <AnimatePresence>
-                                {lastReward && (
-                                    <motion.div initial={{ opacity: 0, y: 50, scale: 0.3 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 bg-white/90 p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-2">
-                                        <div className="text-2xl font-bold text-green-600">+{lastReward.points} Pontos!</div>
-                                        <div className="flex gap-4">
-                                            {lastReward.stars > 0 && <div className="text-xl font-medium text-yellow-500 flex items-center gap-1">+{lastReward.stars} <Star size={20}/></div>}
-                                            {lastReward.gems > 0 && <div className="text-xl font-medium text-purple-500 flex items-center gap-1">+{lastReward.gems} <Gem size={20}/></div>}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-
+                            {showStarBurst && <StarBurstEffect />}
+                            {lastReward && (
+                                <div className={`absolute top-1/2 left-1/2 z-30 bg-white/90 p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-2 ${styles.rewardPopup}`}>
+                                    <div className="text-2xl font-bold text-green-600">+{lastReward.points} Pontos!</div>
+                                    <div className="flex gap-4">
+                                        {lastReward.stars > 0 && <div className="text-xl font-medium text-yellow-500 flex items-center gap-1">+{lastReward.stars} <Star size={20}/></div>}
+                                        {lastReward.gems > 0 && <div className="text-xl font-medium text-purple-500 flex items-center gap-1">+{lastReward.gems} <Gem size={20}/></div>}
+                                    </div>
+                                </div>
+                            )}
                             <h2 className="text-2xl font-bold text-purple-800 mb-4">
                                 {gameMode === 'syllables' ? `Letra ${currentSyllableData?.letter}` : currentSequenceData?.name}
                             </h2>
                             <div className="text-6xl sm:text-8xl font-bold text-purple-600 mb-6 drop-shadow-md h-24 flex items-center justify-center">
                                 {gameMode === 'syllables' ? currentSyllableData?.syllables[currentSyllableData.index] : currentSequenceData?.displayText}
                             </div>
-                            
                             <div className="space-y-4">
                                 <button onClick={playModelAudio} disabled={!!audioPlaying || recordingStatus !== 'idle'} className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-full text-xl font-bold transition-all ${!audioPlaying && recordingStatus === 'idle' ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-400 text-gray-600 cursor-not-allowed'}`}>
                                     <Volume2 className="w-6 h-6" /> {audioPlaying === 'model' ? 'Reproduzindo...' : 'Ouvir'}
                                 </button>
-                                
                                 <button onClick={recordingStatus === 'recording' ? stopRecording : startRecording} disabled={!!audioPlaying} className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-full text-xl font-bold transition-all ${!!audioPlaying ? 'bg-gray-400 text-gray-600 cursor-not-allowed' :
                                     recordingStatus === 'recording' ? 'bg-red-500 text-white animate-pulse' :
                                     recordingStatus === 'initializing' ? 'bg-yellow-500 text-white' :
@@ -281,28 +291,24 @@ export default function SpeechPracticeGame() {
                                      recordingStatus === 'initializing' ? <><LoaderCircle className="w-6 h-6 animate-spin" /> Iniciando...</> :
                                      <><Mic className="w-6 h-6" /> Gravar Voz</>}
                                 </button>
-
                                 {recordingStatus === 'recording' && (
                                     <div className="w-full h-12 bg-white/50 rounded-lg overflow-hidden flex items-center justify-center">
                                         <div className="bg-green-400 h-full transition-all duration-100" style={{ width: `${Math.min(100, audioLevel * 2)}%` }}></div>
                                     </div>
                                 )}
-                                
                                 {recordedAudioUrl && (
                                     <div className="bg-white/60 p-4 rounded-2xl space-y-3 animate-fade-in">
                                         <button onClick={playRecording} disabled={!!audioPlaying} className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-full text-lg font-bold transition-all ${!audioPlaying ? 'bg-purple-500 text-white hover:bg-purple-600' : 'bg-gray-400 text-gray-600'}`}>
                                             <Play className="w-5 h-5" /> {audioPlaying === 'user' ? 'Reproduzindo...' : 'Ouvir Gravação'}
                                         </button>
-                                        <button onClick={handleConfirm} disabled={!!audioPlaying} className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-full text-lg font-bold bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-400">
+                                        <button onClick={handleConfirm} disabled={!!audioPlaying} className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-full text-lg font-bold bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-400 ${styles.confirmButton}`}>
                                             ✅ Confirmar e Avançar
                                         </button>
                                     </div>
                                 )}
                             </div>
-
                             {message && <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-blue-800 font-bold">{message}</div>}
                         </div>
-                        
                         <div className="bg-white rounded-xl shadow-lg p-4">
                             <div className="grid grid-cols-4 gap-4 text-center">
                                 <div><div className="text-2xl font-bold text-purple-600">{score}</div><div className="text-xs text-gray-500">Pontos</div></div>
