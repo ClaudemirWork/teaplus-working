@@ -159,7 +159,11 @@ const MainHeader = ({ currentSection, onNavigate }) => (
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg p-1 flex items-center justify-center">
-            <Brain className="w-full h-full text-purple-600" />
+            <img 
+              src="/images/logo-luditea.png" 
+              alt="LudiTEA Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
           <div className="hidden sm:block">
             <h1 className="text-xl sm:text-2xl font-bold">LudiTEA</h1>
@@ -1335,6 +1339,12 @@ const PlanningModule = ({ onNavigate }) => {
         {/* Views */}
         {currentView === 'templates' && (
           <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-green-800 mb-2">✅ Template Aplicado com Sucesso!</h3>
+              <p className="text-sm text-green-700">
+                Agora use as abas "📅 Diário" ou "📊 Semanal" para ver e modificar seus blocos de tempo.
+              </p>
+            </div>
             <h3 className="text-lg font-bold text-gray-800 mb-4">
               Escolha um Template (Modificável)
             </h3>
