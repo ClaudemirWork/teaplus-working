@@ -182,12 +182,12 @@ const HomeSection = ({ onSelectModule }) => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {/* Hero Section com Logo Integrado */}
       <div className="text-center mb-12">
-        {/* Logo Grande e Integrado - substituído pelo arquivo de imagem */}
-        <div className="w-32 h-32 sm:w-48 sm:h-48 mx-auto mb-6 flex items-center justify-center">
+        {/* Logo Grande e Integrado - Aumentado e sem cortes */}
+        <div className="w-48 h-48 sm:w-64 sm:h-64 mx-auto mb-6 flex items-center justify-center">
           <img 
             src="/images/logo-luditea.png" 
             alt="LudiTEA Logo" 
-            className="w-full h-full object-contain drop-shadow-2xl"
+            className="w-full h-full object-none drop-shadow-2xl"
           />
         </div>
         <h1 className="text-3xl sm:text-5xl font-bold text-gray-800 mb-4">
@@ -1004,6 +1004,18 @@ const PlanningModule = ({ onNavigate }) => {
     category: 'personal',
     priority: 'medium'
   });
+  // Estado para controle do modal de edição de templates
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [customTemplateName, setCustomTemplateName] = useState('');
+  const [customTemplateBlocks, setCustomTemplateBlocks] = useState<Omit<TimeBlock, 'id' | 'color'>[]>([]);
+  const [newCustomBlock, setNewCustomBlock] = useState<Partial<Omit<TimeBlock, 'id' | 'color'>>>({
+    title: '',
+    startTime: '',
+    endTime: '',
+    category: 'personal',
+    priority: 'medium'
+  });
+  
   const createEmptyWeek = (): WeekPlan => {
     const today = new Date();
     const startOfWeek = new Date(today);
@@ -1024,6 +1036,84 @@ const PlanningModule = ({ onNavigate }) => {
       createdAt: new Date()
     };
   };
+  
+  // FUNÇÃO PARA EDITAR TEMPLATE
+  const openTemplateEditor = (template: Template) => {
+    setEditingTemplate(template);
+    setCustomTemplateName(`Meu ${template.name}`);
+    setCustomTemplateBlocks([...template.defaultBlocks]);
+    setNewCustomBlock({
+      title: '',
+      startTime: '',
+      endTime: '',
+      category: 'personal',
+      priority: 'medium'
+    });
+  };
+  
+  // FUNÇÃO PARA ADICIONAR BLOCO AO TEMPLATE PERSONALIZADO
+  const addBlockToCustomTemplate = () => {
+    if (!newCustomBlock.title || !newCustomBlock.startTime || !newCustomBlock.endTime) {
+      alert('Por favor, preencha todos os campos obrigatórios');
+      return;
+    }
+    
+    const block: Omit<TimeBlock, 'id' | 'color'> = {
+      title: newCustomBlock.title,
+      startTime: newCustomBlock.startTime,
+      endTime: newCustomBlock.endTime,
+      category: newCustomBlock.category || 'personal',
+      priority: newCustomBlock.priority || 'medium'
+    };
+    
+    setCustomTemplateBlocks(prev => [...prev, block]);
+    setNewCustomBlock({
+      title: '',
+      startTime: '',
+      endTime: '',
+      category: 'personal',
+      priority: 'medium'
+    });
+  };
+  
+  // FUNÇÃO PARA REMOVER BLOCO DO TEMPLATE PERSONALIZADO
+  const removeBlockFromCustomTemplate = (index: number) => {
+    setCustomTemplateBlocks(prev => prev.filter((_, i) => i !== index));
+  };
+  
+  // FUNÇÃO PARA SALVAR TEMPLATE PERSONALIZADO
+  const saveCustomTemplate = () => {
+    if (!customTemplateName.trim()) {
+      alert('Por favor, dê um nome ao seu template');
+      return;
+    }
+    
+    if (customTemplateBlocks.length === 0) {
+      alert('Adicione pelo menos um bloco de tempo ao seu template');
+      return;
+    }
+    
+    const newWeek = createEmptyWeek();
+    
+    // Aplicar template personalizado de segunda a sexta
+    for (let dayIndex = 1; dayIndex <= 5; dayIndex++) {
+      newWeek.days[dayIndex].blocks = customTemplateBlocks.map((block, i) => ({
+        ...block,
+        id: `${dayIndex}-${i}-${Date.now()}`,
+        color: categories.find(c => c.id === block.category)?.color || '#6B7280',
+        completed: false
+      }));
+    }
+    
+    setCurrentWeek(newWeek);
+    setCurrentView('weekly');
+    setGameStarted(true);
+    setEditingTemplate(null);
+    
+    // Feedback visual
+    alert(`Template "${customTemplateName}" salvo com sucesso! Agora você pode modificar os blocos conforme necessário.`);
+  };
+  
   // FUNÇÃO CORRIGIDA PARA APLICAR TEMPLATE
   const applyTemplate = (template: Template) => {
     const newWeek = createEmptyWeek();
@@ -1044,6 +1134,7 @@ const PlanningModule = ({ onNavigate }) => {
     // Feedback visual
     alert(`Template "${template.name}" aplicado com sucesso! Agora você pode modificar os blocos conforme necessário.`);
   };
+  
   const addTimeBlock = () => {
     if (!currentWeek || !newBlock.title || !newBlock.startTime || !newBlock.endTime) {
       alert('Por favor, preencha todos os campos obrigatórios');
@@ -1076,6 +1167,7 @@ const PlanningModule = ({ onNavigate }) => {
       priority: 'medium'
     });
   };
+  
   const removeTimeBlock = (dayIndex: number, blockId: string) => {
     if (!currentWeek) return;
     
@@ -1083,6 +1175,7 @@ const PlanningModule = ({ onNavigate }) => {
     updatedWeek.days[dayIndex].blocks = updatedWeek.days[dayIndex].blocks.filter(b => b.id !== blockId);
     setCurrentWeek(updatedWeek);
   };
+  
   const toggleBlockComplete = (dayIndex: number, blockId: string) => {
     if (!currentWeek) return;
     
@@ -1094,6 +1187,7 @@ const PlanningModule = ({ onNavigate }) => {
       setCurrentWeek(updatedWeek);
     }
   };
+  
   const calculateStats = () => {
     if (!currentWeek) return { totalBlocks: 0, completedBlocks: 0, hoursPlanned: 0 };
     let totalBlocks = 0;
@@ -1112,7 +1206,9 @@ const PlanningModule = ({ onNavigate }) => {
     });
     return { totalBlocks, completedBlocks, hoursPlanned };
   };
+  
   const stats = calculateStats();
+  
   if (!gameStarted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-teal-50 to-blue-50">
@@ -1166,18 +1262,24 @@ const PlanningModule = ({ onNavigate }) => {
                   <div className="text-xs text-gray-500 mb-4">
                     {template.defaultBlocks.length} blocos de tempo inclusos
                   </div>
-                  <button
-                    onClick={() => applyTemplate(template)}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 transition-all duration-300 font-semibold"
-                  >
-                    Usar Template
-                  </button>
-                  <p className="text-xs text-gray-500 mt-2 text-center">
-                    * Você poderá modificar todas as atividades
-                  </p>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => applyTemplate(template)}
+                      className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 transition-all duration-300 font-semibold"
+                    >
+                      Usar Template
+                    </button>
+                    <button
+                      onClick={() => openTemplateEditor(template)}
+                      className="w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                    >
+                      Personalizar Template
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
+            
             <div className="text-center pt-4 border-t border-gray-200">
               <button
                 onClick={() => {
@@ -1186,16 +1288,134 @@ const PlanningModule = ({ onNavigate }) => {
                   setCurrentView('daily');
                   setGameStarted(true);
                 }}
-                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors"
+                className="bg-gray-800 hover:bg-gray-900 text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg"
               >
                 Começar do Zero
               </button>
+              <p className="text-xs text-gray-500 mt-2">
+                Crie seu planejamento completamente personalizado
+              </p>
             </div>
           </div>
         </div>
+        
+        {/* Modal de Edição de Template */}
+        {editingTemplate && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Personalizar Template</h3>
+                <button 
+                  onClick={() => setEditingTemplate(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nome do Template</label>
+                <input
+                  type="text"
+                  value={customTemplateName}
+                  onChange={e => setCustomTemplateName(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  placeholder="Dê um nome ao seu template"
+                />
+              </div>
+              
+              <div className="mb-6">
+                <h4 className="font-semibold text-gray-800 mb-4">Blocos de Tempo</h4>
+                
+                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                  <h5 className="font-medium text-gray-700 mb-3">Adicionar Novo Bloco</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs text-gray-600 mb-1">Título</label>
+                      <input
+                        type="text"
+                        value={newCustomBlock.title || ''}
+                        onChange={e => setNewCustomBlock(prev => ({ ...prev, title: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
+                        placeholder="Ex: Trabalho Focado"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Início</label>
+                      <input
+                        type="time"
+                        value={newCustomBlock.startTime || ''}
+                        onChange={e => setNewCustomBlock(prev => ({ ...prev, startTime: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Fim</label>
+                      <input
+                        type="time"
+                        value={newCustomBlock.endTime || ''}
+                        onChange={e => setNewCustomBlock(prev => ({ ...prev, endTime: e.target.value }))}
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        onClick={addBlockToCustomTemplate}
+                        className="w-full p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
+                      >
+                        Adicionar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                  {customTemplateBlocks.length === 0 ? (
+                    <div className="text-center py-4 text-gray-500">
+                      Nenhum bloco adicionado ainda
+                    </div>
+                  ) : (
+                    customTemplateBlocks.map((block, index) => (
+                      <div key={index} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3">
+                        <div>
+                          <p className="font-medium text-gray-800">{block.title}</p>
+                          <p className="text-xs text-gray-600">
+                            {block.startTime} - {block.endTime} • {categories.find(c => c.id === block.category)?.name}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => removeBlockFromCustomTemplate(index)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={saveCustomTemplate}
+                  className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-semibold"
+                >
+                  Salvar e Usar Template
+                </button>
+                <button
+                  onClick={() => setEditingTemplate(null)}
+                  className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
+  
   return (
     <div className="min-h-screen bg-gray-50 pb-16 lg:pb-0">
       {/* Status Bar */}
@@ -1240,6 +1460,7 @@ const PlanningModule = ({ onNavigate }) => {
           </div>
         </div>
       </div>
+      
       <div className="max-w-7xl mx-auto p-4">
         {/* Navigation Tabs */}
         <div className="flex border-b border-gray-200 pb-4 mb-6 overflow-x-auto">
@@ -1263,6 +1484,7 @@ const PlanningModule = ({ onNavigate }) => {
             </button>
           ))}
         </div>
+        
         {/* Views */}
         {currentView === 'templates' && (
           <div className="space-y-4">
@@ -1281,17 +1503,26 @@ const PlanningModule = ({ onNavigate }) => {
                   <div className="text-3xl mb-3">{template.icon}</div>
                   <h4 className="font-bold text-green-700 mb-2">{template.name}</h4>
                   <p className="text-sm text-gray-600 mb-3">{template.description}</p>
-                  <button
-                    onClick={() => applyTemplate(template)}
-                    className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                  >
-                    Usar e Modificar
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => applyTemplate(template)}
+                      className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                    >
+                      Usar Template
+                    </button>
+                    <button
+                      onClick={() => openTemplateEditor(template)}
+                      className="w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                    >
+                      Personalizar
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
+        
         {currentView === 'daily' && currentWeek && (
           <div className="space-y-4 sm:space-y-6">
             {/* Day Selector */}
@@ -1310,6 +1541,7 @@ const PlanningModule = ({ onNavigate }) => {
                 </button>
               ))}
             </div>
+            
             {/* Add Block Form */}
             <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
               <h4 className="font-semibold text-gray-800 mb-4 flex items-center">
@@ -1388,6 +1620,7 @@ const PlanningModule = ({ onNavigate }) => {
                 </div>
               </div>
             </div>
+            
             {/* Day Blocks */}
             <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
               <h4 className="font-semibold text-gray-800 mb-4">
@@ -1445,6 +1678,7 @@ const PlanningModule = ({ onNavigate }) => {
             </div>
           </div>
         )}
+        
         {currentView === 'weekly' && currentWeek && (
           <div className="space-y-4 sm:space-y-6">
             <h3 className="text-lg font-bold text-gray-800">Visão Semanal</h3>
@@ -1486,6 +1720,7 @@ const PlanningModule = ({ onNavigate }) => {
             </div>
           </div>
         )}
+        
         {currentView === 'analysis' && currentWeek && (
           <div className="space-y-4 sm:space-y-6">
             <h3 className="text-lg font-bold text-gray-800">Análise do Planejamento</h3>
@@ -1526,6 +1761,7 @@ const PlanningModule = ({ onNavigate }) => {
                   })}
                 </div>
               </div>
+              
               <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
                 <h4 className="font-semibold mb-4">Resumo Geral</h4>
                 <div className="space-y-3">
@@ -1552,6 +1788,7 @@ const PlanningModule = ({ onNavigate }) => {
                 </div>
               </div>
             </div>
+            
             <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
               <h4 className="font-semibold mb-4">Distribuição por Dia</h4>
               <div className="grid grid-cols-7 gap-2">
