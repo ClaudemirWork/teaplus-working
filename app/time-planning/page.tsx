@@ -316,7 +316,510 @@ export default function LudiTEADeskPage() {
   // 5. RENDERIZAÇÃO DAS VIEWS
   // ============================================================================
 
-  // Dashboard Principal
+  // Agenda/Calendar
+  const renderCalendar = () => {
+    const today = new Date();
+    const todayAppointments = appointments.filter(apt => apt.date === selectedDate);
+    
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900">Agenda</h2>
+          <button
+            onClick={() => setIsAddingAppointment(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Nova Consulta
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Seletor de Data */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <h3 className="font-bold text-gray-900 mb-4">Selecionar Data</h3>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={e => setSelectedDate(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+            
+            {/* Resumo do Dia */}
+            <div className="mt-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Total de consultas:</span>
+                <span className="font-bold">{todayAppointments.length}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Tempo ocupado:</span>
+                <span className="font-bold">
+                  {todayAppointments.reduce((total, apt) => {
+                    if (!apt.startTime || !apt.endTime) return total;
+                    const start = new Date(`2000-01-01T${apt.startTime}`);
+                    const end = new Date(`2000-01-01T${apt.endTime}`);
+                    return total + (end.getTime() - start.getTime()) / (1000 * 60);
+                  }, 0)} min
+                </span>
+              </div>
+            </div>
+
+            {/* Tipos de Consulta */}
+            <div className="mt-6">
+              <h4 className="font-semibold text-gray-800 mb-3">Tipos de Consulta</h4>
+              <div className="space-y-2">
+                {appointmentTypes.map(type => (
+                  <div key={type.id} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: type.color }}
+                      />
+                      <span>{type.icon} {type.name}</span>
+                    </div>
+                    <span className="text-gray-500">{type.duration}min</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de Consultas do Dia */}
+          <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <h3 className="font-bold text-gray-900 mb-4">
+              Consultas - {new Date(selectedDate).toLocaleDateString('pt-BR', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </h3>
+
+            {todayAppointments.length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">Nenhuma consulta agendada para este dia</p>
+                <button
+                  onClick={() => setIsAddingAppointment(true)}
+                  className="mt-4 text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Agendar primeira consulta
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {todayAppointments
+                  .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                  .map(apt => {
+                    const patient = patients.find(p => p.id === apt.patientId);
+                    const typeInfo = appointmentTypes.find(t => t.id === apt.type);
+                    
+                    return (
+                      <div key={apt.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-4 flex-1">
+                            <div 
+                              className="w-4 h-4 rounded-full mt-1 flex-shrink-0"
+                              style={{ backgroundColor: typeInfo?.color }}
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h4 className="font-bold text-gray-900">{patient?.name || 'Paciente não encontrado'}</h4>
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                  apt.status === 'agendado' ? 'bg-blue-100 text-blue-800' :
+                                  apt.status === 'concluido' ? 'bg-green-100 text-green-800' :
+                                  apt.status === 'cancelado' ? 'bg-red-100 text-red-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {apt.status}
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-4 h-4" />
+                                  {apt.startTime} - {apt.endTime}
+                                </span>
+                                <span>{typeInfo?.icon} {typeInfo?.name}</span>
+                                {patient?.diagnosis && (
+                                  <span className={`px-2 py-1 rounded text-xs font-medium text-white`}
+                                    style={{ backgroundColor: diagnosisColors[patient.diagnosis] }}
+                                  >
+                                    {patient.diagnosis}
+                                  </span>
+                                )}
+                              </div>
+
+                              {apt.notes && (
+                                <p className="text-sm text-gray-600 mb-2">{apt.notes}</p>
+                              )}
+
+                              {apt.materials && apt.materials.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {apt.materials.map((material, index) => (
+                                    <span key={index} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                      {material}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 ml-4">
+                            {patient?.ludiTeaConnected && (
+                              <Brain className="w-4 h-4 text-purple-500" title="LudiTEA Conectado" />
+                            )}
+                            <button 
+                              onClick={() => {
+                                const updatedAppointments = appointments.map(a => 
+                                  a.id === apt.id 
+                                    ? { ...a, status: a.status === 'concluido' ? 'agendado' : 'concluido' }
+                                    : a
+                                );
+                                setAppointments(updatedAppointments);
+                              }}
+                              className={`p-2 rounded-lg transition-colors ${
+                                apt.status === 'concluido' 
+                                  ? 'bg-green-100 text-green-600 hover:bg-green-200' 
+                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors">
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setAppointments(prev => prev.filter(a => a.id !== apt.id));
+                              }}
+                              className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Modal Adicionar Consulta */}
+        {isAddingAppointment && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Nova Consulta</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Paciente *</label>
+                  <select
+                    value={newAppointment.patientId || ''}
+                    onChange={e => setNewAppointment(prev => ({...prev, patientId: e.target.value}))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Selecione um paciente</option>
+                    {patients.map(patient => (
+                      <option key={patient.id} value={patient.id}>
+                        {patient.name} ({patient.diagnosis})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Consulta *</label>
+                  <select
+                    value={newAppointment.type}
+                    onChange={e => {
+                      const selectedType = appointmentTypes.find(t => t.id === e.target.value);
+                      if (newAppointment.startTime && selectedType) {
+                        const startTime = new Date(`2000-01-01T${newAppointment.startTime}`);
+                        const endTime = new Date(startTime.getTime() + selectedType.duration * 60000);
+                        setNewAppointment(prev => ({
+                          ...prev, 
+                          type: e.target.value as any,
+                          endTime: endTime.toTimeString().slice(0, 5)
+                        }));
+                      } else {
+                        setNewAppointment(prev => ({...prev, type: e.target.value as any}));
+                      }
+                    }}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    {appointmentTypes.map(type => (
+                      <option key={type.id} value={type.id}>
+                        {type.icon} {type.name} ({type.duration}min)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data *</label>
+                  <input
+                    type="date"
+                    value={newAppointment.date || selectedDate}
+                    onChange={e => setNewAppointment(prev => ({...prev, date: e.target.value}))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Horário Início *</label>
+                  <input
+                    type="time"
+                    value={newAppointment.startTime || ''}
+                    onChange={e => {
+                      const selectedType = appointmentTypes.find(t => t.id === newAppointment.type);
+                      if (selectedType) {
+                        const startTime = new Date(`2000-01-01T${e.target.value}`);
+                        const endTime = new Date(startTime.getTime() + selectedType.duration * 60000);
+                        setNewAppointment(prev => ({
+                          ...prev, 
+                          startTime: e.target.value,
+                          endTime: endTime.toTimeString().slice(0, 5)
+                        }));
+                      } else {
+                        setNewAppointment(prev => ({...prev, startTime: e.target.value}));
+                      }
+                    }}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Horário Fim</label>
+                  <input
+                    type="time"
+                    value={newAppointment.endTime || ''}
+                    onChange={e => setNewAppointment(prev => ({...prev, endTime: e.target.value}))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Título Personalizado</label>
+                  <input
+                    type="text"
+                    value={newAppointment.title || ''}
+                    onChange={e => setNewAppointment(prev => ({...prev, title: e.target.value}))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Deixe vazio para gerar automaticamente"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                  <textarea
+                    value={newAppointment.notes || ''}
+                    onChange={e => setNewAppointment(prev => ({...prev, notes: e.target.value}))}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    rows={3}
+                    placeholder="Objetivos da sessão, pontos importantes..."
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={addAppointment}
+                  className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                >
+                  Agendar Consulta
+                </button>
+                <button
+                  onClick={() => setIsAddingAppointment(false)}
+                  className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Relatórios
+  const renderReports = () => {
+    const patientStats = patients.map(patient => {
+      const patientAppointments = appointments.filter(apt => apt.patientId === patient.id);
+      const completedSessions = patientAppointments.filter(apt => apt.status === 'concluido').length;
+      const totalScheduled = patientAppointments.length;
+      const attendanceRate = totalScheduled > 0 ? (completedSessions / totalScheduled) * 100 : 0;
+
+      return {
+        ...patient,
+        completedSessions,
+        totalScheduled,
+        attendanceRate: Math.round(attendanceRate)
+      };
+    });
+
+    const overallStats = {
+      totalPatients: patients.length,
+      avgAge: patients.length > 0 ? Math.round(patients.reduce((sum, p) => sum + p.age, 0) / patients.length) : 0,
+      diagnosisBreakdown: patients.reduce((acc, p) => {
+        acc[p.diagnosis] = (acc[p.diagnosis] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>),
+      ludiTeaAdoption: patients.length > 0 ? Math.round((patients.filter(p => p.ludiTeaConnected).length / patients.length) * 100) : 0
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900">Relatórios e Análises</h2>
+          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Exportar PDF
+          </button>
+        </div>
+
+        {/* Estatísticas Gerais */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <h3 className="text-sm font-medium text-gray-500 mb-2">Pacientes Ativos</h3>
+            <p className="text-3xl font-bold text-blue-600">{overallStats.totalPatients}</p>
+            <p className="text-sm text-gray-600 mt-1">Idade média: {overallStats.avgAge} anos</p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <h3 className="text-sm font-medium text-gray-500 mb-2">Adoção LudiTEA</h3>
+            <p className="text-3xl font-bold text-purple-600">{overallStats.ludiTeaAdoption}%</p>
+            <p className="text-sm text-gray-600 mt-1">{patients.filter(p => p.ludiTeaConnected).length} famílias conectadas</p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <h3 className="text-sm font-medium text-gray-500 mb-2">Consultas Este Mês</h3>
+            <p className="text-3xl font-bold text-green-600">{appointments.length}</p>
+            <p className="text-sm text-gray-600 mt-1">
+              {appointments.filter(apt => apt.status === 'concluido').length} concluídas
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <h3 className="text-sm font-medium text-gray-500 mb-2">Taxa de Presença</h3>
+            <p className="text-3xl font-bold text-orange-600">
+              {appointments.length > 0 ? Math.round((appointments.filter(apt => apt.status === 'concluido').length / appointments.length) * 100) : 0}%
+            </p>
+            <p className="text-sm text-gray-600 mt-1">Média da prática</p>
+          </div>
+        </div>
+
+        {/* Breakdown por Diagnóstico */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Distribuição por Diagnóstico</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Object.entries(overallStats.diagnosisBreakdown).map(([diagnosis, count]) => (
+              <div key={diagnosis} className="text-center p-4 bg-gray-50 rounded-lg">
+                <div 
+                  className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-white font-bold text-lg"
+                  style={{ backgroundColor: diagnosisColors[diagnosis as keyof typeof diagnosisColors] }}
+                >
+                  {count}
+                </div>
+                <p className="font-semibold text-gray-900">{diagnosis}</p>
+                <p className="text-sm text-gray-600">
+                  {overallStats.totalPatients > 0 ? Math.round((count / overallStats.totalPatients) * 100) : 0}% do total
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Desempenho por Paciente */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Desempenho Individual</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900">Paciente</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900">Diagnóstico</th>
+                  <th className="text-center py-3 px-4 font-semibold text-gray-900">Sessões</th>
+                  <th className="text-center py-3 px-4 font-semibold text-gray-900">Taxa Presença</th>
+                  <th className="text-center py-3 px-4 font-semibold text-gray-900">LudiTEA</th>
+                  <th className="text-center py-3 px-4 font-semibold text-gray-900">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {patientStats.map(patient => (
+                  <tr key={patient.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                          style={{ backgroundColor: diagnosisColors[patient.diagnosis] }}
+                        >
+                          {patient.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{patient.name}</p>
+                          <p className="text-sm text-gray-600">{patient.age} anos</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium text-white`}
+                        style={{ backgroundColor: diagnosisColors[patient.diagnosis] }}
+                      >
+                        {patient.diagnosis}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="font-bold">{patient.completedSessions}</span>
+                      <span className="text-gray-500">/{patient.totalScheduled}</span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`font-bold ${
+                        patient.attendanceRate >= 80 ? 'text-green-600' :
+                        patient.attendanceRate >= 60 ? 'text-yellow-600' : 'text-red-600'
+                      }`}>
+                        {patient.attendanceRate}%
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {patient.ludiTeaConnected ? (
+                        <Brain className="w-5 h-5 text-purple-500 mx-auto" />
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button className="bg-blue-100 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors text-sm">
+                        Ver Detalhes
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Insights de IA (Placeholder para quando implementarmos) */}
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-200">
+          <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <Brain className="w-5 h-5 text-purple-600" />
+            Insights Personalizados (IA)
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg p-4">
+              <p className="text-sm text-gray-600 mb-1">Padrão identificado:</p>
+              <p className="font-semibold text-gray-900">Pacientes TEA respondem melhor às 14h</p>
+            </div>
+            <div className="bg-white rounded-lg p-4">
+              <p className="text-sm text-gray-600 mb-1">Recomendação:</p>
+              <p className="font-semibold text-gray-900">Aumentar uso do LudiTEA em 3 famílias</p>
+            </div>
+            <div className="bg-white rounded-lg p-4">
+              <p className="text-sm text-gray-600 mb-1">Alerta:</p>
+              <p className="font-semibold text-orange-600">Pedro precisa de follow-up urgente</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Cards de Estatísticas */}
