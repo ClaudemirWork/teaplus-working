@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Plus, Trash2, Save, User, Brain, Edit3, Clock, CheckCircle, Users, FileText, TrendingUp, Award, Settings, Phone, MapPin, Bell, Star, Target, Zap, Coffee, ArrowRight, Home } from 'lucide-react'
-import Image from 'next/image'
+import { Calendar, Plus, Trash2, Save, User, Brain, Edit3, Clock, CheckCircle, Users, FileText, TrendingUp, Award, Settings, Phone, MapPin, Bell, Star, Target, ArrowRight, Home } from 'lucide-react'
 
 // ============================================================================
 // 1. INTERFACES E TIPOS DE DADOS
@@ -104,27 +103,44 @@ const categories = [
 
 const templates: Template[] = [
   {
-    name: 'Rotina Familiar TEA',
-    description: 'Estrutura pensada para famílias com crianças TEA',
-    icon: '👨‍👩‍👧‍👦',
+    name: 'Rotinas Diárias',
+    description: 'Estrutura pensada para rotinas diárias organizadas',
+    icon: '📅',
     defaultBlocks: [
       { title: 'Rotina Matinal Estruturada', startTime: '07:00', endTime: '08:30', category: 'routine', priority: 'high' },
-      { title: 'Atividades Educativas', startTime: '09:00', endTime: '11:00', category: 'learning', priority: 'high' },
-      { title: 'Intervalo Sensorial', startTime: '11:00', endTime: '11:30', category: 'health', priority: 'medium' },
+      { title: 'Atividades Focadas', startTime: '09:00', endTime: '11:00', category: 'learning', priority: 'high' },
+      { title: 'Intervalo e Descanso', startTime: '11:00', endTime: '11:30', category: 'health', priority: 'medium' },
+      { title: 'Almoço e Pausa', startTime: '12:00', endTime: '13:00', category: 'health', priority: 'medium' },
       { title: 'Tempo de Qualidade', startTime: '16:00', endTime: '17:30', category: 'family', priority: 'high' },
       { title: 'Rotina Noturna', startTime: '19:30', endTime: '21:00', category: 'routine', priority: 'high' }
     ]
   },
   {
-    name: 'Cuidador Organizado',
-    description: 'Para cuidadores que precisam equilibrar múltiplas tarefas',
-    icon: '💪',
+    name: 'Profissional Equilibrado',
+    description: 'Para quem trabalha em horário comercial e busca equilíbrio',
+    icon: '💼',
     defaultBlocks: [
-      { title: 'Preparação do Dia', startTime: '06:30', endTime: '07:30', category: 'routine', priority: 'high' },
-      { title: 'Cuidados Principais', startTime: '08:00', endTime: '12:00', category: 'family', priority: 'high' },
-      { title: 'Pausa Pessoal', startTime: '12:00', endTime: '13:00', category: 'personal', priority: 'medium' },
-      { title: 'Atividades Terapêuticas', startTime: '14:00', endTime: '16:00', category: 'health', priority: 'high' },
-      { title: 'Autocuidado', startTime: '20:00', endTime: '21:00', category: 'personal', priority: 'medium' }
+      { title: 'Rotina Matinal', startTime: '07:00', endTime: '08:30', category: 'routine', priority: 'high' },
+      { title: 'Trabalho Focado', startTime: '09:00', endTime: '12:00', category: 'work', priority: 'high' },
+      { title: 'Almoço e Descanso', startTime: '12:00', endTime: '13:00', category: 'health', priority: 'medium' },
+      { title: 'Trabalho - Reuniões', startTime: '13:00', endTime: '17:00', category: 'work', priority: 'medium' },
+      { title: 'Exercícios', startTime: '18:00', endTime: '19:00', category: 'health', priority: 'medium' },
+      { title: 'Tempo em Família', startTime: '19:30', endTime: '21:00', category: 'family', priority: 'high' },
+      { title: 'Rotina Noturna', startTime: '21:30', endTime: '22:30', category: 'routine', priority: 'low' }
+    ]
+  },
+  {
+    name: 'Home Office Produtivo',
+    description: 'Para quem trabalha de casa e precisa de estrutura',
+    icon: '🏠',
+    defaultBlocks: [
+      { title: 'Preparação Mental', startTime: '07:30', endTime: '08:00', category: 'routine', priority: 'high' },
+      { title: 'Deep Work', startTime: '08:00', endTime: '10:30', category: 'work', priority: 'high' },
+      { title: 'Pausa Café', startTime: '10:30', endTime: '10:45', category: 'rest', priority: 'low' },
+      { title: 'Reuniões/Calls', startTime: '10:45', endTime: '12:00', category: 'work', priority: 'medium' },
+      { title: 'Almoço + Caminhada', startTime: '12:00', endTime: '13:30', category: 'health', priority: 'high' },
+      { title: 'Trabalho Administrativo', startTime: '13:30', endTime: '16:00', category: 'work', priority: 'medium' },
+      { title: 'Encerramento do Dia', startTime: '16:00', endTime: '17:00', category: 'work', priority: 'low' }
     ]
   }
 ];
@@ -182,8 +198,12 @@ const HomeSection = ({ onSelectModule }) => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {/* Hero Section */}
       <div className="text-center mb-12">
-        <div className="w-20 h-20 sm:w-32 sm:h-32 mx-auto mb-6 bg-gradient-to-br from-purple-500 to-blue-500 rounded-3xl flex items-center justify-center shadow-2xl">
-          <span className="text-4xl sm:text-6xl">🧩</span>
+        <div className="w-20 h-20 sm:w-32 sm:h-32 mx-auto mb-6 bg-white rounded-3xl flex items-center justify-center shadow-2xl p-4">
+          <img 
+            src="/images/logo-luditea.png" 
+            alt="LudiTEA Logo" 
+            className="w-full h-full object-contain"
+          />
         </div>
         <h1 className="text-3xl sm:text-5xl font-bold text-gray-800 mb-4">
           Bem-vindo ao <span className="text-purple-600">LudiTEA</span>
@@ -240,21 +260,21 @@ const HomeSection = ({ onSelectModule }) => (
                 <Calendar className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Planejamento de Tempo</h2>
-              <p className="text-gray-600 text-sm sm:text-base">Organização Familiar Estruturada</p>
+              <p className="text-gray-600 text-sm sm:text-base">Organização Diária Estruturada</p>
             </div>
             
             <div className="space-y-3 sm:space-y-4 mb-6">
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                <p className="text-sm sm:text-base text-gray-700">Templates personalizados para rotinas TEA</p>
+                <p className="text-sm sm:text-base text-gray-700">Templates personalizados para rotinas diárias</p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-teal-500 rounded-full mt-2 flex-shrink-0"></div>
-                <p className="text-sm sm:text-base text-gray-700">Cronogramas visuais e gamificação</p>
+                <p className="text-sm sm:text-base text-gray-700">Cronogramas visuais e organizados</p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
-                <p className="text-sm sm:text-base text-gray-700">Ideal para famílias e cuidadores</p>
+                <p className="text-sm sm:text-base text-gray-700">Ideal para famílias e pessoas</p>
               </div>
             </div>
 
@@ -291,8 +311,8 @@ const HomeSection = ({ onSelectModule }) => (
           <div className="w-12 h-12 mx-auto mb-3 bg-blue-100 rounded-lg flex items-center justify-center">
             <TrendingUp className="w-6 h-6 text-blue-600" />
           </div>
-          <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">Análises IA</h3>
-          <p className="text-xs sm:text-sm text-gray-600">Insights inteligentes</p>
+          <h3 className="font-semibold text-gray-800 mb-1 text-sm sm:text-base">Análises Detalhadas</h3>
+          <p className="text-xs sm:text-sm text-gray-600">Insights organizacionais</p>
         </div>
         
         <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 text-center border border-white/20">
@@ -809,7 +829,6 @@ const PlanningModule = ({ onNavigate }) => {
   const [currentView, setCurrentView] = useState<'templates' | 'daily' | 'weekly' | 'analysis'>('templates');
   const [currentWeek, setCurrentWeek] = useState<WeekPlan | null>(null);
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
-  const [score, setScore] = useState(0);
   const [newBlock, setNewBlock] = useState<Partial<Omit<TimeBlock, 'id' | 'color'>>>({
     title: '',
     startTime: '',
@@ -855,7 +874,6 @@ const PlanningModule = ({ onNavigate }) => {
 
     setCurrentWeek(newWeek);
     setCurrentView('weekly');
-    setScore(prev => prev + 50);
     setGameStarted(true);
   };
 
@@ -885,7 +903,6 @@ const PlanningModule = ({ onNavigate }) => {
     updatedWeek.days[selectedDay].blocks.sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     setCurrentWeek(updatedWeek);
-    setScore(prev => prev + 10);
     
     setNewBlock({
       title: '',
@@ -902,7 +919,6 @@ const PlanningModule = ({ onNavigate }) => {
     const updatedWeek = { ...currentWeek };
     updatedWeek.days[dayIndex].blocks = updatedWeek.days[dayIndex].blocks.filter(b => b.id !== blockId);
     setCurrentWeek(updatedWeek);
-    setScore(prev => Math.max(0, prev - 5));
   };
 
   const toggleBlockComplete = (dayIndex: number, blockId: string) => {
@@ -914,7 +930,6 @@ const PlanningModule = ({ onNavigate }) => {
     if (block) {
       block.completed = !block.completed;
       setCurrentWeek(updatedWeek);
-      setScore(prev => prev + (block.completed ? 5 : -5));
     }
   };
 
@@ -959,35 +974,28 @@ const PlanningModule = ({ onNavigate }) => {
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
                 <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
                   <Target className="w-5 h-5 text-blue-600" />
                   Objetivo
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Criar cronogramas semanais estruturados mas flexíveis, reduzindo a sobrecarga cognitiva
+                  Aprender a criar cronogramas semanais e diários estruturados mas flexíveis, melhorando a organização e reduzindo a sobrecarga cognitiva.
                 </p>
               </div>
               
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 sm:p-6">
+              <div className="bg-green-50 border border-green-200 rounded-xl p-6">
                 <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-green-600" />
+                  <Clock className="w-5 h-5 text-green-600" />
                   Como Usar
                 </h3>
-                <p className="text-sm text-gray-600">
-                  Escolha templates prontos ou crie do zero. Organize blocos de tempo e acompanhe o progresso
-                </p>
-              </div>
-              
-              <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 sm:p-6">
-                <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                  <Star className="w-5 h-5 text-purple-600" />
-                  Gamificação
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Ganhe pontos criando e completando blocos. Pratique a estruturação consciente do tempo
-                </p>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• Escolha começar com template ou do zero</li>
+                  <li>• Adicione blocos de tempo para cada dia</li>
+                  <li>• Organize sua semana visualmente</li>
+                  <li>• Acompanhe seu progresso</li>
+                </ul>
               </div>
             </div>
           </div>
@@ -995,7 +1003,7 @@ const PlanningModule = ({ onNavigate }) => {
           <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
             <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-6">Escolha um Template para Começar</h2>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
               {templates.map((template, index) => (
                 <div key={index} className="border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-green-300">
                   <div className="text-3xl sm:text-4xl mb-3">{template.icon}</div>
@@ -1108,7 +1116,7 @@ const PlanningModule = ({ onNavigate }) => {
             <h3 className="text-lg font-bold text-gray-800 mb-4">
               Escolha um Template
             </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               {templates.map((template, index) => (
                 <div key={index} className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-shadow">
                   <div className="text-3xl mb-3">{template.icon}</div>
