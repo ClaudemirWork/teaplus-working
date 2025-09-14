@@ -1,12 +1,9 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { Calendar, Plus, Trash2, Save, User, Brain, Edit3, Clock, CheckCircle, Users, FileText, TrendingUp, Award, Settings, Phone, MapPin, Bell, Star, Target, ArrowRight, Home } from 'lucide-react'
-
 // ============================================================================
 // 1. INTERFACES E TIPOS DE DADOS
 // ============================================================================
-
 // Tipos para Gestão de Pacientes
 interface Patient {
   id: string;
@@ -25,7 +22,6 @@ interface Patient {
   ludiTeaConnected: boolean;
   sessionsCount: number;
 }
-
 interface Appointment {
   id: string;
   patientId: string;
@@ -38,7 +34,6 @@ interface Appointment {
   notes: string;
   materials: string[];
 }
-
 // Tipos para Planejamento de Tempo
 interface TimeBlock {
   id: string;
@@ -50,13 +45,11 @@ interface TimeBlock {
   color: string;
   completed?: boolean;
 }
-
 interface DaySchedule {
   date: string;
   dayName: string;
   blocks: TimeBlock[];
 }
-
 interface WeekPlan {
   id: string;
   title: string;
@@ -64,18 +57,15 @@ interface WeekPlan {
   goals: string[];
   createdAt: Date;
 }
-
 interface Template {
   name: string;
   description: string;
   icon: string;
   defaultBlocks: Omit<TimeBlock, 'id' | 'color'>[];
 }
-
 // ============================================================================
 // 2. DADOS E CONFIGURAÇÕES
 // ============================================================================
-
 const appointmentTypes = [
   { id: 'avaliacao', name: 'Avaliação Inicial', duration: 90, color: '#EF4444', icon: '📋' },
   { id: 'terapia', name: 'Sessão Terapêutica', duration: 60, color: '#10B981', icon: '🧠' },
@@ -83,14 +73,12 @@ const appointmentTypes = [
   { id: 'familiar', name: 'Orientação Familiar', duration: 60, color: '#8B5CF6', icon: '👨‍👩‍👧‍👦' },
   { id: 'relatorio', name: 'Elaboração Relatório', duration: 30, color: '#F59E0B', icon: '📄' }
 ];
-
 const diagnosisColors = {
   'TEA': '#3B82F6',
   'TDAH': '#EF4444', 
   'TEA+TDAH': '#8B5CF6',
   'Outro': '#6B7280'
 };
-
 const categories = [
   { id: 'work', name: 'Trabalho', color: '#3B82F6', icon: '💼' },
   { id: 'personal', name: 'Pessoal', color: '#10B981', icon: '🏠' },
@@ -100,7 +88,6 @@ const categories = [
   { id: 'rest', name: 'Descanso', color: '#6B7280', icon: '😴' },
   { id: 'routine', name: 'Rotina', color: '#EC4899', icon: '🔄' }
 ] as const;
-
 const templates: Template[] = [
   {
     name: 'Rotinas Diárias',
@@ -144,9 +131,7 @@ const templates: Template[] = [
     ]
   }
 ];
-
 const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-
 // ============================================================================
 // 3. COMPONENTE HEADER PRINCIPAL
 // ============================================================================
@@ -189,7 +174,6 @@ const MainHeader = ({ currentSection, onNavigate }) => (
     </div>
   </header>
 );
-
 // ============================================================================
 // 4. COMPONENTE HOME/SELEÇÃO - LOGO INTEGRADO
 // ============================================================================
@@ -198,9 +182,13 @@ const HomeSection = ({ onSelectModule }) => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {/* Hero Section com Logo Integrado */}
       <div className="text-center mb-12">
-        {/* Logo Grande e Integrado - sem box */}
+        {/* Logo Grande e Integrado - substituído pelo arquivo de imagem */}
         <div className="w-32 h-32 sm:w-48 sm:h-48 mx-auto mb-6 flex items-center justify-center">
-          <Brain className="w-full h-full text-purple-600 drop-shadow-2xl" />
+          <img 
+            src="/images/logo-luditea.png" 
+            alt="LudiTEA Logo" 
+            className="w-full h-full object-contain drop-shadow-2xl"
+          />
         </div>
         <h1 className="text-3xl sm:text-5xl font-bold text-gray-800 mb-4">
           Bem-vindo ao <span className="text-purple-600">LudiTEA</span>
@@ -209,7 +197,6 @@ const HomeSection = ({ onSelectModule }) => (
           Plataforma integrada para gestão de pacientes TEA/TDAH e planejamento de tempo estruturado
         </p>
       </div>
-
       {/* Módulos Principais */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 max-w-6xl mx-auto">
         
@@ -238,7 +225,6 @@ const HomeSection = ({ onSelectModule }) => (
                 <p className="text-sm sm:text-base text-gray-700">Integração com análises de IA</p>
               </div>
             </div>
-
             <button
               onClick={() => onSelectModule('patients')}
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 sm:py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
@@ -248,7 +234,6 @@ const HomeSection = ({ onSelectModule }) => (
             </button>
           </div>
         </div>
-
         {/* Planejamento de Tempo */}
         <div className="group">
           <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 sm:p-8 border border-gray-100 group-hover:border-green-200">
@@ -274,7 +259,6 @@ const HomeSection = ({ onSelectModule }) => (
                 <p className="text-sm sm:text-base text-gray-700">Ideal para famílias e profissionais</p>
               </div>
             </div>
-
             <button
               onClick={() => onSelectModule('planning')}
               className="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-semibold py-3 sm:py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
@@ -285,7 +269,6 @@ const HomeSection = ({ onSelectModule }) => (
           </div>
         </div>
       </div>
-
       {/* Features Adicionais */}
       <div className="mt-12 sm:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 text-center border border-white/20">
@@ -323,7 +306,6 @@ const HomeSection = ({ onSelectModule }) => (
     </div>
   </div>
 );
-
 // ============================================================================
 // 5. COMPONENTE GESTÃO DE PACIENTES - RESTAURADO
 // ============================================================================
@@ -335,7 +317,6 @@ const PatientsModule = ({ onNavigate }) => {
   const [isAddingPatient, setIsAddingPatient] = useState(false);
   const [isAddingAppointment, setIsAddingAppointment] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-
   const [newPatient, setNewPatient] = useState<Partial<Patient>>({
     name: '',
     age: 0,
@@ -348,7 +329,6 @@ const PatientsModule = ({ onNavigate }) => {
     notes: '',
     ludiTeaConnected: false
   });
-
   const [newAppointment, setNewAppointment] = useState<Partial<Appointment>>({
     type: 'terapia',
     title: '',
@@ -358,7 +338,6 @@ const PatientsModule = ({ onNavigate }) => {
     notes: '',
     materials: []
   });
-
   // Dados mockados
   useEffect(() => {
     const mockPatients: Patient[] = [
@@ -397,7 +376,6 @@ const PatientsModule = ({ onNavigate }) => {
         sessionsCount: 18
       }
     ];
-
     const mockAppointments: Appointment[] = [
       {
         id: '1',
@@ -412,14 +390,11 @@ const PatientsModule = ({ onNavigate }) => {
         materials: ['Cartões de emoções', 'Jogos cooperativos']
       }
     ];
-
     setPatients(mockPatients);
     setAppointments(mockAppointments);
   }, []);
-
   const addPatient = () => {
     if (!newPatient.name) return;
-
     const patient: Patient = {
       id: Date.now().toString(),
       name: newPatient.name,
@@ -437,7 +412,6 @@ const PatientsModule = ({ onNavigate }) => {
       ludiTeaConnected: newPatient.ludiTeaConnected || false,
       sessionsCount: 0
     };
-
     setPatients(prev => [...prev, patient]);
     setNewPatient({
       name: '',
@@ -453,10 +427,8 @@ const PatientsModule = ({ onNavigate }) => {
     });
     setIsAddingPatient(false);
   };
-
   const addAppointment = () => {
     if (!newAppointment.patientId || !newAppointment.date || !newAppointment.startTime) return;
-
     const appointment: Appointment = {
       id: Date.now().toString(),
       patientId: newAppointment.patientId,
@@ -469,7 +441,6 @@ const PatientsModule = ({ onNavigate }) => {
       notes: newAppointment.notes || '',
       materials: []
     };
-
     setAppointments(prev => [...prev, appointment]);
     setNewAppointment({
       type: 'terapia',
@@ -482,7 +453,6 @@ const PatientsModule = ({ onNavigate }) => {
     });
     setIsAddingAppointment(false);
   };
-
   const getDashboardStats = () => {
     const today = new Date().toISOString().split('T')[0];
     const thisWeek = appointments.filter(apt => {
@@ -491,7 +461,6 @@ const PatientsModule = ({ onNavigate }) => {
       weekStart.setDate(weekStart.getDate() - weekStart.getDay());
       return aptDate >= weekStart;
     });
-
     return {
       totalPatients: patients.length,
       todayAppointments: appointments.filter(apt => apt.date === today).length,
@@ -500,9 +469,7 @@ const PatientsModule = ({ onNavigate }) => {
       pendingReports: appointments.filter(apt => apt.type === 'relatorio' && apt.status === 'agendado').length
     };
   };
-
   const stats = getDashboardStats();
-
   // Mobile Navigation
   const MobileNav = () => (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
@@ -529,7 +496,6 @@ const PatientsModule = ({ onNavigate }) => {
       </div>
     </div>
   );
-
   return (
     <div className="min-h-screen bg-gray-50 pb-16 lg:pb-0">
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row">
@@ -557,7 +523,6 @@ const PatientsModule = ({ onNavigate }) => {
             ))}
           </nav>
         </div>
-
         {/* Main Content */}
         <div className="flex-1 p-4 lg:p-6">
           {currentView === 'dashboard' && (
@@ -573,7 +538,6 @@ const PatientsModule = ({ onNavigate }) => {
                     <Users className="w-6 h-6 lg:w-8 lg:h-8 text-blue-500" />
                   </div>
                 </div>
-
                 <div className="bg-white rounded-lg lg:rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
                   <div className="flex items-center justify-between">
                     <div>
@@ -583,7 +547,6 @@ const PatientsModule = ({ onNavigate }) => {
                     <Calendar className="w-6 h-6 lg:w-8 lg:h-8 text-green-500" />
                   </div>
                 </div>
-
                 <div className="bg-white rounded-lg lg:rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
                   <div className="flex items-center justify-between">
                     <div>
@@ -593,7 +556,6 @@ const PatientsModule = ({ onNavigate }) => {
                     <Brain className="w-6 h-6 lg:w-8 lg:h-8 text-purple-500" />
                   </div>
                 </div>
-
                 <div className="bg-white rounded-lg lg:rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
                   <div className="flex items-center justify-between">
                     <div>
@@ -604,7 +566,6 @@ const PatientsModule = ({ onNavigate }) => {
                   </div>
                 </div>
               </div>
-
               {/* Quick Actions */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                 <div className="bg-white rounded-lg lg:rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
@@ -624,7 +585,6 @@ const PatientsModule = ({ onNavigate }) => {
                     </button>
                   </div>
                 </div>
-
                 <div className="bg-white rounded-lg lg:rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
                   <h3 className="text-base lg:text-lg font-bold text-gray-900 mb-3 lg:mb-4">Pacientes Recentes</h3>
                   <div className="space-y-2 lg:space-y-3">
@@ -647,7 +607,6 @@ const PatientsModule = ({ onNavigate }) => {
               </div>
             </div>
           )}
-
           {currentView === 'patients' && (
             <div className="space-y-4 lg:space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -660,7 +619,6 @@ const PatientsModule = ({ onNavigate }) => {
                   Novo Paciente
                 </button>
               </div>
-
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {patients.map(patient => (
                   <div key={patient.id} className="bg-white rounded-lg lg:rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
@@ -681,7 +639,6 @@ const PatientsModule = ({ onNavigate }) => {
                         <Brain className="w-4 h-4 lg:w-5 lg:h-5 text-purple-500" />
                       )}
                     </div>
-
                     <div className="space-y-2 mb-4 text-xs lg:text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Diagnóstico:</span>
@@ -699,7 +656,6 @@ const PatientsModule = ({ onNavigate }) => {
                         <span className="font-semibold">{patient.sessionsCount}</span>
                       </div>
                     </div>
-
                     <button
                       onClick={() => setSelectedPatient(patient)}
                       className="w-full bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-xs lg:text-sm"
@@ -711,7 +667,6 @@ const PatientsModule = ({ onNavigate }) => {
               </div>
             </div>
           )}
-
           {currentView === 'calendar' && (
             <div className="space-y-4 lg:space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -724,7 +679,6 @@ const PatientsModule = ({ onNavigate }) => {
                   Nova Consulta
                 </button>
               </div>
-
               <div className="bg-white rounded-lg lg:rounded-xl p-4 lg:p-6 shadow-sm border border-gray-200">
                 <input
                   type="date"
@@ -763,7 +717,6 @@ const PatientsModule = ({ onNavigate }) => {
               </div>
             </div>
           )}
-
           {currentView === 'reports' && (
             <div className="space-y-4 lg:space-y-6">
               <h2 className="text-lg lg:text-xl font-bold text-gray-900">Relatórios</h2>
@@ -776,9 +729,7 @@ const PatientsModule = ({ onNavigate }) => {
           )}
         </div>
       </div>
-
       <MobileNav />
-
       {/* Modal Adicionar Paciente - COMPLETO */}
       {isAddingPatient && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -909,7 +860,6 @@ const PatientsModule = ({ onNavigate }) => {
           </div>
         </div>
       )}
-
       {/* Modal Adicionar Consulta - COMPLETO */}
       {isAddingAppointment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1039,7 +989,6 @@ const PatientsModule = ({ onNavigate }) => {
     </div>
   );
 };
-
 // ============================================================================
 // 6. COMPONENTE PLANEJAMENTO DE TEMPO - CORRIGIDO
 // ============================================================================
@@ -1055,12 +1004,10 @@ const PlanningModule = ({ onNavigate }) => {
     category: 'personal',
     priority: 'medium'
   });
-
   const createEmptyWeek = (): WeekPlan => {
     const today = new Date();
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay());
-
     return {
       id: Date.now().toString(),
       title: `Semana de ${startOfWeek.toLocaleDateString('pt-BR')}`,
@@ -1077,7 +1024,6 @@ const PlanningModule = ({ onNavigate }) => {
       createdAt: new Date()
     };
   };
-
   // FUNÇÃO CORRIGIDA PARA APLICAR TEMPLATE
   const applyTemplate = (template: Template) => {
     const newWeek = createEmptyWeek();
@@ -1091,7 +1037,6 @@ const PlanningModule = ({ onNavigate }) => {
         completed: false
       }));
     }
-
     setCurrentWeek(newWeek);
     setCurrentView('weekly');
     setGameStarted(true);
@@ -1099,13 +1044,11 @@ const PlanningModule = ({ onNavigate }) => {
     // Feedback visual
     alert(`Template "${template.name}" aplicado com sucesso! Agora você pode modificar os blocos conforme necessário.`);
   };
-
   const addTimeBlock = () => {
     if (!currentWeek || !newBlock.title || !newBlock.startTime || !newBlock.endTime) {
       alert('Por favor, preencha todos os campos obrigatórios');
       return;
     }
-
     const block: TimeBlock = {
       id: `${selectedDay}-${Date.now()}-${Math.random()}`,
       title: newBlock.title,
@@ -1116,7 +1059,6 @@ const PlanningModule = ({ onNavigate }) => {
       color: categories.find(c => c.id === (newBlock.category || 'personal'))?.color || '#6B7280',
       completed: false
     };
-
     const updatedWeek = { ...currentWeek };
     if (!updatedWeek.days[selectedDay].blocks) {
       updatedWeek.days[selectedDay].blocks = [];
@@ -1124,7 +1066,6 @@ const PlanningModule = ({ onNavigate }) => {
     
     updatedWeek.days[selectedDay].blocks.push(block);
     updatedWeek.days[selectedDay].blocks.sort((a, b) => a.startTime.localeCompare(b.startTime));
-
     setCurrentWeek(updatedWeek);
     
     setNewBlock({
@@ -1135,7 +1076,6 @@ const PlanningModule = ({ onNavigate }) => {
       priority: 'medium'
     });
   };
-
   const removeTimeBlock = (dayIndex: number, blockId: string) => {
     if (!currentWeek) return;
     
@@ -1143,7 +1083,6 @@ const PlanningModule = ({ onNavigate }) => {
     updatedWeek.days[dayIndex].blocks = updatedWeek.days[dayIndex].blocks.filter(b => b.id !== blockId);
     setCurrentWeek(updatedWeek);
   };
-
   const toggleBlockComplete = (dayIndex: number, blockId: string) => {
     if (!currentWeek) return;
     
@@ -1155,14 +1094,11 @@ const PlanningModule = ({ onNavigate }) => {
       setCurrentWeek(updatedWeek);
     }
   };
-
   const calculateStats = () => {
     if (!currentWeek) return { totalBlocks: 0, completedBlocks: 0, hoursPlanned: 0 };
-
     let totalBlocks = 0;
     let completedBlocks = 0;
     let hoursPlanned = 0;
-
     currentWeek.days.forEach(day => {
       totalBlocks += day.blocks.length;
       completedBlocks += day.blocks.filter(b => b.completed).length;
@@ -1174,12 +1110,9 @@ const PlanningModule = ({ onNavigate }) => {
         hoursPlanned += diff;
       });
     });
-
     return { totalBlocks, completedBlocks, hoursPlanned };
   };
-
   const stats = calculateStats();
-
   if (!gameStarted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-teal-50 to-blue-50">
@@ -1195,7 +1128,6 @@ const PlanningModule = ({ onNavigate }) => {
               Crie rotinas estruturadas e organize o tempo de forma visual e eficiente
             </p>
           </div>
-
           <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
@@ -1222,7 +1154,6 @@ const PlanningModule = ({ onNavigate }) => {
               </div>
             </div>
           </div>
-
           <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
             <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-6">Escolha um Template ou Comece do Zero</h2>
             
@@ -1247,7 +1178,6 @@ const PlanningModule = ({ onNavigate }) => {
                 </div>
               ))}
             </div>
-
             <div className="text-center pt-4 border-t border-gray-200">
               <button
                 onClick={() => {
@@ -1266,7 +1196,6 @@ const PlanningModule = ({ onNavigate }) => {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50 pb-16 lg:pb-0">
       {/* Status Bar */}
@@ -1311,7 +1240,6 @@ const PlanningModule = ({ onNavigate }) => {
           </div>
         </div>
       </div>
-
       <div className="max-w-7xl mx-auto p-4">
         {/* Navigation Tabs */}
         <div className="flex border-b border-gray-200 pb-4 mb-6 overflow-x-auto">
@@ -1335,7 +1263,6 @@ const PlanningModule = ({ onNavigate }) => {
             </button>
           ))}
         </div>
-
         {/* Views */}
         {currentView === 'templates' && (
           <div className="space-y-4">
@@ -1365,7 +1292,6 @@ const PlanningModule = ({ onNavigate }) => {
             </div>
           </div>
         )}
-
         {currentView === 'daily' && currentWeek && (
           <div className="space-y-4 sm:space-y-6">
             {/* Day Selector */}
@@ -1384,7 +1310,6 @@ const PlanningModule = ({ onNavigate }) => {
                 </button>
               ))}
             </div>
-
             {/* Add Block Form */}
             <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
               <h4 className="font-semibold text-gray-800 mb-4 flex items-center">
@@ -1463,7 +1388,6 @@ const PlanningModule = ({ onNavigate }) => {
                 </div>
               </div>
             </div>
-
             {/* Day Blocks */}
             <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
               <h4 className="font-semibold text-gray-800 mb-4">
@@ -1521,7 +1445,6 @@ const PlanningModule = ({ onNavigate }) => {
             </div>
           </div>
         )}
-
         {currentView === 'weekly' && currentWeek && (
           <div className="space-y-4 sm:space-y-6">
             <h3 className="text-lg font-bold text-gray-800">Visão Semanal</h3>
@@ -1563,7 +1486,6 @@ const PlanningModule = ({ onNavigate }) => {
             </div>
           </div>
         )}
-
         {currentView === 'analysis' && currentWeek && (
           <div className="space-y-4 sm:space-y-6">
             <h3 className="text-lg font-bold text-gray-800">Análise do Planejamento</h3>
@@ -1579,7 +1501,6 @@ const PlanningModule = ({ onNavigate }) => {
                     const percentage = stats.totalBlocks > 0
                       ? Math.round((count / stats.totalBlocks) * 100)
                       : 0;
-
                     return (
                       <div key={cat.id} className="flex items-center justify-between">
                         <span className="text-sm flex items-center gap-2">
@@ -1605,7 +1526,6 @@ const PlanningModule = ({ onNavigate }) => {
                   })}
                 </div>
               </div>
-
               <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
                 <h4 className="font-semibold mb-4">Resumo Geral</h4>
                 <div className="space-y-3">
@@ -1632,7 +1552,6 @@ const PlanningModule = ({ onNavigate }) => {
                 </div>
               </div>
             </div>
-
             <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
               <h4 className="font-semibold mb-4">Distribuição por Dia</h4>
               <div className="grid grid-cols-7 gap-2">
@@ -1653,17 +1572,14 @@ const PlanningModule = ({ onNavigate }) => {
     </div>
   );
 };
-
 // ============================================================================
 // 7. COMPONENTE PRINCIPAL
 // ============================================================================
 export default function LudiTEAApp() {
   const [currentSection, setCurrentSection] = useState<'home' | 'patients' | 'planning'>('home');
-
   const handleNavigation = (section: 'home' | 'patients' | 'planning') => {
     setCurrentSection(section);
   };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <MainHeader currentSection={currentSection} onNavigate={handleNavigation} />
