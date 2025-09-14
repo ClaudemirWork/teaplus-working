@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Calendar, Plus, Trash2, Save, User, Brain, Edit3, Clock, CheckCircle, Users, FileText, TrendingUp, Award, Settings, Phone, MapPin, Bell, Star, Target, ArrowRight, Home } from 'lucide-react'
+import { Calendar, Plus, Trash2, Save, User, Brain, Edit3, Clock, CheckCircle, Users, FileText, TrendingUp, Award, Settings, Phone, MapPin, Bell, Star, Target, ArrowRight, Home, X } from 'lucide-react'
 // ============================================================================
 // 1. INTERFACES E TIPOS DE DADOS
 // ============================================================================
@@ -182,12 +182,12 @@ const HomeSection = ({ onSelectModule }) => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {/* Hero Section com Logo Integrado */}
       <div className="text-center mb-12">
-        {/* Logo Grande e Integrado - Aumentado e sem cortes */}
-        <div className="w-48 h-48 sm:w-64 sm:h-64 mx-auto mb-6 flex items-center justify-center">
+        {/* Logo Grande e Integrado - SEM DELIMITAÇÃO DE QUADRADO */}
+        <div className="mb-6 flex justify-center">
           <img 
             src="/images/logo-luditea.png" 
             alt="LudiTEA Logo" 
-            className="w-full h-full object-none drop-shadow-2xl"
+            className="max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl h-auto drop-shadow-2xl"
           />
         </div>
         <h1 className="text-3xl sm:text-5xl font-bold text-gray-800 mb-4">
@@ -1004,17 +1004,10 @@ const PlanningModule = ({ onNavigate }) => {
     category: 'personal',
     priority: 'medium'
   });
-  // Estado para controle do modal de edição de templates
-  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [customTemplateName, setCustomTemplateName] = useState('');
-  const [customTemplateBlocks, setCustomTemplateBlocks] = useState<Omit<TimeBlock, 'id' | 'color'>[]>([]);
-  const [newCustomBlock, setNewCustomBlock] = useState<Partial<Omit<TimeBlock, 'id' | 'color'>>>({
-    title: '',
-    startTime: '',
-    endTime: '',
-    category: 'personal',
-    priority: 'medium'
-  });
+  const [editingBlocks, setEditingBlocks] = useState<TimeBlock[]>([]);
   
   const createEmptyWeek = (): WeekPlan => {
     const today = new Date();
@@ -1037,85 +1030,96 @@ const PlanningModule = ({ onNavigate }) => {
     };
   };
   
-  // FUNÇÃO PARA EDITAR TEMPLATE
-  const openTemplateEditor = (template: Template) => {
-    setEditingTemplate(template);
-    setCustomTemplateName(`Meu ${template.name}`);
-    setCustomTemplateBlocks([...template.defaultBlocks]);
-    setNewCustomBlock({
-      title: '',
-      startTime: '',
-      endTime: '',
-      category: 'personal',
-      priority: 'medium'
-    });
-  };
-  
-  // FUNÇÃO PARA ADICIONAR BLOCO AO TEMPLATE PERSONALIZADO
-  const addBlockToCustomTemplate = () => {
-    if (!newCustomBlock.title || !newCustomBlock.startTime || !newCustomBlock.endTime) {
-      alert('Por favor, preencha todos os campos obrigatórios');
-      return;
-    }
+  // FUNÇÃO PARA ABRIR O MODAL DO TEMPLATE
+  const openTemplateModal = (template: Template) => {
+    setSelectedTemplate(template);
+    setCustomTemplateName(template.name);
     
-    const block: Omit<TimeBlock, 'id' | 'color'> = {
-      title: newCustomBlock.title,
-      startTime: newCustomBlock.startTime,
-      endTime: newCustomBlock.endTime,
-      category: newCustomBlock.category || 'personal',
-      priority: newCustomBlock.priority || 'medium'
-    };
+    // Converter os blocos do template para blocos editáveis
+    const editableBlocks = template.defaultBlocks.map((block, index) => ({
+      ...block,
+      id: `template-${index}`,
+      color: categories.find(c => c.id === block.category)?.color || '#6B7280',
+      completed: false
+    }));
     
-    setCustomTemplateBlocks(prev => [...prev, block]);
-    setNewCustomBlock({
-      title: '',
-      startTime: '',
-      endTime: '',
-      category: 'personal',
-      priority: 'medium'
-    });
+    setEditingBlocks(editableBlocks);
+    setTemplateModalOpen(true);
   };
   
-  // FUNÇÃO PARA REMOVER BLOCO DO TEMPLATE PERSONALIZADO
-  const removeBlockFromCustomTemplate = (index: number) => {
-    setCustomTemplateBlocks(prev => prev.filter((_, i) => i !== index));
-  };
-  
-  // FUNÇÃO PARA SALVAR TEMPLATE PERSONALIZADO
+  // FUNÇÃO PARA SALVAR O TEMPLATE CUSTOMIZADO
   const saveCustomTemplate = () => {
-    if (!customTemplateName.trim()) {
+    if (!selectedTemplate || !customTemplateName.trim()) {
       alert('Por favor, dê um nome ao seu template');
-      return;
-    }
-    
-    if (customTemplateBlocks.length === 0) {
-      alert('Adicione pelo menos um bloco de tempo ao seu template');
       return;
     }
     
     const newWeek = createEmptyWeek();
     
-    // Aplicar template personalizado de segunda a sexta
+    // Aplicar blocos editados de segunda a sexta
     for (let dayIndex = 1; dayIndex <= 5; dayIndex++) {
-      newWeek.days[dayIndex].blocks = customTemplateBlocks.map((block, i) => ({
+      newWeek.days[dayIndex].blocks = editingBlocks.map((block, i) => ({
         ...block,
         id: `${dayIndex}-${i}-${Date.now()}`,
-        color: categories.find(c => c.id === block.category)?.color || '#6B7280',
         completed: false
       }));
     }
     
+    // Atualizar o título do plano
+    newWeek.title = customTemplateName;
+    
     setCurrentWeek(newWeek);
     setCurrentView('weekly');
     setGameStarted(true);
-    setEditingTemplate(null);
+    setTemplateModalOpen(false);
     
     // Feedback visual
     alert(`Template "${customTemplateName}" salvo com sucesso! Agora você pode modificar os blocos conforme necessário.`);
   };
   
-  // FUNÇÃO CORRIGIDA PARA APLICAR TEMPLATE
-  const applyTemplate = (template: Template) => {
+  // FUNÇÃO PARA EDITAR UM BLOCO NO MODAL
+  const updateTemplateBlock = (index: number, field: keyof TimeBlock, value: any) => {
+    const updatedBlocks = [...editingBlocks];
+    updatedBlocks[index] = { ...updatedBlocks[index], [field]: value };
+    
+    // Se a categoria mudar, atualizar a cor também
+    if (field === 'category') {
+      updatedBlocks[index].color = categories.find(c => c.id === value)?.color || '#6B7280';
+    }
+    
+    setEditingBlocks(updatedBlocks);
+  };
+  
+  // FUNÇÃO PARA ADICIONAR NOVO BLOCO NO MODAL
+  const addTemplateBlock = () => {
+    const newBlock: TimeBlock = {
+      id: `new-${Date.now()}`,
+      title: 'Nova Atividade',
+      startTime: '09:00',
+      endTime: '10:00',
+      category: 'personal',
+      priority: 'medium',
+      color: categories.find(c => c.id === 'personal')?.color || '#6B7280',
+      completed: false
+    };
+    
+    setEditingBlocks([...editingBlocks, newBlock]);
+  };
+  
+  // FUNÇÃO PARA REMOVER BLOCO NO MODAL
+  const removeTemplateBlock = (index: number) => {
+    if (editingBlocks.length <= 1) {
+      alert('O template precisa ter pelo menos um bloco de tempo');
+      return;
+    }
+    
+    const updatedBlocks = [...editingBlocks];
+    updatedBlocks.splice(index, 1);
+    setEditingBlocks(updatedBlocks);
+  };
+  
+  // FUNÇÃO APENAS PARA VISUALIZAR O TEMPLATE (SEM ALERTA)
+  const viewTemplate = (template: Template) => {
     const newWeek = createEmptyWeek();
     
     // Aplicar template de segunda a sexta
@@ -1127,12 +1131,12 @@ const PlanningModule = ({ onNavigate }) => {
         completed: false
       }));
     }
+    
     setCurrentWeek(newWeek);
     setCurrentView('weekly');
     setGameStarted(true);
     
-    // Feedback visual
-    alert(`Template "${template.name}" aplicado com sucesso! Agora você pode modificar os blocos conforme necessário.`);
+    // Sem alerta - apenas visualização
   };
   
   const addTimeBlock = () => {
@@ -1262,24 +1266,21 @@ const PlanningModule = ({ onNavigate }) => {
                   <div className="text-xs text-gray-500 mb-4">
                     {template.defaultBlocks.length} blocos de tempo inclusos
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={() => applyTemplate(template)}
-                      className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 transition-all duration-300 font-semibold"
-                    >
-                      Usar Template
-                    </button>
-                    <button
-                      onClick={() => openTemplateEditor(template)}
-                      className="w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-                    >
-                      Personalizar Template
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => viewTemplate(template)}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 transition-all duration-300 font-semibold mb-2"
+                  >
+                    Visualizar Template
+                  </button>
+                  <button
+                    onClick={() => openTemplateModal(template)}
+                    className="w-full px-4 py-2 bg-white border border-green-500 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm"
+                  >
+                    Personalizar Template
+                  </button>
                 </div>
               ))}
             </div>
-            
             <div className="text-center pt-4 border-t border-gray-200">
               <button
                 onClick={() => {
@@ -1288,28 +1289,25 @@ const PlanningModule = ({ onNavigate }) => {
                   setCurrentView('daily');
                   setGameStarted(true);
                 }}
-                className="bg-gray-800 hover:bg-gray-900 text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg"
+                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors"
               >
                 Começar do Zero
               </button>
-              <p className="text-xs text-gray-500 mt-2">
-                Crie seu planejamento completamente personalizado
-              </p>
             </div>
           </div>
         </div>
         
-        {/* Modal de Edição de Template */}
-        {editingTemplate && (
+        {/* MODAL PARA PERSONALIZAR TEMPLATE */}
+        {templateModalOpen && selectedTemplate && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-900">Personalizar Template</h3>
+                <h3 className="text-xl font-bold text-gray-800">Personalizar Template</h3>
                 <button 
-                  onClick={() => setEditingTemplate(null)}
+                  onClick={() => setTemplateModalOpen(false)}
                   className="text-gray-500 hover:text-gray-700"
                 >
-                  ✕
+                  <X className="w-6 h-6" />
                 </button>
               </div>
               
@@ -1318,92 +1316,109 @@ const PlanningModule = ({ onNavigate }) => {
                 <input
                   type="text"
                   value={customTemplateName}
-                  onChange={e => setCustomTemplateName(e.target.value)}
+                  onChange={(e) => setCustomTemplateName(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  placeholder="Dê um nome ao seu template"
+                  placeholder="Dê um nome personalizado ao seu template"
                 />
               </div>
               
               <div className="mb-6">
-                <h4 className="font-semibold text-gray-800 mb-4">Blocos de Tempo</h4>
-                
-                <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <h5 className="font-medium text-gray-700 mb-3">Adicionar Novo Bloco</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                    <div className="md:col-span-2">
-                      <label className="block text-xs text-gray-600 mb-1">Título</label>
-                      <input
-                        type="text"
-                        value={newCustomBlock.title || ''}
-                        onChange={e => setNewCustomBlock(prev => ({ ...prev, title: e.target.value }))}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
-                        placeholder="Ex: Trabalho Focado"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">Início</label>
-                      <input
-                        type="time"
-                        value={newCustomBlock.startTime || ''}
-                        onChange={e => setNewCustomBlock(prev => ({ ...prev, startTime: e.target.value }))}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">Fim</label>
-                      <input
-                        type="time"
-                        value={newCustomBlock.endTime || ''}
-                        onChange={e => setNewCustomBlock(prev => ({ ...prev, endTime: e.target.value }))}
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      <button
-                        onClick={addBlockToCustomTemplate}
-                        className="w-full p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
-                      >
-                        Adicionar
-                      </button>
-                    </div>
-                  </div>
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="font-semibold text-gray-800">Blocos de Tempo</h4>
+                  <button
+                    onClick={addTemplateBlock}
+                    className="px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors flex items-center gap-1"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Adicionar Bloco
+                  </button>
                 </div>
                 
-                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                  {customTemplateBlocks.length === 0 ? (
-                    <div className="text-center py-4 text-gray-500">
-                      Nenhum bloco adicionado ainda
-                    </div>
-                  ) : (
-                    customTemplateBlocks.map((block, index) => (
-                      <div key={index} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3">
-                        <div>
-                          <p className="font-medium text-gray-800">{block.title}</p>
-                          <p className="text-xs text-gray-600">
-                            {block.startTime} - {block.endTime} • {categories.find(c => c.id === block.category)?.name}
-                          </p>
+                <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
+                  {editingBlocks.map((block, index) => (
+                    <div key={block.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={block.title}
+                            onChange={(e) => updateTemplateBlock(index, 'title', e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-lg mb-2 focus:ring-2 focus:ring-green-500"
+                            placeholder="Título da atividade"
+                          />
+                          
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1">Início</label>
+                              <input
+                                type="time"
+                                value={block.startTime}
+                                onChange={(e) => updateTemplateBlock(index, 'startTime', e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1">Fim</label>
+                              <input
+                                type="time"
+                                value={block.endTime}
+                                onChange={(e) => updateTemplateBlock(index, 'endTime', e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
+                              />
+                            </div>
+                          </div>
                         </div>
+                        
                         <button
-                          onClick={() => removeBlockFromCustomTemplate(index)}
-                          className="text-red-500 hover:text-red-700"
+                          onClick={() => removeTemplateBlock(index)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg ml-2"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       </div>
-                    ))
-                  )}
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Categoria</label>
+                          <select
+                            value={block.category}
+                            onChange={(e) => updateTemplateBlock(index, 'category', e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
+                          >
+                            {categories.map(cat => (
+                              <option key={cat.id} value={cat.id}>
+                                {cat.icon} {cat.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Prioridade</label>
+                          <select
+                            value={block.priority}
+                            onChange={(e) => updateTemplateBlock(index, 'priority', e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
+                          >
+                            <option value="high">🔴 Alta</option>
+                            <option value="medium">🟡 Média</option>
+                            <option value="low">🟢 Baixa</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
               
-              <div className="flex gap-3 mt-6">
+              <div className="flex gap-3">
                 <button
                   onClick={saveCustomTemplate}
                   className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-semibold"
                 >
-                  Salvar e Usar Template
+                  Salvar Template Personalizado
                 </button>
                 <button
-                  onClick={() => setEditingTemplate(null)}
+                  onClick={() => setTemplateModalOpen(false)}
                   className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
                 >
                   Cancelar
@@ -1494,31 +1509,45 @@ const PlanningModule = ({ onNavigate }) => {
                 Agora use as abas "📅 Diário" ou "📊 Semanal" para ver e modificar seus blocos de tempo.
               </p>
             </div>
+            
             <h3 className="text-lg font-bold text-gray-800 mb-4">
               Escolha um Template (Modificável)
             </h3>
+            
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               {templates.map((template, index) => (
                 <div key={index} className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-shadow">
                   <div className="text-3xl mb-3">{template.icon}</div>
                   <h4 className="font-bold text-green-700 mb-2">{template.name}</h4>
                   <p className="text-sm text-gray-600 mb-3">{template.description}</p>
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={() => applyTemplate(template)}
-                      className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                    >
-                      Usar Template
-                    </button>
-                    <button
-                      onClick={() => openTemplateEditor(template)}
-                      className="w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-                    >
-                      Personalizar
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => viewTemplate(template)}
+                    className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors mb-2"
+                  >
+                    Visualizar Template
+                  </button>
+                  <button
+                    onClick={() => openTemplateModal(template)}
+                    className="w-full px-4 py-2 bg-white border border-green-500 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm"
+                  >
+                    Personalizar Template
+                  </button>
                 </div>
               ))}
+            </div>
+            
+            <div className="text-center pt-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  const newWeek = createEmptyWeek();
+                  setCurrentWeek(newWeek);
+                  setCurrentView('daily');
+                  setGameStarted(true);
+                }}
+                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors"
+              >
+                Começar do Zero
+              </button>
             </div>
           </div>
         )}
