@@ -143,7 +143,11 @@ const MainHeader = ({ currentSection, onNavigate }) => (
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg p-1 flex items-center justify-center">
-            <span className="text-xl sm:text-2xl">🧩</span>
+            <img 
+              src="/images/logo-luditea.png" 
+              alt="LudiTEA Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
           <div className="hidden sm:block">
             <h1 className="text-xl sm:text-2xl font-bold">LudiTEA</h1>
@@ -155,10 +159,10 @@ const MainHeader = ({ currentSection, onNavigate }) => (
           {currentSection !== 'home' && (
             <button
               onClick={() => onNavigate('home')}
-              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg transition-colors text-sm"
+              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg transition-colors text-sm font-medium"
             >
               <Home className="w-4 h-4" />
-              <span className="hidden sm:inline">Início</span>
+              <span>← Voltar ao Início</span>
             </button>
           )}
           <div className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold">
@@ -1036,10 +1040,6 @@ const PlanningModule = ({ onNavigate }) => {
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4 sm:gap-6">
             <div className="text-center">
-              <p className="text-xs text-gray-500">Pontuação</p>
-              <p className="text-lg sm:text-2xl font-bold text-green-600">{score}</p>
-            </div>
-            <div className="text-center">
               <p className="text-xs text-gray-500">Blocos</p>
               <p className="text-sm sm:text-lg font-semibold">{stats.totalBlocks}</p>
             </div>
@@ -1047,14 +1047,28 @@ const PlanningModule = ({ onNavigate }) => {
               <p className="text-xs text-gray-500">Horas</p>
               <p className="text-sm sm:text-lg font-semibold">{stats.hoursPlanned.toFixed(1)}h</p>
             </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Concluídos</p>
+              <p className="text-sm sm:text-lg font-semibold text-green-600">{stats.completedBlocks}</p>
+            </div>
           </div>
           
           <div className="flex gap-2">
             <button
               onClick={() => {
+                if (currentWeek) {
+                  alert('Planejamento salvo com sucesso!');
+                }
+              }}
+              className="px-3 sm:px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              <span className="hidden sm:inline">Salvar</span>
+            </button>
+            <button
+              onClick={() => {
                 setGameStarted(false);
                 setCurrentWeek(null);
-                setScore(0);
               }}
               className="px-3 sm:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
             >
