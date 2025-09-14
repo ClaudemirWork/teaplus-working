@@ -760,20 +760,8 @@ export default function LudiTEADeskPage() {
         <div className="flex-1 p-6">
           {currentView === 'dashboard' && renderDashboard()}
           {currentView === 'patients' && renderPatients()}
-          {currentView === 'calendar' && (
-            <div className="text-center py-20">
-              <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Agenda em Desenvolvimento</h3>
-              <p className="text-gray-600">Funcionalidade de agenda será implementada na próxima versão.</p>
-            </div>
-          )}
-          {currentView === 'reports' && (
-            <div className="text-center py-20">
-              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Relatórios com IA</h3>
-              <p className="text-gray-600">Sistema de relatórios inteligentes será implementado em breve.</p>
-            </div>
-          )}
+          {currentView === 'calendar' && renderCalendar()}
+          {currentView === 'reports' && renderReports()}
           {currentView === 'settings' && (
             <div className="text-center py-20">
               <Settings className="w-16 h-16 text-gray-400 mx-auto mb-4" />
