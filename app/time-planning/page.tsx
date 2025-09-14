@@ -159,11 +159,7 @@ const MainHeader = ({ currentSection, onNavigate }) => (
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg p-1 flex items-center justify-center">
-            <img 
-              src="/images/logo-luditea.png" 
-              alt="LudiTEA Logo" 
-              className="w-full h-full object-contain"
-            />
+            <Brain className="w-full h-full text-purple-600" />
           </div>
           <div className="hidden sm:block">
             <h1 className="text-xl sm:text-2xl font-bold">LudiTEA</h1>
@@ -191,19 +187,16 @@ const MainHeader = ({ currentSection, onNavigate }) => (
 );
 
 // ============================================================================
-// 4. COMPONENTE HOME/SELEÇÃO
+// 4. COMPONENTE HOME/SELEÇÃO - LOGO INTEGRADO
 // ============================================================================
 const HomeSection = ({ onSelectModule }) => (
   <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-      {/* Hero Section */}
+      {/* Hero Section com Logo Integrado */}
       <div className="text-center mb-12">
-        <div className="w-20 h-20 sm:w-32 sm:h-32 mx-auto mb-6 bg-white rounded-3xl flex items-center justify-center shadow-2xl p-4">
-          <img 
-            src="/images/logo-luditea.png" 
-            alt="LudiTEA Logo" 
-            className="w-full h-full object-contain"
-          />
+        {/* Logo Grande e Integrado - sem box */}
+        <div className="w-32 h-32 sm:w-48 sm:h-48 mx-auto mb-6 flex items-center justify-center">
+          <Brain className="w-full h-full text-purple-600 drop-shadow-2xl" />
         </div>
         <h1 className="text-3xl sm:text-5xl font-bold text-gray-800 mb-4">
           Bem-vindo ao <span className="text-purple-600">LudiTEA</span>
@@ -274,7 +267,7 @@ const HomeSection = ({ onSelectModule }) => (
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
-                <p className="text-sm sm:text-base text-gray-700">Ideal para famílias e pessoas</p>
+                <p className="text-sm sm:text-base text-gray-700">Ideal para famílias e profissionais</p>
               </div>
             </div>
 
@@ -328,7 +321,7 @@ const HomeSection = ({ onSelectModule }) => (
 );
 
 // ============================================================================
-// 5. COMPONENTE GESTÃO DE PACIENTES (OTIMIZADO MOBILE)
+// 5. COMPONENTE GESTÃO DE PACIENTES - RESTAURADO
 // ============================================================================
 const PatientsModule = ({ onNavigate }) => {
   const [currentView, setCurrentView] = useState<'dashboard' | 'patients' | 'calendar' | 'reports'>('dashboard');
@@ -455,6 +448,35 @@ const PatientsModule = ({ onNavigate }) => {
       ludiTeaConnected: false
     });
     setIsAddingPatient(false);
+  };
+
+  const addAppointment = () => {
+    if (!newAppointment.patientId || !newAppointment.date || !newAppointment.startTime) return;
+
+    const appointment: Appointment = {
+      id: Date.now().toString(),
+      patientId: newAppointment.patientId,
+      type: newAppointment.type || 'terapia',
+      title: newAppointment.title || `${appointmentTypes.find(t => t.id === newAppointment.type)?.name} - ${patients.find(p => p.id === newAppointment.patientId)?.name}`,
+      date: newAppointment.date,
+      startTime: newAppointment.startTime,
+      endTime: newAppointment.endTime || '',
+      status: 'agendado',
+      notes: newAppointment.notes || '',
+      materials: []
+    };
+
+    setAppointments(prev => [...prev, appointment]);
+    setNewAppointment({
+      type: 'terapia',
+      title: '',
+      date: '',
+      startTime: '',
+      endTime: '',
+      notes: '',
+      materials: []
+    });
+    setIsAddingAppointment(false);
   };
 
   const getDashboardStats = () => {
@@ -753,19 +775,20 @@ const PatientsModule = ({ onNavigate }) => {
 
       <MobileNav />
 
-      {/* Modais */}
+      {/* Modal Adicionar Paciente - COMPLETO */}
       {isAddingPatient && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Novo Paciente</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo *</label>
                 <input
                   type="text"
                   value={newPatient.name || ''}
                   onChange={e => setNewPatient(prev => ({...prev, name: e.target.value}))}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nome do paciente"
                 />
               </div>
               <div>
@@ -775,6 +798,7 @@ const PatientsModule = ({ onNavigate }) => {
                   value={newPatient.age || ''}
                   onChange={e => setNewPatient(prev => ({...prev, age: parseInt(e.target.value)}))}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Idade"
                 />
               </div>
               <div>
@@ -791,24 +815,215 @@ const PatientsModule = ({ onNavigate }) => {
                 </select>
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Severidade</label>
+                <select
+                  value={newPatient.severity}
+                  onChange={e => setNewPatient(prev => ({...prev, severity: e.target.value as any}))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Leve">Leve</option>
+                  <option value="Moderado">Moderado</option>
+                  <option value="Severo">Severo</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Responsável</label>
                 <input
                   type="text"
                   value={newPatient.guardian || ''}
                   onChange={e => setNewPatient(prev => ({...prev, guardian: e.target.value}))}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nome do responsável"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                <input
+                  type="tel"
+                  value={newPatient.phone || ''}
+                  onChange={e => setNewPatient(prev => ({...prev, phone: e.target.value}))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={newPatient.email || ''}
+                  onChange={e => setNewPatient(prev => ({...prev, email: e.target.value}))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="email@exemplo.com"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
+                <input
+                  type="text"
+                  value={newPatient.address || ''}
+                  onChange={e => setNewPatient(prev => ({...prev, address: e.target.value}))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Endereço completo"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                <textarea
+                  value={newPatient.notes || ''}
+                  onChange={e => setNewPatient(prev => ({...prev, notes: e.target.value}))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  placeholder="Observações sobre o paciente..."
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={newPatient.ludiTeaConnected || false}
+                    onChange={e => setNewPatient(prev => ({...prev, ludiTeaConnected: e.target.checked}))}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-sm text-gray-700">Família usa LudiTEA</span>
+                </label>
               </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button
                 onClick={addPatient}
-                className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors"
+                className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-semibold"
               >
-                Salvar
+                Salvar Paciente
               </button>
               <button
                 onClick={() => setIsAddingPatient(false)}
+                className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Adicionar Consulta - COMPLETO */}
+      {isAddingAppointment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Nova Consulta</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Paciente *</label>
+                <select
+                  value={newAppointment.patientId || ''}
+                  onChange={e => setNewAppointment(prev => ({...prev, patientId: e.target.value}))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Selecione um paciente</option>
+                  {patients.map(patient => (
+                    <option key={patient.id} value={patient.id}>
+                      {patient.name} ({patient.diagnosis})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Consulta *</label>
+                <select
+                  value={newAppointment.type}
+                  onChange={e => {
+                    const selectedType = appointmentTypes.find(t => t.id === e.target.value);
+                    if (newAppointment.startTime && selectedType) {
+                      const startTime = new Date(`2000-01-01T${newAppointment.startTime}`);
+                      const endTime = new Date(startTime.getTime() + selectedType.duration * 60000);
+                      setNewAppointment(prev => ({
+                        ...prev,
+                        type: e.target.value as any,
+                        endTime: endTime.toTimeString().slice(0, 5)
+                      }));
+                    } else {
+                      setNewAppointment(prev => ({...prev, type: e.target.value as any}));
+                    }
+                  }}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  {appointmentTypes.map(type => (
+                    <option key={type.id} value={type.id}>
+                      {type.icon} {type.name} ({type.duration}min)
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Data *</label>
+                <input
+                  type="date"
+                  value={newAppointment.date || selectedDate}
+                  onChange={e => setNewAppointment(prev => ({...prev, date: e.target.value}))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Horário Início *</label>
+                <input
+                  type="time"
+                  value={newAppointment.startTime || ''}
+                  onChange={e => {
+                    const selectedType = appointmentTypes.find(t => t.id === newAppointment.type);
+                    if (selectedType) {
+                      const startTime = new Date(`2000-01-01T${e.target.value}`);
+                      const endTime = new Date(startTime.getTime() + selectedType.duration * 60000);
+                      setNewAppointment(prev => ({
+                        ...prev,
+                        startTime: e.target.value,
+                        endTime: endTime.toTimeString().slice(0, 5)
+                      }));
+                    } else {
+                      setNewAppointment(prev => ({...prev, startTime: e.target.value}));
+                    }
+                  }}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Horário Fim</label>
+                <input
+                  type="time"
+                  value={newAppointment.endTime || ''}
+                  onChange={e => setNewAppointment(prev => ({...prev, endTime: e.target.value}))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Título Personalizado</label>
+                <input
+                  type="text"
+                  value={newAppointment.title || ''}
+                  onChange={e => setNewAppointment(prev => ({...prev, title: e.target.value}))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Deixe vazio para gerar automaticamente"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                <textarea
+                  value={newAppointment.notes || ''}
+                  onChange={e => setNewAppointment(prev => ({...prev, notes: e.target.value}))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  placeholder="Objetivos da sessão, pontos importantes..."
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={addAppointment}
+                className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+              >
+                Agendar Consulta
+              </button>
+              <button
+                onClick={() => setIsAddingAppointment(false)}
                 className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
               >
                 Cancelar
@@ -822,7 +1037,7 @@ const PatientsModule = ({ onNavigate }) => {
 };
 
 // ============================================================================
-// 6. COMPONENTE PLANEJAMENTO DE TEMPO
+// 6. COMPONENTE PLANEJAMENTO DE TEMPO - CORRIGIDO
 // ============================================================================
 const PlanningModule = ({ onNavigate }) => {
   const [gameStarted, setGameStarted] = useState(false);
@@ -859,6 +1074,7 @@ const PlanningModule = ({ onNavigate }) => {
     };
   };
 
+  // FUNÇÃO CORRIGIDA PARA APLICAR TEMPLATE
   const applyTemplate = (template: Template) => {
     const newWeek = createEmptyWeek();
     
@@ -875,6 +1091,9 @@ const PlanningModule = ({ onNavigate }) => {
     setCurrentWeek(newWeek);
     setCurrentView('weekly');
     setGameStarted(true);
+    
+    // Feedback visual
+    alert(`Template "${template.name}" aplicado com sucesso! Agora você pode modificar os blocos conforme necessário.`);
   };
 
   const addTimeBlock = () => {
@@ -991,17 +1210,17 @@ const PlanningModule = ({ onNavigate }) => {
                   Como Usar
                 </h3>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• Escolha começar com template ou do zero</li>
-                  <li>• Adicione blocos de tempo para cada dia</li>
-                  <li>• Organize sua semana visualmente</li>
-                  <li>• Acompanhe seu progresso</li>
+                  <li>• Use templates como base ou comece do zero</li>
+                  <li>• Modifique blocos conforme sua necessidade</li>
+                  <li>• Adicione/remova atividades livremente</li>
+                  <li>• Acompanhe seu progresso diário</li>
                 </ul>
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-6">Escolha um Template para Começar</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-6">Escolha um Template ou Comece do Zero</h2>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
               {templates.map((template, index) => (
@@ -1018,6 +1237,9 @@ const PlanningModule = ({ onNavigate }) => {
                   >
                     Usar Template
                   </button>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    * Você poderá modificar todas as atividades
+                  </p>
                 </div>
               ))}
             </div>
@@ -1114,7 +1336,7 @@ const PlanningModule = ({ onNavigate }) => {
         {currentView === 'templates' && (
           <div className="space-y-4">
             <h3 className="text-lg font-bold text-gray-800 mb-4">
-              Escolha um Template
+              Escolha um Template (Modificável)
             </h3>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               {templates.map((template, index) => (
@@ -1126,7 +1348,7 @@ const PlanningModule = ({ onNavigate }) => {
                     onClick={() => applyTemplate(template)}
                     className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                   >
-                    Usar Template
+                    Usar e Modificar
                   </button>
                 </div>
               ))}
