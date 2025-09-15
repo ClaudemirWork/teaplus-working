@@ -52,6 +52,7 @@ const AuditoryMemoryGame: React.FC = () => {
   const [starBurst, setStarBurst] = useState(false);
   const [correctNoteStreak, setCorrectNoteStreak] = useState(0);
   const [showPerfectBonus, setShowPerfectBonus] = useState(false);
+  const [idleMessagePlayed, setIdleMessagePlayed] = useState(false);
   
   const [stats, setStats] = useState<GameStats>({
     level: 1,
@@ -87,7 +88,7 @@ const AuditoryMemoryGame: React.FC = () => {
   
   // LÓGICA DE PROGRESSÃO
   const [sequenceLength, setSequenceLength] = useState(1);
-  const [playbackSpeed, setPlaybackSpeed] = useState(800);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1500); // Velocidade mais lenta e constante
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const isAudioInitialized = useRef(false);
@@ -246,6 +247,14 @@ const AuditoryMemoryGame: React.FC = () => {
     };
   }, []);
   
+  // Adicionar narração quando o jogo está no estado idle
+  useEffect(() => {
+    if (gameState === 'idle' && !idleMessagePlayed && currentScreen === 'game') {
+      narrateText("Clique em começar");
+      setIdleMessagePlayed(true);
+    }
+  }, [gameState, idleMessagePlayed, currentScreen]);
+  
   const playNote = useCallback((frequency: number, duration: number = 400, isSuccess: boolean = false) => {
     if (!soundEnabled || !audioContextRef.current) return;
     
@@ -317,9 +326,9 @@ const AuditoryMemoryGame: React.FC = () => {
     }
   }, [soundEnabled]);
   
-  const generateSequence = useCallback(() => {
-    return Array.from({ length: sequenceLength }, () => Math.floor(Math.random() * 6));
-  }, [sequenceLength]);
+  const generateSequence = useCallback((length: number) => {
+    return Array.from({ length }, () => Math.floor(Math.random() * 6));
+  }, []);
   
   const playSequence = useCallback(async (seq: number[]) => {
     setIsPlaying(true);
@@ -336,7 +345,7 @@ const AuditoryMemoryGame: React.FC = () => {
       setCurrentNote(null);
       
       if (i < seq.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
     }
     
@@ -346,12 +355,15 @@ const AuditoryMemoryGame: React.FC = () => {
   
   const startRound = useCallback(() => {
     initializeAudio();
-    const newSequence = generateSequence();
+    // O comprimento da sequência é igual ao nível atual
+    const newSequenceLength = stats.level;
+    setSequenceLength(newSequenceLength);
+    const newSequence = generateSequence(newSequenceLength);
     setSequence(newSequence);
     setUserSequence([]);
     setCorrectNoteStreak(0);
     playSequence(newSequence);
-  }, [generateSequence, playSequence, initializeAudio]);
+  }, [generateSequence, playSequence, initializeAudio, stats.level]);
   
   const handleNoteClick = useCallback((noteIndex: number) => {
     if (gameState !== 'playing' || isPlaying) return;
@@ -400,13 +412,15 @@ const AuditoryMemoryGame: React.FC = () => {
     setGameState('success');
     setShowSuccess(true);
     
-    // EXPLOSÃO DE RECOMPENSAS!
-    playRewardSound();
-    createStarBurst(10);
+    // EXPLOSÃO DE RECOMPENSAS! (apenas em níveis múltiplos de 2)
+    if (stats.level % 2 === 0) {
+      playRewardSound();
+      createStarBurst(5); // Reduzido de 10 para 5
+    }
     
-    // Bônus perfeito se não errou nenhuma vez
+    // Bônus perfeito se não errou nenhuma vez (apenas em níveis múltiplos de 2)
     const isPerfect = stats.lives === 3;
-    if (isPerfect) {
+    if (isPerfect && stats.level % 2 === 0) {
       setShowPerfectBonus(true);
       setTimeout(() => setShowPerfectBonus(false), 2000);
       createFloatingReward('trophy');
@@ -439,11 +453,13 @@ const AuditoryMemoryGame: React.FC = () => {
     // Verifica conquistas
     checkAchievements(newStats);
     
-    // Narrar progresso
-    narrateText(`Nível ${newLevel}, pontuação ${newScore}`);
+    // Narrar progresso apenas em níveis múltiplos de 2
+    if (newLevel % 2 === 0) {
+      narrateText(`Nível ${newLevel}, pontuação ${newScore}`);
+    }
     
-    // Mensagens especiais de combo
-    if (comboMessages[newCombo as keyof typeof comboMessages]) {
+    // Mensagens especiais de combo (apenas em níveis múltiplos de 2)
+    if (comboMessages[newCombo as keyof typeof comboMessages] && newLevel % 2 === 0) {
       setMotivationalMessage(comboMessages[newCombo as keyof typeof comboMessages]);
       setShowComboFire(true);
       setTimeout(() => {
@@ -452,23 +468,20 @@ const AuditoryMemoryGame: React.FC = () => {
       }, 2000);
     }
     
-    // Progressão de dificuldade
-    if (newLevel <= 5) {
-      setSequenceLength(newLevel);
-      setPlaybackSpeed(800);
-    } else if (newLevel <= 8) {
-      const phase2Level = newLevel - 5;
-      setSequenceLength(phase2Level * 2);
-      setPlaybackSpeed(650);
-    } else {
-      setSequenceLength(Math.min(20, 6 + Math.floor((newLevel - 8) / 2)));
-      setPlaybackSpeed(Math.max(400, 650 - (newLevel - 8) * 20));
+    // Progressão de dificuldade: agora o nível determina o número de sons
+    // Após o nível 6, voltar para o nível 1
+    let nextLevel = newLevel;
+    if (nextLevel > 6) {
+      nextLevel = 1;
     }
+    
+    // Ajustar o nível para o próximo
+    setStats(prev => ({ ...prev, level: nextLevel }));
     
     setTimeout(() => {
       setShowSuccess(false);
       startRound();
-    }, 2000);
+    }, 4000); // Aumentado para 4 segundos para dar tempo da criança perceber
   }, [stats, sequenceLength, startRound, playRewardSound, createStarBurst, createFloatingReward, checkAchievements, comboMessages]);
   
   const handleFailure = useCallback(() => {
@@ -492,10 +505,11 @@ const AuditoryMemoryGame: React.FC = () => {
       setTimeout(() => {
         setShowError(false);
         setUserSequence([]);
-        playSequence(sequence);
+        setGameState('idle');
+        setIdleMessagePlayed(false); // Resetar para tocar a mensagem novamente
       }, 2000);
     }
-  }, [stats, sequence, playSequence, narrateText, playErrorSound]);
+  }, [stats, narrateText, playErrorSound]);
   
   const resetGame = () => {
     setCurrentScreen('titleScreen');
@@ -512,11 +526,12 @@ const AuditoryMemoryGame: React.FC = () => {
       perfectRounds: 0
     }));
     setSequenceLength(1);
-    setPlaybackSpeed(800);
+    setPlaybackSpeed(1500); // Velocidade constante
     setShowSuccess(false);
     setShowError(false);
     setFloatingRewards([]);
     setCorrectNoteStreak(0);
+    setIdleMessagePlayed(false);
   };
   
   // TELAS DO JOGO
@@ -729,8 +744,8 @@ const AuditoryMemoryGame: React.FC = () => {
   const GameScreen = () => {
     return (
       <div id="game-container" className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 game-container relative overflow-hidden">
-        {/* Recompensas Flutuantes */}
-        {floatingRewards.map(reward => (
+        {/* Recompensas Flutuantes (apenas em níveis múltiplos de 2) */}
+        {stats.level % 2 === 0 && floatingRewards.map(reward => (
           <div
             key={reward.id}
             className="absolute animate-float-up pointer-events-none z-50"
@@ -744,8 +759,8 @@ const AuditoryMemoryGame: React.FC = () => {
           </div>
         ))}
         
-        {/* Mensagem Motivacional */}
-        {motivationalMessage && (
+        {/* Mensagem Motivacional (apenas em níveis múltiplos de 2) */}
+        {stats.level % 2 === 0 && motivationalMessage && (
           <div className={`absolute top-1/4 left-1/2 transform -translate-x-1/2 z-50 ${showComboFire ? 'animate-bounce' : 'animate-pulse'}`}>
             <div className="bg-yellow-400 text-purple-900 px-8 py-4 rounded-full text-2xl font-bold shadow-2xl">
               {motivationalMessage}
@@ -768,8 +783,8 @@ const AuditoryMemoryGame: React.FC = () => {
           </div>
         )}
         
-        {/* Bônus Perfeito */}
-        {showPerfectBonus && (
+        {/* Bônus Perfeito (apenas em níveis múltiplos de 2) */}
+        {stats.level % 2 === 0 && showPerfectBonus && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
             <div className="text-6xl font-bold text-yellow-400 animate-ping">
               PERFEITO! 🌟
