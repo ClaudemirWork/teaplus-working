@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link'
-import { ChevronLeft, Save, Star, Trophy, Volume2, VolumeX, Play } from 'lucide-react'; // Adicionei o ícone Play
+import { ChevronLeft, Save, Star, Trophy, Volume2, VolumeX, Play } from 'lucide-react';
 import { createClient } from '../utils/supabaseClient'
 // Importação condicional para evitar erros de SSR
 import dynamic from 'next/dynamic';
@@ -76,6 +76,7 @@ export default function OceanBubblePop() {
   // NOVOS: Controle de fala da Mila
   const [introSpeechComplete, setIntroSpeechComplete] = useState(false);
   const [instructionsSpeechComplete, setInstructionsSpeechComplete] = useState(false);
+  const [gameStartSpeechComplete, setGameStartSpeechComplete] = useState(false);
   
   // NOVO: Controle de interação do usuário para áudio
   const [userInteracted, setUserInteracted] = useState(false);
@@ -134,20 +135,33 @@ export default function OceanBubblePop() {
           audioManager.current = GameAudioManager.getInstance();
           console.log('GameAudioManager carregado com sucesso');
         } else {
-          // Criar um fallback simples
+          // Criar um fallback simples com melhor tratamento de erros
           audioManager.current = {
             falarMila: (texto: string, callback?: () => void) => {
               if (typeof window !== 'undefined' && window.speechSynthesis) {
+                // Parar qualquer fala em andamento para evitar sobreposição
                 window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(texto);
-                utterance.lang = 'pt-BR';
-                utterance.rate = 0.9;
-                utterance.pitch = 1.1;
-                if (callback) {
-                  utterance.onend = callback;
-                  utterance.onerror = callback;
-                }
-                window.speechSynthesis.speak(utterance);
+                
+                // Pequeno atraso para garantir inicialização correta
+                setTimeout(() => {
+                  const utterance = new SpeechSynthesisUtterance(texto);
+                  utterance.lang = 'pt-BR';
+                  utterance.rate = 0.9;
+                  utterance.pitch = 1.1;
+                  utterance.volume = 0.8;
+                  
+                  if (callback) {
+                    utterance.onend = callback;
+                    utterance.onerror = callback;
+                  }
+                  
+                  try {
+                    window.speechSynthesis.speak(utterance);
+                  } catch (error) {
+                    console.error('Erro ao falar:', error);
+                    if (callback) callback();
+                  }
+                }, 100);
               } else if (callback) {
                 callback();
               }
@@ -188,6 +202,7 @@ export default function OceanBubblePop() {
     setUserInteracted(true);
     audioManager.current?.pararTodos();
     
+    // Adicionar um pequeno atraso para garantir que o áudio seja inicializado corretamente
     setTimeout(() => {
       audioManager.current?.falarMila("Olá, eu sou a Mila! Vamos estourar bolhas e salvar o mundo marinho!", () => {
         setTimeout(() => {
@@ -196,7 +211,18 @@ export default function OceanBubblePop() {
           });
         }, 1500);
       });
-    }, 500);
+    }, 300);
+  };
+  
+  // NOVO: Função para ouvir as instruções do jogo
+  const startGameInstructions = () => {
+    audioManager.current?.pararTodos();
+    
+    setTimeout(() => {
+      audioManager.current?.falarMila("Vamos começar! Estoure as bolhas para ganhar pontos!", () => {
+        setGameStartSpeechComplete(true);
+      });
+    }, 300);
   };
   
   // CORREÇÃO 1: Saudação inicial da Mila - Agora na tela inicial
@@ -246,6 +272,18 @@ export default function OceanBubblePop() {
       }, 500);
     }
   }, [currentScreen, instructionsSpeechComplete]);
+  
+  // NOVO: Instruções do início do jogo
+  useEffect(() => {
+    if (currentScreen === 'game' && audioManager.current && !gameStartSpeechComplete && isPlaying) {
+      // Iniciar as instruções do jogo após um pequeno atraso
+      const timer = setTimeout(() => {
+        audioManager.current?.falarMila("Vamos começar! Estoure as bolhas para ganhar pontos!");
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentScreen, gameStartSpeechComplete, isPlaying]);
   
   // NOVO: Parar fala ao mudar de tela
   useEffect(() => {
@@ -439,10 +477,7 @@ export default function OceanBubblePop() {
     });
     setCheckpointBubbles(0);
     setLevelCompleted(false);
-    // NOVO: Narração do início do jogo
-    setTimeout(() => {
-      audioManager.current?.falarMila("Vamos começar! Estoure as bolhas para ganhar pontos!");
-    }, 1000);
+    setGameStartSpeechComplete(false); // Resetar estado de fala do jogo
   };
   
   const createBubble = () => {
@@ -770,8 +805,17 @@ export default function OceanBubblePop() {
       setCombo(prev => prev + 1);
       setLevelMessage(`🐠 Peixe Salvo! +${bubble.points * multiplier}`);
       
-      // ÁUDIO: Peixe salvo é importante
-      audioManager.current?.falarMila("Peixe salvo!");
+      // ÁUDIO: Peixe salvo é importante - Agora personalizado com o nome do peixe
+      const fishNames: {[key: string]: string} = {
+        '🐠': 'peixe tropical',
+        '🐟': 'peixinho dourado',
+        '🐡': 'baiacu',
+        '🦈': 'tubarão',
+        '🐙': 'polvo'
+      };
+      
+      const fishName = fishNames[bubble.fishType || '🐠'] || 'peixe';
+      audioManager.current?.falarMila(`Você salvou um ${fishName}! Muito bem!`);
       
       setTimeout(() => setLevelMessage(''), 1500);
     } else if (bubble.type === 'double') {
@@ -1095,6 +1139,7 @@ export default function OceanBubblePop() {
           setMagnetActive(false);
           setLevelCompleted(false);
           setIsPlaying(true);
+          setGameStartSpeechComplete(false); // Resetar para o próximo nível
           
           // ÁUDIO: Próximo nível
           audioManager.current?.falarMila(`Agora no nível ${nextLevel}!`);
@@ -1258,6 +1303,7 @@ export default function OceanBubblePop() {
     // Resetar estados de fala
     setIntroSpeechComplete(false);
     setInstructionsSpeechComplete(false);
+    setGameStartSpeechComplete(false);
     setUserInteracted(false);
   };
   
@@ -1380,55 +1426,90 @@ export default function OceanBubblePop() {
     </div>
   );
   
-  const InstructionsScreen = () => (
-    <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-blue-300 via-cyan-300 to-teal-300">
-      <div className="bg-white/95 rounded-3xl p-8 max-w-2xl shadow-2xl text-center">
-        <h2 className="text-4xl font-bold mb-6 text-blue-600">Como Jogar</h2>
-        <div className="text-lg text-gray-700 space-y-6 mb-6 text-left">
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">🫧</span>
-            <span><b>Estoure as bolhas</b> clicando ou tocando nelas!</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">🐠</span>
-            <span><b>Salve os peixes presos</b> nas bolhas especiais!</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">💣</span>
-            <span><b>Evite as bombas vermelhas</b> ou reinicie o nível!</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">🤿</span>
-            <span><b>Colete equipamentos</b> de mergulho dourados!</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">💨</span>
-            <span><b>Fique de olho no oxigênio</b> - bolhas azuis ajudam!</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">👑</span>
-            <span><b>Desbloqueie a fase secreta</b> coletando todos os equipamentos!</span>
-          </p>
-        </div>
-        
-        {/* NOVO: Botão só aparece após a fala completa */}
-        {instructionsSpeechComplete ? (
-          <button 
-            onClick={startActivity} 
-            className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform animate-pulse"
-          >
-            Vamos jogar! 🚀
-          </button>
-        ) : (
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-blue-600 mt-4 font-medium">A Mila está explicando...</p>
+  // NOVO: Tela de instruções com botão para ouvir as instruções
+  const InstructionsScreen = () => {
+    const [instructionsStarted, setInstructionsStarted] = useState(false);
+    
+    const startInstructionsSpeech = () => {
+      setInstructionsStarted(true);
+      audioManager.current?.pararTodos();
+      
+      setTimeout(() => {
+        audioManager.current?.falarMila("Vou te ensinar como jogar! Estoure as bolhas clicando nelas!", () => {
+          setTimeout(() => {
+            audioManager.current?.falarMila("Salve os peixes, evite as bombas e colete equipamentos dourados!", () => {
+              setInstructionsSpeechComplete(true);
+            });
+          }, 1500);
+        });
+      }, 300);
+    };
+    
+    return (
+      <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-blue-300 via-cyan-300 to-teal-300">
+        <div className="bg-white/95 rounded-3xl p-8 max-w-2xl shadow-2xl text-center">
+          <h2 className="text-4xl font-bold mb-6 text-blue-600">Como Jogar</h2>
+          <div className="text-lg text-gray-700 space-y-6 mb-6 text-left">
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">🫧</span>
+              <span><b>Estoure as bolhas</b> clicando ou tocando nelas!</span>
+            </p>
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">🐠</span>
+              <span><b>Salve os peixes presos</b> nas bolhas especiais!</span>
+            </p>
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">💣</span>
+              <span><b>Evite as bombas vermelhas</b> ou reinicie o nível!</span>
+            </p>
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">🤿</span>
+              <span><b>Colete equipamentos</b> de mergulho dourados!</span>
+            </p>
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">💨</span>
+              <span><b>Fique de olho no oxigênio</b> - bolhas azuis ajudam!</span>
+            </p>
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">👑</span>
+              <span><b>Desbloqueie a fase secreta</b> coletando todos os equipamentos!</span>
+            </p>
           </div>
-        )}
+          
+          {/* NOVO: Botão para ouvir as instruções */}
+          {!instructionsStarted && (
+            <button 
+              onClick={startInstructionsSpeech}
+              className="flex items-center gap-2 text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full px-8 py-4 shadow-xl transition-all duration-300 hover:scale-110 animate-pulse"
+            >
+              <Play className="w-6 h-6" />
+              Ouvir Instruções
+            </button>
+          )}
+          
+          {/* NOVO: Botão só aparece após a fala completa */}
+          {instructionsSpeechComplete && (
+            <button 
+              onClick={startActivity} 
+              className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform animate-pulse"
+            >
+              Vamos jogar! 🚀
+            </button>
+          )}
+          
+          {/* Indicador de carregamento enquanto a fala não termina */}
+          {instructionsStarted && !instructionsSpeechComplete && (
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-blue-600 mt-4 font-medium">A Mila está explicando...</p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
   
+  // NOVO: Tela do jogo com botão para ouvir instruções
   const GameScreen = () => {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -1550,6 +1631,19 @@ export default function OceanBubblePop() {
                     </div>
                     <span className="text-sm font-bold">{Math.round(oxygenLevel)}%</span>
                   </div>
+                </div>
+              )}
+              
+              {/* NOVO: Botão para ouvir instruções no início do jogo */}
+              {!gameStartSpeechComplete && (
+                <div className="bg-blue-50 rounded-lg p-3 flex justify-center">
+                  <button 
+                    onClick={startGameInstructions}
+                    className="flex items-center gap-2 text-lg font-bold text-blue-600 bg-white rounded-full px-4 py-2 shadow-md transition-all duration-300 hover:scale-105"
+                  >
+                    <Play className="w-5 h-5" />
+                    Ouvir instruções
+                  </button>
                 </div>
               )}
               
