@@ -280,8 +280,8 @@ export default function SpeechPracticeGame() {
             setShowSpecialEffect('crown');
             setCelebrationMessage('👑 SEQUÊNCIA REAL! +5 Gemas Mágicas!');
             createCelebrationBurst('perfect');
-            // Adicionar áudio
-            narrateText("SEQUÊNCIA REAL! +5 Gemas Mágicas!");
+            // Adicionar áudio com a frase específica
+            narrateText("Incrível! Sequência de 10 acertos! Você é um rei da fala!");
             playSoundEffect("crown");
         } else if (streak > 0 && (streak + 1) % 5 === 0) {
             // A cada 5 acertos consecutivos = gema especial
@@ -289,7 +289,7 @@ export default function SpeechPracticeGame() {
             setShowSpecialEffect('gem');
             setCelebrationMessage('💎 SEQUÊNCIA ESPECIAL! +2 Gemas!');
             createCelebrationBurst('streak');
-            // Adicionar áudio
+            // Adicionar áudio com a frase específica
             narrateText("SEQUÊNCIA ESPECIAL! +2 Gemas!");
             playSoundEffect("gem");
         } else {
@@ -322,8 +322,8 @@ export default function SpeechPracticeGame() {
             const nextLetter = letters[currentLetterIndex + 1];
             setMessage(`🎉 Letra ${currentLetter} completa! Próxima: ${nextLetter}`);
             createCelebrationBurst('streak');
-            // Adicionar áudio
-            narrateText(`Parabéns! Dominou a letra ${currentLetter}! Agora vamos para a letra ${nextLetter}!`);
+            // Adicionar áudio com a frase específica
+            narrateText(`Parabéns! Dominou a letra ${currentLetter}! Agora vamos para ${nextLetter}!`);
             playSoundEffect("level_complete");
             
             setTimeout(() => {
@@ -333,7 +333,7 @@ export default function SpeechPracticeGame() {
             // Fim do jogo
             createCelebrationBurst('perfect');
             setShowResults(true);
-            // Adicionar áudio
+            // Adicionar áudio com a frase específica
             narrateText("Fantástico! Você se tornou um verdadeiro campeão da pronúncia!");
             playSoundEffect("game_complete");
         }
@@ -411,11 +411,21 @@ export default function SpeechPracticeGame() {
     };
     
     const TitleScreen = () => {
-        // Adicionar áudio ao carregar a tela
-        useEffect(() => {
-            // Apresentação da dupla
+        const [isPlayingIntro, setIsPlayingIntro] = useState(false);
+
+        const handlePlayIntro = () => {
+            setIsPlayingIntro(true);
+            playSoundEffect("click");
+            
+            // Reproduzir a apresentação da dupla
             narrateText("Olá! Somos Leo e Mila! Vamos praticar sua fala!");
-        }, []);
+            
+            // Após a narração, ir para a tela de instruções
+            setTimeout(() => {
+                setIsPlayingIntro(false);
+                setCurrentScreen('instructions');
+            }, 4000); // Tempo aproximado da narração
+        };
 
         return (
             <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-pink-300 via-purple-400 to-indigo-500 overflow-hidden">
@@ -469,13 +479,13 @@ export default function SpeechPracticeGame() {
                     <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white drop-shadow-lg mb-4">
                         Minha Fala
                     </h1>
-                    <p className="text-xl sm:text-2xl text-white/90 mt-2 mb-4 drop-shadow-md">
+                    <p className="text-xl sm:text-2xl text-white/90 mt-2 mb-6 drop-shadow-md">
                         🗣️ Pratique sílabas de forma divertida! 🎯
                     </p>
                     
                     {/* Estatísticas na tela inicial */}
                     {(totalStarsCollected > 0 || bestScore > 0) && (
-                        <div className="bg-white/80 rounded-2xl p-4 mb-4 shadow-xl">
+                        <div className="bg-white/80 rounded-2xl p-4 mb-6 shadow-xl">
                             <div className="flex items-center gap-4">
                                 {totalStarsCollected > 0 && (
                                     <div className="flex items-center gap-2">
@@ -494,13 +504,15 @@ export default function SpeechPracticeGame() {
                     )}
                     
                     <button 
-                        onClick={() => {
-                            playSoundEffect("click");
-                            setCurrentScreen('instructions');
-                        }} 
-                        className="text-xl font-bold text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-1"
+                        onClick={handlePlayIntro}
+                        disabled={isPlayingIntro}
+                        className={`text-xl font-bold text-white rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-1 ${
+                            isPlayingIntro 
+                                ? 'bg-gray-400 cursor-not-allowed' 
+                                : 'bg-gradient-to-r from-purple-500 to-pink-500'
+                        }`}
                     >
-                        Vamos Praticar!
+                        {isPlayingIntro ? 'Reproduzindo...' : '🔊 Ouvir Leo e Mila'}
                     </button>
                 </div>
             </div>
@@ -508,10 +520,20 @@ export default function SpeechPracticeGame() {
     };
     
     const InstructionsScreen = () => {
-        // Adicionar narração ao carregar a tela
-        useEffect(() => {
+        const [isPlayingInstructions, setIsPlayingInstructions] = useState(false);
+
+        const handlePlayInstructions = () => {
+            setIsPlayingInstructions(true);
+            playSoundEffect("click");
+            
+            // Reproduzir as instruções
             narrateText("Primeiro ouça, depois grave, compare e confirme!");
-        }, []);
+            
+            // Após a narração, habilitar o botão de começar
+            setTimeout(() => {
+                setIsPlayingInstructions(false);
+            }, 3500); // Tempo aproximado da narração
+        };
 
         return (
             <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-300 via-pink-300 to-orange-300">
@@ -554,15 +576,29 @@ export default function SpeechPracticeGame() {
                         </p>
                     </div>
                     
-                    <button 
-                        onClick={() => {
-                            playSoundEffect("click");
-                            startGameFlow();
-                        }} 
-                        className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform"
-                    >
-                        Começar Prática! 🚀
-                    </button>
+                    <div className="space-y-4">
+                        <button 
+                            onClick={handlePlayInstructions}
+                            disabled={isPlayingInstructions}
+                            className={`w-full text-xl font-bold text-white rounded-full py-4 shadow-xl transition-transform ${
+                                isPlayingInstructions 
+                                    ? 'bg-gray-400 cursor-not-allowed' 
+                                    : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:scale-105'
+                            }`}
+                        >
+                            {isPlayingInstructions ? 'Reproduzindo...' : '🔊 Ouvir Instruções'}
+                        </button>
+                        
+                        <button 
+                            onClick={() => {
+                                playSoundEffect("click");
+                                startGameFlow();
+                            }} 
+                            className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform"
+                        >
+                            Começar Prática! 🚀
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -572,7 +608,7 @@ export default function SpeechPracticeGame() {
         // Adicionar áudio quando a tela de resultados for exibida
         useEffect(() => {
             if (showResults) {
-                narrateText("Parabéns! Você é um campeão da fala!");
+                narrateText("Fantástico! Você se tornou um verdadeiro campeão da pronúncia!");
             }
         }, [showResults]);
 
