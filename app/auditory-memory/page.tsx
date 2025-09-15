@@ -54,6 +54,10 @@ const AuditoryMemoryGame: React.FC = () => {
   const [showPerfectBonus, setShowPerfectBonus] = useState(false);
   const [idleMessagePlayed, setIdleMessagePlayed] = useState(false);
   
+  // Estado para controle de áudio no iOS
+  const [audioInitialized, setAudioInitialized] = useState(false);
+  const [audioContextState, setAudioContextState] = useState<'suspended' | 'running' | 'closed'>('suspended');
+  
   const [stats, setStats] = useState<GameStats>({
     level: 1,
     score: 0,
@@ -91,7 +95,7 @@ const AuditoryMemoryGame: React.FC = () => {
   const [playbackSpeed, setPlaybackSpeed] = useState(1500); // Velocidade mais lenta e constante
   
   const audioContextRef = useRef<AudioContext | null>(null);
-  const isAudioInitialized = useRef(false);
+  const isAudioInitializedRef = useRef(false);
   const rewardIdCounter = useRef(0);
   
   const buttons = [
@@ -213,20 +217,61 @@ const AuditoryMemoryGame: React.FC = () => {
     }
   }, [achievements, createStarBurst]);
   
-  // Inicialização do AudioContext
-  const initializeAudio = useCallback(() => {
-    if (!isAudioInitialized.current && typeof window !== 'undefined') {
-      try {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        if (audioContextRef.current.state === 'suspended') {
-          audioContextRef.current.resume();
-        }
-        isAudioInitialized.current = true;
-      } catch (error) {
-        console.error('Erro ao inicializar AudioContext:', error);
+  // Inicialização do AudioContext com suporte para iOS
+  const initializeAudio = useCallback(async () => {
+    if (isAudioInitializedRef.current) return;
+    
+    try {
+      // Criar o AudioContext
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      audioContextRef.current = new AudioContext();
+      
+      // Verificar o estado do AudioContext
+      setAudioContextState(audioContextRef.current.state);
+      
+      // Se estiver suspenso, tentar resumir após uma interação do usuário
+      if (audioContextRef.current.state === 'suspended') {
+        // Criar um áudio silencioso para desbloquear o contexto
+        const oscillator = audioContextRef.current.createOscillator();
+        const gainNode = audioContextRef.current.createGain();
+        gainNode.gain.value = 0.001; // Quase silencioso
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContextRef.current.destination);
+        
+        oscillator.start();
+        oscillator.stop(audioContextRef.current.currentTime + 0.001);
+        
+        // Tentar resumir o contexto
+        await audioContextRef.current.resume();
+        setAudioContextState(audioContextRef.current.state);
       }
+      
+      isAudioInitializedRef.current = true;
+      setAudioInitialized(true);
+      
+      console.log("AudioContext inicializado com sucesso:", audioContextRef.current.state);
+    } catch (error) {
+      console.error('Erro ao inicializar AudioContext:', error);
     }
   }, []);
+  
+  // Função para garantir que o áudio está pronto
+  const ensureAudioReady = useCallback(async () => {
+    if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+      await initializeAudio();
+    }
+    
+    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+      try {
+        await audioContextRef.current.resume();
+        setAudioContextState('running');
+        console.log("AudioContext resumido com sucesso");
+      } catch (error) {
+        console.error("Erro ao resumir AudioContext:", error);
+      }
+    }
+  }, [initializeAudio]);
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -255,8 +300,11 @@ const AuditoryMemoryGame: React.FC = () => {
     }
   }, [gameState, idleMessagePlayed, currentScreen]);
   
-  const playNote = useCallback((frequency: number, duration: number = 400, isSuccess: boolean = false) => {
+  const playNote = useCallback(async (frequency: number, duration: number = 400, isSuccess: boolean = false) => {
     if (!soundEnabled || !audioContextRef.current) return;
+    
+    // Garantir que o áudio está pronto antes de tocar
+    await ensureAudioReady();
     
     try {
       const oscillator = audioContextRef.current.createOscillator();
@@ -289,21 +337,25 @@ const AuditoryMemoryGame: React.FC = () => {
     } catch (error) {
       console.error('Erro ao tocar nota:', error);
     }
-  }, [soundEnabled]);
+  }, [soundEnabled, ensureAudioReady]);
   
   // Som de recompensa
-  const playRewardSound = useCallback(() => {
+  const playRewardSound = useCallback(async () => {
     if (!soundEnabled || !audioContextRef.current) return;
+    
+    await ensureAudioReady();
     
     const notes = [523.25, 659.25, 783.99]; // Acorde maior alegre
     notes.forEach((freq, i) => {
       setTimeout(() => playNote(freq, 200, true), i * 50);
     });
-  }, [soundEnabled, playNote]);
+  }, [soundEnabled, playNote, ensureAudioReady]);
   
   // Som de erro
-  const playErrorSound = useCallback(() => {
+  const playErrorSound = useCallback(async () => {
     if (!soundEnabled || !audioContextRef.current) return;
+    
+    await ensureAudioReady();
     
     try {
       const oscillator = audioContextRef.current.createOscillator();
@@ -324,7 +376,7 @@ const AuditoryMemoryGame: React.FC = () => {
     } catch (error) {
       console.error('Erro ao tocar som de erro:', error);
     }
-  }, [soundEnabled]);
+  }, [soundEnabled, ensureAudioReady]);
   
   const generateSequence = useCallback((length: number) => {
     return Array.from({ length }, () => Math.floor(Math.random() * 6));
@@ -340,7 +392,7 @@ const AuditoryMemoryGame: React.FC = () => {
     
     for (let i = 0; i < seq.length; i++) {
       setCurrentNote(seq[i]);
-      playNote(buttons[seq[i]].freq, 400);
+      await playNote(buttons[seq[i]].freq, 400);
       await new Promise(resolve => setTimeout(resolve, playbackSpeed));
       setCurrentNote(null);
       
@@ -353,8 +405,12 @@ const AuditoryMemoryGame: React.FC = () => {
     setGameState('playing');
   }, [playNote, buttons, playbackSpeed]);
   
-  const startRound = useCallback(() => {
-    initializeAudio();
+  const startRound = useCallback(async () => {
+    // Garantir que o áudio está inicializado
+    if (!audioInitialized) {
+      await initializeAudio();
+    }
+    
     // O comprimento da sequência é igual ao nível atual
     const newSequenceLength = stats.level;
     setSequenceLength(newSequenceLength);
@@ -363,10 +419,13 @@ const AuditoryMemoryGame: React.FC = () => {
     setUserSequence([]);
     setCorrectNoteStreak(0);
     playSequence(newSequence);
-  }, [generateSequence, playSequence, initializeAudio, stats.level]);
+  }, [generateSequence, playSequence, initializeAudio, audioInitialized, stats.level]);
   
-  const handleNoteClick = useCallback((noteIndex: number) => {
+  const handleNoteClick = useCallback(async (noteIndex: number) => {
     if (gameState !== 'playing' || isPlaying) return;
+    
+    // Garantir que o áudio está pronto
+    await ensureAudioReady();
     
     // Feedback visual
     setActiveButton(noteIndex);
@@ -382,7 +441,7 @@ const AuditoryMemoryGame: React.FC = () => {
     }
     
     // ACERTOU UMA NOTA! CELEBRAÇÃO!
-    playNote(buttons[noteIndex].freq, 300, true);
+    await playNote(buttons[noteIndex].freq, 300, true);
     setCorrectNoteStreak(prev => prev + 1);
     
     // Cria recompensa visual para CADA acerto
@@ -406,15 +465,15 @@ const AuditoryMemoryGame: React.FC = () => {
     if (newUserSequence.length === sequence.length) {
       handleSuccess();
     }
-  }, [gameState, isPlaying, userSequence, sequence, playNote, buttons, stats.totalStars, correctNoteStreak, createFloatingReward, motivationalMessages]);
+  }, [gameState, isPlaying, userSequence, sequence, playNote, buttons, stats.totalStars, correctNoteStreak, createFloatingReward, motivationalMessages, ensureAudioReady]);
   
-  const handleSuccess = useCallback(() => {
+  const handleSuccess = useCallback(async () => {
     setGameState('success');
     setShowSuccess(true);
     
     // EXPLOSÃO DE RECOMPENSAS! (apenas em níveis múltiplos de 2)
     if (stats.level % 2 === 0) {
-      playRewardSound();
+      await playRewardSound();
       createStarBurst(5); // Reduzido de 10 para 5
     }
     
@@ -484,14 +543,14 @@ const AuditoryMemoryGame: React.FC = () => {
     }, 4000); // Aumentado para 4 segundos para dar tempo da criança perceber
   }, [stats, sequenceLength, startRound, playRewardSound, createStarBurst, createFloatingReward, checkAchievements, comboMessages]);
   
-  const handleFailure = useCallback(() => {
+  const handleFailure = useCallback(async () => {
     setGameState('fail');
     setShowError(true);
     setCorrectNoteStreak(0);
     
     // Adicionar narração de erro
     narrateText("Ops! Tente novamente");
-    playErrorSound();
+    await playErrorSound();
     
     const newLives = stats.lives - 1;
     setStats(prev => ({ ...prev, lives: newLives, combo: 0 }));
@@ -532,15 +591,23 @@ const AuditoryMemoryGame: React.FC = () => {
     setFloatingRewards([]);
     setCorrectNoteStreak(0);
     setIdleMessagePlayed(false);
+    setAudioInitialized(false);
+    setAudioContextState('suspended');
+    isAudioInitializedRef.current = false;
   };
   
   // TELAS DO JOGO
   const TitleScreen = () => {
     const [isPlayingIntro, setIsPlayingIntro] = useState(false);
 
-    const handlePlayIntro = () => {
+    const handlePlayIntro = async () => {
       setIsPlayingIntro(true);
       playSoundEffect("click");
+      
+      // Garantir que o áudio está inicializado
+      if (!audioInitialized) {
+        await initializeAudio();
+      }
       
       // Reproduzir a apresentação da Mila
       narrateText("Olá, é a Mila! Bem-vindo ao jogo Memória Sonora!");
@@ -624,6 +691,16 @@ const AuditoryMemoryGame: React.FC = () => {
             </div>
           )}
           
+          {/* Indicador de estado do áudio */}
+          <div className="mb-4 text-sm text-purple-700">
+            {audioContextState === 'suspended' && (
+              <p className="text-yellow-600">🔊 Áudio aguardando interação</p>
+            )}
+            {audioContextState === 'running' && (
+              <p className="text-green-600">🔊 Áudio ativo</p>
+            )}
+          </div>
+          
           <button 
             onClick={handlePlayIntro}
             disabled={isPlayingIntro}
@@ -643,9 +720,14 @@ const AuditoryMemoryGame: React.FC = () => {
   const InstructionsScreen = () => {
     const [isPlayingInstructions, setIsPlayingInstructions] = useState(false);
 
-    const handlePlayInstructions = () => {
+    const handlePlayInstructions = async () => {
       setIsPlayingInstructions(true);
       playSoundEffect("click");
+      
+      // Garantir que o áudio está inicializado
+      if (!audioInitialized) {
+        await initializeAudio();
+      }
       
       // Reproduzir as instruções
       narrateText("Primeiro ouça a sequência de sons, depois repita clicando nos botões na ordem correta.");
@@ -727,8 +809,12 @@ const AuditoryMemoryGame: React.FC = () => {
             </button>
             
             <button 
-              onClick={() => {
+              onClick={async () => {
                 playSoundEffect("click");
+                // Garantir que o áudio está inicializado antes de começar o jogo
+                if (!audioInitialized) {
+                  await initializeAudio();
+                }
                 setCurrentScreen('game');
               }} 
               className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform"
@@ -950,8 +1036,10 @@ const AuditoryMemoryGame: React.FC = () => {
                 <button 
                   key={index} 
                   id={`btn-${index}`} 
-                  onClick={() => {
+                  onClick={async () => {
                     playSoundEffect("click");
+                    // Garantir que o áudio está pronto antes de processar o clique
+                    await ensureAudioReady();
                     handleNoteClick(index);
                   }} 
                   disabled={gameState !== 'playing' || isPlaying}
@@ -1000,8 +1088,10 @@ const AuditoryMemoryGame: React.FC = () => {
           <div className="flex justify-center gap-3 flex-wrap">
             {gameState === 'idle' && (
               <button 
-                onClick={() => {
+                onClick={async () => {
                   playSoundEffect("click");
+                  // Garantir que o áudio está pronto antes de começar
+                  await ensureAudioReady();
                   startRound();
                 }} 
                 className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-bold text-lg hover:scale-105 hover:rotate-1 transition-transform shadow-lg flex items-center gap-2"
@@ -1012,8 +1102,10 @@ const AuditoryMemoryGame: React.FC = () => {
             
             {gameState === 'playing' && (
               <button 
-                onClick={() => {
+                onClick={async () => {
                   playSoundEffect("click");
+                  // Garantir que o áudio está pronto antes de tocar a sequência
+                  await ensureAudioReady();
                   playSequence(sequence);
                 }} 
                 disabled={isPlaying}
