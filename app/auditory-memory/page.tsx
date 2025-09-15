@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { Volume2, VolumeX, Play, RotateCcw, Trophy, Star, Sparkles, Heart, Zap, Gift, Award, Crown, Medal, Target, Flame } from 'lucide-react';
@@ -63,7 +62,7 @@ const AuditoryMemoryGame: React.FC = () => {
     totalStars: 0,
     perfectRounds: 0
   });
-
+  
   const [achievements, setAchievements] = useState<Achievement[]>([
     { id: 'first_star', name: 'Primeira Estrela!', description: 'Ganhe sua primeira estrela', icon: <Star className="w-6 h-6" />, unlocked: false },
     { id: 'combo_5', name: 'Combo Master!', description: 'Faça 5 acertos seguidos', icon: <Flame className="w-6 h-6" />, unlocked: false },
@@ -72,7 +71,7 @@ const AuditoryMemoryGame: React.FC = () => {
     { id: '100_points', name: 'Centurião!', description: 'Marque 100 pontos', icon: <Medal className="w-6 h-6" />, unlocked: false },
     { id: 'survivor', name: 'Sobrevivente!', description: 'Complete 10 níveis', icon: <Award className="w-6 h-6" />, unlocked: false }
   ]);
-
+  
   // Mensagens motivacionais variadas
   const motivationalMessages = [
     "Incrível! 🌟", "Você é demais! 🎉", "Fantástico! 🚀", "Show de bola! ⭐",
@@ -80,20 +79,20 @@ const AuditoryMemoryGame: React.FC = () => {
     "Brilhante! ✨", "Espetacular! 🎪", "Genial! 🧠", "Campeão! 🥇",
     "Super! 💪", "Wow! 🤩", "Perfeito! 💯", "Mandou bem! 👏"
   ];
-
+  
   const comboMessages = {
     3: "Combo x3! 🔥", 5: "Super Combo! 🔥🔥", 7: "Mega Combo! 🔥🔥🔥",
     10: "ULTRA COMBO! 🌟🔥🌟", 15: "LENDÁRIO! 👑🔥👑"
   };
-
+  
   // LÓGICA DE PROGRESSÃO
   const [sequenceLength, setSequenceLength] = useState(1);
   const [playbackSpeed, setPlaybackSpeed] = useState(800);
-
+  
   const audioContextRef = useRef<AudioContext | null>(null);
   const isAudioInitialized = useRef(false);
   const rewardIdCounter = useRef(0);
-
+  
   const buttons = [
     { color: 'btn-red', emoji: '🎵', freq: 261.63, name: 'DÓ' },
     { color: 'btn-orange', emoji: '🎶', freq: 293.66, name: 'RÉ' },
@@ -102,7 +101,39 @@ const AuditoryMemoryGame: React.FC = () => {
     { color: 'btn-blue', emoji: '🎸', freq: 440.00, name: 'SOL' },
     { color: 'btn-purple', emoji: '🎺', freq: 523.25, name: 'LÁ' }
   ];
-
+  
+  // Funções de áudio adicionadas
+  const playAudioWithFallback = async (audioPath: string, text: string) => {
+    try {
+      const audio = new Audio(audioPath);
+      await audio.play();
+    } catch (error) {
+      console.error("Erro ao tocar MP3, usando voz sintética:", error);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'pt-BR';
+      utterance.rate = 0.9;
+      utterance.pitch = 1.1;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+  
+  const narrateText = (text: string) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'pt-BR';
+    utterance.rate = 0.9;
+    utterance.pitch = 1.1;
+    window.speechSynthesis.speak(utterance);
+  };
+  
+  const playSoundEffect = (soundName: string) => {
+    try {
+      const audio = new Audio(`/audio/sounds/${soundName}.mp3`);
+      audio.play().catch(e => console.log("Erro ao tocar efeito sonoro:", e));
+    } catch (error) {
+      console.error("Erro ao tocar efeito sonoro:", error);
+    }
+  };
+  
   // Sistema de Partículas/Recompensas Flutuantes
   const createFloatingReward = useCallback((type: FloatingReward['type']) => {
     const newReward: FloatingReward = {
@@ -119,7 +150,7 @@ const AuditoryMemoryGame: React.FC = () => {
       setFloatingRewards(prev => prev.filter(r => r.id !== newReward.id));
     }, 2000);
   }, []);
-
+  
   // Função para criar múltiplas estrelas
   const createStarBurst = useCallback((count: number = 5) => {
     for (let i = 0; i < count; i++) {
@@ -128,12 +159,12 @@ const AuditoryMemoryGame: React.FC = () => {
       }, i * 100);
     }
   }, [createFloatingReward]);
-
+  
   // Verifica e desbloqueia conquistas
   const checkAchievements = useCallback((newStats: GameStats) => {
     const newAchievements = [...achievements];
     let unlocked: Achievement | null = null;
-
+    
     // Primeira estrela
     if (!newAchievements[0].unlocked && newStats.totalStars >= 1) {
       newAchievements[0].unlocked = true;
@@ -169,16 +200,18 @@ const AuditoryMemoryGame: React.FC = () => {
       newAchievements[5].unlocked = true;
       unlocked = newAchievements[5];
     }
-
+    
     setAchievements(newAchievements);
     
     if (unlocked) {
       setUnlockedAchievement(unlocked);
+      // Adicionar narração de conquista
+      narrateText(`Parabéns! Você desbloqueou ${unlocked.name}`);
       createStarBurst(7);
       setTimeout(() => setUnlockedAchievement(null), 3000);
     }
   }, [achievements, createStarBurst]);
-
+  
   // Inicialização do AudioContext
   const initializeAudio = useCallback(() => {
     if (!isAudioInitialized.current && typeof window !== 'undefined') {
@@ -193,7 +226,7 @@ const AuditoryMemoryGame: React.FC = () => {
       }
     }
   }, []);
-
+  
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedHighScore = localStorage.getItem('memoriaSonoraHighScore');
@@ -212,7 +245,7 @@ const AuditoryMemoryGame: React.FC = () => {
       }
     };
   }, []);
-
+  
   const playNote = useCallback((frequency: number, duration: number = 400, isSuccess: boolean = false) => {
     if (!soundEnabled || !audioContextRef.current) return;
     
@@ -248,7 +281,7 @@ const AuditoryMemoryGame: React.FC = () => {
       console.error('Erro ao tocar nota:', error);
     }
   }, [soundEnabled]);
-
+  
   // Som de recompensa
   const playRewardSound = useCallback(() => {
     if (!soundEnabled || !audioContextRef.current) return;
@@ -258,7 +291,32 @@ const AuditoryMemoryGame: React.FC = () => {
       setTimeout(() => playNote(freq, 200, true), i * 50);
     });
   }, [soundEnabled, playNote]);
-
+  
+  // Som de erro
+  const playErrorSound = useCallback(() => {
+    if (!soundEnabled || !audioContextRef.current) return;
+    
+    try {
+      const oscillator = audioContextRef.current.createOscillator();
+      const gainNode = audioContextRef.current.createGain();
+      
+      oscillator.type = 'sawtooth';
+      oscillator.frequency.setValueAtTime(220, audioContextRef.current.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(110, audioContextRef.current.currentTime + 0.3);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContextRef.current.destination);
+      
+      gainNode.gain.setValueAtTime(0.3, audioContextRef.current.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + 0.3);
+      
+      oscillator.start(audioContextRef.current.currentTime);
+      oscillator.stop(audioContextRef.current.currentTime + 0.3);
+    } catch (error) {
+      console.error('Erro ao tocar som de erro:', error);
+    }
+  }, [soundEnabled]);
+  
   const generateSequence = useCallback(() => {
     return Array.from({ length: sequenceLength }, () => Math.floor(Math.random() * 6));
   }, [sequenceLength]);
@@ -304,13 +362,13 @@ const AuditoryMemoryGame: React.FC = () => {
     
     const newUserSequence = [...userSequence, noteIndex];
     setUserSequence(newUserSequence);
-
+    
     // Verifica se errou
     if (newUserSequence[newUserSequence.length - 1] !== sequence[newUserSequence.length - 1]) {
       handleFailure();
       return;
     }
-
+    
     // ACERTOU UMA NOTA! CELEBRAÇÃO!
     playNote(buttons[noteIndex].freq, 300, true);
     setCorrectNoteStreak(prev => prev + 1);
@@ -331,13 +389,13 @@ const AuditoryMemoryGame: React.FC = () => {
       setMotivationalMessage(randomMessage);
       setTimeout(() => setMotivationalMessage(''), 1500);
     }
-
+    
     // Verifica se completou a sequência
     if (newUserSequence.length === sequence.length) {
       handleSuccess();
     }
   }, [gameState, isPlaying, userSequence, sequence, playNote, buttons, stats.totalStars, correctNoteStreak, createFloatingReward, motivationalMessages]);
-
+  
   const handleSuccess = useCallback(() => {
     setGameState('success');
     setShowSuccess(true);
@@ -381,6 +439,9 @@ const AuditoryMemoryGame: React.FC = () => {
     // Verifica conquistas
     checkAchievements(newStats);
     
+    // Narrar progresso
+    narrateText(`Nível ${newLevel}, pontuação ${newScore}`);
+    
     // Mensagens especiais de combo
     if (comboMessages[newCombo as keyof typeof comboMessages]) {
       setMotivationalMessage(comboMessages[newCombo as keyof typeof comboMessages]);
@@ -403,17 +464,21 @@ const AuditoryMemoryGame: React.FC = () => {
       setSequenceLength(Math.min(20, 6 + Math.floor((newLevel - 8) / 2)));
       setPlaybackSpeed(Math.max(400, 650 - (newLevel - 8) * 20));
     }
-
+    
     setTimeout(() => {
       setShowSuccess(false);
       startRound();
     }, 2000);
-  }, [stats, sequenceLength, startRound, playRewardSound, createStarBurst, createFloatingReward, checkAchievements]);
-
+  }, [stats, sequenceLength, startRound, playRewardSound, createStarBurst, createFloatingReward, checkAchievements, comboMessages]);
+  
   const handleFailure = useCallback(() => {
     setGameState('fail');
     setShowError(true);
     setCorrectNoteStreak(0);
+    
+    // Adicionar narração de erro
+    narrateText("Ops! Tente novamente");
+    playErrorSound();
     
     const newLives = stats.lives - 1;
     setStats(prev => ({ ...prev, lives: newLives, combo: 0 }));
@@ -430,8 +495,8 @@ const AuditoryMemoryGame: React.FC = () => {
         playSequence(sequence);
       }, 2000);
     }
-  }, [stats, sequence, playSequence]);
-
+  }, [stats, sequence, playSequence, narrateText, playErrorSound]);
+  
   const resetGame = () => {
     setCurrentScreen('titleScreen');
     setGameState('idle');
@@ -453,122 +518,213 @@ const AuditoryMemoryGame: React.FC = () => {
     setFloatingRewards([]);
     setCorrectNoteStreak(0);
   };
-
+  
   // TELAS DO JOGO
-  const TitleScreen = () => (
-    <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-400 via-pink-300 to-yellow-300 overflow-hidden">
-      {/* Estrelas de fundo animadas */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute animate-pulse"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${3 + Math.random() * 2}s`
-            }}
-          >
-            <Star className="w-6 h-6 text-yellow-200 opacity-50" fill="currentColor" />
-          </div>
-        ))}
-      </div>
+  const TitleScreen = () => {
+    const [isPlayingIntro, setIsPlayingIntro] = useState(false);
+
+    const handlePlayIntro = () => {
+      setIsPlayingIntro(true);
+      playSoundEffect("click");
       
-      <div className="relative z-10 flex flex-col items-center text-center">
-        <div className="mb-4 animate-bounce-slow">
-          <Image 
-            src="/images/mascotes/mila/mila_apoio_resultado.webp" 
-            alt="Mila" 
-            width={400} 
-            height={400} 
-            className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl" 
-            priority 
-          />
+      // Reproduzir a apresentação da Mila
+      narrateText("Olá, é a Mila! Bem-vindo ao jogo Memória Sonora!");
+      
+      // Após a narração, ir para a tela de instruções
+      setTimeout(() => {
+        setIsPlayingIntro(false);
+        setCurrentScreen('instructions');
+      }, 4000); // Tempo aproximado da narração
+    };
+
+    return (
+      <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-400 via-pink-300 to-yellow-300 overflow-hidden">
+        {/* Bolhas flutuantes (similar ao bubble-pop) */}
+        <div className="absolute inset-0 overflow-hidden">
+          {[...Array(15)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full bg-white/20 animate-float"
+              style={{
+                width: `${10 + Math.random() * 40}px`,
+                height: `${10 + Math.random() * 40}px`,
+                left: `${Math.random() * 100}%`,
+                top: `${100 + Math.random() * 20}%`,
+                animationDuration: `${10 + Math.random() * 20}s`,
+                animationDelay: `${Math.random() * 5}s`,
+              }}
+            />
+          ))}
         </div>
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-purple-800 drop-shadow-lg mb-4">
-          Memória Sonora
-        </h1>
-        <p className="text-xl sm:text-2xl text-purple-700 mt-2 mb-4 drop-shadow-md">
-          Siga a melodia e teste sua memória!
-        </p>
         
-        {/* Mostra estatísticas na tela inicial */}
-        {stats.totalStars > 0 && (
-          <div className="bg-white/80 rounded-2xl p-4 mb-4 shadow-xl">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Star className="w-6 h-6 text-yellow-500" fill="currentColor" />
-                <span className="font-bold text-purple-800">{stats.totalStars} estrelas</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Trophy className="w-6 h-6 text-yellow-600" />
-                <span className="font-bold text-purple-800">Recorde: {stats.highScore}</span>
+        {/* Estrelas de fundo animadas */}
+        <div className="absolute inset-0 overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-pulse"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: `${3 + Math.random() * 2}s`
+              }}
+            >
+              <Star className="w-6 h-6 text-yellow-200 opacity-50" fill="currentColor" />
+            </div>
+          ))}
+        </div>
+        
+        <div className="relative z-10 flex flex-col items-center text-center">
+          <div className="mb-4 animate-bounce-slow">
+            <Image 
+              src="/images/mascotes/mila/mila_apoio_resultado.webp" 
+              alt="Mila" 
+              width={400} 
+              height={400} 
+              className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl" 
+              priority 
+            />
+          </div>
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-purple-800 drop-shadow-lg mb-4">
+            Memória Sonora
+          </h1>
+          <p className="text-xl sm:text-2xl text-purple-700 mt-2 mb-6 drop-shadow-md">
+            Siga a melodia e teste sua memória!
+          </p>
+          
+          {/* Mostra estatísticas na tela inicial */}
+          {stats.totalStars > 0 && (
+            <div className="bg-white/80 rounded-2xl p-4 mb-6 shadow-xl">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Star className="w-6 h-6 text-yellow-500" fill="currentColor" />
+                  <span className="font-bold text-purple-800">{stats.totalStars} estrelas</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-6 h-6 text-yellow-600" />
+                  <span className="font-bold text-purple-800">Recorde: {stats.highScore}</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-        
-        <button 
-          onClick={() => {
-            initializeAudio();
-            setCurrentScreen('instructions');
-          }} 
-          className="text-xl font-bold text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-1"
-        >
-          Começar Aventura
-        </button>
+          )}
+          
+          <button 
+            onClick={handlePlayIntro}
+            disabled={isPlayingIntro}
+            className={`text-xl font-bold text-white rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-1 ${
+              isPlayingIntro 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-purple-500 to-pink-500'
+            }`}
+          >
+            {isPlayingIntro ? 'Reproduzindo...' : '🔊 Ouvir Mila'}
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
+  
+  const InstructionsScreen = () => {
+    const [isPlayingInstructions, setIsPlayingInstructions] = useState(false);
 
-  const InstructionsScreen = () => (
-    <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-blue-300 via-green-300 to-yellow-300">
-      <div className="bg-white/95 rounded-3xl p-8 max-w-2xl shadow-2xl text-center">
-        <h2 className="text-4xl font-bold mb-6 text-purple-600">Como Jogar</h2>
-        <div className="text-lg text-gray-700 space-y-6 mb-6 text-left">
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">🎧</span>
-            <span><b>Escute com atenção</b> a sequência de sons.</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">🎹</span>
-            <span><b>Repita a sequência</b> clicando nos botões na ordem correta.</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">⭐</span>
-            <span><b>Ganhe estrelas</b> a cada nota correta!</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">🏆</span>
-            <span><b>Desbloqueie conquistas</b> e bata recordes!</span>
-          </p>
+    const handlePlayInstructions = () => {
+      setIsPlayingInstructions(true);
+      playSoundEffect("click");
+      
+      // Reproduzir as instruções
+      narrateText("Primeiro ouça a sequência de sons, depois repita clicando nos botões na ordem correta.");
+      
+      // Após a narração, habilitar o botão de começar
+      setTimeout(() => {
+        setIsPlayingInstructions(false);
+      }, 4000); // Tempo aproximado da narração
+    };
+
+    return (
+      <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-blue-300 via-green-300 to-yellow-300">
+        {/* Elementos decorativos animados */}
+        <div className="absolute inset-0 overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full bg-white/20 animate-float"
+              style={{
+                width: `${5 + Math.random() * 30}px`,
+                height: `${5 + Math.random() * 30}px`,
+                left: `${Math.random() * 100}%`,
+                top: `${100 + Math.random() * 20}%`,
+                animationDuration: `${8 + Math.random() * 15}s`,
+                animationDelay: `${Math.random() * 5}s`,
+              }}
+            />
+          ))}
         </div>
         
-        {/* Mostra conquistas desbloqueadas */}
-        <div className="bg-purple-100 p-4 rounded-xl mb-4">
-          <h3 className="font-bold text-purple-800 mb-2">Conquistas</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {achievements.slice(0, 3).map(achievement => (
-              <div 
-                key={achievement.id}
-                className={`p-2 rounded-lg ${achievement.unlocked ? 'bg-yellow-200' : 'bg-gray-200'}`}
-              >
-                {achievement.icon}
-              </div>
-            ))}
+        <div className="bg-white/95 rounded-3xl p-8 max-w-2xl shadow-2xl text-center relative z-10">
+          <h2 className="text-4xl font-bold mb-6 text-purple-600">Como Jogar</h2>
+          <div className="text-lg text-gray-700 space-y-6 mb-6 text-left">
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">🎧</span>
+              <span><b>Escute com atenção</b> a sequência de sons.</span>
+            </p>
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">🎹</span>
+              <span><b>Repita a sequência</b> clicando nos botões na ordem correta.</span>
+            </p>
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">⭐</span>
+              <span><b>Ganhe estrelas</b> a cada nota correta!</span>
+            </p>
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">🏆</span>
+              <span><b>Desbloqueie conquistas</b> e bata recordes!</span>
+            </p>
+          </div>
+          
+          {/* Mostra conquistas desbloqueadas */}
+          <div className="bg-purple-100 p-4 rounded-xl mb-6">
+            <h3 className="font-bold text-purple-800 mb-2">Conquistas</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {achievements.slice(0, 3).map(achievement => (
+                <div 
+                  key={achievement.id}
+                  className={`p-2 rounded-lg ${achievement.unlocked ? 'bg-yellow-200' : 'bg-gray-200'}`}
+                  title={achievement.description}
+                >
+                  {achievement.icon}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <button 
+              onClick={handlePlayInstructions}
+              disabled={isPlayingInstructions}
+              className={`w-full text-xl font-bold text-white rounded-full py-4 shadow-xl transition-transform ${
+                isPlayingInstructions 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:scale-105'
+              }`}
+            >
+              {isPlayingInstructions ? 'Reproduzindo...' : '🔊 Ouvir Instruções'}
+            </button>
+            
+            <button 
+              onClick={() => {
+                playSoundEffect("click");
+                setCurrentScreen('game');
+              }} 
+              className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform"
+            >
+              Vamos jogar! 🚀
+            </button>
           </div>
         </div>
-        
-        <button 
-          onClick={() => setCurrentScreen('game')} 
-          className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform"
-        >
-          Vamos jogar! 🚀
-        </button>
       </div>
-    </div>
-  );
+    );
+  };
   
   const GameScreen = () => {
     return (
@@ -669,7 +825,7 @@ const AuditoryMemoryGame: React.FC = () => {
               </div>
             </div>
           </div>
-
+          
           {/* Barra de Progresso Visual */}
           {gameState === 'playing' && sequence.length > 0 && (
             <div className="bg-white/20 backdrop-blur rounded-full p-2 mb-4">
@@ -687,7 +843,7 @@ const AuditoryMemoryGame: React.FC = () => {
               </div>
             </div>
           )}
-
+          
           {/* Área Principal do Jogo */}
           <div className="bg-white/10 backdrop-blur rounded-3xl p-6 mb-4">
             {/* Mensagens de Status com Mascotes */}
@@ -772,14 +928,17 @@ const AuditoryMemoryGame: React.FC = () => {
                 </div>
               )}
             </div>
-
+            
             {/* Botões Musicais com Melhor Feedback */}
             <div className="grid grid-cols-3 gap-4 mb-6">
               {buttons.map((button, index) => (
                 <button 
                   key={index} 
                   id={`btn-${index}`} 
-                  onClick={() => handleNoteClick(index)} 
+                  onClick={() => {
+                    playSoundEffect("click");
+                    handleNoteClick(index);
+                  }} 
                   disabled={gameState !== 'playing' || isPlaying}
                   className={`
                     musical-button ${button.color} 
@@ -802,7 +961,7 @@ const AuditoryMemoryGame: React.FC = () => {
               ))}
             </div>
           </div>
-
+          
           {/* Conquistas Rápidas */}
           <div className="bg-white/10 backdrop-blur rounded-2xl p-3 mb-4">
             <div className="flex justify-center gap-2">
@@ -821,12 +980,15 @@ const AuditoryMemoryGame: React.FC = () => {
               ))}
             </div>
           </div>
-
+          
           {/* Botões de Controle */}
           <div className="flex justify-center gap-3 flex-wrap">
             {gameState === 'idle' && (
               <button 
-                onClick={startRound} 
+                onClick={() => {
+                  playSoundEffect("click");
+                  startRound();
+                }} 
                 className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-bold text-lg hover:scale-105 hover:rotate-1 transition-transform shadow-lg flex items-center gap-2"
               >
                 <Play className="w-5 h-5" /> COMEÇAR
@@ -835,7 +997,10 @@ const AuditoryMemoryGame: React.FC = () => {
             
             {gameState === 'playing' && (
               <button 
-                onClick={() => playSequence(sequence)} 
+                onClick={() => {
+                  playSoundEffect("click");
+                  playSequence(sequence);
+                }} 
                 disabled={isPlaying}
                 className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -844,21 +1009,27 @@ const AuditoryMemoryGame: React.FC = () => {
             )}
             
             <button 
-              onClick={() => setSoundEnabled(!soundEnabled)}
+              onClick={() => {
+                playSoundEffect("click");
+                setSoundEnabled(!soundEnabled);
+              }}
               className={`${soundEnabled ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gray-500'} text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg`}
             >
               {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
             </button>
             
             <button 
-              onClick={resetGame} 
+              onClick={() => {
+                playSoundEffect("click");
+                resetGame();
+              }} 
               className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg"
             >
               MENU
             </button>
           </div>
         </div>
-
+        
         {/* Adicione estas animações ao seu arquivo CSS */}
         <style jsx>{`
           @keyframes float-up {
@@ -882,6 +1053,23 @@ const AuditoryMemoryGame: React.FC = () => {
             75% { transform: translateX(5px); }
           }
           
+          @keyframes float {
+            0% {
+              transform: translateY(0) translateX(0);
+              opacity: 0;
+            }
+            10% {
+              opacity: 0.7;
+            }
+            90% {
+              opacity: 0.7;
+            }
+            100% {
+              transform: translateY(-100vh) translateX(20px);
+              opacity: 0;
+            }
+          }
+          
           .animate-float-up {
             animation: float-up 2s ease-out forwards;
           }
@@ -889,11 +1077,15 @@ const AuditoryMemoryGame: React.FC = () => {
           .animate-shake {
             animation: shake 0.5s ease-in-out;
           }
+          
+          .animate-float {
+            animation: float linear infinite;
+          }
         `}</style>
       </div>
     );
   };
-
+  
   // Renderização condicional das telas
   if (currentScreen === 'titleScreen') return <TitleScreen />;
   if (currentScreen === 'instructions') return <InstructionsScreen />;
