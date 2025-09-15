@@ -59,6 +59,10 @@ export default function OceanBubblePop() {
   // NOVO: Controle de telas
   const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game'>('title');
   
+  // NOVOS: Controle de fala da Mila
+  const [introSpeechComplete, setIntroSpeechComplete] = useState(false);
+  const [instructionsSpeechComplete, setInstructionsSpeechComplete] = useState(false);
+  
   // Estados salvos (para mostrar na tela inicial)
   const [totalStarsCollected, setTotalStarsCollected] = useState(0);
   const [bestScore, setBestScore] = useState(0);
@@ -108,30 +112,47 @@ export default function OceanBubblePop() {
     audioManager.current = GameAudioManager.getInstance();
   }, []);
   
-  // CORREÇÃO 1: Saudação inicial da Mila
+  // CORREÇÃO 1: Saudação inicial da Mila - Agora na tela inicial
   useEffect(() => {
-    if (currentScreen === 'title' && audioManager.current) {
+    if (currentScreen === 'title' && audioManager.current && !introSpeechComplete) {
+      // Parar qualquer fala em andamento
+      audioManager.current?.pararFala();
+      
       setTimeout(() => {
         audioManager.current?.falarMila("Olá, eu sou a Mila! Vamos estourar bolhas e salvar o mundo marinho!", () => {
           setTimeout(() => {
-            audioManager.current?.falarMila("Será uma aventura incrível no fundo do oceano!");
+            audioManager.current?.falarMila("Será uma aventura incrível no fundo do oceano!", () => {
+              setIntroSpeechComplete(true);
+            });
           }, 1500);
         });
-      }, 1500);
+      }, 1000);
     }
-  }, [currentScreen]);
+  }, [currentScreen, introSpeechComplete]);
   
-  // NOVO: Narração das instruções
+  // NOVO: Narração das instruções - Agora controlada
   useEffect(() => {
-    if (currentScreen === 'instructions' && audioManager.current) {
+    if (currentScreen === 'instructions' && audioManager.current && !instructionsSpeechComplete) {
+      // Parar qualquer fala em andamento
+      audioManager.current?.pararFala();
+      
       setTimeout(() => {
         audioManager.current?.falarMila("Vou te ensinar como jogar! Estoure as bolhas clicando nelas!", () => {
           setTimeout(() => {
-            audioManager.current?.falarMila("Salve os peixes, evite as bombas e colete equipamentos dourados!");
+            audioManager.current?.falarMila("Salve os peixes, evite as bombas e colete equipamentos dourados!", () => {
+              setInstructionsSpeechComplete(true);
+            });
           }, 1500);
         });
       }, 500);
     }
+  }, [currentScreen, instructionsSpeechComplete]);
+  
+  // NOVO: Parar fala ao mudar de tela
+  useEffect(() => {
+    return () => {
+      audioManager.current?.pararFala();
+    };
   }, [currentScreen]);
   
   const levelConfigs = [
@@ -1145,6 +1166,9 @@ export default function OceanBubblePop() {
     setFreedCreatures([]);
     setBossDefeated(false);
     setShowBossLevel(false);
+    // Resetar estados de fala
+    setIntroSpeechComplete(false);
+    setInstructionsSpeechComplete(false);
   };
   
   // NOVO: Toggle de áudio
@@ -1205,13 +1229,13 @@ export default function OceanBubblePop() {
         <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white drop-shadow-lg mb-4">
           Oceano de Bolhas
         </h1>
-        <p className="text-xl sm:text-2xl text-white/90 mt-2 mb-4 drop-shadow-md">
+        <p className="text-xl sm:text-2xl text-white/90 mt-2 mb-6 drop-shadow-md">
           🌊 Salve o reino oceânico! 🐠
         </p>
         
         {/* Mostra estatísticas na tela inicial */}
         {(totalStarsCollected > 0 || bestScore > 0) && (
-          <div className="bg-white/80 rounded-2xl p-4 mb-4 shadow-xl">
+          <div className="bg-white/80 rounded-2xl p-4 mb-6 shadow-xl">
             <div className="flex items-center gap-4">
               {totalStarsCollected > 0 && (
                 <div className="flex items-center gap-2">
@@ -1229,12 +1253,23 @@ export default function OceanBubblePop() {
           </div>
         )}
         
-        <button 
-          onClick={() => setCurrentScreen('instructions')} 
-          className="text-xl font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-1"
-        >
-          Começar Aventura
-        </button>
+        {/* NOVO: Botão só aparece após a fala completa */}
+        {introSpeechComplete && (
+          <button 
+            onClick={() => setCurrentScreen('instructions')} 
+            className="text-xl font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-1 animate-pulse"
+          >
+            Começar Aventura
+          </button>
+        )}
+        
+        {/* Indicador de carregamento enquanto a fala não termina */}
+        {!introSpeechComplete && (
+          <div className="mt-8 flex flex-col items-center">
+            <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-white mt-4 font-medium">A Mila está falando...</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1270,12 +1305,20 @@ export default function OceanBubblePop() {
           </p>
         </div>
         
-        <button 
-          onClick={startActivity} 
-          className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform"
-        >
-          Vamos jogar! 🚀
-        </button>
+        {/* NOVO: Botão só aparece após a fala completa */}
+        {instructionsSpeechComplete ? (
+          <button 
+            onClick={startActivity} 
+            className="w-full text-xl font-bold text-white bg-gradient-to-r from-green-500 to-blue-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform animate-pulse"
+          >
+            Vamos jogar! 🚀
+          </button>
+        ) : (
+          <div className="flex flex-col items-center">
+            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-blue-600 mt-4 font-medium">A Mila está explicando...</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1707,4 +1750,4 @@ export default function OceanBubblePop() {
   if (currentScreen === 'title') return <TitleScreen />;
   if (currentScreen === 'instructions') return <InstructionsScreen />;
   return <GameScreen />;
-};
+}
