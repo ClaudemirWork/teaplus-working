@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link'
-import { ChevronLeft, Save, Star, Trophy } from 'lucide-react';
+import { ChevronLeft, Save, Star, Trophy, Volume2, VolumeX } from 'lucide-react';
 import { createClient } from '../utils/supabaseClient'
+import { GameAudioManager } from '../utils/gameAudioManager'; // NOVO IMPORT
 import confetti from 'canvas-confetti';
 import styles from './bubble-pop.module.css';
 import Image from 'next/image';
@@ -52,6 +53,10 @@ export default function OceanBubblePop() {
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>();
   
+  // NOVO: AudioManager
+  const audioManager = useRef<GameAudioManager | null>(null);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  
   // NOVO: Controle de telas
   const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game'>('title');
   
@@ -98,6 +103,37 @@ export default function OceanBubblePop() {
   const [freedCreatures, setFreedCreatures] = useState<string[]>([]);
   const [checkpointBubbles, setCheckpointBubbles] = useState(0);
   const [levelCompleted, setLevelCompleted] = useState(false);
+
+  // NOVO: Inicializar AudioManager
+  useEffect(() => {
+    audioManager.current = GameAudioManager.getInstance();
+  }, []);
+
+  // NOVO: Apresentação inicial da Mila
+  useEffect(() => {
+    if (currentScreen === 'title' && audioManager.current) {
+      setTimeout(() => {
+        audioManager.current?.falarMila("Oi! Eu sou a Mila! Que tal explorarmos o fundo do oceano juntos?", () => {
+          setTimeout(() => {
+            audioManager.current?.falarMila("Vamos salvar os peixes e descobrir tesouros incríveis!");
+          }, 1000);
+        });
+      }, 1500);
+    }
+  }, [currentScreen]);
+
+  // NOVO: Narração das instruções
+  useEffect(() => {
+    if (currentScreen === 'instructions' && audioManager.current) {
+      setTimeout(() => {
+        audioManager.current?.falarMila("Vou te ensinar como jogar! Estoure as bolhas clicando nelas!", () => {
+          setTimeout(() => {
+            audioManager.current?.falarMila("Salve os peixes, evite as bombas e colete equipamentos dourados!");
+          }, 1500);
+        });
+      }, 500);
+    }
+  }, [currentScreen]);
 
   const levelConfigs = [
     { 
@@ -284,6 +320,11 @@ export default function OceanBubblePop() {
     });
     setCheckpointBubbles(0);
     setLevelCompleted(false);
+
+    // NOVO: Narração do início do jogo
+    setTimeout(() => {
+      audioManager.current?.falarMila("Vamos começar! Estoure as bolhas para ganhar pontos!");
+    }, 1000);
   };
 
   const createBubble = () => {
@@ -381,6 +422,7 @@ export default function OceanBubblePop() {
     setBubblesSpawned(prev => prev + 1);
     setBubblesRemaining(prev => prev - 1);
   };
+
     const updateBubbles = () => {
     if (!gameAreaRef.current) return;
     
@@ -568,9 +610,13 @@ export default function OceanBubblePop() {
     if (bubble.type === 'mine') {
       createParticles(x, y, bubble.color, 'explosion');
       
+      // NOVO: Feedback de erro
+      audioManager.current?.falarMila("Ops! Você tocou numa bomba!");
+      
       if (equipment.suit) {
         setEquipment(prev => ({ ...prev, suit: false }));
         setLevelMessage('⚠️ Proteção do Traje Perdida!');
+        audioManager.current?.falarMila("Você perdeu a proteção!");
         setTimeout(() => setLevelMessage(''), 2000);
       } else {
         resetLevel();
@@ -583,6 +629,19 @@ export default function OceanBubblePop() {
         [bubble.equipmentType || '']: true
       }));
       setLevelMessage(`🎯 ${bubble.equipmentType?.toUpperCase()} Coletado!`);
+      
+      // NOVO: Feedback de equipamento coletado
+      const equipmentNames: {[key: string]: string} = {
+        'mask': 'máscara',
+        'fins': 'nadadeiras',
+        'tank': 'tanque de oxigênio',
+        'suit': 'roupa de mergulho',
+        'light': 'lanterna'
+      };
+      
+      const equipmentName = equipmentNames[bubble.equipmentType || ''] || 'equipamento';
+      audioManager.current?.falarMila(`Incrível! Você coletou ${equipmentName}!`);
+      
       setTimeout(() => setLevelMessage(''), 2000);
       checkForBossUnlock();
     } else if (bubble.type === 'fish') {
@@ -592,29 +651,58 @@ export default function OceanBubblePop() {
       setPoppedBubbles(prev => prev + 1);
       setCombo(prev => prev + 1);
       setLevelMessage(`🐠 Peixe Salvo! +${bubble.points * multiplier}`);
+      
+      // NOVO: Feedback de peixe salvo
+      const fishNames: {[key: string]: string} = {
+        '🐠': 'peixe tropical',
+        '🐟': 'peixinho',
+        '🐡': 'baiacu',
+        '🦈': 'tubarão',
+        '🐙': 'polvo'
+      };
+      
+      const fishName = fishNames[bubble.fishType || ''] || 'peixe';
+      audioManager.current?.falarMila(`Você salvou um ${fishName}! Muito bem!`);
+      
       setTimeout(() => setLevelMessage(''), 1500);
     } else if (bubble.type === 'double') {
       createParticles(x, y, bubble.color, 'shockwave');
       setMultiplier(2);
       setMultiplierTime(10);
       setLevelMessage('✨ PONTOS x2 ATIVADO!');
+      
+      // NOVO: Feedback de multiplicador
+      audioManager.current?.falarMila("Multiplicador duplo ativado! Seus pontos valem muito mais!");
+      
       setTimeout(() => setLevelMessage(''), 2000);
     } else if (bubble.type === 'triple') {
       createParticles(x, y, bubble.color, 'shockwave');
       setMultiplier(3);
       setMultiplierTime(7);
       setLevelMessage('🌟 PONTOS x3 ATIVADO!');
+      
+      // NOVO: Feedback de multiplicador triplo
+      audioManager.current?.falarMila("Multiplicador triplo! Agora sim você vai ganhar muitos pontos!");
+      
       setTimeout(() => setLevelMessage(''), 2000);
     } else if (bubble.type === 'shockwave') {
       createParticles(x, y, bubble.color, 'shockwave');
       popAllNearbyBubbles(x, y, 150);
       setLevelMessage('💥 ONDA DE CHOQUE!');
+      
+      // NOVO: Feedback de onda de choque
+      audioManager.current?.falarMila("Onda de choque! Todas as bolhas ao redor foram estouradas!");
+      
       setTimeout(() => setLevelMessage(''), 1500);
     } else if (bubble.type === 'magnet') {
       createParticles(x, y, bubble.color, 'shockwave');
       setMagnetActive(true);
       setMagnetTime(8);
       setLevelMessage('🧲 ÍMÃ ATIVADO!');
+      
+      // NOVO: Feedback de ímã
+      audioManager.current?.falarMila("Ímã ativado! As bolhas vão ser atraídas para você!");
+      
       setTimeout(() => setLevelMessage(''), 2000);
     } else {
       createParticles(x, y, bubble.color);
@@ -622,6 +710,14 @@ export default function OceanBubblePop() {
       setCombo(prev => {
         const newCombo = prev + 1;
         setMaxCombo(max => Math.max(max, newCombo));
+        
+        // NOVO: Feedback de combo
+        if (newCombo % 10 === 0) {
+          audioManager.current?.falarMila(`Combo incrível! ${newCombo} acertos seguidos!`);
+        } else if (newCombo % 5 === 0) {
+          audioManager.current?.falarMila(`Bom combo! Continue assim!`);
+        }
+        
         return newCombo;
       });
       
@@ -630,8 +726,14 @@ export default function OceanBubblePop() {
       
       if (bubble.type === 'oxygen') {
         setOxygenLevel(prev => Math.min(100, prev + 10));
+        // NOVO: Feedback de oxigênio
+        if (Math.random() < 0.3) { // Não falar sempre para não ser repetitivo
+          audioManager.current?.falarMila("Oxigênio restaurado!");
+        }
       } else if (bubble.type === 'pearl') {
         setOxygenLevel(prev => Math.min(100, prev + 20));
+        // NOVO: Feedback de pérola
+        audioManager.current?.falarMila("Pérola rara! Muito oxigênio restaurado!");
       } else {
         setOxygenLevel(prev => Math.min(100, prev + 3));
       }
@@ -644,12 +746,15 @@ export default function OceanBubblePop() {
       
       if (percentage >= 25 && percentage < 26) {
         setLevelMessage('📍 25% Completo!');
+        audioManager.current?.falarMila("Você já completou 25 por cento do nível!");
         setTimeout(() => setLevelMessage(''), 1500);
       } else if (percentage >= 50 && percentage < 51) {
         setLevelMessage('📍 50% Completo!');
+        audioManager.current?.falarMila("Metade do nível concluída! Continue assim!");
         setTimeout(() => setLevelMessage(''), 1500);
       } else if (percentage >= 75 && percentage < 76) {
         setLevelMessage('📍 75% Completo!');
+        audioManager.current?.falarMila("75 por cento! Você está quase terminando!");
         setTimeout(() => setLevelMessage(''), 1500);
       }
       
@@ -680,6 +785,9 @@ export default function OceanBubblePop() {
     setLevelMessage('💣 BOMBA! Reiniciando nível...');
     setShowLevelTransition(true);
     
+    // NOVO: Feedback de reinício
+    audioManager.current?.falarMila("Não se preocupe! Vamos tentar de novo!");
+    
     setTimeout(() => {
       const config = levelConfigs[currentLevel - 1];
       setBubbles([]);
@@ -703,6 +811,10 @@ export default function OceanBubblePop() {
     
     if (hasAllEquipment && currentLevel === 10 && !showBossLevel) {
       setLevelMessage('🔓 FASE SECRETA DESBLOQUEADA!');
+      
+      // NOVO: Feedback de fase secreta
+      audioManager.current?.falarMila("Incrível! Você coletou todos os equipamentos! Fase secreta desbloqueada!");
+      
       setShowBossLevel(true);
     }
   };
@@ -854,6 +966,9 @@ export default function OceanBubblePop() {
         setShowLevelTransition(true);
         createCelebrationBurst();
         
+        // NOVO: Feedback de nível completo
+        audioManager.current?.falarMila(`Parabéns! Você completou o nível ${currentLevel}!`);
+        
         setTimeout(() => {
           const nextLevel = currentLevel + 1;
           const nextConfig = levelConfigs[nextLevel - 1];
@@ -870,12 +985,18 @@ export default function OceanBubblePop() {
           setMagnetActive(false);
           setLevelCompleted(false);
           setIsPlaying(true);
+          
+          // NOVO: Feedback de novo nível
+          audioManager.current?.falarMila(`Agora vamos para o nível ${nextLevel}! Prepare-se!`);
         }, 3000);
       } else if (currentLevel === 10) {
         if (showBossLevel) {
           setLevelMessage('🌊 ENTRANDO NO REINO DO SENHOR DOS MARES!');
           setShowLevelTransition(true);
           createCelebrationBurst();
+          
+          // NOVO: Feedback de boss battle
+          audioManager.current?.falarMila("Chegou a hora da batalha final! Vamos enfrentar o Senhor dos Mares!");
           
           setTimeout(() => {
             setCurrentLevel(11);
@@ -900,6 +1021,9 @@ export default function OceanBubblePop() {
     setIsPlaying(false);
     setLevelMessage('🎉 SENHOR DOS MARES DERROTADO!');
     
+    // NOVO: Feedback de vitória épica
+    audioManager.current?.falarMila("Incrível! Você derrotou o Senhor dos Mares! Você é o herói do oceano!");
+    
     for (let i = 0; i < 5; i++) {
       setTimeout(() => {
         confetti({
@@ -917,9 +1041,16 @@ export default function OceanBubblePop() {
       if (index < creatures.length) {
         setFreedCreatures(prev => [...prev, creatures[index]]);
         index++;
+        
+        // NOVO: Feedback de libertação das criaturas
+        if (index === 1) {
+          audioManager.current?.falarMila("Olha! As criaturas marinhas estão sendo libertadas!");
+        }
       } else {
         clearInterval(releaseInterval);
         setTimeout(() => {
+          // NOVO: Feedback final de vitória
+          audioManager.current?.falarMila("Você salvou todo o reino oceânico! Você é um verdadeiro herói!");
           endGame(true);
         }, 3000);
       }
@@ -938,6 +1069,9 @@ export default function OceanBubblePop() {
     if (score > bestScore) {
       setBestScore(score);
       localStorage.setItem('bubblePop_bestScore', score.toString());
+      
+      // NOVO: Feedback de novo recorde
+      audioManager.current?.falarMila("Parabéns! Você bateu seu recorde!");
     }
     
     if (bossVictory) {
@@ -995,6 +1129,9 @@ export default function OceanBubblePop() {
         console.error('Erro ao salvar:', error);
         alert(`Erro ao salvar: ${error.message}`);
       } else {
+        // NOVO: Feedback de salvamento
+        audioManager.current?.falarMila("Sessão salva com sucesso! Muito bem!");
+        
         alert(`Sessão salva com sucesso!
         
 🌊 Resultado da Aventura Oceânica:
@@ -1026,6 +1163,18 @@ export default function OceanBubblePop() {
     setShowBossLevel(false);
   };
 
+  // NOVO: Toggle de áudio
+  const toggleAudio = () => {
+    if (audioManager.current) {
+      const newState = audioManager.current.toggleAudio();
+      setAudioEnabled(newState);
+      
+      if (newState) {
+        audioManager.current.falarMila("Áudio ligado!");
+      }
+    }
+  };
+
   // TELAS DO JOGO
   const TitleScreen = () => (
     <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-cyan-300 via-blue-400 to-blue-600 overflow-hidden">
@@ -1046,6 +1195,17 @@ export default function OceanBubblePop() {
           </div>
         ))}
       </div>
+
+      {/* NOVO: Controle de áudio */}
+      <button
+        onClick={toggleAudio}
+        className="absolute top-4 right-4 z-20 bg-white/20 hover:bg-white/30 p-3 rounded-full transition-colors"
+      >
+        {audioEnabled ? 
+          <Volume2 className="w-6 h-6 text-white" /> : 
+          <VolumeX className="w-6 h-6 text-white" />
+        }
+      </button>
       
       <div className="relative z-10 flex flex-col items-center text-center">
         <div className="mb-4 animate-bounce-slow">
@@ -1155,22 +1315,35 @@ export default function OceanBubblePop() {
                 <span>Oceano de Bolhas</span>
               </h1>
 
-              {showResults ? (
+              <div className="flex items-center gap-2">
+                {/* NOVO: Toggle de áudio no header */}
                 <button
-                  onClick={handleSaveSession}
-                  disabled={salvando}
-                  className={`flex items-center space-x-2 px-3 py-2 sm:px-4 rounded-lg font-semibold transition-colors ${
-                    !salvando
-                      ? 'bg-green-500 text-white hover:bg-green-600'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
+                  onClick={toggleAudio}
+                  className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
                 >
-                  <Save size={18} />
-                  <span className="hidden sm:inline">{salvando ? 'Salvando...' : 'Salvar'}</span>
+                  {audioEnabled ? 
+                    <Volume2 className="w-5 h-5" /> : 
+                    <VolumeX className="w-5 h-5" />
+                  }
                 </button>
-              ) : (
-                <div className="w-24"></div>
-              )}
+
+                {showResults ? (
+                  <button
+                    onClick={handleSaveSession}
+                    disabled={salvando}
+                    className={`flex items-center space-x-2 px-3 py-2 sm:px-4 rounded-lg font-semibold transition-colors ${
+                      !salvando
+                        ? 'bg-green-500 text-white hover:bg-green-600'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <Save size={18} />
+                    <span className="hidden sm:inline">{salvando ? 'Salvando...' : 'Salvar'}</span>
+                  </button>
+                ) : (
+                  <div className="w-16"></div>
+                )}
+              </div>
             </div>
           </div>
         </header>
