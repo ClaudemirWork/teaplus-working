@@ -13,56 +13,13 @@ const confetti = dynamic(() => import('canvas-confetti'), { ssr: false });
 import styles from './bubble-pop.module.css';
 import Image from 'next/image';
 
-// Classe simplificada para o AudioManager caso o original não exista
-class SimpleGameAudioManager {
-  private static instance: SimpleGameAudioManager;
-  private audioEnabled: boolean = true;
-  private speechSynthesis: typeof window.speechSynthesis | null = null;
-
-  private constructor() {
-    if (typeof window !== 'undefined') {
-      this.speechSynthesis = window.speechSynthesis;
-    }
-  }
-
-  static getInstance(): SimpleGameAudioManager {
-    if (!SimpleGameAudioManager.instance) {
-      SimpleGameAudioManager.instance = new SimpleGameAudioManager();
-    }
-    return SimpleGameAudioManager.instance;
-  }
-
-  toggleAudio(): boolean {
-    this.audioEnabled = !this.audioEnabled;
-    return this.audioEnabled;
-  }
-
-  falarMila(texto: string, callback?: () => void): void {
-    if (!this.audioEnabled || !this.speechSynthesis) {
-      if (callback) callback();
-      return;
-    }
-
-    // Parar qualquer fala em andamento
-    this.pararFala();
-
-    const utterance = new SpeechSynthesisUtterance(texto);
-    utterance.lang = 'pt-BR';
-    utterance.rate = 0.9;
-    utterance.pitch = 1.1;
-    
-    if (callback) {
-      utterance.onend = callback;
-    }
-    
-    this.speechSynthesis.speak(utterance);
-  }
-
-  pararFala(): void {
-    if (this.speechSynthesis) {
-      this.speechSynthesis.cancel();
-    }
-  }
+// Importação do GameAudioManager com tratamento de erro
+let GameAudioManager: any;
+try {
+  // @ts-ignore - Ignorar erro se o módulo não existir
+  GameAudioManager = require('../utils/gameAudioManager').GameAudioManager;
+} catch (e) {
+  console.warn('GameAudioManager não encontrado, usando fallback:', e);
 }
 
 // Interface Bubble permanece igual
@@ -110,7 +67,7 @@ export default function OceanBubblePop() {
   const animationRef = useRef<number>();
   
   // NOVO: AudioManager com fallback
-  const audioManager = useRef<SimpleGameAudioManager | null>(null);
+  const audioManager = useRef<any>(null);
   const [audioEnabled, setAudioEnabled] = useState(true);
   
   // NOVO: Controle de telas
@@ -167,19 +124,58 @@ export default function OceanBubblePop() {
   // NOVO: Inicializar AudioManager com tratamento de erro
   useEffect(() => {
     try {
-      // Tentar usar o GameAudioManager original se existir
+      // Verificar se estamos no lado do cliente
       if (typeof window !== 'undefined') {
-        // @ts-ignore - Ignorar erro se o módulo não existir
-        const { GameAudioManager } = require('../utils/gameAudioManager');
-        audioManager.current = GameAudioManager.getInstance();
-      } else {
-        // Fallback para a classe simplificada
-        audioManager.current = SimpleGameAudioManager.getInstance();
+        // Tentar usar o GameAudioManager original se existir
+        if (GameAudioManager) {
+          audioManager.current = GameAudioManager.getInstance();
+          console.log('GameAudioManager carregado com sucesso');
+        } else {
+          // Criar um fallback simples
+          audioManager.current = {
+            falarMila: (texto: string, callback?: () => void) => {
+              if (typeof window !== 'undefined' && window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(texto);
+                utterance.lang = 'pt-BR';
+                utterance.rate = 0.9;
+                utterance.pitch = 1.1;
+                if (callback) {
+                  utterance.onend = callback;
+                }
+                window.speechSynthesis.speak(utterance);
+              } else if (callback) {
+                callback();
+              }
+            },
+            pararTodos: () => {
+              if (typeof window !== 'undefined' && window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+              }
+            },
+            toggleAudio: () => {
+              const newState = !audioEnabled;
+              setAudioEnabled(newState);
+              return newState;
+            }
+          };
+          console.log('Usando fallback para áudio');
+        }
       }
     } catch (e) {
-      console.warn('GameAudioManager não encontrado, usando fallback:', e);
-      // Usar a classe simplificada como fallback
-      audioManager.current = SimpleGameAudioManager.getInstance();
+      console.error('Erro ao inicializar áudio:', e);
+      // Criar um fallback mínimo
+      audioManager.current = {
+        falarMila: (_texto: string, callback?: () => void) => {
+          if (callback) callback();
+        },
+        pararTodos: () => {},
+        toggleAudio: () => {
+          const newState = !audioEnabled;
+          setAudioEnabled(newState);
+          return newState;
+        }
+      };
     }
   }, []);
   
@@ -187,7 +183,7 @@ export default function OceanBubblePop() {
   useEffect(() => {
     if (currentScreen === 'title' && audioManager.current && !introSpeechComplete) {
       // Parar qualquer fala em andamento
-      audioManager.current?.pararFala();
+      audioManager.current?.pararTodos();
       
       setTimeout(() => {
         audioManager.current?.falarMila("Olá, eu sou a Mila! Vamos estourar bolhas e salvar o mundo marinho!", () => {
@@ -205,7 +201,7 @@ export default function OceanBubblePop() {
   useEffect(() => {
     if (currentScreen === 'instructions' && audioManager.current && !instructionsSpeechComplete) {
       // Parar qualquer fala em andamento
-      audioManager.current?.pararFala();
+      audioManager.current?.pararTodos();
       
       setTimeout(() => {
         audioManager.current?.falarMila("Vou te ensinar como jogar! Estoure as bolhas clicando nelas!", () => {
@@ -222,7 +218,7 @@ export default function OceanBubblePop() {
   // NOVO: Parar fala ao mudar de tela
   useEffect(() => {
     return () => {
-      audioManager.current?.pararFala();
+      audioManager.current?.pararTodos();
     };
   }, [currentScreen]);
   
@@ -898,29 +894,33 @@ export default function OceanBubblePop() {
   const createCelebrationBurst = () => {
     if (typeof confetti !== 'function') return;
     
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
-    
-    setTimeout(() => {
+    try {
       confetti({
-        particleCount: 50,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0 }
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
       });
-    }, 200);
-    
-    setTimeout(() => {
-      confetti({
-        particleCount: 50,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1 }
-      });
-    }, 400);
+      
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 }
+        });
+      }, 200);
+      
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 }
+        });
+      }, 400);
+    } catch (e) {
+      console.error('Erro ao criar confetti:', e);
+    }
   };
   
   const handleInteraction = (e: React.MouseEvent | React.TouchEvent) => {
