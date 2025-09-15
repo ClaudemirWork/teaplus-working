@@ -153,7 +153,7 @@
   transform: scale(1.05);
   border-color: #007BFF;
 }
-/* --- FEEDBACKS, ANIMAÇÕES, CONFETES (Sem alterações) --- */
+/* --- FEEDBACKS, ANIMAÇÕES, CONFETES --- */
 .option-button.correct {
   border-color: #28a745;
   background-color: #e9f7ea;
@@ -194,7 +194,10 @@
 }
 .confetti {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  bottom: 0;
   pointer-events: none;
   overflow: hidden;
 }
@@ -207,19 +210,12 @@
   top: -20px;
   animation: confetti-fall 2s linear infinite;
   box-shadow: 
-    20vw 10vh 0 #0f0, 40vw -5vh 0 #00f, 60vw 15vh 0 #ff0, 80vw 5vh 0 #f0f, -10vw 20vh 0 #0
-  .confetti::before {
-  content: '';
-  position: absolute;
-  width: 10px;
-  height: 20px;
-  background: #f00;
-  top: -20px;
-  animation: confetti-fall 2s linear infinite;
-  box-shadow: 
-    20vw 10vh 0 #0f0, 40vw -5vh 0 #00f, 60vw 15vh 0 #ff0, 80vw 5vh 0 #f0f, -10vw 20vh 0 #0ff;
+    20vw 10vh 0 #0f0, 
+    40vw -5vh 0 #00f, 
+    60vw 15vh 0 #ff0, 
+    80vw 5vh 0 #f0f, 
+    -10vw 20vh 0 #0ff;
 }
-
 @keyframes confetti-fall {
   to {
     transform: translateY(100vh) rotate(360deg);
