@@ -58,9 +58,11 @@ export default function ShadowGamePage() {
   const [totalStars, setTotalStars] = useState(0);
   const [isPlayingIntro, setIsPlayingIntro] = useState(false);
   const [isPlayingInstructions, setIsPlayingInstructions] = useState(false);
+  const [lastNarration, setLastNarration] = useState<string | null>(null);
   
   const successAudioRef = useRef<HTMLAudioElement | null>(null);
   const errorAudioRef = useRef<HTMLAudioElement | null>(null);
+  const narrationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Carregar estatísticas salvas
   useEffect(() => {
@@ -77,7 +79,48 @@ export default function ShadowGamePage() {
     } catch (error) {
       console.error('Erro ao inicializar áudios:', error);
     }
+    
+    // Limpar timeouts quando o componente for desmontado
+    return () => {
+      if (narrationTimeoutRef.current) {
+        clearTimeout(narrationTimeoutRef.current);
+      }
+    };
   }, []);
+  
+  // Função de narração aprimorada para evitar sobreposições
+  const narrateText = (text: string) => {
+    // Cancelar narração anterior se existir
+    window.speechSynthesis.cancel();
+    
+    // Limpar timeout anterior se existir
+    if (narrationTimeoutRef.current) {
+      clearTimeout(narrationTimeoutRef.current);
+    }
+    
+    // Evitar repetir a mesma narração consecutivamente
+    if (lastNarration === text) {
+      return;
+    }
+    
+    setLastNarration(text);
+    
+    try {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'pt-BR';
+      utterance.rate = 0.9;
+      utterance.pitch = 1.1;
+      
+      // Definir um timeout para limpar a última narração após um tempo
+      narrationTimeoutRef.current = setTimeout(() => {
+        setLastNarration(null);
+      }, 3000);
+      
+      window.speechSynthesis.speak(utterance);
+    } catch (error) {
+      console.error('Erro na narração:', error);
+    }
+  };
   
   // Funções de áudio com tratamento de erro
   const playAudioWithFallback = async (audioPath: string, text: string) => {
@@ -86,23 +129,7 @@ export default function ShadowGamePage() {
       await audio.play();
     } catch (error) {
       console.error("Erro ao tocar MP3, usando voz sintética:", error);
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'pt-BR';
-      utterance.rate = 0.9;
-      utterance.pitch = 1.1;
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-  
-  const narrateText = (text: string) => {
-    try {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'pt-BR';
-      utterance.rate = 0.9;
-      utterance.pitch = 1.1;
-      window.speechSynthesis.speak(utterance);
-    } catch (error) {
-      console.error('Erro na narração:', error);
+      narrateText(text);
     }
   };
   
@@ -171,8 +198,27 @@ export default function ShadowGamePage() {
     if (clickedOption === roundData?.correctAnswer) {
       const newStreak = streak + 1;
       let pointsGained = 100;
-      if (newStreak >= 5) pointsGained = 500;
-      else if (newStreak >= 2) pointsGained = 200;
+      let comboMessage = "";
+      
+      // Sistema de combos aprimorado
+      if (newStreak >= 20) {
+        pointsGained = 3000;
+        comboMessage = `Combo incrível de ${newStreak} acertos! ${pointsGained} pontos!`;
+      } else if (newStreak >= 15) {
+        pointsGained = 2000;
+        comboMessage = `Combo fantástico de ${newStreak} acertos! ${pointsGained} pontos!`;
+      } else if (newStreak >= 10) {
+        pointsGained = 1000;
+        comboMessage = `Combo impressionante de ${newStreak} acertos! ${pointsGained} pontos!`;
+      } else if (newStreak >= 5) {
+        pointsGained = 500;
+        comboMessage = `Combo de ${newStreak} acertos! ${pointsGained} pontos!`;
+      } else if (newStreak >= 2) {
+        pointsGained = 200;
+        comboMessage = `Muito bem! ${pointsGained} pontos!`;
+      } else {
+        comboMessage = `Correto! ${pointsGained} pontos!`;
+      }
       
       setScore(score + pointsGained);
       setStreak(newStreak);
@@ -188,13 +234,7 @@ export default function ShadowGamePage() {
       localStorage.setItem('shadowGameHighScore', newHighScore.toString());
       
       // Narrar pontos e combo
-      if (newStreak >= 5) {
-        narrateText(`Combo de 5 acertos! ${pointsGained} pontos!`);
-      } else if (newStreak >= 2) {
-        narrateText(`Muito bem! ${pointsGained} pontos!`);
-      } else {
-        narrateText(`Correto! ${pointsGained} pontos!`);
-      }
+      narrateText(comboMessage);
       
       if (soundEnabled && successAudioRef.current) {
         successAudioRef.current.play().catch(e => console.log("Erro ao tocar som de sucesso:", e));
@@ -244,7 +284,6 @@ export default function ShadowGamePage() {
         setGameState('instructions');
       }, 4000);
     };
-
     return (
       <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-blue-400 via-purple-400 to-indigo-500 overflow-hidden">
         {/* Bolhas flutuantes (similar ao bubble-pop) */}
@@ -354,7 +393,6 @@ export default function ShadowGamePage() {
         setIsPlayingInstructions(false);
       }, 4500);
     };
-
     return (
       <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-300 via-pink-300 to-orange-300 overflow-hidden">
         {/* Elementos decorativos animados */}
@@ -528,6 +566,18 @@ export default function ShadowGamePage() {
   const GameScreen = () => {
     if (!roundData) return <div>Carregando...</div>;
     
+    // Determinar o nível do combo para exibição
+    const getComboLevel = () => {
+      if (streak >= 20) return { level: 20, points: 3000, icon: <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" /> };
+      if (streak >= 15) return { level: 15, points: 2000, icon: <Award className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" /> };
+      if (streak >= 10) return { level: 10, points: 1000, icon: <Medal className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" /> };
+      if (streak >= 5) return { level: 5, points: 500, icon: <Flame className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" /> };
+      if (streak >= 2) return { level: 2, points: 200, icon: <Star className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" fill="currentColor" /> };
+      return { level: 1, points: 100, icon: <Target className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" /> };
+    };
+    
+    const comboLevel = getComboLevel();
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4">
         <div className="max-w-4xl mx-auto">
@@ -597,21 +647,10 @@ export default function ShadowGamePage() {
           <div className="text-center text-white mb-4">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
               <span className="text-sm sm:text-base">Combo:</span>
-              {streak >= 5 && (
-                <>
-                  <Flame className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
-                  <span className="font-bold text-lg sm:text-xl">5x (500 pontos)</span>
-                </>
-              )}
-              {streak >= 2 && streak < 5 && (
-                <>
-                  <Star className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" fill="currentColor" />
-                  <span className="font-bold text-lg sm:text-xl">{streak}x (200 pontos)</span>
-                </>
-              )}
-              {streak < 2 && (
-                <span className="font-bold text-lg sm:text-xl">{streak}x (100 pontos)</span>
-              )}
+              {comboLevel.icon}
+              <span className="font-bold text-lg sm:text-xl">
+                {streak}x ({comboLevel.points} pontos)
+              </span>
             </div>
           </div>
           
