@@ -4,11 +4,68 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link'
 import { ChevronLeft, Save, Star, Trophy, Volume2, VolumeX } from 'lucide-react';
 import { createClient } from '../utils/supabaseClient'
-import { GameAudioManager } from '../utils/gameAudioManager'; // NOVO IMPORT
-import confetti from 'canvas-confetti';
+// Importação condicional para evitar erros de SSR
+import dynamic from 'next/dynamic';
+
+// Importação dinâmica do canvas-confetti para evitar erros no servidor
+const confetti = dynamic(() => import('canvas-confetti'), { ssr: false });
+
 import styles from './bubble-pop.module.css';
 import Image from 'next/image';
 
+// Classe simplificada para o AudioManager caso o original não exista
+class SimpleGameAudioManager {
+  private static instance: SimpleGameAudioManager;
+  private audioEnabled: boolean = true;
+  private speechSynthesis: typeof window.speechSynthesis | null = null;
+
+  private constructor() {
+    if (typeof window !== 'undefined') {
+      this.speechSynthesis = window.speechSynthesis;
+    }
+  }
+
+  static getInstance(): SimpleGameAudioManager {
+    if (!SimpleGameAudioManager.instance) {
+      SimpleGameAudioManager.instance = new SimpleGameAudioManager();
+    }
+    return SimpleGameAudioManager.instance;
+  }
+
+  toggleAudio(): boolean {
+    this.audioEnabled = !this.audioEnabled;
+    return this.audioEnabled;
+  }
+
+  falarMila(texto: string, callback?: () => void): void {
+    if (!this.audioEnabled || !this.speechSynthesis) {
+      if (callback) callback();
+      return;
+    }
+
+    // Parar qualquer fala em andamento
+    this.pararFala();
+
+    const utterance = new SpeechSynthesisUtterance(texto);
+    utterance.lang = 'pt-BR';
+    utterance.rate = 0.9;
+    utterance.pitch = 1.1;
+    
+    if (callback) {
+      utterance.onend = callback;
+    }
+    
+    this.speechSynthesis.speak(utterance);
+  }
+
+  pararFala(): void {
+    if (this.speechSynthesis) {
+      this.speechSynthesis.cancel();
+    }
+  }
+}
+
+// Interface Bubble permanece igual
 interface Bubble {
   id: number;
   x: number;
@@ -52,8 +109,8 @@ export default function OceanBubblePop() {
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>();
   
-  // NOVO: AudioManager
-  const audioManager = useRef<GameAudioManager | null>(null);
+  // NOVO: AudioManager com fallback
+  const audioManager = useRef<SimpleGameAudioManager | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(true);
   
   // NOVO: Controle de telas
@@ -107,9 +164,23 @@ export default function OceanBubblePop() {
   const [checkpointBubbles, setCheckpointBubbles] = useState(0);
   const [levelCompleted, setLevelCompleted] = useState(false);
   
-  // NOVO: Inicializar AudioManager
+  // NOVO: Inicializar AudioManager com tratamento de erro
   useEffect(() => {
-    audioManager.current = GameAudioManager.getInstance();
+    try {
+      // Tentar usar o GameAudioManager original se existir
+      if (typeof window !== 'undefined') {
+        // @ts-ignore - Ignorar erro se o módulo não existir
+        const { GameAudioManager } = require('../utils/gameAudioManager');
+        audioManager.current = GameAudioManager.getInstance();
+      } else {
+        // Fallback para a classe simplificada
+        audioManager.current = SimpleGameAudioManager.getInstance();
+      }
+    } catch (e) {
+      console.warn('GameAudioManager não encontrado, usando fallback:', e);
+      // Usar a classe simplificada como fallback
+      audioManager.current = SimpleGameAudioManager.getInstance();
+    }
   }, []);
   
   // CORREÇÃO 1: Saudação inicial da Mila - Agora na tela inicial
@@ -825,6 +896,8 @@ export default function OceanBubblePop() {
   };
   
   const createCelebrationBurst = () => {
+    if (typeof confetti !== 'function') return;
+    
     confetti({
       particleCount: 100,
       spread: 70,
@@ -1031,11 +1104,7 @@ export default function OceanBubblePop() {
     
     for (let i = 0; i < 5; i++) {
       setTimeout(() => {
-        confetti({
-          particleCount: 100,
-          spread: 100,
-          origin: { y: Math.random() }
-        });
+        createCelebrationBurst();
       }, i * 300);
     }
     
@@ -1084,19 +1153,7 @@ export default function OceanBubblePop() {
       const end = Date.now() + duration;
       
       (function frame() {
-        confetti({
-          particleCount: 3,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0 }
-        });
-        confetti({
-          particleCount: 3,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1 }
-        });
-        
+        createCelebrationBurst();
         if (Date.now() < end) {
           requestAnimationFrame(frame);
         }
@@ -1224,6 +1281,11 @@ export default function OceanBubblePop() {
             height={400} 
             className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl" 
             priority 
+            onError={(e) => {
+              // Fallback para imagem padrão se não encontrar
+              const target = e.target as HTMLImageElement;
+              target.src = "https://via.placeholder.com/400x400?text=Mila";
+            }}
           />
         </div>
         <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white drop-shadow-lg mb-4">
