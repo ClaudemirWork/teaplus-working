@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link'
-import { ChevronLeft, Save, Star, Trophy, Volume2, VolumeX } from 'lucide-react';
+import { ChevronLeft, Save, Star, Trophy, Volume2, VolumeX, Play } from 'lucide-react'; // Adicionei o ícone Play
 import { createClient } from '../utils/supabaseClient'
 // Importação condicional para evitar erros de SSR
 import dynamic from 'next/dynamic';
@@ -77,6 +77,9 @@ export default function OceanBubblePop() {
   const [introSpeechComplete, setIntroSpeechComplete] = useState(false);
   const [instructionsSpeechComplete, setInstructionsSpeechComplete] = useState(false);
   
+  // NOVO: Controle de interação do usuário para áudio
+  const [userInteracted, setUserInteracted] = useState(false);
+  
   // Estados salvos (para mostrar na tela inicial)
   const [totalStarsCollected, setTotalStarsCollected] = useState(0);
   const [bestScore, setBestScore] = useState(0);
@@ -142,6 +145,7 @@ export default function OceanBubblePop() {
                 utterance.pitch = 1.1;
                 if (callback) {
                   utterance.onend = callback;
+                  utterance.onerror = callback;
                 }
                 window.speechSynthesis.speak(utterance);
               } else if (callback) {
@@ -179,9 +183,25 @@ export default function OceanBubblePop() {
     }
   }, []);
   
+  // NOVO: Função para iniciar a fala após interação do usuário
+  const startIntroSpeech = () => {
+    setUserInteracted(true);
+    audioManager.current?.pararTodos();
+    
+    setTimeout(() => {
+      audioManager.current?.falarMila("Olá, eu sou a Mila! Vamos estourar bolhas e salvar o mundo marinho!", () => {
+        setTimeout(() => {
+          audioManager.current?.falarMila("Será uma aventura incrível no fundo do oceano!", () => {
+            setIntroSpeechComplete(true);
+          });
+        }, 1500);
+      });
+    }, 500);
+  };
+  
   // CORREÇÃO 1: Saudação inicial da Mila - Agora na tela inicial
   useEffect(() => {
-    if (currentScreen === 'title' && audioManager.current && !introSpeechComplete) {
+    if (currentScreen === 'title' && audioManager.current && !introSpeechComplete && userInteracted) {
       // Parar qualquer fala em andamento
       audioManager.current?.pararTodos();
       
@@ -195,7 +215,19 @@ export default function OceanBubblePop() {
         });
       }, 1000);
     }
-  }, [currentScreen, introSpeechComplete]);
+  }, [currentScreen, introSpeechComplete, userInteracted]);
+  
+  // NOVO: Timeout de segurança para garantir que o botão apareça
+  useEffect(() => {
+    if (currentScreen === 'title' && !introSpeechComplete && !userInteracted) {
+      const timeout = setTimeout(() => {
+        // Se após 5 segundos o usuário ainda não interagiu, mostrar o botão
+        setUserInteracted(true);
+      }, 5000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [currentScreen, introSpeechComplete, userInteracted]);
   
   // NOVO: Narração das instruções - Agora controlada
   useEffect(() => {
@@ -1226,6 +1258,7 @@ export default function OceanBubblePop() {
     // Resetar estados de fala
     setIntroSpeechComplete(false);
     setInstructionsSpeechComplete(false);
+    setUserInteracted(false);
   };
   
   // NOVO: Toggle de áudio
@@ -1315,6 +1348,17 @@ export default function OceanBubblePop() {
           </div>
         )}
         
+        {/* NOVO: Botão para iniciar a fala */}
+        {!userInteracted && (
+          <button 
+            onClick={startIntroSpeech}
+            className="flex items-center gap-2 text-xl font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full px-8 py-4 shadow-xl transition-all duration-300 hover:scale-110 animate-pulse"
+          >
+            <Play className="w-6 h-6" />
+            Ouvir Mila
+          </button>
+        )}
+        
         {/* NOVO: Botão só aparece após a fala completa */}
         {introSpeechComplete && (
           <button 
@@ -1326,7 +1370,7 @@ export default function OceanBubblePop() {
         )}
         
         {/* Indicador de carregamento enquanto a fala não termina */}
-        {!introSpeechComplete && (
+        {userInteracted && !introSpeechComplete && (
           <div className="mt-8 flex flex-col items-center">
             <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
             <p className="text-white mt-4 font-medium">A Mila está falando...</p>
