@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Save, Volume2, Mic, Star, Trophy, Play, Sparkles, Crown, Gift } from 'lucide-react';
-import { createClient } from '../utils/supabaseClient';
+import { createClient } from '@/utils/supabaseClient'; // <-- CORREÇÃO REALIZADA AQUI
 import confetti from 'canvas-confetti';
 import Image from 'next/image';
 
