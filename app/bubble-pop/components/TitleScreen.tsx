@@ -36,10 +36,11 @@ export const TitleScreen = React.memo(({ onStart, toggleAudio, audioEnabled, tot
     useEffect(() => {
         if (!userInteracted) {
             const timer = setTimeout(() => {
+                // Se o usuário não interagiu, permite que o jogo comece mesmo assim
                 if (!introSpeechComplete) {
                     setIntroSpeechComplete(true);
                 }
-            }, 7000);
+            }, 7000); // 7 segundos de espera
             return () => clearTimeout(timer);
         }
     }, [userInteracted, introSpeechComplete]);
@@ -80,7 +81,7 @@ export const TitleScreen = React.memo(({ onStart, toggleAudio, audioEnabled, tot
                     </div>
                 )}
                 
-                {!userInteracted && (
+                {(!userInteracted && !introSpeechComplete) && (
                     <button onClick={handleStartIntroSpeech} className="flex items-center gap-2 text-xl font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full px-8 py-4 shadow-xl transition-all duration-300 hover:scale-110 animate-pulse">
                         <Play className="w-6 h-6" /> Ouvir Mila
                     </button>
@@ -92,7 +93,7 @@ export const TitleScreen = React.memo(({ onStart, toggleAudio, audioEnabled, tot
                     </button>
                 )}
                 
-                {userInteracted && !introSpeechComplete && (
+                {(userInteracted && !introSpeechComplete) && (
                     <div className="mt-8 flex flex-col items-center">
                         <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-white mt-4 font-medium">A Mila está falando...</p>
