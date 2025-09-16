@@ -10,7 +10,6 @@ import dynamic from 'next/dynamic';
 
 const confetti = dynamic(() => import('canvas-confetti'), { ssr: false });
 
-// ... (as constantes levelConfigs, coloredBubbles, comboPhrases permanecem as mesmas) ...
 const levelConfigs = [
     { level: 1, name: 'Superfície - Bolhas Coloridas', depth: '0-10m', totalBubbles: 100, minePercentage: 0.05, spawnRate: 600, oxygenDrain: 0.3, bgGradient: 'from-cyan-300 to-blue-400', equipment: null, features: ['colored_bubbles']},
     { level: 2, name: 'Águas Rasas - Salvando Peixes', depth: '10-20m', totalBubbles: 110, minePercentage: 0.1, spawnRate: 580, oxygenDrain: 0.4, bgGradient: 'from-blue-400 to-blue-500', equipment: 'mask', features: ['colored_bubbles', 'fish_rescue']},
@@ -26,10 +25,14 @@ const levelConfigs = [
 ];
 
 const coloredBubbles = {
-    air: { color: '#E0F2FE', points: 5, size: 40 }, oxygen: { color: '#60A5FA', points: 15, size: 55 },
-    pink: { color: '#F9A8D4', points: 20, size: 45 }, purple: { color: '#C084FC', points: 25, size: 45 },
-    yellow: { color: '#FDE047', points: 30, size: 45 }, green: { color: '#86EFAC', points: 35, size: 45 },
-    orange: { color: '#FB923C', points: 40, size: 45 }, treasure: { color: '#FFD700', points: 50, size: 50 },
+    air: { color: '#E0F2FE', points: 5, size: 40 },
+    oxygen: { color: '#60A5FA', points: 15, size: 55 },
+    pink: { color: '#F9A8D4', points: 20, size: 45 },
+    purple: { color: '#C084FC', points: 25, size: 45 },
+    yellow: { color: '#FDE047', points: 30, size: 45 },
+    green: { color: '#86EFAC', points: 35, size: 45 },
+    orange: { color: '#FB923C', points: 40, size: 45 },
+    treasure: { color: '#FFD700', points: 50, size: 50 },
     pearl: { color: '#FFF0F5', points: 100, size: 40 }
 };
 
@@ -47,8 +50,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const [particles, setParticles] = useState<Particle[]>([]);
     const [scoreEffects, setScoreEffects] = useState<ScoreEffect[]>([]);
     const [fishEffects, setFishEffects] = useState<FishEffect[]>([]);
-    
-    // ... (restante dos estados permanece igual) ...
     const [oxygenLevel, setOxygenLevel] = useState(100);
     const [currentLevel, setCurrentLevel] = useState(1);
     const [combo, setCombo] = useState(0);
@@ -66,12 +67,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const [equipment, setEquipment] = useState<Equipment>({ mask: false, fins: false, tank: false, suit: false, light: false });
     const [savedFish, setSavedFish] = useState(0);
     const [multiplier, setMultiplier] = useState(1);
-    const [multiplierTime, setMultiplierTime] = useState(0);
-    const [magnetActive, setMagnetActive] = useState(false);
-    const [magnetTime, setMagnetTime] = useState(0);
-    const [bossDefeated, setBossDefeated] = useState(false);
-    const [freedCreatures, setFreedCreatures] = useState<string[]>([]);
-    const [levelCompleted, setLevelCompleted] = useState(false);
     const [audioEnabled, setAudioEnabled] = useState(true);
 
     useEffect(() => {
@@ -88,7 +83,149 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, []);
 
-    // ... (outras funções como createCelebrationBurst, endGame, resetLevel permanecem as mesmas) ...
+    // ==========================================================
+    // LÓGICA DE SOM ORIGINAL RESTAURADA
+    // ==========================================================
+    const playPopSound = useCallback((type: Bubble['type']) => {
+        if (!audioEnabled) return; // Respeita o botão de mudo
+        try {
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            if (type === 'mine') {
+                // Som de explosão
+                const noise = audioContext.createOscillator();
+                const noiseGain = audioContext.createGain();
+                noise.type = 'sawtooth';
+                noise.frequency.value = 100;
+                noise.connect(noiseGain);
+                noiseGain.connect(audioContext.destination);
+                noiseGain.gain.setValueAtTime(0.5, audioContext.currentTime);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                noise.start(audioContext.currentTime);
+                noise.stop(audioContext.currentTime + 0.3);
+
+                oscillator.frequency.value = 50;
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            } else if (type === 'pearl' || type === 'treasure') {
+                // Som especial
+                oscillator.frequency.value = 1200;
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } else {
+                // Som de bolha normal com variação baseada na cor
+                const freqMap: { [key: string]: number } = {
+                    air: 600, oxygen: 700, pink: 800, purple: 900,
+                    yellow: 1000, green: 1100, orange: 1200
+                };
+                oscillator.frequency.value = freqMap[type] || 600;
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.05);
+            }
+        } catch (e) {
+            console.error("Web Audio API error:", e);
+        }
+    }, [audioEnabled]);
+
+    const popBubble = useCallback((bubble: Bubble) => {
+        if (bubble.popped) return;
+
+        setBubbles(prev => prev.map(b => b.id === bubble.id ? { ...b, popped: true } : b));
+        
+        // CHAMANDO A FUNÇÃO DE SOM ORIGINAL
+        playPopSound(bubble.type);
+
+        const newParticles = [];
+        for (let i = 0; i < 8; i++) {
+            newParticles.push({
+                id: Math.random(), x: bubble.x + bubble.size / 2, y: bubble.y + bubble.size / 2,
+                size: Math.random() * 2 + 1, color: 'white',
+                vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, opacity: 1,
+            });
+        }
+        setParticles(prev => [...prev, ...newParticles]);
+        
+        if (bubble.type === 'mine') {
+            audioManager.current?.falarMila("Ops! Cuidado com a bomba!");
+            resetLevel();
+            return;
+        }
+
+        const finalPoints = Math.round(bubble.points * multiplier);
+        setScore(prev => prev + finalPoints);
+        setPoppedBubbles(prev => prev + 1);
+
+        setScoreEffects(prev => [...prev, {
+            id: bubble.id, points: finalPoints, x: bubble.x, y: bubble.y, opacity: 1,
+        }]);
+
+        if (bubble.type === 'fish') {
+            setFishEffects(prev => [...prev, {
+                id: bubble.id, x: bubble.x, y: bubble.y, opacity: 1,
+            }]);
+            setSavedFish(prev => prev + 1);
+            setOxygenLevel(prev => Math.min(100, prev + 5));
+        } else if (bubble.type === 'oxygen') {
+            setOxygenLevel(prev => Math.min(100, prev + 10));
+        } else {
+            setOxygenLevel(prev => Math.min(100, prev + 3));
+        }
+        
+        setCombo(prev => {
+            const newCombo = prev + 1;
+            setMaxCombo(max => Math.max(max, newCombo));
+            if (newCombo >= 15 && newCombo % 5 === 0) {
+              const randomPhrase = comboPhrases[Math.floor(Math.random() * comboPhrases.length)];
+              audioManager.current?.falarMila(randomPhrase);
+            }
+            return newCombo;
+        });
+
+    }, [multiplier, resetLevel, playPopSound]);
+
+    const startActivity = useCallback(() => {
+        // CORREÇÃO: Inicializar o áudio no primeiro clique para começar
+        audioManager.current?.forceInitialize();
+        
+        setIsPlaying(true);
+        setShowResults(false);
+        setCurrentLevel(1);
+        setScore(0);
+        setCombo(0);
+        setMaxCombo(0);
+        setBubbles([]);
+        setParticles([]);
+        setScoreEffects([]);
+        setFishEffects([]);
+        setOxygenLevel(100);
+        setPoppedBubbles(0);
+        setMissedBubbles(0);
+        setCompletedLevels([]);
+        setBubblesSpawned(0);
+        setBubblesRemaining(levelConfigs[0].totalBubbles);
+        setSavedFish(0);
+        setMultiplier(1);
+        setEquipment({ mask: false, fins: false, tank: false, suit: false, light: false });
+        setLevelCompleted(false);
+        setFreedCreatures([]);
+        setBossDefeated(false);
+    }, []);
+
+    // ... (O resto do código, como `handleInteraction`, `updateGameElements`, `createBubble`, etc., permanece o mesmo) ...
     const createCelebrationBurst = useCallback(() => {
         const fireConfetti = async () => {
             const confettiInstance = await confetti;
@@ -129,85 +266,12 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             setBubblesRemaining(config.totalBubbles);
             setOxygenLevel(100);
             setMultiplier(1);
-            setMagnetActive(false);
             setShowLevelTransition(false);
             setIsPlaying(true);
             setLevelCompleted(false);
         }, 2000);
     }, [currentLevel]);
-    
-    const popBubble = useCallback((bubble: Bubble) => {
-        if (bubble.popped) return;
 
-        setBubbles(prev => prev.map(b => b.id === bubble.id ? { ...b, popped: true } : b));
-
-        // CORREÇÃO: Chamando a função correta para o efeito sonoro
-        audioManager.current?.playSoundEffect('pop', 0.5);
-
-        const newParticles = [];
-        for (let i = 0; i < 8; i++) {
-            newParticles.push({
-                id: Math.random(),
-                x: bubble.x + bubble.size / 2,
-                y: bubble.y + bubble.size / 2,
-                size: Math.random() * 2 + 1,
-                color: 'white',
-                vx: (Math.random() - 0.5) * 4,
-                vy: (Math.random() - 0.5) * 4,
-                opacity: 1,
-            });
-        }
-        setParticles(prev => [...prev, ...newParticles]);
-        
-        if (bubble.type === 'mine') {
-            audioManager.current?.playSoundEffect('explosion', 0.7); // Som de bomba
-            audioManager.current?.falarMila("Ops! Você tocou numa bomba!");
-            resetLevel();
-            return;
-        }
-
-        const finalPoints = Math.round(bubble.points * multiplier);
-        setScore(prev => prev + finalPoints);
-        setPoppedBubbles(prev => prev + 1);
-
-        setScoreEffects(prev => [...prev, {
-            id: bubble.id,
-            points: finalPoints,
-            x: bubble.x,
-            y: bubble.y,
-            opacity: 1,
-        }]);
-
-        if (bubble.type === 'fish') {
-            audioManager.current?.playSoundEffect('fish', 0.6); // Som de peixe salvo
-            setFishEffects(prev => [...prev, {
-                id: bubble.id,
-                x: bubble.x,
-                y: bubble.y,
-                opacity: 1,
-            }]);
-            setSavedFish(prev => prev + 1);
-            setOxygenLevel(prev => Math.min(100, prev + 5));
-        } else if (bubble.type === 'oxygen') {
-            audioManager.current?.playSoundEffect('oxygen', 0.4); // Som de oxigênio
-            setOxygenLevel(prev => Math.min(100, prev + 10));
-        } else {
-            setOxygenLevel(prev => Math.min(100, prev + 3));
-        }
-        
-        setCombo(prev => {
-            const newCombo = prev + 1;
-            setMaxCombo(max => Math.max(max, newCombo));
-            if (newCombo >= 15 && newCombo % 5 === 0) {
-              const randomPhrase = comboPhrases[Math.floor(Math.random() * comboPhrases.length)];
-              audioManager.current?.falarMila(randomPhrase);
-            }
-            return newCombo;
-        });
-
-    }, [multiplier, resetLevel]);
-
-    // ... (handleInteraction, createBubble, etc. permanecem os mesmos) ...
     const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
         if (!gameAreaRef.current || !isPlaying) return;
         
@@ -385,36 +449,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             }, 3000);
         }
     }, [isPlaying, bubbles, bubblesSpawned, currentLevel, levelCompleted, createCelebrationBurst, endGame]);
-
-    const startActivity = useCallback(() => {
-        // CORREÇÃO: Inicializar o áudio no primeiro clique para começar
-        audioManager.current?.forceInitialize();
-        
-        setIsPlaying(true);
-        setShowResults(false);
-        setCurrentLevel(1);
-        setScore(0);
-        setCombo(0);
-        setMaxCombo(0);
-        setBubbles([]);
-        setParticles([]);
-        setScoreEffects([]);
-        setFishEffects([]);
-        setOxygenLevel(100);
-        setPoppedBubbles(0);
-        setMissedBubbles(0);
-        setCompletedLevels([]);
-        setBubblesSpawned(0);
-        setBubblesRemaining(levelConfigs[0].totalBubbles);
-        setSavedFish(0);
-        setMultiplier(1);
-        setEquipment({ mask: false, fins: false, tank: false, suit: false, light: false });
-        setLevelCompleted(false);
-        setFreedCreatures([]);
-        setBossDefeated(false);
-    }, []);
-
-    // ... (voltarInicio e handleSaveSession permanecem os mesmos) ...
+    
     const voltarInicio = useCallback(() => {
         setIsPlaying(false);
         setShowResults(false);
@@ -447,7 +482,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         scoreEffects, fishEffects,
         currentLevel,
         levelMessage, showLevelTransition, equipment, savedFish, bubblesRemaining,
-        multiplier, multiplierTime, magnetActive, magnetTime, showResults, maxCombo,
+        multiplier, showResults, maxCombo,
         completedLevels, bossDefeated, freedCreatures, salvando, accuracy,
         startActivity,
         handleInteraction,
