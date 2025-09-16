@@ -108,6 +108,21 @@ export class GameAudioManager {
         }
     }
 
+    // ==========================================================
+    // NOVA FUNÇÃO PARA TOCAR EFEITOS SONOROS
+    // ==========================================================
+    playSoundEffect(soundName: string, volume: number = 0.5): void {
+        if (!this.isEnabled) return;
+        try {
+            // Usamos um novo elemento de áudio para não interferir com a fala da Mila/Leo
+            const sound = new Audio(`/audio/effects/${soundName}.mp3`);
+            sound.volume = volume;
+            sound.play().catch(e => console.error("Erro ao tocar efeito sonoro:", e));
+        } catch (error) {
+            console.error(`❌ Erro ao carregar o som: ${soundName}`, error);
+        }
+    }
+
     pararTodos(): void {
         if (this.currentSource) {
             this.currentSource.onended = null;
