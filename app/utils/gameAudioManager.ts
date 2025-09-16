@@ -20,7 +20,7 @@ export class GameAudioManager {
   }
 
   private async synthesizeAzureSpeech(texto: string, voiceName: string): Promise<ArrayBuffer> {
-    const endpoint = `https://${this.azureRegion}.tts.speech.microsoft.com/cognitiveservices/v1`;
+    const endpoint = `https://${this.azureRegion}.api.cognitive.microsoft.com/cognitiveservices/v1`;
     
     console.log('Tentando Azure TTS:', {
       endpoint,
