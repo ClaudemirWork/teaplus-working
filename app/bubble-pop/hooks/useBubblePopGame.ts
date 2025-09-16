@@ -10,7 +10,6 @@ import dynamic from 'next/dynamic';
 
 const confetti = dynamic(() => import('canvas-confetti'), { ssr: false });
 
-// ... (as constantes levelConfigs, coloredBubbles, comboPhrases permanecem as mesmas) ...
 const levelConfigs = [
     { level: 1, name: 'Superfície - Bolhas Coloridas', depth: '0-10m', totalBubbles: 100, minePercentage: 0.05, spawnRate: 600, oxygenDrain: 0.3, bgGradient: 'from-cyan-300 to-blue-400', equipment: null, features: ['colored_bubbles']},
     { level: 2, name: 'Águas Rasas - Salvando Peixes', depth: '10-20m', totalBubbles: 110, minePercentage: 0.1, spawnRate: 580, oxygenDrain: 0.4, bgGradient: 'from-blue-400 to-blue-500', equipment: 'mask', features: ['colored_bubbles', 'fish_rescue']},
@@ -39,16 +38,12 @@ const coloredBubbles = {
 
 const comboPhrases = ["Uhuuuu!", "Incrível!", "Mandou bem!", "Continue assim!", "Que demais!"];
 
-
 export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const router = useRouter();
     const supabase = createClient();
     const animationRef = useRef<number>();
-    
-    // CORREÇÃO: Usar useRef para o audioManager para evitar recriação
     const audioManager = useRef<GameAudioManager | null>(null);
 
-    // ... (restante dos estados permanece igual) ...
     const [isPlaying, setIsPlaying] = useState(false);
     const [score, setScore] = useState(0);
     const [bubbles, setBubbles] = useState<Bubble[]>([]);
@@ -75,22 +70,9 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const [audioEnabled, setAudioEnabled] = useState(true);
     const [levelCompleted, setLevelCompleted] = useState(false);
 
-    // CORREÇÃO: Inicializar o audioManager dentro de um useEffect para garantir que ele só rode no cliente (navegador)
     useEffect(() => {
         if (!audioManager.current) {
             audioManager.current = GameAudioManager.getInstance();
-        }
-    }, []);
-
-    // ... (O restante do seu código permanece praticamente o mesmo)
-
-    const toggleAudio = useCallback(() => {
-        if (audioManager.current) {
-            const newState = audioManager.current.toggleAudio();
-            setAudioEnabled(newState);
-            if (newState) {
-                audioManager.current.falarMila("Áudio ligado!");
-            }
         }
     }, []);
 
@@ -100,7 +82,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
 
@@ -146,7 +127,67 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, [audioEnabled]);
     
-    // ... (restante das funções como popBubble, startActivity, etc.)
+    // ... (outras funções permanecem iguais)
+
+    const createBubble = useCallback(() => {
+        if (!isPlaying || !gameAreaRef.current || levelCompleted) return;
+        const config = levelConfigs[currentLevel - 1];
+        if (bubblesSpawned >= config.totalBubbles) return;
+    
+        const gameArea = gameAreaRef.current.getBoundingClientRect();
+        const rand = Math.random();
+        let type: Bubble['type'] = 'air';
+        let bubbleConfig: any = coloredBubbles.air;
+    
+        if (rand < config.minePercentage) {
+            type = 'mine';
+            bubbleConfig = { color: '#8B0000', points: -20, size: 45 };
+        } else {
+            // ==========================================================
+            // LÓGICA DE SORTEIO DE CORES RESTAURADA DO CÓDIGO ORIGINAL
+            // ==========================================================
+            const featureRand = Math.random();
+            if (config.features.includes('fish_rescue') && featureRand < 0.15) {
+                type = 'fish';
+                bubbleConfig = { color: '#87CEEB', points: 50, size: 55 };
+            } else {
+                const colorRand = Math.random();
+                // A lógica abaixo foi adaptada para usar os tipos corretos
+                const types = Object.keys(coloredBubbles) as (keyof typeof coloredBubbles)[];
+                const selectedType = types[Math.floor(colorRand * types.length)];
+                type = selectedType;
+                bubbleConfig = coloredBubbles[selectedType];
+            }
+        }
+    
+        const newBubble: Bubble = {
+            id: Date.now() + Math.random(),
+            x: Math.random() * (gameArea.width - bubbleConfig.size),
+            y: gameArea.height + bubbleConfig.size,
+            size: bubbleConfig.size,
+            speed: 1.2 + Math.random() * 0.5,
+            color: bubbleConfig.color,
+            points: bubbleConfig.points,
+            type: type,
+            popped: false,
+            opacity: 1,
+        };
+    
+        setBubbles(prev => [...prev, newBubble]);
+        setBubblesSpawned(prev => prev + 1);
+    }, [isPlaying, levelCompleted, currentLevel, bubblesSpawned, gameAreaRef]);
+    
+    // ... (O resto do hook permanece o mesmo, incluindo popBubble, handleInteraction, etc.)
+    const toggleAudio = useCallback(() => {
+        if (audioManager.current) {
+            const newState = audioManager.current.toggleAudio();
+            setAudioEnabled(newState);
+            if (newState) {
+                audioManager.current.falarMila("Áudio ligado!");
+            }
+        }
+    }, []);
+
     const createCelebrationBurst = useCallback(() => {
         const fireConfetti = async () => {
             const confettiInstance = await confetti;
@@ -311,49 +352,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
 
     }, [gameAreaRef]);
 
-    const createBubble = useCallback(() => {
-        if (!isPlaying || !gameAreaRef.current || levelCompleted) return;
-        const config = levelConfigs[currentLevel - 1];
-        if (bubblesSpawned >= config.totalBubbles) return;
-    
-        const gameArea = gameAreaRef.current.getBoundingClientRect();
-        const rand = Math.random();
-        let type: Bubble['type'] = 'air';
-        let bubbleConfig: any = coloredBubbles.air;
-    
-        if (rand < config.minePercentage) {
-            type = 'mine';
-            bubbleConfig = { color: '#8B0000', points: -20, size: 45 };
-        } else {
-            const featureRand = Math.random();
-            if (config.features.includes('fish_rescue') && featureRand < 0.15) {
-                type = 'fish';
-                bubbleConfig = { color: '#87CEEB', points: 50, size: 55 };
-            } else {
-                const colorRand = Math.random();
-                if (colorRand < 0.4) type = 'air';
-                else type = 'oxygen';
-                bubbleConfig = coloredBubbles[type];
-            }
-        }
-    
-        const newBubble: Bubble = {
-            id: Date.now() + Math.random(),
-            x: Math.random() * (gameArea.width - bubbleConfig.size),
-            y: gameArea.height + bubbleConfig.size,
-            size: bubbleConfig.size,
-            speed: 1.2 + Math.random() * 0.5,
-            color: bubbleConfig.color,
-            points: bubbleConfig.points,
-            type: type,
-            popped: false,
-            opacity: 1,
-        };
-    
-        setBubbles(prev => [...prev, newBubble]);
-        setBubblesSpawned(prev => prev + 1);
-    }, [isPlaying, levelCompleted, currentLevel, bubblesSpawned, gameAreaRef]);
-
     useEffect(() => {
         if (isPlaying) {
             setBubblesRemaining(levelConfigs[currentLevel - 1].totalBubbles - bubblesSpawned);
@@ -449,6 +447,8 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         setMultiplier(1);
         setEquipment({ mask: false, fins: false, tank: false, suit: false, light: false });
         setLevelCompleted(false);
+        setFreedCreatures([]);
+        setBossDefeated(false);
     }, []);
 
     const voltarInicio = useCallback(() => {
