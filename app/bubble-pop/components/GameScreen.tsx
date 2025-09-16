@@ -2,8 +2,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, Volume2, VolumeX } from 'lucide-react';
-// CORREÇÃO: Importando os novos tipos de efeitos
+import { ChevronLeft, VolumeX, Volume2 } from 'lucide-react';
 import { Bubble, Particle, Equipment, ScoreEffect, FishEffect } from '@/app/types/bubble-pop';
 import styles from '../bubble-pop.module.css';
 
@@ -14,8 +13,7 @@ interface GameScreenProps {
     oxygenLevel: number;
     bubbles: Bubble[];
     particles: Particle[];
-    // CORREÇÃO: Adicionando os novos arrays de efeitos às props
-    scoreEffects: ScoreEffect[];
+    scoreEffects: ScoreEffect[]; // Manteremos para as partículas de estouro
     fishEffects: FishEffect[];
     currentLevel: number;
     levelMessage: string;
@@ -35,11 +33,10 @@ interface GameScreenProps {
 export const GameScreen = React.forwardRef<HTMLDivElement, GameScreenProps>((props, ref) => {
     const {
         score, combo, oxygenLevel, bubbles, particles,
-        // CORREÇÃO: Desestruturando as novas props para uso
-        scoreEffects, fishEffects,
+        scoreEffects, fishEffects, // AINDA PRECISAMOS DELES PARA OS EFEITOS DE FADE
         currentLevel,
         levelMessage, showLevelTransition, equipment, savedFish, bubblesRemaining,
-        multiplier, completedLevels, levelConfigs, handleInteraction,
+        multiplier, levelConfigs, handleInteraction,
         onBack, toggleAudio, audioEnabled
     } = props;
 
@@ -100,67 +97,53 @@ export const GameScreen = React.forwardRef<HTMLDivElement, GameScreenProps>((pro
                     )}
 
                     <div ref={ref} className={`relative bg-gradient-to-b ${levelConfigs[currentLevel - 1]?.bgGradient} rounded-xl shadow-lg overflow-hidden cursor-crosshair`} style={{ height: isMobile ? 'calc(100vh - 300px)' : '550px' }} onMouseDown={handleInteraction} onTouchStart={handleInteraction}>
-                        {/* Renderização das Bolhas */}
+                        {/* ========================================================== */}
+                        {/* RENDERIZAÇÃO DAS BOLHAS COM LÓGICA ORIGINAL RESTAURADA */}
+                        {/* ========================================================== */}
                         {bubbles.map(bubble => (
                             <div key={bubble.id} className={`${styles.bubbleContainer} absolute rounded-full transition-opacity`} style={{ left: `${bubble.x}px`, top: `${bubble.y}px`, width: `${bubble.size}px`, height: `${bubble.size}px`, background: bubble.color, opacity: bubble.opacity, border: `1px solid rgba(255,255,255,0.3)` }}>
+                                {/* Ícones e pontos DENTRO da bolha, como no original */}
                                 {bubble.type === 'mine' && <div className="absolute inset-0 flex items-center justify-center text-xl">💣</div>}
                                 {bubble.type === 'fish' && <div className="absolute inset-0 flex items-center justify-center text-2xl">🐠</div>}
+                                {bubble.type === 'treasure' && <div className="absolute inset-0 flex items-center justify-center text-xl">💰</div>}
+                                {bubble.type === 'pearl' && <div className="absolute inset-0 flex items-center justify-center text-xl">🦪</div>}
+                                {!['mine', 'pearl', 'treasure', 'fish', 'oxygen'].includes(bubble.type) && (
+                                    <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xs">
+                                        +{bubble.points}
+                                    </div>
+                                )}
                             </div>
                         ))}
 
-                        {/* ========================================================== */}
-                        {/* CÓDIGO ADICIONADO PARA RENDERIZAR OS EFEITOS */}
-                        {/* ========================================================== */}
-                        
-                        {/* Efeito de partículas de estouro */}
+                        {/* EFEITOS DE PARTÍCULAS, PONTOS E PEIXES (agora separados) */}
                         {particles.map((p) => (
                             <div
                                 key={p.id}
                                 className="absolute rounded-full"
                                 style={{
-                                    left: p.x,
-                                    top: p.y,
-                                    width: p.size,
-                                    height: p.size,
-                                    background: p.color,
-                                    opacity: p.opacity,
-                                    pointerEvents: 'none',
+                                    left: p.x, top: p.y, width: p.size, height: p.size,
+                                    background: p.color, opacity: p.opacity, pointerEvents: 'none',
                                 }}
                             />
                         ))}
-
-                        {/* Efeito de pontuação flutuante */}
                         {scoreEffects.map((effect) => (
                             <div
                                 key={effect.id}
                                 className={styles.scoreEffect}
-                                style={{
-                                    left: effect.x,
-                                    top: effect.y,
-                                    opacity: effect.opacity,
-                                }}
+                                style={{ left: effect.x, top: effect.y, opacity: effect.opacity }}
                             >
                                 +{effect.points}
                             </div>
                         ))}
-
-                        {/* Efeito de peixe salvo */}
                         {fishEffects.map((effect) => (
                             <div
                                 key={effect.id}
                                 className={styles.fishEffect}
-                                style={{
-                                    left: effect.x,
-                                    top: effect.y,
-                                    opacity: effect.opacity,
-                                }}
+                                style={{ left: effect.x, top: effect.y, opacity: effect.opacity }}
                             >
                                 🐠
                             </div>
                         ))}
-                        {/* ========================================================== */}
-                        {/* FIM DO CÓDIGO ADICIONADO */}
-                        {/* ========================================================== */}
                     </div>
                 </div>
             </main>
