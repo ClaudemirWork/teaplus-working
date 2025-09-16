@@ -5,329 +5,329 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link'
 import Image from 'next/image';
 import { ChevronLeft, Save, Star, Trophy } from 'lucide-react';
-import { createClient } from '../utils/supabaseClient'
+import { createClient } from '@/utils/supabaseClient'; // <-- CORREÇÃO REALIZADA AQUI
 
 // Componente do Cabeçalho Padrão (foi movido para dentro do GameScreen para facilitar a lógica de "voltar")
 // const GameHeader = ...
 
 interface Circle {
-  id: number;
-  label: string;
-  xPercent: number;
-  yPercent: number;
-  connected: boolean;
+  id: number;
+  label: string;
+  xPercent: number;
+  yPercent: number;
+  connected: boolean;
 }
 
 export default function TrailMaking() {
-  const router = useRouter();
-  const supabase = createClient();
-  const gameAreaRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const supabase = createClient();
+  const gameAreaRef = useRef<HTMLDivElement>(null);
 
   // NOVO: Controle de telas como no Bubble-Pop
-  const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game'>('title');
-  
-  const [selectedLevel, setSelectedLevel] = useState(1);
-  const [currentGameLevel, setCurrentGameLevel] = useState(1);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [circles, setCircles] = useState<Circle[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [connections, setConnections] = useState<number[]>([]);
-  const [errors, setErrors] = useState(0);
-  const [totalErrors, setTotalErrors] = useState(0);
-  const [startTime, setStartTime] = useState<number>(0);
-  const [levelStartTime, setLevelStartTime] = useState<number>(0);
-  const [completionTime, setCompletionTime] = useState<number>(0);
-  const [showResults, setShowResults] = useState(false);
-  const [jogoIniciado, setJogoIniciado] = useState(false);
-  const [salvando, setSalvando] = useState(false);
-  const [pontuacao, setPontuacao] = useState(0);
-  const [feedback, setFeedback] = useState('');
-  const [gameAreaDimensions, setGameAreaDimensions] = useState({ width: 0, height: 0 });
-  const [showLevelTransition, setShowLevelTransition] = useState(false);
-  const [levelMessage, setLevelMessage] = useState('');
-  const [levelsCompleted, setLevelsCompleted] = useState<number[]>([]);
+  const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game'>('title');
+  
+  const [selectedLevel, setSelectedLevel] = useState(1);
+  const [currentGameLevel, setCurrentGameLevel] = useState(1);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [circles, setCircles] = useState<Circle[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [connections, setConnections] = useState<number[]>([]);
+  const [errors, setErrors] = useState(0);
+  const [totalErrors, setTotalErrors] = useState(0);
+  const [startTime, setStartTime] = useState<number>(0);
+  const [levelStartTime, setLevelStartTime] = useState<number>(0);
+  const [completionTime, setCompletionTime] = useState<number>(0);
+  const [showResults, setShowResults] = useState(false);
+  const [jogoIniciado, setJogoIniciado] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [pontuacao, setPontuacao] = useState(0);
+  const [feedback, setFeedback] = useState('');
+  const [gameAreaDimensions, setGameAreaDimensions] = useState({ width: 0, height: 0 });
+  const [showLevelTransition, setShowLevelTransition] = useState(false);
+  const [levelMessage, setLevelMessage] = useState('');
+  const [levelsCompleted, setLevelsCompleted] = useState<number[]>([]);
 
-  const levels = [
-    { id: 1, name: 'Nível 1', count: 5, type: 'numbers', description: 'Números 1-5' },
-    { id: 2, name: 'Nível 2', count: 8, type: 'numbers', description: 'Números 1-8' },
-    { id: 3, name: 'Nível 3', count: 12, type: 'numbers', description: 'Números 1-12' },
-    { id: 4, name: 'Nível 4', count: 15, type: 'numbers', description: 'Números 1-15' },
-    { id: 5, name: 'Nível 5', count: 8, type: 'mixed', description: '1-A-2-B...' }
-  ];
+  const levels = [
+    { id: 1, name: 'Nível 1', count: 5, type: 'numbers', description: 'Números 1-5' },
+    { id: 2, name: 'Nível 2', count: 8, type: 'numbers', description: 'Números 1-8' },
+    { id: 3, name: 'Nível 3', count: 12, type: 'numbers', description: 'Números 1-12' },
+    { id: 4, name: 'Nível 4', count: 15, type: 'numbers', description: 'Números 1-15' },
+    { id: 5, name: 'Nível 5', count: 8, type: 'mixed', description: '1-A-2-B...' }
+  ];
 
-  // Atualizar dimensões da área de jogo
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (gameAreaRef.current) {
-        setGameAreaDimensions({
-          width: gameAreaRef.current.offsetWidth,
-          height: gameAreaRef.current.offsetHeight
-        });
-      }
-    };
+  // Atualizar dimensões da área de jogo
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (gameAreaRef.current) {
+        setGameAreaDimensions({
+          width: gameAreaRef.current.offsetWidth,
+          height: gameAreaRef.current.offsetHeight
+        });
+      }
+    };
 
-    if (isPlaying) {
+    if (isPlaying) {
         updateDimensions();
         window.addEventListener('resize', updateDimensions);
         return () => window.removeEventListener('resize', updateDimensions);
     }
-  }, [isPlaying]);
+  }, [isPlaying]);
 
-  const generateCircles = (level: number) => {
-    const config = levels[level - 1];
-    const newCircles: Circle[] = [];
-    
-    // Gerar labels
-    const labels: string[] = [];
-    if (config.type === 'numbers') {
-      for (let i = 1; i <= config.count; i++) {
-        labels.push(i.toString());
-      }
-    } else {
-      // Mixed: 1-A-2-B-3-C-4-D
-      const letters = ['A', 'B', 'C', 'D'];
-      for (let i = 0; i < config.count; i++) {
-        if (i % 2 === 0) {
-          labels.push(Math.floor(i / 2 + 1).toString());
-        } else {
-          labels.push(letters[Math.floor(i / 2)]);
-        }
-      }
-    }
-    
-    // Posicionar círculos em PERCENTUAIS (responsivo)
-    const minDistance = 15; // Distância mínima em percentual
-    const padding = 10; // Padding em percentual
-    
-    for (let i = 0; i < labels.length; i++) {
-      let xPercent, yPercent;
-      let attempts = 0;
-      let validPosition = false;
-      
-      while (!validPosition && attempts < 50) {
-        xPercent = Math.random() * (100 - padding * 2) + padding;
-        yPercent = Math.random() * (100 - padding * 2) + padding;
-        
-        validPosition = true;
-        for (let j = 0; j < newCircles.length; j++) {
-          const distance = Math.sqrt(
-            Math.pow(xPercent - newCircles[j].xPercent, 2) + 
-            Math.pow(yPercent - newCircles[j].yPercent, 2)
-          );
-          if (distance < minDistance) {
-            validPosition = false;
-            break;
-          }
-        }
-        attempts++;
-      }
-      
-      newCircles.push({
-        id: i,
-        label: labels[i],
-        xPercent: xPercent || Math.random() * 80 + 10,
-        yPercent: yPercent || Math.random() * 80 + 10,
-        connected: false
-      });
-    }
-    
-    return newCircles;
-  };
+  const generateCircles = (level: number) => {
+    const config = levels[level - 1];
+    const newCircles: Circle[] = [];
+    
+    // Gerar labels
+    const labels: string[] = [];
+    if (config.type === 'numbers') {
+      for (let i = 1; i <= config.count; i++) {
+        labels.push(i.toString());
+      }
+    } else {
+      // Mixed: 1-A-2-B-3-C-4-D
+      const letters = ['A', 'B', 'C', 'D'];
+      for (let i = 0; i < config.count; i++) {
+        if (i % 2 === 0) {
+          labels.push(Math.floor(i / 2 + 1).toString());
+        } else {
+          labels.push(letters[Math.floor(i / 2)]);
+        }
+      }
+    }
+    
+    // Posicionar círculos em PERCENTUAIS (responsivo)
+    const minDistance = 15; // Distância mínima em percentual
+    const padding = 10; // Padding em percentual
+    
+    for (let i = 0; i < labels.length; i++) {
+      let xPercent, yPercent;
+      let attempts = 0;
+      let validPosition = false;
+      
+      while (!validPosition && attempts < 50) {
+        xPercent = Math.random() * (100 - padding * 2) + padding;
+        yPercent = Math.random() * (100 - padding * 2) + padding;
+        
+        validPosition = true;
+        for (let j = 0; j < newCircles.length; j++) {
+          const distance = Math.sqrt(
+            Math.pow(xPercent - newCircles[j].xPercent, 2) + 
+            Math.pow(yPercent - newCircles[j].yPercent, 2)
+          );
+          if (distance < minDistance) {
+            validPosition = false;
+            break;
+          }
+        }
+        attempts++;
+      }
+      
+      newCircles.push({
+        id: i,
+        label: labels[i],
+        xPercent: xPercent || Math.random() * 80 + 10,
+        yPercent: yPercent || Math.random() * 80 + 10,
+        connected: false
+      });
+    }
+    
+    return newCircles;
+  };
 
-  const startActivity = () => {
-    const newCircles = generateCircles(selectedLevel);
-    setCircles(newCircles);
-    setIsPlaying(true);
-    setCurrentIndex(0);
-    setCurrentGameLevel(selectedLevel);
-    setConnections([]);
-    setErrors(0);
-    setTotalErrors(0);
-    setStartTime(Date.now());
-    setLevelStartTime(Date.now());
-    setShowResults(false);
-    setJogoIniciado(true);
-    setPontuacao(0);
-    setLevelsCompleted([]);
-    setFeedback('Conecte os círculos em ordem!');
-  };
+  const startActivity = () => {
+    const newCircles = generateCircles(selectedLevel);
+    setCircles(newCircles);
+    setIsPlaying(true);
+    setCurrentIndex(0);
+    setCurrentGameLevel(selectedLevel);
+    setConnections([]);
+    setErrors(0);
+    setTotalErrors(0);
+    setStartTime(Date.now());
+    setLevelStartTime(Date.now());
+    setShowResults(false);
+    setJogoIniciado(true);
+    setPontuacao(0);
+    setLevelsCompleted([]);
+    setFeedback('Conecte os círculos em ordem!');
+  };
 
-  const nextLevel = () => {
-    const nextLevelNum = currentGameLevel + 1;
-    
-    if (nextLevelNum > 5) {
-      // Completou todos os níveis!
-      const time = Date.now() - startTime;
-      setCompletionTime(time);
-      setIsPlaying(false);
-      setShowResults(true);
-      
-      // Calcular pontuação total
-      const baseScore = 2000;
-      const timeBonus = Math.max(0, 1000 - Math.floor(time / 100));
-      const errorPenalty = totalErrors * 50;
-      const levelBonus = levelsCompleted.length * 200;
-      setPontuacao(baseScore + timeBonus - errorPenalty + levelBonus);
-      
-      setFeedback('🏆 Todos os níveis completados!');
-    } else {
-      // Próximo nível
-      setCurrentGameLevel(nextLevelNum);
-      const newCircles = generateCircles(nextLevelNum);
-      setCircles(newCircles);
-      setCurrentIndex(0);
-      setConnections([]);
-      setErrors(0);
-      setLevelStartTime(Date.now());
-      
-      // Mostrar mensagem de transição
-      setLevelMessage(`🎉 Nível ${nextLevelNum}!`);
-      setShowLevelTransition(true);
-      setFeedback(levels[nextLevelNum - 1].description);
-      
-      setTimeout(() => {
-        setShowLevelTransition(false);
-        setFeedback('Continue conectando!');
-      }, 2500);
-    }
-  };
+  const nextLevel = () => {
+    const nextLevelNum = currentGameLevel + 1;
+    
+    if (nextLevelNum > 5) {
+      // Completou todos os níveis!
+      const time = Date.now() - startTime;
+      setCompletionTime(time);
+      setIsPlaying(false);
+      setShowResults(true);
+      
+      // Calcular pontuação total
+      const baseScore = 2000;
+      const timeBonus = Math.max(0, 1000 - Math.floor(time / 100));
+      const errorPenalty = totalErrors * 50;
+      const levelBonus = levelsCompleted.length * 200;
+      setPontuacao(baseScore + timeBonus - errorPenalty + levelBonus);
+      
+      setFeedback('🏆 Todos os níveis completados!');
+    } else {
+      // Próximo nível
+      setCurrentGameLevel(nextLevelNum);
+      const newCircles = generateCircles(nextLevelNum);
+      setCircles(newCircles);
+      setCurrentIndex(0);
+      setConnections([]);
+      setErrors(0);
+      setLevelStartTime(Date.now());
+      
+      // Mostrar mensagem de transição
+      setLevelMessage(`🎉 Nível ${nextLevelNum}!`);
+      setShowLevelTransition(true);
+      setFeedback(levels[nextLevelNum - 1].description);
+      
+      setTimeout(() => {
+        setShowLevelTransition(false);
+        setFeedback('Continue conectando!');
+      }, 2500);
+    }
+  };
 
-  const handleCircleClick = (circle: Circle) => {
-    if (!isPlaying || circle.connected) return;
-    
-    const expectedLabel = circles[currentIndex].label;
-    
-    if (circle.label === expectedLabel) {
-      // Correto!
-      const updatedCircles = [...circles];
-      updatedCircles[circle.id].connected = true;
-      setCircles(updatedCircles);
-      setConnections([...connections, circle.id]);
-      
-      // Som de sucesso
-      playSound(true);
-      
-      if (currentIndex === circles.length - 1) {
-        // Completou o nível atual!
-        const levelTime = Date.now() - levelStartTime;
-        setLevelsCompleted([...levelsCompleted, currentGameLevel]);
-        
-        // Pontuação do nível
-        const levelScore = Math.max(100, 500 - Math.floor(levelTime / 100) - errors * 20);
-        setPontuacao(prev => prev + levelScore);
-        
-        // Feedback e próximo nível
-        setFeedback(`✅ Nível ${currentGameLevel} completo!`);
-        
-        // Aguardar um pouco e ir para próximo nível automaticamente
-        setTimeout(() => {
-          nextLevel();
-        }, 1500);
-        
-      } else {
-        setCurrentIndex(currentIndex + 1);
-        setFeedback(`✅ Correto! Próximo: ${circles[currentIndex + 1].label}`);
-      }
-    } else {
-      // Erro!
-      setErrors(errors + 1);
-      setTotalErrors(totalErrors + 1);
-      playSound(false);
-      setFeedback(`❌ Errado! Procure: ${expectedLabel}`);
-      
-      // Feedback visual
-      const wrongCircle = document.getElementById(`circle-${circle.id}`);
-      if (wrongCircle) {
-        wrongCircle.classList.add('animate-shake');
-        setTimeout(() => {
-          wrongCircle.classList.remove('animate-shake');
-        }, 500);
-      }
-    }
-  };
+  const handleCircleClick = (circle: Circle) => {
+    if (!isPlaying || circle.connected) return;
+    
+    const expectedLabel = circles[currentIndex].label;
+    
+    if (circle.label === expectedLabel) {
+      // Correto!
+      const updatedCircles = [...circles];
+      updatedCircles[circle.id].connected = true;
+      setCircles(updatedCircles);
+      setConnections([...connections, circle.id]);
+      
+      // Som de sucesso
+      playSound(true);
+      
+      if (currentIndex === circles.length - 1) {
+        // Completou o nível atual!
+        const levelTime = Date.now() - levelStartTime;
+        setLevelsCompleted([...levelsCompleted, currentGameLevel]);
+        
+        // Pontuação do nível
+        const levelScore = Math.max(100, 500 - Math.floor(levelTime / 100) - errors * 20);
+        setPontuacao(prev => prev + levelScore);
+        
+        // Feedback e próximo nível
+        setFeedback(`✅ Nível ${currentGameLevel} completo!`);
+        
+        // Aguardar um pouco e ir para próximo nível automaticamente
+        setTimeout(() => {
+          nextLevel();
+        }, 1500);
+        
+      } else {
+        setCurrentIndex(currentIndex + 1);
+        setFeedback(`✅ Correto! Próximo: ${circles[currentIndex + 1].label}`);
+      }
+    } else {
+      // Erro!
+      setErrors(errors + 1);
+      setTotalErrors(totalErrors + 1);
+      playSound(false);
+      setFeedback(`❌ Errado! Procure: ${expectedLabel}`);
+      
+      // Feedback visual
+      const wrongCircle = document.getElementById(`circle-${circle.id}`);
+      if (wrongCircle) {
+        wrongCircle.classList.add('animate-shake');
+        setTimeout(() => {
+          wrongCircle.classList.remove('animate-shake');
+        }, 500);
+      }
+    }
+  };
 
-  const playSound = (success: boolean) => {
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = success ? 800 : 300;
-      oscillator.type = 'sine';
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.1);
-    } catch (e) {
-      // Silently fail
-    }
-  };
+  const playSound = (success: boolean) => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = success ? 800 : 300;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.1);
+    } catch (e) {
+      // Silently fail
+    }
+  };
 
-  const handleSaveSession = async () => {
-    setSalvando(true);
-    
-    try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        console.error('Erro ao obter usuário:', userError);
-        alert('Erro: Sessão expirada. Por favor, faça login novamente.');
-        router.push('/login');
-        return;
-      }
-      
-      const { data, error } = await supabase
-        .from('sessoes')
-        .insert([{
-          usuario_id: user.id,
-          atividade_nome: 'Trilha Numérica',
-          pontuacao_final: pontuacao,
-          data_fim: new Date().toISOString()
-        }]);
+  const handleSaveSession = async () => {
+    setSalvando(true);
+    
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('Erro ao obter usuário:', userError);
+        alert('Erro: Sessão expirada. Por favor, faça login novamente.');
+        router.push('/login');
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('sessoes')
+        .insert([{
+          usuario_id: user.id,
+          atividade_nome: 'Trilha Numérica',
+          pontuacao_final: pontuacao,
+          data_fim: new Date().toISOString()
+        }]);
 
-      if (error) {
-        console.error('Erro ao salvar:', error);
-        alert(`Erro ao salvar: ${error.message}`);
-      } else {
-        alert(`Sessão salva com sucesso!
-        
+      if (error) {
+        console.error('Erro ao salvar:', error);
+        alert(`Erro ao salvar: ${error.message}`);
+      } else {
+        alert(`Sessão salva com sucesso!
+        
 📊 Resultado da Trilha:
 - Tempo Total: ${(completionTime / 1000).toFixed(1)}s
 - Erros Totais: ${totalErrors}
 - Níveis Completados: ${levelsCompleted.length}
 - Pontuação: ${pontuacao} pontos`);
-        
-        router.push('/dashboard');
-      }
-    } catch (error: any) {
-      console.error('Erro inesperado:', error);
-      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
-    } finally {
-      setSalvando(false);
-    }
-  };
+        
+        router.push('/dashboard');
+      }
+    } catch (error: any) {
+      console.error('Erro inesperado:', error);
+      alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
+    } finally {
+      setSalvando(false);
+    }
+  };
 
-  const voltarInicio = () => {
-    setJogoIniciado(false);
-    setShowResults(false);
-    setIsPlaying(false);
-  };
+  const voltarInicio = () => {
+    setJogoIniciado(false);
+    setShowResults(false);
+    setIsPlaying(false);
+  };
 
-  // Timer para atualizar o tempo
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying && startTime > 0) {
-      interval = setInterval(() => {
-        // Força re-render para atualizar o timer
-        setStartTime(s => s); // Apenas para forçar atualização
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, startTime]);
+  // Timer para atualizar o tempo
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPlaying && startTime > 0) {
+      interval = setInterval(() => {
+        // Força re-render para atualizar o timer
+        setStartTime(s => s); // Apenas para forçar atualização
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, startTime]);
 
 
   // ==========================================================
@@ -369,7 +369,7 @@ export default function TrailMaking() {
           Trilha Numérica
         </h1>
         <p className="text-xl sm:text-2xl text-white/90 mt-2 mb-8 drop-shadow-md">
-         ✏️ Conecte os pontos e agilize a mente! 🧠
+          ✏️ Conecte os pontos e agilize a mente! 🧠
         </p>
         
         <button 
@@ -416,7 +416,7 @@ export default function TrailMaking() {
   );
   
   const GameScreen = () => {
-     // Componente do Cabeçalho Padrão
+   // Componente do Cabeçalho Padrão
     const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: any) => (
         <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
             <div className="max-w-5xl mx-auto px-4 sm:px-6">
