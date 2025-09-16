@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, Volume2, VolumeX, Save, Star, Trophy, Timer, Target } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '../utils/supabaseClient';
+import { createClient } from '@/utils/supabaseClient'; // <-- CORREÇÃO REALIZADA AQUI
 import Image from 'next/image';
 import confetti from 'canvas-confetti';
 
@@ -784,12 +784,12 @@ export default function MemoryGame() {
               <div className="text-center mb-6">
                 <div className="text-5xl sm:text-6xl mb-4 animate-bounce">
                   {timeLeft > 0 && matches === DIFFICULTY_SETTINGS[difficulty].pairs ? '🏆' : 
-                   timeLeft > 0 ? '🎯' : '⏰'}
+                  timeLeft > 0 ? '🎯' : '⏰'}
                 </div>
                 
                 <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
                   {timeLeft > 0 && matches === DIFFICULTY_SETTINGS[difficulty].pairs ? 'Parabéns! Você venceu!' : 
-                   timeLeft > 0 ? 'Boa tentativa!' : 'Tempo Esgotado!'}
+                  timeLeft > 0 ? 'Boa tentativa!' : 'Tempo Esgotado!'}
                 </h3>
                 
                 <p className="text-lg text-indigo-600 font-medium">
