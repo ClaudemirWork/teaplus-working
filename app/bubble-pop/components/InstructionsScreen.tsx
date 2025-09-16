@@ -13,7 +13,9 @@ export const InstructionsScreen = React.memo(({ onPlay }: InstructionsScreenProp
     const [speechComplete, setSpeechComplete] = useState(false);
     const speechStartedRef = useRef(false);
 
-    const startInstructionsSpeech = () => {
+    // Efeito para iniciar a fala automaticamente ao entrar na tela
+    useEffect(() => {
+        // Esta "bandeira" (ref) garante que a fala só seja iniciada uma única vez
         if (speechStartedRef.current) return;
         speechStartedRef.current = true;
         
@@ -26,11 +28,6 @@ export const InstructionsScreen = React.memo(({ onPlay }: InstructionsScreenProp
                 });
             }, 1500);
         });
-    };
-    
-    // Inicia a fala automaticamente ao entrar na tela
-    useEffect(() => {
-        startInstructionsSpeech();
     }, []);
 
     return (
