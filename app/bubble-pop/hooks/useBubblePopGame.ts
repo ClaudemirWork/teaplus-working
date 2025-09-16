@@ -5,11 +5,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabaseClient';
 import { GameAudioManager } from '@/utils/gameAudioManager';
-import { Bubble, Particle, Equipment } from '@/app/types/bubble-pop';
+import { Bubble, Particle, Equipment, ScoreEffect, FishEffect } from '@/app/types/bubble-pop'; // Adicionado ScoreEffect e FishEffect
 import dynamic from 'next/dynamic';
 
 const confetti = dynamic(() => import('canvas-confetti'), { ssr: false });
 
+// ... (as constantes levelConfigs, coloredBubbles, comboPhrases permanecem as mesmas) ...
 const levelConfigs = [
     { level: 1, name: 'Superfície - Bolhas Coloridas', depth: '0-10m', totalBubbles: 100, minePercentage: 0.05, spawnRate: 600, oxygenDrain: 0.3, bgGradient: 'from-cyan-300 to-blue-400', equipment: null, features: ['colored_bubbles']},
     { level: 2, name: 'Águas Rasas - Salvando Peixes', depth: '10-20m', totalBubbles: 110, minePercentage: 0.1, spawnRate: 580, oxygenDrain: 0.4, bgGradient: 'from-blue-400 to-blue-500', equipment: 'mask', features: ['colored_bubbles', 'fish_rescue']},
@@ -34,6 +35,7 @@ const coloredBubbles = {
 
 const comboPhrases = ["Uhuuuu!", "Incrível!", "Mandou bem!", "Continue assim!", "Que demais!"];
 
+
 export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const router = useRouter();
     const supabase = createClient();
@@ -44,6 +46,10 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const [score, setScore] = useState(0);
     const [bubbles, setBubbles] = useState<Bubble[]>([]);
     const [particles, setParticles] = useState<Particle[]>([]);
+    // NOVOS ESTADOS PARA EFEITOS VISUAIS
+    const [scoreEffects, setScoreEffects] = useState<ScoreEffect[]>([]);
+    const [fishEffects, setFishEffects] = useState<FishEffect[]>([]);
+    
     const [oxygenLevel, setOxygenLevel] = useState(100);
     const [currentLevel, setCurrentLevel] = useState(1);
     const [combo, setCombo] = useState(0);
@@ -116,6 +122,9 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             const config = levelConfigs[currentLevel - 1];
             setBubbles([]);
             setParticles([]);
+            // LIMPAR NOVOS ESTADOS
+            setScoreEffects([]);
+            setFishEffects([]);
             setCombo(0);
             setBubblesSpawned(0);
             setBubblesRemaining(config.totalBubbles);
@@ -131,8 +140,33 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const popBubble = useCallback((bubble: Bubble) => {
         if (bubble.popped) return;
     
+        // MARCA A BOLHA COMO ESTOURADA
         setBubbles(prev => prev.map(b => b.id === bubble.id ? { ...b, popped: true } : b));
     
+        // ==========================================================
+        // LÓGICA DE EFEITOS RESTAURADA AQUI
+        // ==========================================================
+        
+        // 1. Tocar o som de estouro
+        audioManager.current?.tocarEfeito('pop');
+
+        // 2. Criar partículas de estouro
+        const newParticles = [];
+        for (let i = 0; i < 8; i++) {
+            newParticles.push({
+                id: Math.random(),
+                x: bubble.x + bubble.size / 2,
+                y: bubble.y + bubble.size / 2,
+                size: Math.random() * 2 + 1,
+                color: 'white',
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
+                opacity: 1,
+            });
+        }
+        setParticles(prev => [...prev, ...newParticles]);
+        
+        // LÓGICA DA BOMBA (continua aqui)
         if (bubble.type === 'mine') {
             audioManager.current?.falarMila("Ops! Você tocou numa bomba!");
             resetLevel();
@@ -143,6 +177,32 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         setScore(prev => prev + finalPoints);
         setPoppedBubbles(prev => prev + 1);
 
+        // 3. Criar efeito visual de pontuação
+        setScoreEffects(prev => [...prev, {
+            id: bubble.id,
+            points: finalPoints,
+            x: bubble.x,
+            y: bubble.y,
+            opacity: 1,
+        }]);
+
+        // 4. Criar efeito visual do peixe (se for uma bolha de peixe)
+        if (bubble.type === 'fish') {
+            setFishEffects(prev => [...prev, {
+                id: bubble.id,
+                x: bubble.x,
+                y: bubble.y,
+                opacity: 1,
+            }]);
+            setSavedFish(prev => prev + 1);
+            setOxygenLevel(prev => Math.min(100, prev + 5));
+        } else if (bubble.type === 'oxygen') {
+            setOxygenLevel(prev => Math.min(100, prev + 10));
+        } else {
+            setOxygenLevel(prev => Math.min(100, prev + 3));
+        }
+        // ==========================================================
+        
         setCombo(prev => {
             const newCombo = prev + 1;
             setMaxCombo(max => Math.max(max, newCombo));
@@ -152,15 +212,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             }
             return newCombo;
         });
-
-        if (bubble.type === 'oxygen') {
-            setOxygenLevel(prev => Math.min(100, prev + 10));
-        } else if (bubble.type === 'fish') {
-            setSavedFish(prev => prev + 1);
-            setOxygenLevel(prev => Math.min(100, prev + 5));
-        } else {
-            setOxygenLevel(prev => Math.min(100, prev + 3));
-        }
 
     }, [multiplier, resetLevel]);
 
@@ -186,8 +237,11 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, [isPlaying, bubbles, popBubble, gameAreaRef]);
 
-    const updateBubbles = useCallback(() => {
+    // RENOMEADO E EXPANDIDO para cuidar de todos os elementos
+    const updateGameElements = useCallback(() => {
         if (!gameAreaRef.current) return;
+
+        // Atualizar Bolhas
         setBubbles(prev => 
             prev.map(bubble => {
                 if (bubble.popped) {
@@ -204,6 +258,29 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                 return { ...bubble, y: newY };
             }).filter(bubble => bubble.opacity > 0)
         );
+
+        // Atualizar Partículas
+        setParticles(prev => prev.map(p => ({
+            ...p,
+            x: p.x + p.vx,
+            y: p.y + p.vy,
+            opacity: p.opacity - 0.02,
+        })).filter(p => p.opacity > 0));
+
+        // Atualizar Efeitos de Pontuação
+        setScoreEffects(prev => prev.map(effect => ({
+            ...effect,
+            y: effect.y - 0.5,
+            opacity: effect.opacity - 0.02,
+        })).filter(effect => effect.opacity > 0));
+
+        // Atualizar Efeitos de Peixe
+        setFishEffects(prev => prev.map(effect => ({
+            ...effect,
+            x: effect.x + 1,
+            opacity: effect.opacity - 0.015,
+        })).filter(effect => effect.opacity > 0));
+
     }, [gameAreaRef]);
 
     const createBubble = useCallback(() => {
@@ -255,17 +332,18 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, [isPlaying, bubblesSpawned, currentLevel]);
 
+    // ATUALIZADO para usar a nova função de update
     useEffect(() => {
         if (!isPlaying) return;
         const gameLoop = () => {
-            updateBubbles();
+            updateGameElements(); 
             animationRef.current = requestAnimationFrame(gameLoop);
         };
         animationRef.current = requestAnimationFrame(gameLoop);
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
-    }, [isPlaying, updateBubbles]);
+    }, [isPlaying, updateGameElements]);
 
     useEffect(() => {
         if (!isPlaying || levelCompleted) return;
@@ -306,6 +384,9 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                     setCurrentLevel(nextLevel);
                     setBubbles([]);
                     setParticles([]);
+                    // LIMPAR NOVOS ESTADOS
+                    setScoreEffects([]);
+                    setFishEffects([]);
                     setCombo(0);
                     setBubblesSpawned(0);
                     setBubblesRemaining(levelConfigs[nextLevel - 1].totalBubbles);
@@ -328,6 +409,9 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         setMaxCombo(0);
         setBubbles([]);
         setParticles([]);
+        // LIMPAR NOVOS ESTADOS
+        setScoreEffects([]);
+        setFishEffects([]);
         setOxygenLevel(100);
         setPoppedBubbles(0);
         setMissedBubbles(0);
@@ -370,7 +454,10 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     }, [score, router, supabase]);
 
     return {
-        isPlaying, score, combo, oxygenLevel, bubbles, particles, currentLevel,
+        isPlaying, score, combo, oxygenLevel, bubbles, particles,
+        // RETORNAR NOVOS ESTADOS
+        scoreEffects, fishEffects,
+        currentLevel,
         levelMessage, showLevelTransition, equipment, savedFish, bubblesRemaining,
         multiplier, multiplierTime, magnetActive, magnetTime, showResults, maxCombo,
         completedLevels, bossDefeated, freedCreatures, salvando, accuracy,
