@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, Save, Star, Trophy, Timer, Target, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '../utils/supabaseClient';
+import { createClient } from '@/utils/supabaseClient'; // <-- CORREÇÃO REALIZADA AQUI
 import Image from 'next/image';
 
 interface PuzzlePiece {
