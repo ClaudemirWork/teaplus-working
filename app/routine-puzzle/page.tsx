@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Save, Clock, Calendar, Trophy, Star, Check, Plus, Volume2, VolumeX, ArrowRight, Award, Trash2, Edit2, Search, Filter } from 'lucide-react';
-import { createClient } from '../utils/supabaseClient';
+import { createClient } from '@/utils/supabaseClient'; // <-- CORREÇÃO REALIZADA AQUI
 import './styles.css';
 
 // MAPEAMENTO COMPLETO DOS CARDS PECS
