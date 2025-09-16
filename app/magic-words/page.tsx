@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, Volume2, VolumeX, Save, Star, Trophy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '../utils/supabaseClient';
+import { createClient } from '@/utils/supabaseClient'; // <-- CORREÇÃO REALIZADA AQUI
 import Image from 'next/image';
 
 // --- Interfaces ---
@@ -915,11 +915,11 @@ Rounds Completados: ${roundsCompleted}`);
                               const fallback = document.createElement('div');
                               fallback.className = 'fallback absolute inset-0 bg-gradient-to-br from-violet-100 to-pink-100 rounded flex items-center justify-center';
                               const emoji = card.category === 'animais' ? '🐾' : 
-                                             card.category === 'acoes' ? '👋' : 
-                                             card.category === 'alimentos' ? '🍎' : 
-                                             card.category === 'rotina' ? '⏰' : 
-                                             card.category === 'core' ? '💬' : 
-                                             card.category === 'casa' ? '🏠' : '📚';
+                                            card.category === 'acoes' ? '👋' : 
+                                            card.category === 'alimentos' ? '🍎' : 
+                                            card.category === 'rotina' ? '⏰' : 
+                                            card.category === 'core' ? '💬' : 
+                                            card.category === 'casa' ? '🏠' : '📚';
                               fallback.innerHTML = `<span class="text-2xl md:text-3xl">${emoji}</span>`;
                               parent.appendChild(fallback);
                             }
@@ -986,7 +986,7 @@ Rounds Completados: ${roundsCompleted}`);
                     <div
                       key={phase}
                       className={`w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold
-                        ${phase <= currentPhaseIndex + 1 ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white' :
+                        ${phase <= currentPhaseIndex + 1 ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white' : 
                           'bg-gray-300 text-gray-600'}`}
                     >
                       {phase}
