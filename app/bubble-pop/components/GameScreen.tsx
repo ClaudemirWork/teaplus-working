@@ -3,13 +3,106 @@
 
 import React from 'react';
 import { ChevronLeft, Save, Volume2, VolumeX } from 'lucide-react';
-import { Bubble, Particle, Equipment } from '@/app/types/bubble-pop'; // Ajuste
+import { Bubble, Particle, Equipment } from '@/app/types/bubble-pop';
 import styles from '../bubble-pop.module.css';
 
-// ... (Definição de props) ...
+interface GameScreenProps {
+    isPlaying: boolean;
+    score: number;
+    combo: number;
+    oxygenLevel: number;
+    bubbles: Bubble[];
+    particles: Particle[];
+    currentLevel: number;
+    levelMessage: string;
+    showLevelTransition: boolean;
+    equipment: Equipment;
+    savedFish: number;
+    bubblesRemaining: number;
+    multiplier: number;
+    multiplierTime: number;
+    magnetActive: boolean;
+    magnetTime: number;
+    completedLevels: number[];
+    bossDefeated: boolean;
+    freedCreatures: string[];
+    levelConfigs: any[];
+    handleInteraction: (e: React.MouseEvent | React.TouchEvent) => void;
+    onBack: () => void;
+    toggleAudio: () => void;
+    audioEnabled: boolean;
+}
 
 export const GameScreen = React.forwardRef<HTMLDivElement, GameScreenProps>((props, ref) => {
-    // ... (JSX da tela de jogo) ...
+    const {
+        score, combo, oxygenLevel, bubbles, particles, currentLevel,
+        levelMessage, showLevelTransition, equipment, savedFish, bubblesRemaining,
+        multiplier, multiplierTime, magnetActive, magnetTime, completedLevels,
+        levelConfigs, handleInteraction, onBack, toggleAudio, audioEnabled
+    } = props;
+
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6">
+                    <div className="flex items-center justify-between h-16">
+                        <button onClick={onBack} className="flex items-center text-teal-600 hover:text-teal-700 transition-colors">
+                            <ChevronLeft className="h-6 w-6" />
+                            <span className="ml-1 font-medium text-sm sm:text-base">Sair</span>
+                        </button>
+                        <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center flex items-center gap-2">🌊<span>Oceano de Bolhas</span></h1>
+                        <div className="flex items-center gap-2 w-28 justify-end">
+                            <button onClick={toggleAudio} className="p-2 text-gray-600 hover:text-gray-800 transition-colors">
+                                {audioEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <main className="p-2 sm:p-6 max-w-7xl mx-auto w-full">
+                <div className="space-y-4">
+                    <div className="bg-white rounded-xl shadow-lg p-2 sm:p-4">
+                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
+                            <div><div className="text-base sm:text-xl font-bold text-indigo-800">Nv.{currentLevel}</div><div className="text-xs text-indigo-600">Nível</div></div>
+                            <div><div className="text-base sm:text-xl font-bold text-blue-800">{score}</div><div className="text-xs text-blue-600">Pontos</div></div>
+                            <div><div className="text-base sm:text-xl font-bold text-orange-800">x{combo}</div><div className="text-xs text-orange-600">Combo</div></div>
+                            <div><div className="text-base sm:text-xl font-bold text-green-800">{savedFish}</div><div className="text-xs text-green-600">🐠 Salvos</div></div>
+                            <div><div className="text-base sm:text-xl font-bold text-purple-800">{bubblesRemaining < 0 ? 0 : bubblesRemaining}</div><div className="text-xs text-purple-600">Faltam</div></div>
+                            <div><div className={`text-base sm:text-xl font-bold ${multiplier > 1 ? 'text-yellow-500 animate-pulse' : 'text-gray-800'}`}>x{multiplier}</div><div className="text-xs text-gray-600">Multi</div></div>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-lg shadow p-2 flex justify-center gap-3">
+                        <span className={`text-2xl ${equipment.mask ? '' : 'opacity-30'}`}>🥽</span>
+                        <span className={`text-2xl ${equipment.fins ? '' : 'opacity-30'}`}>🦶</span>
+                        <span className={`text-2xl ${equipment.tank ? '' : 'opacity-30'}`}>🤿</span>
+                        <span className={`text-2xl ${equipment.suit ? '' : 'opacity-30'}`}>👔</span>
+                        <span className={`text-2xl ${equipment.light ? '' : 'opacity-30'}`}>🔦</span>
+                    </div>
+                    {currentLevel !== 11 && (
+                        <div className="bg-white rounded-lg shadow p-3">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold">💨 Oxigênio:</span>
+                                <div className="flex-1 bg-gray-200 rounded-full h-6 overflow-hidden">
+                                    <div className={`h-full transition-all duration-300 ${oxygenLevel > 60 ? 'bg-blue-500' : oxygenLevel > 30 ? 'bg-yellow-500' : 'bg-red-500 animate-pulse'}`} style={{ width: `${oxygenLevel}%` }} />
+                                </div>
+                                <span className="text-sm font-bold">{Math.round(oxygenLevel)}%</span>
+                            </div>
+                        </div>
+                    )}
+                    <div ref={ref} className={`relative bg-gradient-to-b ${levelConfigs[currentLevel - 1]?.bgGradient} rounded-xl shadow-lg overflow-hidden cursor-crosshair`} style={{ height: isMobile ? '450px' : '500px' }} onMouseDown={handleInteraction} onTouchStart={handleInteraction}>
+                        {bubbles.map(bubble => (
+                            <div key={bubble.id} className={`${styles.bubbleContainer} absolute rounded-full transition-opacity`} style={{ left: `${bubble.x}px`, top: `${bubble.y}px`, width: `${bubble.size}px`, height: `${bubble.size}px`, background: bubble.color, opacity: bubble.opacity }}>
+                                {bubble.type === 'mine' && <div className="absolute inset-0 flex items-center justify-center text-xl">💣</div>}
+                                {bubble.type === 'fish' && <div className="absolute inset-0 flex items-center justify-center text-2xl">🐠</div>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </main>
+        </div>
+    );
 });
 
 GameScreen.displayName = 'GameScreen';
