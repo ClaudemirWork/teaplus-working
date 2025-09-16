@@ -10,46 +10,61 @@ import { GameScreen } from './components/GameScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 
 export default function BubblePopPage() {
-  const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game' | 'results'>('title');
-  const gameAreaRef = useRef<HTMLDivElement>(null);
+    const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game' | 'results'>('title');
+    const gameAreaRef = useRef<HTMLDivElement>(null);
+    const [totalStars, setTotalStars] = useState(0);
+    const [bestScore, setBestScore] = useState(0);
 
-  // O motor do jogo é chamado aqui!
-  const game = useBubblePopGame(gameAreaRef);
+    // O motor do jogo é chamado aqui!
+    const game = useBubblePopGame();
 
-  // Lógica para transição de telas
-  const handleStart = () => setCurrentScreen('instructions');
-  const handlePlay = () => {
-    game.startActivity();
-    setCurrentScreen('game');
-  };
-  const handleRestart = () => {
-    game.voltarInicio();
-    setCurrentScreen('title');
-  };
+    useEffect(() => {
+        // Carregar dados salvos do localStorage
+        const savedStars = localStorage.getItem('bubblePop_totalStars');
+        const savedBest = localStorage.getItem('bubblePop_bestScore');
+        if (savedStars) setTotalStars(parseInt(savedStars));
+        if (savedBest) setBestScore(parseInt(savedBest));
+    }, []);
 
-  // Detecta quando o jogo acaba para mostrar os resultados
-  useEffect(() => {
-    if (game.showResults) {
-      setCurrentScreen('results');
+    const handleStart = () => setCurrentScreen('instructions');
+    const handlePlay = () => {
+        game.startActivity();
+        setCurrentScreen('game');
+    };
+    const handleRestart = () => {
+        game.voltarInicio();
+        setCurrentScreen('title');
+    };
+
+    useEffect(() => {
+        if (game.showResults) {
+            // Atualizar recordes no final do jogo
+            const newStars = totalStars + (game.savedFish * 10);
+            localStorage.setItem('bubblePop_totalStars', newStars.toString());
+            setTotalStars(newStars);
+            if (game.score > bestScore) {
+                localStorage.setItem('bubblePop_bestScore', game.score.toString());
+                setBestScore(game.score);
+            }
+            setCurrentScreen('results');
+        }
+    }, [game.showResults]);
+
+    if (currentScreen === 'title') {
+        return <TitleScreen onStart={handleStart} toggleAudio={game.toggleAudio} audioEnabled={game.audioEnabled} totalStarsCollected={totalStars} bestScore={bestScore} />;
     }
-  }, [game.showResults]);
 
-  // Renderização condicional
-  if (currentScreen === 'title') {
-    return <TitleScreen onStart={handleStart} toggleAudio={game.toggleAudio} audioEnabled={game.audioEnabled} />;
-  }
-
-  if (currentScreen === 'instructions') {
-    return <InstructionsScreen onPlay={handlePlay} />;
-  }
+    if (currentScreen === 'instructions') {
+        return <InstructionsScreen onPlay={handlePlay} />;
+    }
   
-  if (currentScreen === 'game') {
-    return <GameScreen ref={gameAreaRef} {...game} onBack={handleRestart} />;
-  }
+    if (currentScreen === 'game') {
+        return <GameScreen ref={gameAreaRef} {...game} onBack={handleRestart} />;
+    }
   
-  if (currentScreen === 'results') {
-    return <ResultsScreen {...game} onRestart={handleRestart} />;
-  }
+    if (currentScreen === 'results') {
+        return <ResultsScreen {...game} onRestart={handleRestart} />;
+    }
 
-  return null;
+    return null;
 }
