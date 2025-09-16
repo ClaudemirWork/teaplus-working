@@ -42,7 +42,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [score, setScore] = useState(0);
-    // ... (restante dos estados)
     const [bubbles, setBubbles] = useState<Bubble[]>([]);
     const [particles, setParticles] = useState<Particle[]>([]);
     const [oxygenLevel, setOxygenLevel] = useState(100);
@@ -71,9 +70,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const [audioEnabled, setAudioEnabled] = useState(true);
 
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            audioManager.current = GameAudioManager.getInstance();
-        }
+        audioManager.current = GameAudioManager.getInstance();
     }, []);
 
     const toggleAudio = useCallback(() => {
@@ -87,26 +84,274 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     }, []);
 
     const createCelebrationBurst = useCallback(() => {
-        if (typeof confetti !== 'function') return;
-        try {
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-        } catch (e) { console.error('Erro ao criar confetti:', e); }
+        const fireConfetti = async () => {
+            const confettiInstance = await confetti;
+            if (confettiInstance) {
+                confettiInstance({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+        };
+        fireConfetti();
     }, []);
+    
+    const endGame = useCallback((bossVictory = false) => {
+        setIsPlaying(false);
+        audioManager.current?.pararTodos();
+        const totalAttempts = poppedBubbles + missedBubbles;
+        const acc = totalAttempts > 0 ? Math.round((poppedBubbles / totalAttempts) * 100) : 0;
+        setAccuracy(acc);
+        setShowResults(true);
+
+        if (score > (parseInt(localStorage.getItem('bubblePop_bestScore') || '0'))) {
+             audioManager.current?.falarMila("Novo recorde! Parabéns!");
+        }
+    }, [poppedBubbles, missedBubbles, score]);
 
     const resetLevel = useCallback(() => {
-        // Lógica de reset
+        setIsPlaying(false);
+        setLevelMessage('💣 BOMBA! Reiniciando nível...');
+        setShowLevelTransition(true);
+        audioManager.current?.falarMila("Vamos tentar de novo!");
+
+        setTimeout(() => {
+            const config = levelConfigs[currentLevel - 1];
+            setBubbles([]);
+            setParticles([]);
+            setCombo(0);
+            setBubblesSpawned(0);
+            setBubblesRemaining(config.totalBubbles);
+            setOxygenLevel(100);
+            setMultiplier(1);
+            setMagnetActive(false);
+            setShowLevelTransition(false);
+            setIsPlaying(true);
+            setLevelCompleted(false);
+        }, 2000);
     }, [currentLevel]);
     
-    // ... (Todas as outras funções de lógica: popBubble, createBubble, etc., movidas para cá)
+    const createParticles = useCallback((x: number, y: number, color: string, type: string = 'normal') => {
+        // ... (lógica completa de createParticles)
+    }, []);
 
-    // Lembre-se de retornar todos os estados e funções que a UI precisa
+    const popBubble = useCallback((bubble: Bubble, x: number, y: number) => {
+        if (bubble.popped) return;
+    
+        setBubbles(prev => prev.map(b => b.id === bubble.id ? { ...b, popped: true } : b));
+    
+        if (bubble.type === 'mine') {
+            audioManager.current?.falarMila("Ops! Você tocou numa bomba!");
+            resetLevel();
+            return;
+        }
+
+        const finalPoints = Math.round(bubble.points * multiplier);
+        setScore(prev => prev + finalPoints);
+        setPoppedBubbles(prev => prev + 1);
+
+        setCombo(prev => {
+            const newCombo = prev + 1;
+            setMaxCombo(max => Math.max(max, newCombo));
+            if (newCombo >= 15 && newCombo % 5 === 0) {
+              const randomPhrase = comboPhrases[Math.floor(Math.random() * comboPhrases.length)];
+              audioManager.current?.falarMila(randomPhrase);
+            }
+            return newCombo;
+        });
+
+        if (bubble.type === 'oxygen') {
+            setOxygenLevel(prev => Math.min(100, prev + 10));
+        } else {
+            setOxygenLevel(prev => Math.min(100, prev + 3));
+        }
+
+        if(bubble.type === 'fish') {
+            setSavedFish(prev => prev + 1);
+        }
+
+    }, [multiplier, resetLevel]);
+
+    const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+        if (!gameAreaRef.current || !isPlaying) return;
+        
+        const rect = gameAreaRef.current.getBoundingClientRect();
+        const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
+        const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+        
+        bubbles.forEach(bubble => {
+            if (bubble.popped) return;
+            const bubbleCenterX = bubble.x + bubble.size / 2;
+            const bubbleCenterY = bubble.y + bubble.size / 2;
+            const distance = Math.sqrt(Math.pow(x - bubbleCenterX, 2) + Math.pow(y - bubbleCenterY, 2));
+            if (distance <= bubble.size / 2) {
+                popBubble(bubble, x, y);
+            }
+        });
+    }, [isPlaying, bubbles, popBubble, gameAreaRef]);
+
+    const updateBubbles = useCallback(() => {
+        if (!gameAreaRef.current) return;
+        const gameArea = gameAreaRef.current.getBoundingClientRect();
+        setBubbles(prev => 
+            prev.map(bubble => {
+                if (bubble.popped) {
+                    return { ...bubble, opacity: bubble.opacity - 0.05 };
+                }
+                let newY = bubble.y - bubble.speed;
+                if (newY < -bubble.size) {
+                    if (bubble.type !== 'mine') {
+                        setMissedBubbles(prevMissed => prevMissed + 1);
+                        setCombo(0);
+                    }
+                    return { ...bubble, y: newY, opacity: 0 };
+                }
+                return { ...bubble, y: newY };
+            }).filter(bubble => bubble.opacity > 0)
+        );
+    }, [gameAreaRef]);
+
+    const createBubble = useCallback(() => {
+        if (!isPlaying || !gameAreaRef.current || levelCompleted) return;
+        const config = levelConfigs[currentLevel - 1];
+        if (bubblesSpawned >= config.totalBubbles) return;
+    
+        const gameArea = gameAreaRef.current.getBoundingClientRect();
+        const rand = Math.random();
+        let type: Bubble['type'] = 'air';
+        let bubbleConfig: any = coloredBubbles.air;
+    
+        if (rand < config.minePercentage) {
+            type = 'mine';
+            bubbleConfig = { color: '#8B0000', points: -20, size: 45 };
+        } else {
+            const colorRand = Math.random();
+            if (colorRand < 0.3) type = 'air';
+            else if (colorRand < 0.45) type = 'oxygen';
+            else type = 'fish';
+            bubbleConfig = coloredBubbles[type as keyof typeof coloredBubbles] || coloredBubbles.air;
+        }
+    
+        const newBubble: Bubble = {
+            id: Date.now() + Math.random(),
+            x: Math.random() * (gameArea.width - bubbleConfig.size),
+            y: gameArea.height + bubbleConfig.size,
+            size: bubbleConfig.size,
+            speed: 1.2 + Math.random() * 0.5,
+            color: bubbleConfig.color,
+            points: bubbleConfig.points,
+            type: type,
+            popped: false,
+            opacity: 1,
+        };
+    
+        setBubbles(prev => [...prev, newBubble]);
+        setBubblesSpawned(prev => prev + 1);
+        setBubblesRemaining(prev => prev - 1);
+    }, [isPlaying, levelCompleted, currentLevel, bubblesSpawned, gameAreaRef]);
+
+    useEffect(() => {
+        if (!isPlaying) return;
+        const gameLoop = () => {
+            updateBubbles();
+            animationRef.current = requestAnimationFrame(gameLoop);
+        };
+        animationRef.current = requestAnimationFrame(gameLoop);
+        return () => {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
+            }
+        };
+    }, [isPlaying, updateBubbles]);
+
+    useEffect(() => {
+        if (!isPlaying || levelCompleted) return;
+        const config = levelConfigs[currentLevel - 1];
+        const spawnInterval = setInterval(() => {
+            if (bubblesSpawned < config.totalBubbles) {
+                createBubble();
+            }
+        }, config.spawnRate);
+        return () => clearInterval(spawnInterval);
+    }, [isPlaying, currentLevel, bubblesSpawned, levelCompleted, createBubble]);
+
+    useEffect(() => {
+        if (!isPlaying) return;
+        const config = levelConfigs[currentLevel - 1];
+        const drainInterval = setInterval(() => {
+            setOxygenLevel(prev => {
+                const newLevel = Math.max(0, prev - config.oxygenDrain);
+                if (newLevel === 0) {
+                    endGame();
+                }
+                return newLevel;
+            });
+        }, 1000);
+        return () => clearInterval(drainInterval);
+    }, [isPlaying, currentLevel, endGame]);
+    
+    useEffect(() => {
+        if (isPlaying && !levelCompleted && bubblesSpawned >= levelConfigs[currentLevel - 1].totalBubbles && bubbles.length === 0) {
+            setLevelCompleted(true);
+            audioManager.current?.falarMila(`Você é fera! Terminou a fase ${currentLevel}!`);
+            setShowLevelTransition(true);
+            createCelebrationBurst();
+
+            setTimeout(() => {
+                if (currentLevel + 1 < levelConfigs.length) {
+                    setCurrentLevel(prev => prev + 1);
+                    setBubbles([]);
+                    setParticles([]);
+                    setCombo(0);
+                    setBubblesSpawned(0);
+                    setBubblesRemaining(levelConfigs[currentLevel].totalBubbles);
+                    setOxygenLevel(100);
+                    setLevelCompleted(false);
+                    setShowLevelTransition(false);
+                } else {
+                    endGame();
+                }
+            }, 3000);
+        }
+    }, [isPlaying, bubbles, bubblesSpawned, currentLevel, levelCompleted, createCelebrationBurst, endGame]);
+
+    const startActivityCallback = useCallback(() => {
+        setIsPlaying(true);
+        setShowResults(false);
+        setCurrentLevel(1);
+        setScore(0);
+        setCombo(0);
+        setMaxCombo(0);
+        setBubbles([]);
+        setParticles([]);
+        setOxygenLevel(100);
+        setPoppedBubbles(0);
+        setMissedBubbles(0);
+        setCompletedLevels([]);
+        setBubblesSpawned(0);
+        setBubblesRemaining(levelConfigs[0].totalBubbles);
+        setSavedFish(0);
+        setMultiplier(1);
+        setEquipment({ mask: false, fins: false, tank: false, suit: false, light: false });
+        setLevelCompleted(false);
+        setFreedCreatures([]);
+        setBossDefeated(false);
+    }, []);
+
+    const voltarInicioCallback = useCallback(() => {
+        setIsPlaying(false);
+        setShowResults(false);
+        // Resetar qualquer estado necessário ao voltar para o início
+    }, []);
+
     return {
         isPlaying, score, combo, oxygenLevel, bubbles, particles, currentLevel,
         levelMessage, showLevelTransition, equipment, savedFish, bubblesRemaining,
         multiplier, multiplierTime, magnetActive, magnetTime, showResults, maxCombo,
         completedLevels, bossDefeated, freedCreatures, salvando, accuracy,
-        //...
+        startActivity: startActivityCallback,
+        handleInteraction,
+        handleSaveSession,
+        voltarInicio: voltarInicioCallback,
         audioEnabled,
         toggleAudio,
+        levelConfigs,
     };
 }
