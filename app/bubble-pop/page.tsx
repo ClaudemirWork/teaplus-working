@@ -15,8 +15,10 @@ export default function BubblePopPage() {
     const [totalStars, setTotalStars] = useState(0);
     const [bestScore, setBestScore] = useState(0);
 
+    // 1. O "motor" do jogo é chamado aqui e nos dá tudo que precisamos.
     const game = useBubblePopGame(gameAreaRef);
 
+    // Efeito para carregar dados salvos do localStorage apenas uma vez
     useEffect(() => {
         const savedStars = localStorage.getItem('bubblePop_totalStars');
         const savedBest = localStorage.getItem('bubblePop_bestScore');
@@ -24,23 +26,27 @@ export default function BubblePopPage() {
         if (savedBest) setBestScore(parseInt(savedBest));
     }, []);
 
+    // 2. Funções simples para controlar qual tela é mostrada
     const handleStart = () => setCurrentScreen('instructions');
-
+    
     const handlePlay = () => {
         game.startActivity();
         setCurrentScreen('game');
     };
-
+    
     const handleRestart = () => {
         game.voltarInicio();
         setCurrentScreen('title');
     };
 
+    // 3. Efeito que observa o estado do jogo e muda para a tela de resultados quando o jogo termina
     useEffect(() => {
         if (game.showResults) {
+            // Atualiza os recordes no final do jogo
             const newStars = totalStars + (game.savedFish * 10);
             localStorage.setItem('bubblePop_totalStars', newStars.toString());
             setTotalStars(newStars);
+
             if (game.score > bestScore) {
                 localStorage.setItem('bubblePop_bestScore', game.score.toString());
                 setBestScore(game.score);
@@ -49,6 +55,7 @@ export default function BubblePopPage() {
         }
     }, [game.showResults, game.savedFish, game.score, totalStars, bestScore]);
 
+    // 4. Lógica de renderização: mostra um componente de cada vez
     if (currentScreen === 'title') {
         return <TitleScreen onStart={handleStart} toggleAudio={game.toggleAudio} audioEnabled={game.audioEnabled} totalStarsCollected={totalStars} bestScore={bestScore} />;
     }
@@ -65,5 +72,5 @@ export default function BubblePopPage() {
         return <ResultsScreen {...game} onRestart={handleRestart} />;
     }
 
-    return null;
+    return null; // Tela de carregamento, se necessário
 }
