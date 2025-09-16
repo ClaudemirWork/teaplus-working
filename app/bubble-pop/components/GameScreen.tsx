@@ -2,10 +2,10 @@
 'use client';
 import React, { forwardRef } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Save } from 'lucide-react';
+import { ChevronLeft, Save, Volume2, VolumeX } from 'lucide-react';
 
 // Componente do Header
-const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: any) => (
+const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton, onToggleAudio, audioEnabled }: any) => (
     <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between h-16">
@@ -17,22 +17,33 @@ const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton }: any
                     {icon}
                     <span>{title}</span>
                 </h1>
-                {showSaveButton && onSave ? (
-                    <button
-                        onClick={onSave}
-                        disabled={isSaveDisabled}
-                        className={`flex items-center space-x-2 px-3 py-2 sm:px-4 rounded-lg font-semibold transition-colors ${
-                            !isSaveDisabled
-                                ? 'bg-green-500 text-white hover:bg-green-600'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                    >
-                        <Save size={18} />
-                        <span className="hidden sm:inline">{isSaveDisabled ? 'Salvando...' : 'Salvar'}</span>
-                    </button>
-                ) : (
-                    <div className="w-24"></div>
-                )}
+                <div className="flex items-center gap-2">
+                    {onToggleAudio && (
+                        <button
+                            onClick={onToggleAudio}
+                            className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                            title={audioEnabled ? "Desativar som" : "Ativar som"}
+                        >
+                            {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                        </button>
+                    )}
+                    {showSaveButton && onSave ? (
+                        <button
+                            onClick={onSave}
+                            disabled={isSaveDisabled}
+                            className={`flex items-center space-x-2 px-3 py-2 sm:px-4 rounded-lg font-semibold transition-colors ${
+                                !isSaveDisabled
+                                    ? 'bg-green-500 text-white hover:bg-green-600'
+                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                        >
+                            <Save size={18} />
+                            <span className="hidden sm:inline">{isSaveDisabled ? 'Salvando...' : 'Salvar'}</span>
+                        </button>
+                    ) : (
+                        <div className="w-24"></div>
+                    )}
+                </div>
             </div>
         </div>
     </header>
@@ -44,16 +55,67 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
         showResults, salvando, poppedBubbles, bubblesRemaining, showLevelTransition,
         levelMessage, levelConfigs, completedLevels, handleInteraction,
         handleSaveSession, voltarInicio, jogoIniciado, startActivity,
-        namingFish, nameFish, unlockedGear, activeGearItems
+        namingFish, nameFish, unlockedGear, activeGearItems, toggleAudio, audioEnabled
     } = props;
 
     const [fishName, setFishName] = React.useState('');
     const currentLevelConfig = levelConfigs[currentLevel - 1];
 
+    // Função auxiliar para obter o ícone da bolha
+    const getBubbleIcon = (type: string) => {
+        switch(type) {
+            case 'mine': return '💣';
+            case 'pearl': return '🦪';
+            case 'treasure': return '💰';
+            case 'pufferfish': return '🐡';
+            case 'starfish': return '⭐';
+            case 'octopus': return '🐙';
+            default: return null;
+        }
+    };
+
+    // Função auxiliar para obter o gradiente da bolha
+    const getBubbleGradient = (type: string) => {
+        switch(type) {
+            case 'mine': return 'radial-gradient(circle, #8B0000, #4B0000)';
+            case 'treasure': return 'radial-gradient(circle, #FFD700, #FFA500)';
+            case 'pearl': return 'radial-gradient(circle, #FFF0F5, #FFB6C1)';
+            case 'pufferfish': return 'radial-gradient(circle, #FF6B6B, #FF4444)';
+            case 'starfish': return 'radial-gradient(circle, #FFD93D, #FFB000)';
+            case 'octopus': return 'radial-gradient(circle, #6BCF7F, #4CAF50)';
+            default: return null;
+        }
+    };
+
+    // Função auxiliar para obter a borda da bolha
+    const getBubbleBorder = (type: string) => {
+        switch(type) {
+            case 'pearl': return '2px solid #FFD700';
+            case 'treasure': return '2px solid #FFA500';
+            case 'mine': return '2px solid #FF0000';
+            case 'pufferfish': return '2px solid #FF4444';
+            case 'starfish': return '2px solid #FFB000';
+            case 'octopus': return '2px solid #4CAF50';
+            default: return '1px solid rgba(255,255,255,0.3)';
+        }
+    };
+
+    // Função auxiliar para obter o box-shadow da bolha
+    const getBubbleBoxShadow = (type: string) => {
+        switch(type) {
+            case 'pearl': return '0 0 20px #FFF0F5';
+            case 'treasure': return '0 0 15px #FFD700';
+            case 'pufferfish': return '0 0 15px #FF6B6B';
+            case 'starfish': return '0 0 15px #FFD93D';
+            case 'octopus': return '0 0 15px #6BCF7F';
+            default: return '0 2px 8px rgba(0,0,0,0.2)';
+        }
+    };
+
     if (!jogoIniciado) {
         return (
             <div className="min-h-screen bg-gray-50">
-                <GameHeader title="Oceano de Bolhas" icon="🌊" />
+                <GameHeader title="Oceano de Bolhas" icon="🌊" onToggleAudio={toggleAudio} audioEnabled={audioEnabled} />
                 <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
                     <div className="space-y-6">
                         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8">
@@ -79,18 +141,19 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                     </p>
                                 </div>
                                 <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 sm:p-4">
-                                    <h3 className="font-semibold text-gray-800 mb-1">🫧 Pontuação:</h3>
+                                    <h3 className="font-semibold text-gray-800 mb-1">🫧 Criaturas Especiais:</h3>
                                     <ul className="text-sm text-gray-600 space-y-1">
                                         <li>🐡 Baiacu = 75 pts</li>
                                         <li>⭐ Estrela = 80 pts</li>
                                         <li>🐙 Polvo = 90 pts</li>
-                                        <li>💎 Pérola = 100 pts!</li>
+                                        <li>🦪 Pérola = 100 pts</li>
+                                        <li>💰 Tesouro = 50 pts</li>
                                     </ul>
                                 </div>
                                 <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 sm:p-4">
                                     <h3 className="font-semibold text-gray-800 mb-1">🤿 Equipamentos:</h3>
                                     <p className="text-sm text-gray-600">
-                                        Colete equipamentos de mergulho em cada nível!
+                                        Colete equipamentos de mergulho em cada nível para ganhar bônus!
                                     </p>
                                 </div>
                             </div>
@@ -110,7 +173,7 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
     }
 
     if (showResults) {
-        return null; // ResultsScreen será renderizada pelo page.tsx
+        return null;
     }
 
     return (
@@ -121,6 +184,8 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                 onSave={handleSaveSession}
                 isSaveDisabled={salvando}
                 showSaveButton={false}
+                onToggleAudio={toggleAudio}
+                audioEnabled={audioEnabled}
             />
 
             <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
@@ -198,6 +263,17 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                         onMouseDown={handleInteraction}
                         onTouchStart={handleInteraction}
                     >
+                        {/* Imagem de fundo da Mila */}
+                        <div
+                            className="absolute inset-0 w-full h-full opacity-10 pointer-events-none"
+                            style={{
+                                backgroundImage: `url(https://raw.githubusercontent.com/ClaudemirWork/teaplus-working/main/public/images/mila_feiticeira_resultado.webp)`,
+                                backgroundSize: 'contain',
+                                backgroundPosition: 'center',
+                                backgroundRepeat: 'no-repeat'
+                            }}
+                        />
+
                         {/* Transição de nível */}
                         {showLevelTransition && (
                             <div className="absolute inset-0 bg-white/95 flex items-center justify-center z-30">
@@ -205,6 +281,9 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                     <div className="text-6xl mb-2">🌊</div>
                                     <div className="text-3xl font-bold text-blue-600">
                                         {levelMessage}
+                                    </div>
+                                    <div className="text-base text-gray-600 mt-2">
+                                        Descendo para: {levelConfigs[currentLevel]?.name}
                                     </div>
                                 </div>
                             </div>
@@ -215,7 +294,8 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-40">
                                 <div className="bg-white rounded-xl p-6 max-w-sm">
                                     <h3 className="text-lg font-bold mb-4">
-                                        Dê um nome para sua {namingFish.type === 'pearl' ? 'pérola' : 'descoberta'}!
+                                        Dê um nome para sua {namingFish.type === 'pearl' ? 'pérola' : 
+                                                             namingFish.type === 'treasure' ? 'tesouro' : 'descoberta'}!
                                     </h3>
                                     <input
                                         type="text"
@@ -249,32 +329,56 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                     left: `${gear.x}px`,
                                     top: `${gear.y}px`,
                                     fontSize: '2.5rem',
-                                    filter: 'drop-shadow(0 0 8px rgba(255,255,0,0.8))'
+                                    filter: 'drop-shadow(0 0 8px rgba(255,215,0,0.8))'
                                 }}
                             >
                                 {gear.icon}
                             </div>
                         ))}
 
-                        {/* Renderizar bolhas e partículas */}
-                        {bubbles.map(bubble => (
-                            <div
-                                key={bubble.id}
-                                className={`absolute rounded-full transition-opacity ${
-                                    bubble.popped ? 'pointer-events-none' : 'cursor-pointer'
-                                }`}
-                                style={{
-                                    left: `${bubble.x}px`,
-                                    top: `${bubble.y}px`,
-                                    width: `${bubble.size}px`,
-                                    height: `${bubble.size}px`,
-                                    background: bubble.color,
-                                    opacity: bubble.opacity,
-                                    transform: `scale(${bubble.popped ? 1.5 : 1})`,
-                                }}
-                            />
-                        ))}
+                        {/* Bolhas */}
+                        {bubbles.map(bubble => {
+                            const icon = getBubbleIcon(bubble.type);
+                            const gradient = getBubbleGradient(bubble.type);
+                            const border = getBubbleBorder(bubble.type);
+                            const boxShadow = getBubbleBoxShadow(bubble.type);
 
+                            return (
+                                <div
+                                    key={bubble.id}
+                                    className={`absolute rounded-full transition-opacity ${
+                                        bubble.popped ? 'pointer-events-none' : 'cursor-pointer'
+                                    }`}
+                                    style={{
+                                        left: `${bubble.x}px`,
+                                        top: `${bubble.y}px`,
+                                        width: `${bubble.size}px`,
+                                        height: `${bubble.size}px`,
+                                        background: gradient || bubble.color,
+                                        border: border,
+                                        opacity: bubble.opacity,
+                                        boxShadow: boxShadow,
+                                        transform: `scale(${bubble.popped ? 1.5 : 1})`,
+                                    }}
+                                >
+                                    {/* Ícone da bolha especial */}
+                                    {icon && (
+                                        <div className="absolute inset-0 flex items-center justify-center text-xl font-bold">
+                                            {icon}
+                                        </div>
+                                    )}
+                                    
+                                    {/* Pontos para bolhas normais */}
+                                    {!['mine', 'pearl', 'treasure', 'pufferfish', 'starfish', 'octopus'].includes(bubble.type) && (
+                                        <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xs">
+                                            +{bubble.points}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+
+                        {/* Partículas */}
                         {particles.map(particle => (
                             <div
                                 key={particle.id}
@@ -289,19 +393,41 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                 }}
                             />
                         ))}
+
+                        {/* Aviso de oxigênio baixo */}
+                        {oxygenLevel < 30 && (
+                            <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
+                                <div className="bg-red-500 text-white px-4 py-2 rounded-full font-bold animate-pulse">
+                                    ⚠️ OXIGÊNIO BAIXO!
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Combo display */}
+                        {combo > 5 && (
+                            <div className="absolute top-12 left-1/2 transform -translate-x-1/2 animate-bounce">
+                                <div className="bg-yellow-400 text-black px-4 py-2 rounded-full font-bold text-lg">
+                                    🔥 COMBO x{combo}!
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Indicador de níveis */}
+                    {/* Indicador de níveis com nomes */}
                     <div className="flex justify-center gap-2">
                         {[1, 2, 3, 4, 5].map((level) => (
-                            <div
-                                key={level}
-                                className={`w-16 h-10 rounded-lg flex flex-col items-center justify-center text-xs font-bold
-                                    ${completedLevels.includes(level) ? 'bg-blue-500 text-white' :
-                                    level === currentLevel ? 'bg-cyan-400 text-black animate-pulse' :
-                                    'bg-gray-300 text-gray-600'}`}
-                            >
-                                <div>{levelConfigs[level - 1].depth}</div>
+                            <div key={level} className="text-center">
+                                <div
+                                    className={`w-16 h-10 rounded-lg flex flex-col items-center justify-center text-xs font-bold
+                                        ${completedLevels.includes(level) ? 'bg-blue-500 text-white' :
+                                        level === currentLevel ? 'bg-cyan-400 text-black animate-pulse' :
+                                        'bg-gray-300 text-gray-600'}`}
+                                >
+                                    <div>{levelConfigs[level - 1].depth}</div>
+                                </div>
+                                <p className="text-xs mt-1 text-gray-600">
+                                    {levelConfigs[level - 1].name.split('(')[0].trim()}
+                                </p>
                             </div>
                         ))}
                     </div>
