@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic';
 
 const confetti = dynamic(() => import('canvas-confetti'), { ssr: false });
 
+// ... (as constantes levelConfigs, coloredBubbles, comboPhrases permanecem as mesmas) ...
 const levelConfigs = [
     { level: 1, name: 'Superfície - Bolhas Coloridas', depth: '0-10m', totalBubbles: 100, minePercentage: 0.05, spawnRate: 600, oxygenDrain: 0.3, bgGradient: 'from-cyan-300 to-blue-400', equipment: null, features: ['colored_bubbles']},
     { level: 2, name: 'Águas Rasas - Salvando Peixes', depth: '10-20m', totalBubbles: 110, minePercentage: 0.1, spawnRate: 580, oxygenDrain: 0.4, bgGradient: 'from-blue-400 to-blue-500', equipment: 'mask', features: ['colored_bubbles', 'fish_rescue']},
@@ -38,12 +39,16 @@ const coloredBubbles = {
 
 const comboPhrases = ["Uhuuuu!", "Incrível!", "Mandou bem!", "Continue assim!", "Que demais!"];
 
+
 export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const router = useRouter();
     const supabase = createClient();
     const animationRef = useRef<number>();
+    
+    // CORREÇÃO: Usar useRef para o audioManager para evitar recriação
     const audioManager = useRef<GameAudioManager | null>(null);
 
+    // ... (restante dos estados permanece igual) ...
     const [isPlaying, setIsPlaying] = useState(false);
     const [score, setScore] = useState(0);
     const [bubbles, setBubbles] = useState<Bubble[]>([]);
@@ -68,10 +73,16 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const [savedFish, setSavedFish] = useState(0);
     const [multiplier, setMultiplier] = useState(1);
     const [audioEnabled, setAudioEnabled] = useState(true);
+    const [levelCompleted, setLevelCompleted] = useState(false);
 
+    // CORREÇÃO: Inicializar o audioManager dentro de um useEffect para garantir que ele só rode no cliente (navegador)
     useEffect(() => {
-        audioManager.current = GameAudioManager.getInstance();
+        if (!audioManager.current) {
+            audioManager.current = GameAudioManager.getInstance();
+        }
     }, []);
+
+    // ... (O restante do seu código permanece praticamente o mesmo)
 
     const toggleAudio = useCallback(() => {
         if (audioManager.current) {
@@ -83,11 +94,8 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, []);
 
-    // ==========================================================
-    // LÓGICA DE SOM ORIGINAL RESTAURADA
-    // ==========================================================
     const playPopSound = useCallback((type: Bubble['type']) => {
-        if (!audioEnabled) return; // Respeita o botão de mudo
+        if (!audioEnabled) return;
         try {
             const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
@@ -97,7 +105,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             gainNode.connect(audioContext.destination);
 
             if (type === 'mine') {
-                // Som de explosão
                 const noise = audioContext.createOscillator();
                 const noiseGain = audioContext.createGain();
                 noise.type = 'sawtooth';
@@ -116,7 +123,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.2);
             } else if (type === 'pearl' || type === 'treasure') {
-                // Som especial
                 oscillator.frequency.value = 1200;
                 oscillator.type = 'sine';
                 gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
@@ -124,12 +130,11 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.3);
             } else {
-                // Som de bolha normal com variação baseada na cor
                 const freqMap: { [key: string]: number } = {
                     air: 600, oxygen: 700, pink: 800, purple: 900,
                     yellow: 1000, green: 1100, orange: 1200
                 };
-                oscillator.frequency.value = freqMap[type] || 600;
+                oscillator.frequency.value = freqMap[type as keyof typeof freqMap] || 600;
                 oscillator.type = 'sine';
                 gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
@@ -140,13 +145,59 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             console.error("Web Audio API error:", e);
         }
     }, [audioEnabled]);
+    
+    // ... (restante das funções como popBubble, startActivity, etc.)
+    const createCelebrationBurst = useCallback(() => {
+        const fireConfetti = async () => {
+            const confettiInstance = await confetti;
+            if (confettiInstance) {
+                confettiInstance({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+        };
+        fireConfetti();
+    }, []);
+    
+    const endGame = useCallback((bossVictory = false) => {
+        setIsPlaying(false);
+        audioManager.current?.pararTodos();
+        const totalAttempts = poppedBubbles + missedBubbles;
+        const acc = totalAttempts > 0 ? Math.round((poppedBubbles / totalAttempts) * 100) : 0;
+        setAccuracy(acc);
+        setShowResults(true);
 
+        if (score > (parseInt(localStorage.getItem('bubblePop_bestScore') || '0'))) {
+             audioManager.current?.falarMila("Novo recorde! Parabéns!");
+        }
+    }, [poppedBubbles, missedBubbles, score]);
+
+    const resetLevel = useCallback(() => {
+        setIsPlaying(false);
+        setLevelMessage('💣 BOMBA! Reiniciando nível...');
+        setShowLevelTransition(true);
+        audioManager.current?.falarMila("Vamos tentar de novo!");
+
+        setTimeout(() => {
+            const config = levelConfigs[currentLevel - 1];
+            setBubbles([]);
+            setParticles([]);
+            setScoreEffects([]);
+            setFishEffects([]);
+            setCombo(0);
+            setBubblesSpawned(0);
+            setBubblesRemaining(config.totalBubbles);
+            setOxygenLevel(100);
+            setMultiplier(1);
+            setShowLevelTransition(false);
+            setIsPlaying(true);
+            setLevelCompleted(false);
+        }, 2000);
+    }, [currentLevel]);
+    
     const popBubble = useCallback((bubble: Bubble) => {
         if (bubble.popped) return;
 
         setBubbles(prev => prev.map(b => b.id === bubble.id ? { ...b, popped: true } : b));
         
-        // CHAMANDO A FUNÇÃO DE SOM ORIGINAL
         playPopSound(bubble.type);
 
         const newParticles = [];
@@ -196,81 +247,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         });
 
     }, [multiplier, resetLevel, playPopSound]);
-
-    const startActivity = useCallback(() => {
-        // CORREÇÃO: Inicializar o áudio no primeiro clique para começar
-        audioManager.current?.forceInitialize();
-        
-        setIsPlaying(true);
-        setShowResults(false);
-        setCurrentLevel(1);
-        setScore(0);
-        setCombo(0);
-        setMaxCombo(0);
-        setBubbles([]);
-        setParticles([]);
-        setScoreEffects([]);
-        setFishEffects([]);
-        setOxygenLevel(100);
-        setPoppedBubbles(0);
-        setMissedBubbles(0);
-        setCompletedLevels([]);
-        setBubblesSpawned(0);
-        setBubblesRemaining(levelConfigs[0].totalBubbles);
-        setSavedFish(0);
-        setMultiplier(1);
-        setEquipment({ mask: false, fins: false, tank: false, suit: false, light: false });
-        setLevelCompleted(false);
-        setFreedCreatures([]);
-        setBossDefeated(false);
-    }, []);
-
-    // ... (O resto do código, como `handleInteraction`, `updateGameElements`, `createBubble`, etc., permanece o mesmo) ...
-    const createCelebrationBurst = useCallback(() => {
-        const fireConfetti = async () => {
-            const confettiInstance = await confetti;
-            if (confettiInstance) {
-                confettiInstance({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-            }
-        };
-        fireConfetti();
-    }, []);
-    
-    const endGame = useCallback((bossVictory = false) => {
-        setIsPlaying(false);
-        audioManager.current?.pararTodos();
-        const totalAttempts = poppedBubbles + missedBubbles;
-        const acc = totalAttempts > 0 ? Math.round((poppedBubbles / totalAttempts) * 100) : 0;
-        setAccuracy(acc);
-        setShowResults(true);
-
-        if (score > (parseInt(localStorage.getItem('bubblePop_bestScore') || '0'))) {
-             audioManager.current?.falarMila("Novo recorde! Parabéns!");
-        }
-    }, [poppedBubbles, missedBubbles, score]);
-
-    const resetLevel = useCallback(() => {
-        setIsPlaying(false);
-        setLevelMessage('💣 BOMBA! Reiniciando nível...');
-        setShowLevelTransition(true);
-        audioManager.current?.falarMila("Vamos tentar de novo!");
-
-        setTimeout(() => {
-            const config = levelConfigs[currentLevel - 1];
-            setBubbles([]);
-            setParticles([]);
-            setScoreEffects([]);
-            setFishEffects([]);
-            setCombo(0);
-            setBubblesSpawned(0);
-            setBubblesRemaining(config.totalBubbles);
-            setOxygenLevel(100);
-            setMultiplier(1);
-            setShowLevelTransition(false);
-            setIsPlaying(true);
-            setLevelCompleted(false);
-        }, 2000);
-    }, [currentLevel]);
 
     const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
         if (!gameAreaRef.current || !isPlaying) return;
@@ -450,6 +426,31 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, [isPlaying, bubbles, bubblesSpawned, currentLevel, levelCompleted, createCelebrationBurst, endGame]);
     
+    const startActivity = useCallback(() => {
+        audioManager.current?.forceInitialize();
+        
+        setIsPlaying(true);
+        setShowResults(false);
+        setCurrentLevel(1);
+        setScore(0);
+        setCombo(0);
+        setMaxCombo(0);
+        setBubbles([]);
+        setParticles([]);
+        setScoreEffects([]);
+        setFishEffects([]);
+        setOxygenLevel(100);
+        setPoppedBubbles(0);
+        setMissedBubbles(0);
+        setCompletedLevels([]);
+        setBubblesSpawned(0);
+        setBubblesRemaining(levelConfigs[0].totalBubbles);
+        setSavedFish(0);
+        setMultiplier(1);
+        setEquipment({ mask: false, fins: false, tank: false, suit: false, light: false });
+        setLevelCompleted(false);
+    }, []);
+
     const voltarInicio = useCallback(() => {
         setIsPlaying(false);
         setShowResults(false);
@@ -483,7 +484,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         currentLevel,
         levelMessage, showLevelTransition, equipment, savedFish, bubblesRemaining,
         multiplier, showResults, maxCombo,
-        completedLevels, bossDefeated, freedCreatures, salvando, accuracy,
+        completedLevels, salvando, accuracy,
         startActivity,
         handleInteraction,
         handleSaveSession,
