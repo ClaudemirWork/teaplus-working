@@ -128,11 +128,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }, 2000);
     }, [currentLevel]);
     
-    const createParticles = useCallback((x: number, y: number, color: string, type: string = 'normal') => {
-        // ... (lógica completa de createParticles)
-    }, []);
-
-    const popBubble = useCallback((bubble: Bubble, x: number, y: number) => {
+    const popBubble = useCallback((bubble: Bubble) => {
         if (bubble.popped) return;
     
         setBubbles(prev => prev.map(b => b.id === bubble.id ? { ...b, popped: true } : b));
@@ -159,12 +155,11 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
 
         if (bubble.type === 'oxygen') {
             setOxygenLevel(prev => Math.min(100, prev + 10));
+        } else if (bubble.type === 'fish') {
+            setSavedFish(prev => prev + 1);
+            setOxygenLevel(prev => Math.min(100, prev + 5));
         } else {
             setOxygenLevel(prev => Math.min(100, prev + 3));
-        }
-
-        if(bubble.type === 'fish') {
-            setSavedFish(prev => prev + 1);
         }
 
     }, [multiplier, resetLevel]);
@@ -176,20 +171,23 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
         const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
         
-        bubbles.forEach(bubble => {
-            if (bubble.popped) return;
+        for (let i = bubbles.length - 1; i >= 0; i--) {
+            const bubble = bubbles[i];
+            if (bubble.popped) continue;
+
             const bubbleCenterX = bubble.x + bubble.size / 2;
             const bubbleCenterY = bubble.y + bubble.size / 2;
             const distance = Math.sqrt(Math.pow(x - bubbleCenterX, 2) + Math.pow(y - bubbleCenterY, 2));
+
             if (distance <= bubble.size / 2) {
-                popBubble(bubble, x, y);
+                popBubble(bubble);
+                break;
             }
-        });
+        }
     }, [isPlaying, bubbles, popBubble, gameAreaRef]);
 
     const updateBubbles = useCallback(() => {
         if (!gameAreaRef.current) return;
-        const gameArea = gameAreaRef.current.getBoundingClientRect();
         setBubbles(prev => 
             prev.map(bubble => {
                 if (bubble.popped) {
@@ -201,7 +199,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                         setMissedBubbles(prevMissed => prevMissed + 1);
                         setCombo(0);
                     }
-                    return { ...bubble, y: newY, opacity: 0 };
+                    return { ...bubble, opacity: 0 };
                 }
                 return { ...bubble, y: newY };
             }).filter(bubble => bubble.opacity > 0)
@@ -222,11 +220,16 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             type = 'mine';
             bubbleConfig = { color: '#8B0000', points: -20, size: 45 };
         } else {
-            const colorRand = Math.random();
-            if (colorRand < 0.3) type = 'air';
-            else if (colorRand < 0.45) type = 'oxygen';
-            else type = 'fish';
-            bubbleConfig = coloredBubbles[type as keyof typeof coloredBubbles] || coloredBubbles.air;
+            const featureRand = Math.random();
+            if (config.features.includes('fish_rescue') && featureRand < 0.15) {
+                type = 'fish';
+                bubbleConfig = { color: '#87CEEB', points: 50, size: 55 };
+            } else {
+                const colorRand = Math.random();
+                if (colorRand < 0.4) type = 'air';
+                else type = 'oxygen';
+                bubbleConfig = coloredBubbles[type];
+            }
         }
     
         const newBubble: Bubble = {
@@ -244,8 +247,13 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     
         setBubbles(prev => [...prev, newBubble]);
         setBubblesSpawned(prev => prev + 1);
-        setBubblesRemaining(prev => prev - 1);
     }, [isPlaying, levelCompleted, currentLevel, bubblesSpawned, gameAreaRef]);
+
+    useEffect(() => {
+        if (isPlaying) {
+            setBubblesRemaining(levelConfigs[currentLevel - 1].totalBubbles - bubblesSpawned);
+        }
+    }, [isPlaying, bubblesSpawned, currentLevel]);
 
     useEffect(() => {
         if (!isPlaying) return;
@@ -255,9 +263,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         };
         animationRef.current = requestAnimationFrame(gameLoop);
         return () => {
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current);
-            }
+            if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
     }, [isPlaying, updateBubbles]);
 
@@ -295,13 +301,14 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             createCelebrationBurst();
 
             setTimeout(() => {
-                if (currentLevel + 1 < levelConfigs.length) {
-                    setCurrentLevel(prev => prev + 1);
+                const nextLevel = currentLevel + 1;
+                if (nextLevel <= levelConfigs.length) {
+                    setCurrentLevel(nextLevel);
                     setBubbles([]);
                     setParticles([]);
                     setCombo(0);
                     setBubblesSpawned(0);
-                    setBubblesRemaining(levelConfigs[currentLevel].totalBubbles);
+                    setBubblesRemaining(levelConfigs[nextLevel - 1].totalBubbles);
                     setOxygenLevel(100);
                     setLevelCompleted(false);
                     setShowLevelTransition(false);
@@ -312,7 +319,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, [isPlaying, bubbles, bubblesSpawned, currentLevel, levelCompleted, createCelebrationBurst, endGame]);
 
-    const startActivityCallback = useCallback(() => {
+    const startActivity = useCallback(() => {
         setIsPlaying(true);
         setShowResults(false);
         setCurrentLevel(1);
@@ -335,21 +342,42 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         setBossDefeated(false);
     }, []);
 
-    const voltarInicioCallback = useCallback(() => {
+    const voltarInicio = useCallback(() => {
         setIsPlaying(false);
         setShowResults(false);
-        // Resetar qualquer estado necessário ao voltar para o início
     }, []);
+
+    const handleSaveSession = useCallback(async () => {
+        setSalvando(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                router.push('/login');
+                return;
+            }
+            await supabase.from('sessoes').insert([{
+                usuario_id: user.id,
+                atividade_nome: 'Oceano de Bolhas - Aventura Completa',
+                pontuacao_final: score,
+                data_fim: new Date().toISOString()
+            }]);
+            router.push('/dashboard');
+        } catch (error) {
+            console.error("Erro ao salvar sessão:", error);
+        } finally {
+            setSalvando(false);
+        }
+    }, [score, router, supabase]);
 
     return {
         isPlaying, score, combo, oxygenLevel, bubbles, particles, currentLevel,
         levelMessage, showLevelTransition, equipment, savedFish, bubblesRemaining,
         multiplier, multiplierTime, magnetActive, magnetTime, showResults, maxCombo,
         completedLevels, bossDefeated, freedCreatures, salvando, accuracy,
-        startActivity: startActivityCallback,
+        startActivity,
         handleInteraction,
         handleSaveSession,
-        voltarInicio: voltarInicioCallback,
+        voltarInicio,
         audioEnabled,
         toggleAudio,
         levelConfigs,
