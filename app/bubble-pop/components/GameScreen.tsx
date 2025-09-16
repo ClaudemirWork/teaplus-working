@@ -1,18 +1,15 @@
 // app/bubble-pop/components/GameScreen.tsx
+'use client';
 
 import React from 'react';
-import { Bubble, Particle, Equipment } from '@/app/types/bubble-pop'; // Ajuste o caminho
-// ... (importe ícones e outros itens necessários) ...
+import { ChevronLeft, Save, Volume2, VolumeX } from 'lucide-react';
+import { Bubble, Particle, Equipment } from '@/app/types/bubble-pop'; // Ajuste
+import styles from '../bubble-pop.module.css';
 
-interface GameScreenProps {
-  // Defina todas as props que este componente precisa
-}
+// ... (Definição de props) ...
 
-export const GameScreen = React.memo(({ /* ...props... */ }: GameScreenProps) => {
-  // ... (Cole aqui apenas o JSX e a lógica da tela de jogo) ...
-  return (
-    <div className="min-h-screen bg-gray-50">
-        {/* ... JSX da tela de jogo ... */}
-    </div>
-  );
+export const GameScreen = React.forwardRef<HTMLDivElement, GameScreenProps>((props, ref) => {
+    // ... (JSX da tela de jogo) ...
 });
+
+GameScreen.displayName = 'GameScreen';
