@@ -16,9 +16,10 @@ interface ResultsScreenProps {
     salvando: boolean;
     onRestart: () => void;
     handleSaveSession: () => void;
+    accuracy: number;
 }
 
-export const ResultsScreen = React.memo(({ score, savedFish, maxCombo, completedLevels, equipment, bossDefeated, salvando, onRestart, handleSaveSession }: ResultsScreenProps) => {
+export const ResultsScreen = React.memo(({ score, savedFish, maxCombo, completedLevels, equipment, bossDefeated, salvando, onRestart, handleSaveSession, accuracy }: ResultsScreenProps) => {
     
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -46,8 +47,8 @@ export const ResultsScreen = React.memo(({ score, savedFish, maxCombo, completed
                         <div className="text-xs text-orange-600">Combo Máximo</div>
                     </div>
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 sm:p-3 text-center">
-                        <div className="text-lg sm:text-xl font-bold text-purple-800">{completedLevels.length}/11</div>
-                        <div className="text-xs text-purple-600">Níveis Concluídos</div>
+                        <div className="text-lg sm:text-xl font-bold text-purple-800">{accuracy}%</div>
+                        <div className="text-xs text-purple-600">Precisão</div>
                     </div>
                 </div>
                 
