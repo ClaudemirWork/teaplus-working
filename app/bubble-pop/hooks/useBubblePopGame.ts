@@ -69,6 +69,10 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const [multiplier, setMultiplier] = useState(1);
     const [audioEnabled, setAudioEnabled] = useState(true);
     const [levelCompleted, setLevelCompleted] = useState(false);
+    
+    // LINHA QUE FALTAVA ADICIONADA AQUI
+    const [freedCreatures, setFreedCreatures] = useState<string[]>([]);
+    const [bossDefeated, setBossDefeated] = useState(false);
 
     useEffect(() => {
         if (!audioManager.current) {
@@ -126,8 +130,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             console.error("Web Audio API error:", e);
         }
     }, [audioEnabled]);
-    
-    // ... (outras funções permanecem iguais)
 
     const createBubble = useCallback(() => {
         if (!isPlaying || !gameAreaRef.current || levelCompleted) return;
@@ -143,16 +145,12 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             type = 'mine';
             bubbleConfig = { color: '#8B0000', points: -20, size: 45 };
         } else {
-            // ==========================================================
-            // LÓGICA DE SORTEIO DE CORES RESTAURADA DO CÓDIGO ORIGINAL
-            // ==========================================================
             const featureRand = Math.random();
             if (config.features.includes('fish_rescue') && featureRand < 0.15) {
                 type = 'fish';
                 bubbleConfig = { color: '#87CEEB', points: 50, size: 55 };
             } else {
                 const colorRand = Math.random();
-                // A lógica abaixo foi adaptada para usar os tipos corretos
                 const types = Object.keys(coloredBubbles) as (keyof typeof coloredBubbles)[];
                 const selectedType = types[Math.floor(colorRand * types.length)];
                 type = selectedType;
@@ -177,7 +175,8 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         setBubblesSpawned(prev => prev + 1);
     }, [isPlaying, levelCompleted, currentLevel, bubblesSpawned, gameAreaRef]);
     
-    // ... (O resto do hook permanece o mesmo, incluindo popBubble, handleInteraction, etc.)
+    // O resto do hook (popBubble, startActivity, etc.) continua o mesmo
+    // ...
     const toggleAudio = useCallback(() => {
         if (audioManager.current) {
             const newState = audioManager.current.toggleAudio();
@@ -492,5 +491,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         audioEnabled,
         toggleAudio,
         levelConfigs,
+        bossDefeated, // Retornar esses estados também
+        freedCreatures,
     };
 }
