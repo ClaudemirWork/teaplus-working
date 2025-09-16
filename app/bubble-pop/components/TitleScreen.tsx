@@ -59,7 +59,7 @@ export const TitleScreen = React.memo(({ onStart, toggleAudio, audioEnabled, tot
             </button>
             <div className="relative z-10 flex flex-col items-center text-center">
                 <div className="mb-4 animate-bounce-slow">
-                    <Image src="/images/mascotes/mila/Mila_roupa_mergulho.png" alt="Mila" width={400} height={400} className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl" priority />
+                    <Image src="/images/mascotes/mila/Mila_roupa_mergulho.png" alt="Mila" width={400} height={400} className="w-[280px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl" priority onError={(e) => { const target = e.target as HTMLImageElement; target.src = "https://via.placeholder.com/400x400?text=Mila"; }} />
                 </div>
                 <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white drop-shadow-lg mb-4">
                     Oceano de Bolhas
