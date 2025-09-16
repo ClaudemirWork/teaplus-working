@@ -15,11 +15,9 @@ export default function BubblePopPage() {
     const [totalStars, setTotalStars] = useState(0);
     const [bestScore, setBestScore] = useState(0);
 
-    // O motor do jogo é chamado aqui!
-    const game = useBubblePopGame();
+    const game = useBubblePopGame(gameAreaRef);
 
     useEffect(() => {
-        // Carregar dados salvos do localStorage
         const savedStars = localStorage.getItem('bubblePop_totalStars');
         const savedBest = localStorage.getItem('bubblePop_bestScore');
         if (savedStars) setTotalStars(parseInt(savedStars));
@@ -27,10 +25,12 @@ export default function BubblePopPage() {
     }, []);
 
     const handleStart = () => setCurrentScreen('instructions');
+
     const handlePlay = () => {
         game.startActivity();
         setCurrentScreen('game');
     };
+
     const handleRestart = () => {
         game.voltarInicio();
         setCurrentScreen('title');
@@ -38,7 +38,6 @@ export default function BubblePopPage() {
 
     useEffect(() => {
         if (game.showResults) {
-            // Atualizar recordes no final do jogo
             const newStars = totalStars + (game.savedFish * 10);
             localStorage.setItem('bubblePop_totalStars', newStars.toString());
             setTotalStars(newStars);
@@ -48,7 +47,7 @@ export default function BubblePopPage() {
             }
             setCurrentScreen('results');
         }
-    }, [game.showResults]);
+    }, [game.showResults, game.savedFish, game.score, totalStars, bestScore]);
 
     if (currentScreen === 'title') {
         return <TitleScreen onStart={handleStart} toggleAudio={game.toggleAudio} audioEnabled={game.audioEnabled} totalStarsCollected={totalStars} bestScore={bestScore} />;
