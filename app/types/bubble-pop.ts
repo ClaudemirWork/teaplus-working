@@ -1,5 +1,4 @@
 // app/types/bubble-pop.ts
-
 export interface Bubble {
   id: number;
   x: number;
@@ -8,12 +7,17 @@ export interface Bubble {
   speed: number;
   color: string;
   points: number;
-  type: 'air' | 'oxygen' | 'pink' | 'purple' | 'yellow' | 'green' | 'orange' | 'mine' | 'treasure' | 'pearl' | 'fish' | 'double' | 'triple' | 'shockwave' | 'magnet' | 'equipment' | 'boss_minion';
+  type: 'air' | 'oxygen' | 'pink' | 'purple' | 'yellow' | 'green' | 'orange' | 
+        'mine' | 'treasure' | 'pearl' | 'fish' | 'double' | 'triple' | 
+        'shockwave' | 'magnet' | 'equipment' | 'boss_minion' |
+        'pufferfish' | 'starfish' | 'octopus';  // ADICIONAR ESTES TRÊS
   popped: boolean;
   opacity: number;
   horizontalMovement?: number;
   equipmentType?: string;
   fishType?: string;
+  emoji?: string;  // ADICIONAR ESTE CAMPO
+  message?: string; // ADICIONAR ESTE CAMPO
 }
 
 export interface Particle {
@@ -33,4 +37,15 @@ export interface Equipment {
   tank: boolean;
   suit: boolean;
   light: boolean;
+}
+
+export interface LevelConfig {
+  level: number;
+  name: string;
+  depth: string;
+  totalBubbles: number;
+  minePercentage: number;
+  spawnRate: number;
+  oxygenDrain: number;
+  bgGradient: string;
 }
