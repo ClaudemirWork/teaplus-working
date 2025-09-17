@@ -391,58 +391,29 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     animationRef.current = requestAnimationFrame(gameLoop);
   }, [isPlaying, currentLevel]);
 
-  // Atualizar contador de bolhas
-  useEffect(() => {
-    const activeBubbles = bubbles.filter(b => !b.popped).length;
-    setBubblesRemaining(activeBubbles);
-
-    // Verificar condições de fim de nível/jogo
-    if (isPlaying) {
-      if (activeBubbles === 0 || oxygenLevel <= 0) {
-        setIsPlaying(false);
-        
-        if (currentLevel < 5 && activeBubbles === 0) {
-          // Nível completo
-          setCompletedLevels(prev => [...prev, currentLevel]);
-          setShowLevelTransition(true);
-          setLevelMessage(`Nível ${currentLevel} Completo!`);
-          
-          setTimeout(() => {
-            const nextLevel = currentLevel + 1;
-            setCurrentLevel(nextLevel);
-            
-            if (audioEnabled && audioManager.current) {
-              const levelPhrases = [
-                'Ai sim, vamos para a fase 2!',
-                'Ai sim, vamos para a fase 3!',
-                'Ai sim, vamos para a fase 4!',
-                'Ai sim, vamos para a fase 5!'
-              ];
-              if (nextLevel >= 2 && nextLevel <= 5) {
-                audioManager.current.falarMila(levelPhrases[nextLevel - 2]);
-              }
-            }
-            
-            setShowLevelTransition(false);
-            setOxygenLevel(100);
-            setBubbles([]);
-            setCombo(0);
-            setTimeout(() => setIsPlaying(true), 1000);
-          }, 3000);
-        } else {
-          // Fim do jogo
-          setShowResults(true);
-          if (currentLevel >= 5 && audioEnabled && audioManager.current) {
-            audioManager.current.falarMila('Parabéns! Você completou todos os níveis!');
-          }
-        }
-      }
-    }
-  }, [bubbles, isPlaying, currentLevel, oxygenLevel, audioEnabled]);
-
-  // Iniciar jogo
-  const startGame = useCallback(() => {
+  // Função principal de iniciar jogo (ORIGINAL)
+  const startActivity = useCallback(() => {
     setIsPlaying(true);
+    setScore(0);
+    setOxygenLevel(100);
+    setCurrentLevel(1);
+    setCombo(0);
+    setMaxCombo(0);
+    setPoppedBubbles(0);
+    setMissedBubbles(0);
+    setBubbles([]);
+    setParticles([]);
+    setCompletedLevels([]);
+    setFishCollection([]);
+    setUnlockedGear([]);
+    setShowResults(false);
+    setShowLevelTransition(false);
+    lastScoreMilestone.current = 0;
+  }, []);
+
+  // Função voltar ao início (ORIGINAL)
+  const voltarInicio = useCallback(() => {
+    setIsPlaying(false);
     setScore(0);
     setOxygenLevel(100);
     setCurrentLevel(1);
@@ -496,10 +467,14 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     }
   }, [score, maxCombo, completedLevels, poppedBubbles, missedBubbles, fishCollection, unlockedGear, supabase, audioEnabled]);
 
-  // Reiniciar jogo
-  const restartGame = useCallback(() => {
-    startGame();
-  }, [startGame]);
+  // Atualizar contador de bolhas e condições de fim de jogo
+  useEffect(() => {
+    const activeBubbles = bubbles.filter(b => !b.popped).length;
+    setBubblesRemaining(activeBubbles);
+
+    // REMOVIDA A LÓGICA AUTOMÁTICA DE TRANSIÇÃO AQUI
+    // Deixar apenas o game manual
+  }, [bubbles]);
 
   // Spawn de bolhas
   useEffect(() => {
@@ -554,9 +529,9 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     // Configurações
     levelConfigs,
 
-    // Funções
-    startGame,
-    restartGame,
+    // Funções ORIGINAIS (compatibilidade)
+    startActivity,  // ✅ ORIGINAL
+    voltarInicio,   // ✅ ORIGINAL
     handleInteraction,
     toggleAudio,
     handleSaveSession
