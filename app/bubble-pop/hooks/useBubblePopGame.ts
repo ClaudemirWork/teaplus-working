@@ -32,6 +32,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
   const [bubblesRemaining, setBubblesRemaining] = useState(0);
   const [fishCollection, setFishCollection] = useState<Array<{id: number, name: string, type: string}>>([]);
   const [unlockedGear, setUnlockedGear] = useState<Array<{level: number, item: string, icon: string}>>([]);
+  const [bubblesPopped, setBubblesPopped] = useState(0); // Contador de bolhas estouradas no nível
 
   // Refs para controle de frequência do áudio
   const lastAudioTime = useRef<number>(0);
@@ -60,17 +61,47 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
 
   // Configurações dos níveis
   const levelConfigs = [
-    { level: 1, name: 'Águas Rasas', depth: '0-10m', totalBubbles: 30, minePercentage: 0.05, spawnRate: 2000, oxygenDrain: 0.5, bgGradient: 'from-cyan-200 to-blue-400' },
-    { level: 2, name: 'Zona Iluminada', depth: '10-50m', totalBubbles: 40, minePercentage: 0.08, spawnRate: 1800, oxygenDrain: 0.7, bgGradient: 'from-blue-400 to-blue-600' },
-    { level: 3, name: 'Zona Crepuscular', depth: '50-100m', totalBubbles: 50, minePercentage: 0.1, spawnRate: 1600, oxygenDrain: 0.9, bgGradient: 'from-blue-600 to-indigo-700' },
-    { level: 4, name: 'Zona Escura', depth: '100-500m', totalBubbles: 60, minePercentage: 0.12, spawnRate: 1400, oxygenDrain: 1.1, bgGradient: 'from-indigo-700 to-purple-900' },
-    { level: 5, name: 'Águas Profundas', depth: '500m+', totalBubbles: 70, minePercentage: 0.15, spawnRate: 1200, oxygenDrain: 1.3, bgGradient: 'from-purple-900 to-black' }
+    { level: 1, name: 'Águas Rasas', depth: '0-10m', totalBubbles: 25, minePercentage: 0.05, spawnRate: 2000, oxygenDrain: 0.5, bgGradient: 'from-cyan-200 to-blue-400' },
+    { level: 2, name: 'Zona Iluminada', depth: '10-50m', totalBubbles: 30, minePercentage: 0.08, spawnRate: 1800, oxygenDrain: 0.7, bgGradient: 'from-blue-400 to-blue-600' },
+    { level: 3, name: 'Zona Crepuscular', depth: '50-100m', totalBubbles: 35, minePercentage: 0.1, spawnRate: 1600, oxygenDrain: 0.9, bgGradient: 'from-blue-600 to-indigo-700' },
+    { level: 4, name: 'Zona Escura', depth: '100-500m', totalBubbles: 40, minePercentage: 0.12, spawnRate: 1400, oxygenDrain: 1.1, bgGradient: 'from-indigo-700 to-purple-900' },
+    { level: 5, name: 'Águas Profundas', depth: '500m+', totalBubbles: 45, minePercentage: 0.15, spawnRate: 1200, oxygenDrain: 1.3, bgGradient: 'from-purple-900 to-black' }
   ];
 
   // Inicialização do gerenciador de áudio
   useEffect(() => {
     audioManager.current = GameAudioManager.getInstance();
   }, []);
+
+  // Função para som de bolha estourando (RESTAURADO)
+  const playBubblePopSound = useCallback(() => {
+    if (!audioEnabled || !audioManager.current) return;
+    
+    // Som sintético de bolha estourando
+    try {
+      const audioContext = audioManager.current.audioContext;
+      if (audioContext && audioContext.state === 'running') {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Configuração do som de bolha
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.1);
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+        
+        oscillator.type = 'sine';
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.15);
+      }
+    } catch (error) {
+      console.log('Erro ao tocar som de bolha:', error);
+    }
+  }, [audioEnabled]);
 
   // Função para criar bolhas
   const createBubble = useCallback((): Bubble => {
@@ -290,6 +321,9 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
       b.id === clickedBubble.id ? { ...b, popped: true, opacity: 0 } : b
     ));
 
+    // Incrementar contador de bolhas estouradas
+    setBubblesPopped(prev => prev + 1);
+
     // Processar pontuação
     const bonusPoints = combo * 5;
     const newScore = score + clickedBubble.points + bonusPoints;
@@ -298,6 +332,9 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
 
     // Verificar marcos de pontuação
     checkScoreMilestone(newScore);
+
+    // Som de bolha estourando (RESTAURADO)
+    playBubblePopSound();
 
     // Processar efeitos especiais
     if (clickedBubble.type === 'oxygen') {
@@ -351,12 +388,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
 
     // Criar partículas
     createParticles(clickedBubble.x + clickedBubble.size / 2, clickedBubble.y + clickedBubble.size / 2, clickedBubble.color);
-
-    // Tocar som de bolha
-    if (audioEnabled && audioManager.current) {
-      audioManager.current.tocarSom('bubble_pop');
-    }
-  }, [isPlaying, score, combo, detectBubbleClick, checkScoreMilestone, playAnimalSound, createParticles, audioEnabled, currentLevel]);
+  }, [isPlaying, score, combo, detectBubbleClick, checkScoreMilestone, playAnimalSound, createParticles, audioEnabled, currentLevel, playBubblePopSound]);
 
   // Loop principal do jogo
   const gameLoop = useCallback(() => {
@@ -408,6 +440,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     setUnlockedGear([]);
     setShowResults(false);
     setShowLevelTransition(false);
+    setBubblesPopped(0); // Reset contador
     lastScoreMilestone.current = 0;
   }, []);
 
@@ -428,6 +461,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     setUnlockedGear([]);
     setShowResults(false);
     setShowLevelTransition(false);
+    setBubblesPopped(0); // Reset contador
     lastScoreMilestone.current = 0;
   }, []);
 
@@ -467,14 +501,59 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     }
   }, [score, maxCombo, completedLevels, poppedBubbles, missedBubbles, fishCollection, unlockedGear, supabase, audioEnabled]);
 
-  // Atualizar contador de bolhas e condições de fim de jogo
+  // Controle de progressão de níveis (RESTAURADO)
   useEffect(() => {
     const activeBubbles = bubbles.filter(b => !b.popped).length;
     setBubblesRemaining(activeBubbles);
 
-    // REMOVIDA A LÓGICA AUTOMÁTICA DE TRANSIÇÃO AQUI
-    // Deixar apenas o game manual
-  }, [bubbles]);
+    // Verificar condições de fim de nível/jogo
+    if (isPlaying) {
+      const targetBubbles = levelConfigs[currentLevel - 1].totalBubbles;
+      
+      if (bubblesPopped >= targetBubbles && currentLevel < 5) {
+        // Nível completo - próximo nível
+        setIsPlaying(false);
+        setCompletedLevels(prev => [...prev, currentLevel]);
+        setShowLevelTransition(true);
+        setLevelMessage(`Nível ${currentLevel} Completo!`);
+        
+        setTimeout(() => {
+          const nextLevel = currentLevel + 1;
+          setCurrentLevel(nextLevel);
+          
+          if (audioEnabled && audioManager.current) {
+            const levelPhrases = [
+              'Ai sim, vamos para a fase 2!',
+              'Ai sim, vamos para a fase 3!',
+              'Ai sim, vamos para a fase 4!',
+              'Ai sim, vamos para a fase 5!'
+            ];
+            if (nextLevel >= 2 && nextLevel <= 5) {
+              audioManager.current.falarMila(levelPhrases[nextLevel - 2]);
+            }
+          }
+          
+          setShowLevelTransition(false);
+          setOxygenLevel(100);
+          setBubbles([]);
+          setCombo(0);
+          setBubblesPopped(0); // Reset contador para o próximo nível
+          setTimeout(() => setIsPlaying(true), 1000);
+        }, 3000);
+      } else if (bubblesPopped >= targetBubbles && currentLevel >= 5) {
+        // Jogo completo
+        setIsPlaying(false);
+        setShowResults(true);
+        if (audioEnabled && audioManager.current) {
+          audioManager.current.falarMila('Parabéns! Você completou todos os níveis!');
+        }
+      } else if (oxygenLevel <= 0) {
+        // Game over por falta de oxigênio
+        setIsPlaying(false);
+        setShowResults(true);
+      }
+    }
+  }, [bubbles, bubblesPopped, isPlaying, currentLevel, oxygenLevel, audioEnabled]);
 
   // Spawn de bolhas
   useEffect(() => {
