@@ -346,44 +346,66 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, [combo, createParticles, playPopSound, audioEnabled]);
 
-    // HANDLE INTERACTION 100% COMPATÍVEL e ROBUSTO
+    // Função handleInteraction corrigida
     const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
         if (!gameAreaRef.current || !isPlaying) return;
-        // Não use preventDefault aqui!
+        
         const rect = gameAreaRef.current.getBoundingClientRect();
         const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
         const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
         const x = clientX - rect.left;
         const y = clientY - rect.top;
+        
+        // Adicionando log para depuração
+        console.log(`Clique em: (${x}, ${y})`);
+        
         let closestBubble: Bubble | null = null;
         let closestDistance = Infinity;
-        for (let i = 0; i < bubbles.length; i++) {
-            const bubble = bubbles[i];
+        
+        // Usar uma cópia atualizada das bolhas para evitar problemas de sincronização
+        const currentBubbles = [...bubbles];
+        
+        for (let i = 0; i < currentBubbles.length; i++) {
+            const bubble = currentBubbles[i];
             if (bubble.popped) continue;
+            
+            // Calcular o centro da bolha
             const bubbleCenterX = bubble.x + bubble.size / 2;
             const bubbleCenterY = bubble.y + bubble.size / 2;
+            
+            // Calcular distância entre clique e centro da bolha
             const distance = Math.sqrt(
                 Math.pow(x - bubbleCenterX, 2) +
                 Math.pow(y - bubbleCenterY, 2)
             );
-            // Use raio ampliado:
-            const hitRadius = bubble.size;
+            
+            // Log para depuração
+            console.log(`Verificando bolha ${i}: ID=${bubble.id}, Centro=(${bubbleCenterX},${bubbleCenterY}), Distância=${distance}`);
+            
+            // CORREÇÃO: Usar metade do tamanho como raio de colisão
+            const hitRadius = bubble.size / 2;
+            
+            // Verificar se o clique está dentro do raio da bolha
             if (distance <= hitRadius && distance < closestDistance) {
                 closestDistance = distance;
                 closestBubble = bubble;
             }
         }
+        
         if (closestBubble) {
+            console.log(`Bolha mais próxima: ID=${closestBubble.id}, Distância=${closestDistance}`);
             const now = Date.now();
             if (lastClickedBubble !== closestBubble.id || now - lastClickTime > 100) {
                 popBubble(closestBubble, x, y);
                 setLastClickedBubble(closestBubble.id);
                 setLastClickTime(now);
             }
+        } else {
+            console.log("Nenhuma bolha encontrada dentro do raio de clique");
         }
     }, [isPlaying, bubbles, popBubble, gameAreaRef, lastClickedBubble, lastClickTime]);
 
-    // Spawn, loop, término e outras funções (igual do seu código prévio)
+    // Spawn, loop, término e outras funções
     useEffect(() => {
         if (!isPlaying) return;
         let lastTime = 0;
@@ -492,6 +514,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         setLastClickedBubble(null);
         setLastClickTime(0);
     }, []);
+    
     const voltarInicio = useCallback(() => {
         setJogoIniciado(false);
         setShowResults(false);
@@ -501,6 +524,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         setLastClickedBubble(null);
         setLastClickTime(0);
     }, []);
+    
     const handleSaveSession = useCallback(async () => {
         setSalvando(true);
         try {
@@ -522,6 +546,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             setSalvando(false);
         }
     }, [supabase, router, score]);
+    
     const toggleAudio = useCallback(() => {
         if (audioManager.current) {
             const newState = audioManager.current.toggleAudio();
