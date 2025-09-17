@@ -39,7 +39,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const [unlockedGear, setUnlockedGear] = useState<{level: number, item: string, icon: string}[]>([]);
     const [activeGearItems, setActiveGearItems] = useState<{level: number, item: string, icon: string, x: number, y: number}[]>([]);
 
-    // Configuração dos níveis - IGUAL AO CÓDIGO ORIGINAL FUNCIONAL
+    // Configuração dos níveis
     const levelConfigs = [
         {
             level: 1,
@@ -122,9 +122,12 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, []);
 
-    // Criar nova bolha
+    // Criar nova bolha com velocidade variável
     const createBubble = useCallback(() => {
-        if (!isPlaying || !gameAreaRef.current) return;
+        if (!isPlaying || !gameAreaRef.current) {
+            console.log("Não é possível criar bolha: isPlaying =", isPlaying, "gameAreaRef =", !!gameAreaRef.current);
+            return;
+        }
 
         const config = levelConfigs[currentLevel - 1];
         if (bubblesSpawned >= config.totalBubbles) return;
@@ -183,12 +186,17 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             }
         }
 
+        // Velocidade baseada no nível e com variação aleatória
+        const baseSpeed = 3 + (currentLevel * 0.5);
+        const speedVariation = Math.random() * 2 - 1; // Variação entre -1 e 1
+        const finalSpeed = baseSpeed + speedVariation;
+
         const newBubble: Bubble = {
             id: Date.now() + Math.random(),
             x: Math.random() * (gameArea.width - bubbleConfig.size),
             y: gameArea.height + bubbleConfig.size,
             size: bubbleConfig.size + (Math.random() * 10 - 5),
-            speed: 2, // VELOCIDADE CONSTANTE
+            speed: finalSpeed, // VELOCIDADE VARIÁVEL
             color: bubbleConfig.color,
             points: bubbleConfig.points,
             type: type,
@@ -197,48 +205,60 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             horizontalMovement: horizontalMovement
         };
 
-        setBubbles(prev => [...prev, newBubble]);
+        console.log(`Criando bolha: tipo=${type}, velocidade=${finalSpeed}, total=${bubblesSpawned + 1}`);
+        
+        setBubbles(prev => {
+            console.log(`Adicionando bolha ao array. Total antes: ${prev.length}, total depois: ${prev.length + 1}`);
+            return [...prev, newBubble];
+        });
+        
         setTotalBubbles(prev => prev + 1);
         setBubblesSpawned(prev => prev + 1);
         setBubblesRemaining(prev => prev - 1);
     }, [isPlaying, currentLevel, bubblesSpawned, gameAreaRef]);
 
-    // Atualizar posição das bolhas - FUNÇÃO SEPARADA
+    // Atualizar posição das bolhas com remoção imediata
     const updateBubbles = useCallback(() => {
         if (!gameAreaRef.current) return;
 
         const gameArea = gameAreaRef.current.getBoundingClientRect();
-
-        setBubbles(prev => prev.map(bubble => {
-            if (bubble.popped) {
-                return { ...bubble, opacity: bubble.opacity - 0.05 };
-            }
-
-            let newY = bubble.y - bubble.speed;
-            let newX = bubble.x;
-
-            if (bubble.horizontalMovement) {
-                newX += bubble.horizontalMovement;
-                if (newX <= 0 || newX >= gameArea.width - bubble.size) {
-                    bubble.horizontalMovement = -bubble.horizontalMovement;
-                    newX = Math.max(0, Math.min(gameArea.width - bubble.size, newX));
+        
+        setBubbles(prev => {
+            const updatedBubbles = prev.map(bubble => {
+                if (bubble.popped) {
+                    return { ...bubble, opacity: bubble.opacity - 0.05 };
                 }
-            }
 
-            if (newY < -bubble.size) {
-                if (!bubble.popped && bubble.type !== 'mine') {
-                    setMissedBubbles(prev => prev + 1);
-                    setCombo(0);
-                    setOxygenLevel(prev => Math.max(0, prev - 1));
+                let newY = bubble.y - bubble.speed;
+                let newX = bubble.x;
+
+                if (bubble.horizontalMovement) {
+                    newX += bubble.horizontalMovement;
+                    if (newX <= 0 || newX >= gameArea.width - bubble.size) {
+                        bubble.horizontalMovement = -bubble.horizontalMovement;
+                        newX = Math.max(0, Math.min(gameArea.width - bubble.size, newX));
+                    }
                 }
-                return { ...bubble, y: newY, opacity: 0 };
-            }
 
-            return { ...bubble, y: newY, x: newX };
-        }).filter(bubble => bubble.opacity > 0));
+                // Se a bolha saiu da tela, marcar para remoção
+                if (newY < -bubble.size) {
+                    if (!bubble.popped && bubble.type !== 'mine') {
+                        setMissedBubbles(prev => prev + 1);
+                        setCombo(0);
+                        setOxygenLevel(prev => Math.max(0, prev - 1));
+                    }
+                    return { ...bubble, opacity: 0 }; // Marcar para remoção
+                }
+
+                return { ...bubble, y: newY, x: newX };
+            });
+            
+            // Remover bolhas com opacidade 0 ou que saíram da tela
+            return updatedBubbles.filter(bubble => bubble.opacity > 0);
+        });
     }, [gameAreaRef]);
 
-    // Atualizar partículas - FUNÇÃO SEPARADA
+    // Atualizar partículas
     const updateParticles = useCallback(() => {
         setParticles(prev => prev.map(particle => ({
             ...particle,
@@ -404,13 +424,20 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         });
     }, [isPlaying, bubbles, popBubble, gameAreaRef]);
 
-    // Game loop - ESTRUTURA CORRETA
+    // Game loop otimizado com controle de FPS
     useEffect(() => {
         if (!isPlaying) return;
 
-        const gameLoop = () => {
-            updateBubbles();
-            updateParticles();
+        let lastTime = 0;
+        const targetFPS = 60;
+        const frameInterval = 1000 / targetFPS;
+
+        const gameLoop = (timestamp: number) => {
+            if (!lastTime || timestamp - lastTime >= frameInterval) {
+                updateBubbles();
+                updateParticles();
+                lastTime = timestamp;
+            }
             animationRef.current = requestAnimationFrame(gameLoop);
         };
 
@@ -423,16 +450,23 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         };
     }, [isPlaying, updateBubbles, updateParticles]);
 
-    // Spawn de bolhas
+    // Spawn de bolhas com taxa ajustada por nível
     useEffect(() => {
         if (!isPlaying) return;
 
         const config = levelConfigs[currentLevel - 1];
+        
+        // Ajustar a taxa de spawn com base no nível
+        const adjustedSpawnRate = Math.max(200, config.spawnRate - (currentLevel * 50));
+        
         const spawnInterval = setInterval(() => {
             if (bubblesSpawned < config.totalBubbles) {
                 createBubble();
+            } else {
+                // Parar de gerar bolhas quando atingir o limite
+                clearInterval(spawnInterval);
             }
-        }, config.spawnRate);
+        }, adjustedSpawnRate);
 
         return () => clearInterval(spawnInterval);
     }, [isPlaying, currentLevel, bubblesSpawned, createBubble]);
