@@ -343,13 +343,15 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                 oscillator.stop(audioContext.currentTime + 0.05);
             }
         } catch (e) {
-            // Silently fail
+            console.error('Erro ao reproduzir som:', e);
         }
     }, [audioEnabled]);
 
     // Estourar bolha com feedback visual imediato
     const popBubble = useCallback((bubble: Bubble, x: number, y: number) => {
         if (bubble.popped) return;
+
+        console.log(`Estourando bolha: ID=${bubble.id}, Tipo=${bubble.type}, Posição=(${x},${y})`);
 
         // Marcar a bolha como estourada imediatamente
         setBubbles(prev => prev.map(b =>
@@ -414,6 +416,8 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         const x = clientX - rect.left;
         const y = clientY - rect.top;
 
+        console.log(`Clique detectado em: (${x}, ${y})`);
+
         // Encontrar a bolha mais próxima do clique
         let closestBubble: Bubble | null = null;
         let closestDistance = Infinity;
@@ -430,12 +434,15 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                 Math.pow(y - bubbleCenterY, 2)
             );
 
-            // Considerar uma margem de erro (aumentar o raio em 25% para facilitar o clique)
-            const hitRadius = bubble.size / 2 * 1.25;
+            console.log(`Verificando bolha ${i}: ID=${bubble.id}, Centro=(${bubbleCenterX},${bubbleCenterY}), Distância=${distance}`);
+
+            // Considerar uma margem de erro (aumentar o raio em 40% para facilitar o clique)
+            const hitRadius = bubble.size / 2 * 1.4;
 
             if (distance <= hitRadius && distance < closestDistance) {
                 closestDistance = distance;
                 closestBubble = bubble;
+                console.log(`Bolha candidata encontrada: ID=${bubble.id}, Distância=${distance}`);
             }
         }
 
@@ -443,10 +450,15 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             const now = Date.now();
             // Verificar se a mesma bolha não foi clicada nos últimos 100ms
             if (lastClickedBubble !== closestBubble.id || now - lastClickTime > 100) {
+                console.log(`Clique válido na bolha: ID=${closestBubble.id}`);
                 popBubble(closestBubble, x, y);
                 setLastClickedBubble(closestBubble.id);
                 setLastClickTime(now);
+            } else {
+                console.log(`Clique ignorado (debounce): ID=${closestBubble.id}, Tempo desde último clique=${now - lastClickTime}ms`);
             }
+        } else {
+            console.log('Nenhuma bolha encontrada para o clique');
         }
     }, [isPlaying, bubbles, popBubble, gameAreaRef, lastClickedBubble, lastClickTime]);
 
