@@ -11,7 +11,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const animationRef = useRef<number>();
     const audioManager = useRef<GameAudioManager | null>(null);
 
-    // Arrays SEMPRE inicializados
     const [isPlaying, setIsPlaying] = useState(false);
     const [score, setScore] = useState(0);
     const [bubbles, setBubbles] = useState<Bubble[]>([]);
@@ -32,18 +31,16 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const [bubblesSpawned, setBubblesSpawned] = useState(0);
     const [audioEnabled, setAudioEnabled] = useState(true);
     const [jogoIniciado, setJogoIniciado] = useState(false);
-
-    // Arrays auxiliares SEMPRE como []
     const [unlockedGear, setUnlockedGear] = useState<Array<{level: number, item: string, icon: string}>>([]);
     const [activeGearItems, setActiveGearItems] = useState<Array<{x: number, y: number, icon: string}>>([]);
     const [fishCollection, setFishCollection] = useState<Array<{id: number, name: string, type: string}>>([]);
 
     const levelConfigs = useMemo(() => [
-        { level: 1, name: 'Superfície (0-10m)', depth: '0-10m', totalBubbles: 200, minePercentage: 0.05, spawnRate: 400, oxygenDrain: 0.3, bgGradient: 'from-cyan-300 to-blue-400' },
-        { level: 2, name: 'Águas Rasas (10-30m)', depth: '10-30m', totalBubbles: 150, minePercentage: 0.15, spawnRate: 450, oxygenDrain: 0.5, bgGradient: 'from-blue-400 to-blue-500' },
-        { level: 3, name: 'Zona Média (30-60m)', depth: '30-60m', totalBubbles: 100, minePercentage: 0.30, spawnRate: 500, oxygenDrain: 0.7, bgGradient: 'from-blue-500 to-blue-700' },
-        { level: 4, name: 'Águas Fundas (60-100m)', depth: '60-100m', totalBubbles: 60, minePercentage: 0.45, spawnRate: 550, oxygenDrain: 0.9, bgGradient: 'from-blue-700 to-indigo-900' },
-        { level: 5, name: 'Zona Abissal (100m+)', depth: '100m+', totalBubbles: 40, minePercentage: 0.60, spawnRate: 600, oxygenDrain: 1.1, bgGradient: 'from-indigo-900 to-black' }
+        { level: 1, name: 'Superfície (0-10m)', depth: '0-10m', totalBubbles: 200, minePercentage: 0.05, spawnRate: 1200, oxygenDrain: 0.2, bgGradient: 'from-cyan-300 to-blue-400' },
+        { level: 2, name: 'Águas Rasas (10-30m)', depth: '10-30m', totalBubbles: 150, minePercentage: 0.15, spawnRate: 1400, oxygenDrain: 0.3, bgGradient: 'from-blue-400 to-blue-500' },
+        { level: 3, name: 'Zona Média (30-60m)', depth: '30-60m', totalBubbles: 100, minePercentage: 0.30, spawnRate: 1600, oxygenDrain: 0.4, bgGradient: 'from-blue-500 to-blue-700' },
+        { level: 4, name: 'Águas Fundas (60-100m)', depth: '60-100m', totalBubbles: 60, minePercentage: 0.45, spawnRate: 1800, oxygenDrain: 0.5, bgGradient: 'from-blue-700 to-indigo-900' },
+        { level: 5, name: 'Zona Abissal (100m+)', depth: '100m+', totalBubbles: 40, minePercentage: 0.60, spawnRate: 2000, oxygenDrain: 0.6, bgGradient: 'from-indigo-900 to-black' }
     ], []);
 
     const coloredBubbles = useMemo(() => ({
@@ -67,41 +64,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const playPopSound = useCallback((type: Bubble['type']) => {
         if (!audioEnabled) return;
         try {
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            if (type === 'mine') {
-                const noise = audioContext.createOscillator();
-                const noiseGain = audioContext.createGain();
-                noise.type = 'sawtooth'; noise.frequency.value = 100;
-                noise.connect(noiseGain);
-                noiseGain.connect(audioContext.destination);
-                noiseGain.gain.setValueAtTime(0.5, audioContext.currentTime);
-                noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                noise.start(audioContext.currentTime);
-                noise.stop(audioContext.currentTime + 0.3);
-                oscillator.frequency.value = 50; oscillator.type = 'sine';
-                gainNode.gain.setValueAtTime(0.7, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.2);
-            } else if (type === 'pearl' || type === 'treasure') {
-                oscillator.frequency.value = 1200; oscillator.type = 'sine';
-                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.3);
-            } else {
-                const freqMap: { [key: string]: number } = { air: 600, oxygen: 700, pink: 800, purple: 900, yellow: 1000, green: 1100, orange: 1200 };
-                oscillator.frequency.value = freqMap[type as keyof typeof freqMap] || 600;
-                oscillator.type = 'sine';
-                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.05);
-            }
+            GameAudioManager.getInstance().playSoundEffect("pop", 0.6);
         } catch (e) { console.error("Web Audio API error:", e); }
     }, [audioEnabled]);
 
@@ -133,7 +96,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         } else {
             createParticles(x, y, bubble.color);
             setPoppedBubbles(prev => prev + 1);
-
             const newCombo = combo + 1;
             setCombo(newCombo);
             setMaxCombo(max => Math.max(max, newCombo));
@@ -225,6 +187,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, []);
 
+    // Movimento LENTO das bolhas, e só some se realmente saiu de toda tela
     useEffect(() => {
         if (!isPlaying) { if(animationRef.current) cancelAnimationFrame(animationRef.current); return; }
         const updateBubbles = () => {
@@ -232,7 +195,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             const gameArea = gameAreaRef.current.getBoundingClientRect();
             setBubbles(prev => prev.map(bubble => {
                 if (bubble.popped) return { ...bubble, opacity: bubble.opacity - 0.05 };
-                let newY = bubble.y - bubble.speed;
+                let newY = bubble.y - (bubble.speed * 0.8); // Mais lento!
                 let newX = bubble.x;
                 if (bubble.horizontalMovement) {
                     newX += bubble.horizontalMovement;
@@ -241,11 +204,12 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                         newX = Math.max(0, Math.min(gameArea.width - bubble.size, newX));
                     }
                 }
+                // Só remove e baixa oxigênio se sumiu da tela
                 if (newY < -bubble.size) {
                     if (!bubble.popped && bubble.type !== 'mine') {
                         setMissedBubbles(prev => prev + 1);
                         setCombo(0);
-                        setOxygenLevel(prev => Math.max(0, prev - 1));
+                        setOxygenLevel(prev => Math.max(0, prev - 5));
                     }
                     return { ...bubble, opacity: 0 };
                 }
@@ -269,7 +233,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     useEffect(() => {
         if (!isPlaying) return;
         const config = levelConfigs[currentLevel - 1];
-
         const createBubble = () => {
             if (!gameAreaRef.current) return;
             const gameArea = gameAreaRef.current.getBoundingClientRect();
@@ -296,7 +259,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             }
             const newBubble: Bubble = {
                 id: Date.now() + Math.random(), x: Math.random() * (gameArea.width - bubbleConfig.size), y: gameArea.height + bubbleConfig.size,
-                size: bubbleConfig.size + (Math.random() * 10 - 5), speed: 2, color: bubbleConfig.color, points: bubbleConfig.points,
+                size: bubbleConfig.size + (Math.random() * 10 - 5), speed: 1.2, color: bubbleConfig.color, points: bubbleConfig.points,
                 type: type, popped: false, opacity: 1, horizontalMovement: horizontalMovement
             };
             setBubbles(prev => [...prev, newBubble]);
@@ -353,32 +316,11 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     }, [isPlaying, bubbles, currentLevel, bubblesSpawned, levelConfigs, endGame]);
 
     return {
-        isPlaying,
-        score,
-        combo,
-        oxygenLevel,
-        bubbles,
-        particles,
-        currentLevel,
-        showResults,
-        salvando,
-        poppedBubbles,
-        bubblesRemaining,
-        accuracy,
-        maxCombo,
-        showLevelTransition,
-        levelMessage,
-        levelConfigs,
-        completedLevels,
-        unlockedGear,
-        fishCollection,
-        activeGearItems,
-        startActivity,
-        handleInteraction,
-        handleSaveSession,
-        voltarInicio,
-        toggleAudio,
-        audioEnabled,
-        jogoIniciado
+        isPlaying, score, combo, oxygenLevel, bubbles, particles, currentLevel,
+        showResults, salvando, poppedBubbles, bubblesRemaining, accuracy, maxCombo,
+        showLevelTransition, levelMessage, levelConfigs, completedLevels,
+        unlockedGear, fishCollection, activeGearItems,
+        startActivity, handleInteraction, handleSaveSession, voltarInicio,
+        toggleAudio, audioEnabled, jogoIniciado
     };
 }
