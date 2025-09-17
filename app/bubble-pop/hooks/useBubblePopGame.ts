@@ -34,6 +34,10 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const [audioEnabled, setAudioEnabled] = useState(true);
     const [jogoIniciado, setJogoIniciado] = useState(false);
     const [totalBubbles, setTotalBubbles] = useState(0);
+    
+    // Estados para controle de cliques
+    const [lastClickTime, setLastClickTime] = useState(0);
+    const [lastClickedBubble, setLastClickedBubble] = useState<number | null>(null);
 
     // Estados dos equipamentos de mergulho
     const [unlockedGear, setUnlockedGear] = useState<{level: number, item: string, icon: string}[]>([]);
@@ -125,7 +129,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     // Criar nova bolha com velocidade variável
     const createBubble = useCallback(() => {
         if (!isPlaying || !gameAreaRef.current) {
-            console.log("Não é possível criar bolha: isPlaying =", isPlaying, "gameAreaRef =", !!gameAreaRef.current);
             return;
         }
 
@@ -205,13 +208,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             horizontalMovement: horizontalMovement
         };
 
-        console.log(`Criando bolha: tipo=${type}, velocidade=${finalSpeed}, total=${bubblesSpawned + 1}`);
-        
-        setBubbles(prev => {
-            console.log(`Adicionando bolha ao array. Total antes: ${prev.length}, total depois: ${prev.length + 1}`);
-            return [...prev, newBubble];
-        });
-        
+        setBubbles(prev => [...prev, newBubble]);
         setTotalBubbles(prev => prev + 1);
         setBubblesSpawned(prev => prev + 1);
         setBubblesRemaining(prev => prev - 1);
@@ -229,7 +226,8 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                     return { ...bubble, opacity: bubble.opacity - 0.05 };
                 }
 
-                let newY = bubble.y - bubble.speed;
+                // Calcular nova posição
+                const newY = bubble.y - bubble.speed;
                 let newX = bubble.x;
 
                 if (bubble.horizontalMovement) {
@@ -349,18 +347,23 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, [audioEnabled]);
 
-    // Estourar bolha
+    // Estourar bolha com feedback visual imediato
     const popBubble = useCallback((bubble: Bubble, x: number, y: number) => {
         if (bubble.popped) return;
 
+        // Marcar a bolha como estourada imediatamente
         setBubbles(prev => prev.map(b =>
             b.id === bubble.id ? { ...b, popped: true } : b
         ));
 
+        // Criar partículas imediatamente no local do clique
+        createParticles(x, y, bubble.color, bubble.type === 'mine');
+
+        // Tocar som
         playPopSound(bubble.type);
 
+        // Atualizar estado do jogo
         if (bubble.type === 'mine') {
-            createParticles(x, y, bubble.color, true);
             setScore(prev => Math.max(0, prev + bubble.points));
             setCombo(0);
             setOxygenLevel(prev => Math.max(0, prev - 10));
@@ -368,7 +371,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                 audioManager.current.falarMila("Cuidado! Era uma mina!");
             }
         } else {
-            createParticles(x, y, bubble.color);
             setPoppedBubbles(prev => prev + 1);
             
             setCombo(prev => {
@@ -400,16 +402,26 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, [combo, createParticles, playPopSound, audioEnabled]);
 
-    // Handle de clique/toque
+    // Handle de clique/toque otimizado com detecção de colisão aprimorada
     const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
         if (!gameAreaRef.current || !isPlaying) return;
 
+        e.preventDefault(); // Prevenir comportamento padrão
+        
         const rect = gameAreaRef.current.getBoundingClientRect();
-        const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-        const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
 
-        bubbles.forEach(bubble => {
-            if (bubble.popped) return;
+        // Encontrar a bolha mais próxima do clique
+        let closestBubble: Bubble | null = null;
+        let closestDistance = Infinity;
+
+        // Otimização: usar for loop em vez de forEach para melhor performance
+        for (let i = 0; i < bubbles.length; i++) {
+            const bubble = bubbles[i];
+            if (bubble.popped) continue;
 
             const bubbleCenterX = bubble.x + bubble.size / 2;
             const bubbleCenterY = bubble.y + bubble.size / 2;
@@ -418,11 +430,25 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                 Math.pow(y - bubbleCenterY, 2)
             );
 
-            if (distance <= bubble.size / 2) {
-                popBubble(bubble, x, y);
+            // Considerar uma margem de erro (aumentar o raio em 30% para facilitar o clique)
+            const hitRadius = bubble.size / 2 * 1.3;
+
+            if (distance <= hitRadius && distance < closestDistance) {
+                closestDistance = distance;
+                closestBubble = bubble;
             }
-        });
-    }, [isPlaying, bubbles, popBubble, gameAreaRef]);
+        }
+
+        if (closestBubble) {
+            const now = Date.now();
+            // Verificar se a mesma bolha não foi clicada nos últimos 150ms
+            if (lastClickedBubble !== closestBubble.id || now - lastClickTime > 150) {
+                popBubble(closestBubble, x, y);
+                setLastClickedBubble(closestBubble.id);
+                setLastClickTime(now);
+            }
+        }
+    }, [isPlaying, bubbles, popBubble, gameAreaRef, lastClickedBubble, lastClickTime]);
 
     // Game loop otimizado com controle de FPS
     useEffect(() => {
@@ -548,6 +574,8 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         setCompletedLevels([]);
         setBubblesSpawned(0);
         setBubblesRemaining(levelConfigs[0].totalBubbles);
+        setLastClickedBubble(null);
+        setLastClickTime(0);
     }, []);
 
     const voltarInicio = useCallback(() => {
@@ -556,6 +584,8 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         setIsPlaying(false);
         setBubbles([]);
         setParticles([]);
+        setLastClickedBubble(null);
+        setLastClickTime(0);
     }, []);
 
     const handleSaveSession = useCallback(async () => {
@@ -592,13 +622,17 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, []);
 
+    // Memoizar a lista de bolhas e partículas para melhor performance
+    const memoizedBubbles = useMemo(() => bubbles, [bubbles]);
+    const memoizedParticles = useMemo(() => particles, [particles]);
+
     return {
         isPlaying,
         score,
         combo,
         oxygenLevel,
-        bubbles,
-        particles,
+        bubbles: memoizedBubbles,
+        particles: memoizedParticles,
         currentLevel,
         showResults,
         salvando,
