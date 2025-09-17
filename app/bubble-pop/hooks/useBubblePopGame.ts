@@ -1,3 +1,4 @@
+// app/bubble-pop/hooks/useBubblePopGame.ts
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -33,19 +34,20 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const [bubblesSpawned, setBubblesSpawned] = useState(0);
     const [audioEnabled, setAudioEnabled] = useState(true);
     const [jogoIniciado, setJogoIniciado] = useState(false);
+    const [totalBubbles, setTotalBubbles] = useState(0);
 
     // Estados dos equipamentos de mergulho
     const [unlockedGear, setUnlockedGear] = useState<{level: number, item: string, icon: string}[]>([]);
     const [activeGearItems, setActiveGearItems] = useState<{level: number, item: string, icon: string, x: number, y: number}[]>([]);
 
-    // Configuração dos níveis - VELOCIDADE BAIXA E CONSTANTE
+    // Configuração dos níveis com velocidade adequada
     const levelConfigs = [
-    { level: 1, name: 'Superfície (0-10m)', depth: '0-10m', totalBubbles: 150, minePercentage: 0.05, spawnRate: 350, oxygenDrain: 0.3, bgGradient: 'from-cyan-300 to-blue-400' },
-    { level: 2, name: 'Águas Rasas (10-30m)', depth: '10-30m', totalBubbles: 120, minePercentage: 0.15, spawnRate: 400, oxygenDrain: 0.5, bgGradient: 'from-blue-400 to-blue-500' },
-    { level: 3, name: 'Zona Média (30-60m)', depth: '30-60m', totalBubbles: 100, minePercentage: 0.30, spawnRate: 450, oxygenDrain: 0.7, bgGradient: 'from-blue-500 to-blue-700' },
-    { level: 4, name: 'Águas Fundas (60-100m)', depth: '60-100m', totalBubbles: 80, minePercentage: 0.45, spawnRate: 500, oxygenDrain: 0.9, bgGradient: 'from-blue-700 to-indigo-900' },
-    { level: 5, name: 'Zona Abissal (100m+)', depth: '100m+', totalBubbles: 60, minePercentage: 0.60, spawnRate: 550, oxygenDrain: 1.1, bgGradient: 'from-indigo-900 to-black' }
-];
+        { level: 1, name: 'Superfície (0-10m)', depth: '0-10m', totalBubbles: 150, minePercentage: 0.05, spawnRate: 350, oxygenDrain: 0.3, bgGradient: 'from-cyan-300 to-blue-400' },
+        { level: 2, name: 'Águas Rasas (10-30m)', depth: '10-30m', totalBubbles: 120, minePercentage: 0.15, spawnRate: 400, oxygenDrain: 0.5, bgGradient: 'from-blue-400 to-blue-500' },
+        { level: 3, name: 'Zona Média (30-60m)', depth: '30-60m', totalBubbles: 100, minePercentage: 0.30, spawnRate: 450, oxygenDrain: 0.7, bgGradient: 'from-blue-500 to-blue-700' },
+        { level: 4, name: 'Águas Fundas (60-100m)', depth: '60-100m', totalBubbles: 80, minePercentage: 0.45, spawnRate: 500, oxygenDrain: 0.9, bgGradient: 'from-blue-700 to-indigo-900' },
+        { level: 5, name: 'Zona Abissal (100m+)', depth: '100m+', totalBubbles: 60, minePercentage: 0.60, spawnRate: 550, oxygenDrain: 1.1, bgGradient: 'from-indigo-900 to-black' }
+    ];
 
     const coloredBubbles = {
         air: { color: '#E0F2FE', points: 5, size: 40 },
@@ -226,7 +228,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             }
         });
     }, [isPlaying, bubbles, popBubble, gameAreaRef, activeGearItems, collectGear]);
-// ... continuação da PARTE 1
 
     const { endGame, startActivity, voltarInicio, handleSaveSession } = useMemo(() => {
         const endGame = () => {
@@ -257,6 +258,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             setCompletedLevels([]);
             setBubblesSpawned(0);
             setBubblesRemaining(levelConfigs[0].totalBubbles);
+            setTotalBubbles(0);
             setUnlockedGear([]);
             setActiveGearItems([]);
         };
@@ -367,7 +369,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             x: Math.random() * (gameArea.width - bubbleConfig.size),
             y: gameArea.height + bubbleConfig.size,
             size: bubbleConfig.size + (Math.random() * 10 - 5),
-            speed: 3.5, // VELOCIDADE ADEQUADA E CONSTANTE
+            speed: 2.7, // VELOCIDADE MODERADA E CONSTANTE
             color: bubbleConfig.color,
             points: bubbleConfig.points,
             type: type,
@@ -378,14 +380,17 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
 
         setBubbles(prev => [...prev, newBubble]);
         setBubblesSpawned(prev => prev + 1);
-        setBubblesRemaining(prev => prev - 1);
+        setBubblesRemaining(prev => Math.max(0, prev - 1));
+        setTotalBubbles(prev => prev + 1);
     }, [isPlaying, currentLevel, bubblesSpawned, gameAreaRef]);
     
+    // VERIFICAÇÃO CORRETA DO FIM DE NÍVEL
     useEffect(() => {
         if (!isPlaying) return;
 
         const config = levelConfigs[currentLevel - 1];
 
+        // Só terminar quando spawned todas E não tiver mais bolhas na tela
         if (bubblesSpawned >= config.totalBubbles && bubbles.length === 0) {
             if (currentLevel < 5) {
                 setCompletedLevels(prev => [...prev, currentLevel]);
@@ -427,7 +432,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                 endGame();
             }
         }
-    }, [isPlaying, currentLevel, bubblesSpawned, bubbles, endGame, unlockedGear, audioEnabled, gameAreaRef]);
+    }, [isPlaying, currentLevel, bubblesSpawned, bubbles.length, endGame, unlockedGear, audioEnabled, gameAreaRef]);
 
     useEffect(() => {
         if (!isPlaying) return;
@@ -481,7 +486,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                 cancelAnimationFrame(animationRef.current);
             }
         };
-    }, [isPlaying]);
+    }, [isPlaying, gameAreaRef]);
 
     useEffect(() => {
         if (!isPlaying) return;
