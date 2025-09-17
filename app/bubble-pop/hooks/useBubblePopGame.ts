@@ -227,5 +227,266 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             }
         });
     }, [isPlaying, bubbles, popBubble, gameAreaRef, activeGearItems, collectGear]);
+    const spawnBubble = useCallback(() => {
+        if (!isPlaying || bubblesSpawned >= levelConfigs[currentLevel - 1].totalBubbles) return;
 
-    // Continua na PARTE 2...
+        const config = levelConfigs[currentLevel - 1];
+        const isMine = Math.random() < config.minePercentage;
+        
+        let bubbleType: Bubble['type'] = 'air';
+        if (isMine) {
+            bubbleType = 'mine';
+        } else {
+            const types = Object.keys(coloredBubbles).filter(t => t !== 'mine') as Bubble['type'][];
+            bubbleType = types[Math.floor(Math.random() * types.length)];
+        }
+
+        const bubbleConfig = coloredBubbles[bubbleType];
+        const size = bubbleConfig.size;
+        const x = Math.random() * (gameAreaRef.current?.clientWidth || 800 - size);
+        const speed = 0.5 + Math.random() * 0.5; // VELOCIDADE CONSTANTE E LENTA
+
+        const newBubble: Bubble = {
+            id: Date.now() + Math.random(),
+            type: bubbleType,
+            x,
+            y: gameAreaRef.current?.clientHeight || 600,
+            size,
+            speed,
+            color: bubbleConfig.color,
+            points: bubbleConfig.points,
+            popped: false,
+        };
+
+        setBubbles(prev => [...prev, newBubble]);
+        setBubblesSpawned(prev => prev + 1);
+    }, [isPlaying, currentLevel, bubblesSpawned, gameAreaRef]);
+
+    const updateBubbles = useCallback(() => {
+        if (!isPlaying) return;
+
+        setBubbles(prev => {
+            const updated = prev.map(bubble => {
+                if (bubble.popped) return bubble;
+                return { ...bubble, y: bubble.y - bubble.speed };
+            }).filter(bubble => {
+                if (bubble.y < -bubble.size) {
+                    if (!bubble.popped && bubble.type !== 'mine') {
+                        setMissedBubbles(prev => prev + 1);
+                        setCombo(0);
+                    }
+                    return false;
+                }
+                return true;
+            });
+            return updated;
+        });
+
+        setParticles(prev => {
+            return prev
+                .map(p => ({ ...p, x: p.x + p.vx, y: p.y + p.vy, life: p.life - 0.02 }))
+                .filter(p => p.life > 0);
+        });
+
+        // Drenar oxigênio lentamente
+        setOxygenLevel(prev => Math.max(0, prev - levelConfigs[currentLevel - 1].oxygenDrain / 60));
+
+        // Verificar condições de fim de jogo
+        const remaining = levelConfigs[currentLevel - 1].totalBubbles - bubblesSpawned;
+        setBubblesRemaining(remaining);
+
+        if (oxygenLevel <= 0) {
+            endGame(false);
+        } else if (bubblesSpawned >= levelConfigs[currentLevel - 1].totalBubbles && bubbles.length === 0) {
+            completeLevel();
+        }
+    }, [isPlaying, currentLevel, bubblesSpawned, oxygenLevel]);
+
+    const completeLevel = useCallback(() => {
+        setIsPlaying(false);
+        setShowLevelTransition(true);
+        setCompletedLevels(prev => [...prev, currentLevel]);
+        
+        // Desbloquear equipamento
+        const gear = divingGear.find(g => g.level === currentLevel);
+        if (gear) {
+            setUnlockedGear(prev => [...prev, gear]);
+            setActiveGearItems(prev => [...prev, {
+                level: gear.level,
+                item: gear.item,
+                icon: gear.icon,
+                x: Math.random() * (gameAreaRef.current?.clientWidth || 800 - 60),
+                y: Math.random() * (gameAreaRef.current?.clientHeight || 600 - 60)
+            }]);
+            
+            if (audioManager.current && audioEnabled) {
+                audioManager.current.falarMila(`Parabéns! Você completou o nível ${currentLevel} e desbloqueou ${gear.item}!`);
+            }
+        }
+
+        setLevelMessage(`Nível ${currentLevel} Completo!`);
+        setTimeout(() => {
+            setShowLevelTransition(false);
+            if (currentLevel < levelConfigs.length) {
+                setCurrentLevel(prev => prev + 1);
+                setOxygenLevel(100);
+                setBubblesSpawned(0);
+                setPoppedBubbles(0);
+                setMissedBubbles(0);
+                setCombo(0);
+            } else {
+                endGame(true);
+            }
+        }, 3000);
+    }, [currentLevel, audioEnabled, gameAreaRef]);
+
+    const endGame = useCallback((completed: boolean) => {
+        setIsPlaying(false);
+        setShowResults(true);
+        setAccuracy(poppedBubbles > 0 ? Math.round((poppedBubbles / (poppedBubbles + missedBubbles)) * 100) : 0);
+        
+        if (audioManager.current && audioEnabled) {
+            if (completed) {
+                audioManager.current.falarMila("Parabéns! Você completou todos os níveis do jogo!");
+            } else {
+                audioManager.current.falarMila("O oxigênio acabou! Tente novamente!");
+            }
+        }
+    }, [poppedBubbles, missedBubbles, audioEnabled]);
+
+    const startActivity = useCallback(() => {
+        setIsPlaying(true);
+        setJogoIniciado(true);
+        setShowResults(false);
+        setScore(0);
+        setOxygenLevel(100);
+        setBubbles([]);
+        setParticles([]);
+        setPoppedBubbles(0);
+        setMissedBubbles(0);
+        setCombo(0);
+        setMaxCombo(0);
+        setCompletedLevels([]);
+        setBubblesSpawned(0);
+        setUnlockedGear([]);
+        setActiveGearItems([]);
+        setCurrentLevel(1);
+        
+        if (audioManager.current && audioEnabled) {
+            audioManager.current.falarMila("Vamos começar! Estou pronta para mergulhar!");
+        }
+    }, [audioEnabled]);
+
+    const handleSaveSession = useCallback(async () => {
+        setSalvando(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Usuário não autenticado");
+
+            const { error } = await supabase
+                .from('game_sessions')
+                .insert([{
+                    user_id: user.id,
+                    game_type: 'bubble_pop',
+                    score,
+                    max_level: currentLevel,
+                    completed_levels: completedLevels,
+                    accuracy,
+                    max_combo: maxCombo,
+                    bubbles_popped: poppedBubbles,
+                    bubbles_missed: missedBubbles
+                }]);
+
+            if (error) throw error;
+            
+            if (audioManager.current && audioEnabled) {
+                audioManager.current.falarMila("Sua sessão foi salva com sucesso!");
+            }
+            
+            setTimeout(() => {
+                router.push('/dashboard');
+            }, 2000);
+        } catch (error) {
+            console.error("Erro ao salvar sessão:", error);
+            if (audioManager.current && audioEnabled) {
+                audioManager.current.falarMila("Ocorreu um erro ao salvar sua sessão. Tente novamente.");
+            }
+        } finally {
+            setSalvando(false);
+        }
+    }, [supabase, score, currentLevel, completedLevels, accuracy, maxCombo, poppedBubbles, missedBubbles, router, audioEnabled]);
+
+    const voltarInicio = useCallback(() => {
+        setIsPlaying(false);
+        setJogoIniciado(false);
+        setShowResults(false);
+        if (audioManager.current && audioEnabled) {
+            audioManager.current.falarMila("Voltando ao início...");
+        }
+    }, [audioEnabled]);
+
+    const toggleAudio = useCallback(() => {
+        setAudioEnabled(prev => !prev);
+        if (audioManager.current) {
+            audioManager.current.setEnabled(!audioEnabled);
+        }
+    }, [audioEnabled]);
+
+    // Loop do jogo
+    useEffect(() => {
+        if (!isPlaying) return;
+
+        const gameLoop = () => {
+            updateBubbles();
+            animationRef.current = requestAnimationFrame(gameLoop);
+        };
+
+        animationRef.current = requestAnimationFrame(gameLoop);
+        return () => {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
+            }
+        };
+    }, [isPlaying, updateBubbles]);
+
+    // Spawn de bolhas
+    useEffect(() => {
+        if (!isPlaying) return;
+
+        const spawnInterval = setInterval(() => {
+            spawnBubble();
+        }, levelConfigs[currentLevel - 1].spawnRate);
+
+        return () => clearInterval(spawnInterval);
+    }, [isPlaying, currentLevel, spawnBubble]);
+
+    return {
+        isPlaying,
+        score,
+        combo,
+        oxygenLevel,
+        bubbles,
+        particles,
+        currentLevel,
+        showResults,
+        salvando,
+        poppedBubbles,
+        bubblesRemaining,
+        accuracy,
+        maxCombo,
+        showLevelTransition,
+        levelMessage,
+        levelConfigs,
+        completedLevels,
+        startActivity,
+        handleInteraction,
+        handleSaveSession,
+        voltarInicio,
+        toggleAudio,
+        audioEnabled,
+        jogoIniciado,
+        unlockedGear,
+        activeGearItems,
+        collectGear
+    };
+}
