@@ -314,7 +314,7 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                             return (
                                 <div
                                     key={bubble.id}
-                                    className={`absolute rounded-full transition-opacity ${
+                                    className={`absolute rounded-full transition-all duration-200 ${
                                         bubble.popped ? 'pointer-events-none' : 'cursor-pointer'
                                     }`}
                                     style={{
@@ -324,7 +324,7 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                         height: `${bubble.size}px`,
                                         background: gradient || bubble.color,
                                         border: border,
-                                        opacity: bubble.opacity,
+                                        opacity: bubble.popped ? 0 : 1,
                                         boxShadow: boxShadow,
                                         transform: `scale(${bubble.popped ? 1.5 : 1})`,
                                     }}
