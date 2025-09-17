@@ -1,4 +1,3 @@
-// app/bubble-pop/hooks/useBubblePopGame.ts
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -39,13 +38,13 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const [unlockedGear, setUnlockedGear] = useState<{level: number, item: string, icon: string}[]>([]);
     const [activeGearItems, setActiveGearItems] = useState<{level: number, item: string, icon: string, x: number, y: number}[]>([]);
 
-    // Configuração dos níveis - VELOCIDADE AJUSTADA
+    // Configuração dos níveis - VELOCIDADE BAIXA E CONSTANTE
     const levelConfigs = [
-        { level: 1, name: 'Superfície (0-10m)', depth: '0-10m', totalBubbles: 200, minePercentage: 0.05, spawnRate: 500, oxygenDrain: 0.3, bgGradient: 'from-cyan-300 to-blue-400' },
-        { level: 2, name: 'Águas Rasas (10-30m)', depth: '10-30m', totalBubbles: 150, minePercentage: 0.15, spawnRate: 600, oxygenDrain: 0.5, bgGradient: 'from-blue-400 to-blue-500' },
-        { level: 3, name: 'Zona Média (30-60m)', depth: '30-60m', totalBubbles: 100, minePercentage: 0.30, spawnRate: 700, oxygenDrain: 0.7, bgGradient: 'from-blue-500 to-blue-700' },
-        { level: 4, name: 'Águas Fundas (60-100m)', depth: '60-100m', totalBubbles: 60, minePercentage: 0.45, spawnRate: 800, oxygenDrain: 0.9, bgGradient: 'from-blue-700 to-indigo-900' },
-        { level: 5, name: 'Zona Abissal (100m+)', depth: '100m+', totalBubbles: 40, minePercentage: 0.60, spawnRate: 900, oxygenDrain: 1.1, bgGradient: 'from-indigo-900 to-black' }
+        { level: 1, name: 'Superfície (0-10m)', depth: '0-10m', totalBubbles: 200, minePercentage: 0.05, spawnRate: 600, oxygenDrain: 0.3, bgGradient: 'from-cyan-300 to-blue-400' },
+        { level: 2, name: 'Águas Rasas (10-30m)', depth: '10-30m', totalBubbles: 150, minePercentage: 0.15, spawnRate: 700, oxygenDrain: 0.5, bgGradient: 'from-blue-400 to-blue-500' },
+        { level: 3, name: 'Zona Média (30-60m)', depth: '30-60m', totalBubbles: 100, minePercentage: 0.30, spawnRate: 800, oxygenDrain: 0.7, bgGradient: 'from-blue-500 to-blue-700' },
+        { level: 4, name: 'Águas Fundas (60-100m)', depth: '60-100m', totalBubbles: 60, minePercentage: 0.45, spawnRate: 900, oxygenDrain: 0.9, bgGradient: 'from-blue-700 to-indigo-900' },
+        { level: 5, name: 'Zona Abissal (100m+)', depth: '100m+', totalBubbles: 40, minePercentage: 0.60, spawnRate: 1000, oxygenDrain: 1.1, bgGradient: 'from-indigo-900 to-black' }
     ];
 
     const coloredBubbles = {
@@ -227,283 +226,310 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             }
         });
     }, [isPlaying, bubbles, popBubble, gameAreaRef, activeGearItems, collectGear]);
+// ... continuação da PARTE 1
 
-    const spawnBubble = useCallback(() => {
-        if (!isPlaying || bubblesSpawned >= levelConfigs[currentLevel - 1].totalBubbles) return;
+    const { endGame, startActivity, voltarInicio, handleSaveSession } = useMemo(() => {
+        const endGame = () => {
+            setIsPlaying(false);
+            setShowResults(true);
+            if (currentLevel === 5 && bubblesSpawned >= levelConfigs[4].totalBubbles) {
+                setCompletedLevels(prev => [...prev, currentLevel]);
+            }
+            const totalAttempts = poppedBubbles + missedBubbles;
+            const acc = totalAttempts > 0 ? Math.round((poppedBubbles / totalAttempts) * 100) : 0;
+            setAccuracy(acc);
+        };
+
+        const startActivity = () => {
+            audioManager.current?.forceInitialize();
+            setJogoIniciado(true);
+            setIsPlaying(true);
+            setCurrentLevel(1);
+            setScore(0);
+            setCombo(0);
+            setMaxCombo(0);
+            setBubbles([]);
+            setParticles([]);
+            setOxygenLevel(100);
+            setShowResults(false);
+            setPoppedBubbles(0);
+            setMissedBubbles(0);
+            setCompletedLevels([]);
+            setBubblesSpawned(0);
+            setBubblesRemaining(levelConfigs[0].totalBubbles);
+            setUnlockedGear([]);
+            setActiveGearItems([]);
+        };
+        
+        const voltarInicio = () => {
+            setJogoIniciado(false);
+            setShowResults(false);
+            setIsPlaying(false);
+        };
+
+        const handleSaveSession = async () => {
+            setSalvando(true);
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    router.push('/login');
+                    return;
+                }
+                await supabase.from('sessoes').insert([{
+                    usuario_id: user.id,
+                    atividade_nome: 'Oceano de Bolhas',
+                    pontuacao_final: score,
+                    data_fim: new Date().toISOString()
+                }]);
+                router.push('/dashboard');
+            } catch (error) {
+                console.error("Erro ao salvar sessão:", error);
+            } finally {
+                setSalvando(false);
+            }
+        };
+
+        return { endGame, startActivity, voltarInicio, handleSaveSession };
+    }, [currentLevel, bubblesSpawned, poppedBubbles, missedBubbles, supabase, router, score]);
+    
+    const createBubble = useCallback(() => {
+        if (!isPlaying || !gameAreaRef.current) return;
 
         const config = levelConfigs[currentLevel - 1];
-        const isMine = Math.random() < config.minePercentage;
-        
-        let bubbleType: Bubble['type'] = 'air';
-        if (isMine) {
-            bubbleType = 'mine';
-        } else {
-            const types = Object.keys(coloredBubbles).filter(t => t !== 'mine') as Bubble['type'][];
-            bubbleType = types[Math.floor(Math.random() * types.length)];
-        }
 
-        const bubbleConfig = coloredBubbles[bubbleType];
-        const size = bubbleConfig.size;
-        const x = Math.random() * (gameAreaRef.current?.clientWidth || 800 - size);
-        // VELOCIDADE AJUSTADA - mais rápida que antes
-        const speed = 1.2 + Math.random() * 0.8; // Velocidade entre 1.2 e 2.0
+        if (bubblesSpawned >= config.totalBubbles) return;
+
+        const gameArea = gameAreaRef.current.getBoundingClientRect();
+        const rand = Math.random();
+        let type: Bubble['type'] = 'air';
+        let bubbleConfig = coloredBubbles.air;
+        let horizontalMovement = 0;
+
+        if (rand < config.minePercentage) {
+            type = 'mine';
+            bubbleConfig = { color: '#8B0000', points: -20, size: 45 };
+        } else {
+            const colorRand = Math.random();
+
+            if (currentLevel === 1) {
+                if (colorRand < 0.4) type = 'air';
+                else if (colorRand < 0.6) type = 'oxygen';
+                else if (colorRand < 0.75) type = 'pink';
+                else if (colorRand < 0.85) type = 'purple';
+                else if (colorRand < 0.92) type = 'treasure';
+                else if (colorRand < 0.96) type = 'pufferfish';
+                else type = 'starfish';
+            } else if (currentLevel === 2) {
+                if (colorRand < 0.3) type = 'air';
+                else if (colorRand < 0.5) type = 'oxygen';
+                else if (colorRand < 0.65) type = 'pink';
+                else if (colorRand < 0.75) type = 'purple';
+                else if (colorRand < 0.82) type = 'yellow';
+                else if (colorRand < 0.88) type = 'green';
+                else if (colorRand < 0.93) type = 'treasure';
+                else if (colorRand < 0.96) type = 'pufferfish';
+                else type = 'octopus';
+            } else if (currentLevel === 3) {
+                if (colorRand < 0.2) type = 'air';
+                else if (colorRand < 0.35) type = 'oxygen';
+                else if (colorRand < 0.5) type = 'pink';
+                else if (colorRand < 0.6) type = 'purple';
+                else if (colorRand < 0.7) type = 'yellow';
+                else if (colorRand < 0.8) type = 'green';
+                else if (colorRand < 0.87) type = 'orange';
+                else if (colorRand < 0.92) type = 'treasure';
+                else if (colorRand < 0.95) type = 'pufferfish';
+                else if (colorRand < 0.97) type = 'starfish';
+                else type = 'pearl';
+            } else {
+                if (colorRand < 0.15) type = 'air';
+                else if (colorRand < 0.25) type = 'oxygen';
+                else if (colorRand < 0.4) type = 'purple';
+                else if (colorRand < 0.55) type = 'yellow';
+                else if (colorRand < 0.7) type = 'green';
+                else if (colorRand < 0.8) type = 'orange';
+                else if (colorRand < 0.88) type = 'treasure';
+                else if (colorRand < 0.92) type = 'pufferfish';
+                else if (colorRand < 0.95) type = 'starfish';
+                else if (colorRand < 0.97) type = 'octopus';
+                else type = 'pearl';
+            }
+
+            bubbleConfig = coloredBubbles[type as keyof typeof coloredBubbles];
+
+            if (type === 'pearl' || type === 'treasure' || type === 'pufferfish' || type === 'starfish' || type === 'octopus') {
+                horizontalMovement = (Math.random() - 0.5) * 1.5;
+            }
+        }
 
         const newBubble: Bubble = {
             id: Date.now() + Math.random(),
-            type: bubbleType,
-            x,
-            y: gameAreaRef.current?.clientHeight || 600,
-            size,
-            speed,
+            x: Math.random() * (gameArea.width - bubbleConfig.size),
+            y: gameArea.height + bubbleConfig.size,
+            size: bubbleConfig.size + (Math.random() * 10 - 5),
+            speed: 1.2, // VELOCIDADE BAIXA E CONSTANTE
             color: bubbleConfig.color,
             points: bubbleConfig.points,
+            type: type,
             popped: false,
+            opacity: 1,
+            horizontalMovement: horizontalMovement
         };
 
         setBubbles(prev => [...prev, newBubble]);
         setBubblesSpawned(prev => prev + 1);
+        setBubblesRemaining(prev => prev - 1);
     }, [isPlaying, currentLevel, bubblesSpawned, gameAreaRef]);
-
-    const updateBubbles = useCallback(() => {
+    
+    useEffect(() => {
         if (!isPlaying) return;
 
-        setBubbles(prev => {
-            // Remover bolhas estouradas após um tempo para evitar acúmulo
-            const now = Date.now();
-            const updated = prev
-                .map(bubble => {
-                    if (bubble.popped) {
-                        // Manter bolhas estouradas por 300ms para animação
-                        if (now - (bubble.poppedAt || 0) > 300) {
-                            return null;
-                        }
-                        return bubble;
-                    }
-                    // Mover bolhas não estouradas
-                    return { ...bubble, y: bubble.y - bubble.speed };
-                })
-                .filter(bubble => {
-                    if (!bubble) return false; // Remover bolhas nulas (estouradas há mais de 300ms)
+        const config = levelConfigs[currentLevel - 1];
+
+        if (bubblesSpawned >= config.totalBubbles && bubbles.length === 0) {
+            if (currentLevel < 5) {
+                setCompletedLevels(prev => [...prev, currentLevel]);
+                setLevelMessage(`🌊 Profundidade ${config.depth} Completa!`);
+                setShowLevelTransition(true);
+
+                // Desbloquear equipamento
+                const newGear = divingGear.find(gear => gear.level === currentLevel);
+                if (newGear && !unlockedGear.some(g => g.level === currentLevel)) {
+                    setUnlockedGear(prev => [...prev, newGear]);
                     
-                    // Remover bolhas que saíram da tela
-                    if (bubble.y < -bubble.size) {
-                        if (!bubble.popped && bubble.type !== 'mine') {
-                            setMissedBubbles(prev => prev + 1);
-                            setCombo(0);
-                        }
-                        return false;
+                    // Adicionar item ativo na tela
+                    if (gameAreaRef.current) {
+                        const gameArea = gameAreaRef.current.getBoundingClientRect();
+                        const x = Math.random() * (gameArea.width - 100) + 50;
+                        const y = Math.random() * (gameArea.height - 100) + 50;
+                        setActiveGearItems(prev => [...prev, {...newGear, x, y}]);
                     }
-                    return true;
-                });
-            
-            return updated;
-        });
+                    
+                    if (audioManager.current && audioEnabled) {
+                        const message = `Parabéns! Você desbloqueou ${newGear.item}. Clique nele para equipar!`;
+                        audioManager.current.falarMila(message);
+                    }
+                }
 
-        setParticles(prev => {
-            return prev
-                .map(p => ({ ...p, x: p.x + p.vx, y: p.y + p.vy, life: p.life - 0.02 }))
-                .filter(p => p.life > 0);
-        });
-
-        // Drenar oxigênio lentamente
-        setOxygenLevel(prev => Math.max(0, prev - levelConfigs[currentLevel - 1].oxygenDrain / 60));
-
-        // Verificar condições de fim de jogo
-        const remaining = levelConfigs[currentLevel - 1].totalBubbles - bubblesSpawned;
-        setBubblesRemaining(remaining);
-
-        if (oxygenLevel <= 0) {
-            endGame(false);
-        } else if (bubblesSpawned >= levelConfigs[currentLevel - 1].totalBubbles && bubbles.length === 0) {
-            completeLevel();
-        }
-    }, [isPlaying, currentLevel, bubblesSpawned, oxygenLevel]);
-
-    const completeLevel = useCallback(() => {
-        setIsPlaying(false);
-        setShowLevelTransition(true);
-        setCompletedLevels(prev => [...prev, currentLevel]);
-        
-        // Desbloquear equipamento
-        const gear = divingGear.find(g => g.level === currentLevel);
-        if (gear) {
-            setUnlockedGear(prev => [...prev, gear]);
-            setActiveGearItems(prev => [...prev, {
-                level: gear.level,
-                item: gear.item,
-                icon: gear.icon,
-                x: Math.random() * (gameAreaRef.current?.clientWidth || 800 - 60),
-                y: Math.random() * (gameAreaRef.current?.clientHeight || 600 - 60)
-            }]);
-            
-            if (audioManager.current && audioEnabled) {
-                audioManager.current.falarMila(`Parabéns! Você completou o nível ${currentLevel} e desbloqueou ${gear.item}!`);
-            }
-        }
-
-        setLevelMessage(`Nível ${currentLevel} Completo!`);
-        setTimeout(() => {
-            setShowLevelTransition(false);
-            if (currentLevel < levelConfigs.length) {
-                setCurrentLevel(prev => prev + 1);
-                setOxygenLevel(100);
-                setBubblesSpawned(0);
-                setPoppedBubbles(0);
-                setMissedBubbles(0);
-                setCombo(0);
+                setTimeout(() => {
+                    const nextLevel = currentLevel + 1;
+                    const nextConfig = levelConfigs[nextLevel - 1];
+                    setCurrentLevel(nextLevel);
+                    setShowLevelTransition(false);
+                    setBubbles([]);
+                    setParticles([]);
+                    setCombo(0);
+                    setBubblesSpawned(0);
+                    setBubblesRemaining(nextConfig.totalBubbles);
+                    setOxygenLevel(100);
+                }, 2500);
             } else {
-                endGame(true);
-            }
-        }, 3000);
-    }, [currentLevel, audioEnabled, gameAreaRef]);
-
-    const endGame = useCallback((completed: boolean) => {
-        setIsPlaying(false);
-        setShowResults(true);
-        setAccuracy(poppedBubbles > 0 ? Math.round((poppedBubbles / (poppedBubbles + missedBubbles)) * 100) : 0);
-        
-        if (audioManager.current && audioEnabled) {
-            if (completed) {
-                audioManager.current.falarMila("Parabéns! Você completou todos os níveis do jogo!");
-            } else {
-                audioManager.current.falarMila("O oxigênio acabou! Tente novamente!");
+                endGame();
             }
         }
-    }, [poppedBubbles, missedBubbles, audioEnabled]);
+    }, [isPlaying, currentLevel, bubblesSpawned, bubbles, endGame, unlockedGear, audioEnabled, gameAreaRef]);
 
-    const startActivity = useCallback(() => {
-        setIsPlaying(true);
-        setJogoIniciado(true);
-        setShowResults(false);
-        setScore(0);
-        setOxygenLevel(100);
-        setBubbles([]);
-        setParticles([]);
-        setPoppedBubbles(0);
-        setMissedBubbles(0);
-        setCombo(0);
-        setMaxCombo(0);
-        setCompletedLevels([]);
-        setBubblesSpawned(0);
-        setUnlockedGear([]);
-        setActiveGearItems([]);
-        setCurrentLevel(1);
-        
-        if (audioManager.current && audioEnabled) {
-            audioManager.current.falarMila("Vamos começar! Estou pronta para mergulhar!");
-        }
-    }, [audioEnabled]);
-
-    const handleSaveSession = useCallback(async () => {
-        setSalvando(true);
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("Usuário não autenticado");
-
-            const { error } = await supabase
-                .from('game_sessions')
-                .insert([{
-                    user_id: user.id,
-                    game_type: 'bubble_pop',
-                    score,
-                    max_level: currentLevel,
-                    completed_levels: completedLevels,
-                    accuracy,
-                    max_combo: maxCombo,
-                    bubbles_popped: poppedBubbles,
-                    bubbles_missed: missedBubbles
-                }]);
-
-            if (error) throw error;
-            
-            if (audioManager.current && audioEnabled) {
-                audioManager.current.falarMila("Sua sessão foi salva com sucesso!");
-            }
-            
-            setTimeout(() => {
-                router.push('/dashboard');
-            }, 2000);
-        } catch (error) {
-            console.error("Erro ao salvar sessão:", error);
-            if (audioManager.current && audioEnabled) {
-                audioManager.current.falarMila("Ocorreu um erro ao salvar sua sessão. Tente novamente.");
-            }
-        } finally {
-            setSalvando(false);
-        }
-    }, [supabase, score, currentLevel, completedLevels, accuracy, maxCombo, poppedBubbles, missedBubbles, router, audioEnabled]);
-
-    const voltarInicio = useCallback(() => {
-        setIsPlaying(false);
-        setJogoIniciado(false);
-        setShowResults(false);
-        if (audioManager.current && audioEnabled) {
-            audioManager.current.falarMila("Voltando ao início...");
-        }
-    }, [audioEnabled]);
-
-    const toggleAudio = useCallback(() => {
-        setAudioEnabled(prev => !prev);
-        if (audioManager.current) {
-            audioManager.current.setEnabled(!audioEnabled);
-        }
-    }, [audioEnabled]);
-
-    // Loop do jogo
     useEffect(() => {
         if (!isPlaying) return;
 
         const gameLoop = () => {
-            updateBubbles();
+            setBubbles(prev => prev.map(bubble => {
+                if (bubble.popped) {
+                    return { ...bubble, opacity: bubble.opacity - 0.05 };
+                }
+
+                let newY = bubble.y - bubble.speed;
+                let newX = bubble.x;
+
+                if (bubble.horizontalMovement) {
+                    newX += bubble.horizontalMovement;
+                    if (!gameAreaRef.current) return bubble;
+                    const gameArea = gameAreaRef.current.getBoundingClientRect();
+                    if (newX <= 0 || newX >= gameArea.width - bubble.size) {
+                        bubble.horizontalMovement = -bubble.horizontalMovement;
+                        newX = Math.max(0, Math.min(gameArea.width - bubble.size, newX));
+                    }
+                }
+
+                if (newY < -bubble.size) {
+                    if (!bubble.popped && bubble.type !== 'mine') {
+                        setMissedBubbles(prev => prev + 1);
+                        setCombo(0);
+                        setOxygenLevel(prev => Math.max(0, prev - 1));
+                    }
+                    return { ...bubble, y: newY, opacity: 0 };
+                }
+
+                return { ...bubble, y: newY, x: newX };
+            }).filter(bubble => bubble.opacity > 0));
+
+            setParticles(prev => prev.map(particle => ({
+                ...particle,
+                x: particle.x + particle.vx,
+                y: particle.y + particle.vy,
+                vy: particle.vy + 0.2,
+                life: particle.life - 0.03
+            })).filter(particle => particle.life > 0));
+
             animationRef.current = requestAnimationFrame(gameLoop);
         };
 
         animationRef.current = requestAnimationFrame(gameLoop);
+
         return () => {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
         };
-    }, [isPlaying, updateBubbles]);
+    }, [isPlaying]);
 
-    // Spawn de bolhas
     useEffect(() => {
         if (!isPlaying) return;
 
+        const config = levelConfigs[currentLevel - 1];
         const spawnInterval = setInterval(() => {
-            spawnBubble();
-        }, levelConfigs[currentLevel - 1].spawnRate);
+            if (bubblesSpawned < config.totalBubbles) {
+                createBubble();
+            }
+        }, config.spawnRate);
 
         return () => clearInterval(spawnInterval);
-    }, [isPlaying, currentLevel, spawnBubble]);
+    }, [isPlaying, currentLevel, bubblesSpawned, createBubble]);
 
+    useEffect(() => {
+        if (!isPlaying) return;
+
+        const config = levelConfigs[currentLevel - 1];
+        const drainInterval = setInterval(() => {
+            setOxygenLevel(prev => {
+                const newLevel = Math.max(0, prev - config.oxygenDrain);
+                if (newLevel === 0) {
+                    endGame();
+                }
+                return newLevel;
+            });
+        }, 1000);
+
+        return () => clearInterval(drainInterval);
+    }, [isPlaying, currentLevel, endGame]);
+
+    const toggleAudio = useCallback(() => {
+        if (audioManager.current) {
+            const newState = audioManager.current.toggleAudio();
+            setAudioEnabled(newState);
+            if (newState) {
+                audioManager.current.falarMila("Áudio ligado!");
+            }
+        }
+    }, []);
+
+    // RETORNO SEM SISTEMA DE NOMEAÇÃO
     return {
-        isPlaying,
-        score,
-        combo,
-        oxygenLevel,
-        bubbles,
-        particles,
-        currentLevel,
-        showResults,
-        salvando,
-        poppedBubbles,
-        bubblesRemaining,
-        accuracy,
-        maxCombo,
-        showLevelTransition,
-        levelMessage,
-        levelConfigs,
-        completedLevels,
-        startActivity,
-        handleInteraction,
-        handleSaveSession,
-        voltarInicio,
-        toggleAudio,
-        audioEnabled,
-        jogoIniciado,
-        unlockedGear,
-        activeGearItems,
-        collectGear
+        isPlaying, score, combo, oxygenLevel, bubbles, particles, currentLevel,
+        showResults, salvando, poppedBubbles, bubblesRemaining, accuracy, maxCombo,
+        showLevelTransition, levelMessage, levelConfigs, completedLevels,
+        startActivity, handleInteraction, handleSaveSession, voltarInicio,
+        toggleAudio, audioEnabled, jogoIniciado,
+        unlockedGear, activeGearItems, collectGear
     };
 }
