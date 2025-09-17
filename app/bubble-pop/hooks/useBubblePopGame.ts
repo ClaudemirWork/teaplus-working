@@ -1,6 +1,4 @@
-// app/bubble-pop/hooks/useBubblePopGame.ts
 'use client';
-
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabaseClient';
@@ -34,6 +32,11 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const [audioEnabled, setAudioEnabled] = useState(true);
     const [jogoIniciado, setJogoIniciado] = useState(false);
 
+    // New: always provide arrays for consistency later
+    const [unlockedGear, setUnlockedGear] = useState<Array<{level: number, item: string, icon: string}>>([]);
+    const [activeGearItems, setActiveGearItems] = useState<Array<{x: number, y: number, icon: string}>>([]);
+    const [fishCollection, setFishCollection] = useState<Array<{id: number, name: string, type: string}>>([]);
+
     const levelConfigs = useMemo(() => [
         { level: 1, name: 'Superfície (0-10m)', depth: '0-10m', totalBubbles: 200, minePercentage: 0.05, spawnRate: 400, oxygenDrain: 0.3, bgGradient: 'from-cyan-300 to-blue-400' },
         { level: 2, name: 'Águas Rasas (10-30m)', depth: '10-30m', totalBubbles: 150, minePercentage: 0.15, spawnRate: 450, oxygenDrain: 0.5, bgGradient: 'from-blue-400 to-blue-500' },
@@ -53,13 +56,11 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         treasure: { color: '#FFD700', points: 50, size: 50 },
         pearl: { color: '#FFF0F5', points: 100, size: 40 }
     }), []);
-
     useEffect(() => {
         if (!audioManager.current) {
             audioManager.current = GameAudioManager.getInstance();
         }
     }, []);
-
     const playPopSound = useCallback((type: Bubble['type']) => {
         if (!audioEnabled) return;
         try {
@@ -68,7 +69,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             const gainNode = audioContext.createGain();
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-
             if (type === 'mine') {
                 const noise = audioContext.createOscillator();
                 const noiseGain = audioContext.createGain();
@@ -101,7 +101,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             }
         } catch (e) { console.error("Web Audio API error:", e); }
     }, [audioEnabled]);
-
     const createParticles = useCallback((x: number, y: number, color: string, isExplosion: boolean = false) => {
         const newParticles: Particle[] = [];
         const particleCount = isExplosion ? 20 : 10;
@@ -117,250 +116,13 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
         setParticles(prev => [...prev, ...newParticles]);
     }, []);
-
     const popBubble = useCallback((bubble: Bubble, x: number, y: number) => {
         if (bubble.popped) return;
-
         setBubbles(prev => prev.map(b => b.id === bubble.id ? { ...b, popped: true } : b));
         playPopSound(bubble.type);
-
         if (bubble.type === 'mine') {
             createParticles(x, y, bubble.color, true);
             setScore(prev => Math.max(0, prev + bubble.points));
             setCombo(0);
             setOxygenLevel(prev => Math.max(0, prev - 10));
         } else {
-            createParticles(x, y, bubble.color);
-            setPoppedBubbles(prev => prev + 1);
-            
-            const newCombo = combo + 1;
-            setCombo(newCombo);
-            setMaxCombo(max => Math.max(max, newCombo));
-
-            const comboMultiplier = 1 + (newCombo * 0.1);
-            const finalPoints = Math.round(bubble.points * comboMultiplier);
-            setScore(prev => prev + finalPoints);
-
-            if (bubble.type === 'oxygen') setOxygenLevel(prev => Math.min(100, prev + 10));
-            else if (bubble.type === 'pearl') setOxygenLevel(prev => Math.min(100, prev + 20));
-            else setOxygenLevel(prev => Math.min(100, prev + 3));
-        }
-    }, [combo, createParticles, playPopSound]);
-
-    const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-        if (!gameAreaRef.current || !isPlaying) return;
-        const rect = gameAreaRef.current.getBoundingClientRect();
-        const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-        const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
-
-        const currentBubbles = [...bubbles];
-        currentBubbles.forEach(bubble => {
-            if (bubble.popped) return;
-            const bubbleCenterX = bubble.x + bubble.size / 2;
-            const bubbleCenterY = bubble.y + bubble.size / 2;
-            const distance = Math.sqrt(Math.pow(x - bubbleCenterX, 2) + Math.pow(y - bubbleCenterY, 2));
-            if (distance <= bubble.size / 2) {
-                popBubble(bubble, x, y);
-            }
-        });
-    }, [isPlaying, bubbles, popBubble, gameAreaRef]);
-
-    const endGame = useCallback(() => {
-        setIsPlaying(false);
-        setShowResults(true);
-        if (currentLevel === 5) {
-            setCompletedLevels(prev => [...prev, 5]);
-        }
-        const totalAttempts = poppedBubbles + missedBubbles;
-        const acc = totalAttempts > 0 ? Math.round((poppedBubbles / totalAttempts) * 100) : 0;
-        setAccuracy(acc);
-    }, [currentLevel, poppedBubbles, missedBubbles]);
-    
-    const startActivity = useCallback(() => {
-        audioManager.current?.forceInitialize();
-        setJogoIniciado(true);
-        setIsPlaying(true);
-        setCurrentLevel(1);
-        setScore(0);
-        setCombo(0);
-        setMaxCombo(0);
-        setBubbles([]);
-        setParticles([]);
-        setOxygenLevel(100);
-        setShowResults(false);
-        setPoppedBubbles(0);
-        setMissedBubbles(0);
-        setCompletedLevels([]);
-        setBubblesSpawned(0);
-        setBubblesRemaining(levelConfigs[0].totalBubbles);
-    }, [levelConfigs]);
-
-    const voltarInicio = useCallback(() => {
-        setJogoIniciado(false);
-        setShowResults(false);
-        setIsPlaying(false);
-    }, []);
-
-    const handleSaveSession = useCallback(async () => {
-        setSalvando(true);
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) { router.push('/login'); return; }
-            await supabase.from('sessoes').insert([{
-                usuario_id: user.id,
-                atividade_nome: 'Oceano de Bolhas',
-                pontuacao_final: score,
-                data_fim: new Date().toISOString()
-            }]);
-            router.push('/dashboard');
-        } catch (error) { console.error("Erro ao salvar sessão:", error); } 
-        finally { setSalvando(false); }
-    }, [supabase, router, score]);
-
-    const toggleAudio = useCallback(() => {
-        if (audioManager.current) {
-            const newState = audioManager.current.toggleAudio();
-            setAudioEnabled(newState);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (!isPlaying) { if(animationRef.current) cancelAnimationFrame(animationRef.current); return; }
-
-        const updateBubbles = () => {
-            if (!gameAreaRef.current) return;
-            const gameArea = gameAreaRef.current.getBoundingClientRect();
-            setBubbles(prev => prev.map(bubble => {
-                if (bubble.popped) return { ...bubble, opacity: bubble.opacity - 0.05 };
-                let newY = bubble.y - bubble.speed;
-                let newX = bubble.x;
-                if (bubble.horizontalMovement) {
-                    newX += bubble.horizontalMovement;
-                    if (newX <= 0 || newX >= gameArea.width - bubble.size) {
-                        bubble.horizontalMovement = -(bubble.horizontalMovement ?? 0);
-                        newX = Math.max(0, Math.min(gameArea.width - bubble.size, newX));
-                    }
-                }
-                if (newY < -bubble.size) {
-                    if (!bubble.popped && bubble.type !== 'mine') {
-                        setMissedBubbles(prev => prev + 1);
-                        setCombo(0);
-                        setOxygenLevel(prev => Math.max(0, prev - 1));
-                    }
-                    return { ...bubble, opacity: 0 };
-                }
-                return { ...bubble, y: newY, x: newX };
-            }).filter(bubble => bubble.opacity > 0));
-        };
-
-        const updateParticles = () => {
-            setParticles(prev => prev.map(p => ({
-                ...p, x: p.x + p.vx, y: p.y + p.vy, vy: p.vy + 0.2, life: p.life - 0.03
-            })).filter(p => p.life > 0));
-        };
-
-        const gameLoop = () => {
-            updateBubbles();
-            updateParticles();
-            animationRef.current = requestAnimationFrame(gameLoop);
-        };
-        animationRef.current = requestAnimationFrame(gameLoop);
-        return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-    }, [isPlaying, gameAreaRef]);
-    
-    useEffect(() => {
-        if (!isPlaying) return;
-        const config = levelConfigs[currentLevel - 1];
-        
-        const createBubble = () => {
-            if (!gameAreaRef.current) return;
-            const gameArea = gameAreaRef.current.getBoundingClientRect();
-            const rand = Math.random();
-            let type: Bubble['type'] = 'air';
-            let bubbleConfig = coloredBubbles.air;
-            let horizontalMovement = 0;
-            if (rand < config.minePercentage) {
-                type = 'mine';
-                bubbleConfig = { color: '#8B0000', points: -20, size: 45 };
-            } else {
-                const colorRand = Math.random();
-                if (currentLevel === 1) {
-                    if (colorRand < 0.5) type = 'air'; else if (colorRand < 0.7) type = 'oxygen'; else if (colorRand < 0.85) type = 'pink'; else if (colorRand < 0.95) type = 'purple'; else type = 'treasure';
-                } else if (currentLevel === 2) {
-                    if (colorRand < 0.3) type = 'air'; else if (colorRand < 0.5) type = 'oxygen'; else if (colorRand < 0.65) type = 'pink'; else if (colorRand < 0.75) type = 'purple'; else if (colorRand < 0.85) type = 'yellow'; else if (colorRand < 0.95) type = 'green'; else type = 'treasure';
-                } else if (currentLevel === 3) {
-                    if (colorRand < 0.2) type = 'air'; else if (colorRand < 0.35) type = 'oxygen'; else if (colorRand < 0.5) type = 'pink'; else if (colorRand < 0.6) type = 'purple'; else if (colorRand < 0.7) type = 'yellow'; else if (colorRand < 0.8) type = 'green'; else if (colorRand < 0.9) type = 'orange'; else if (colorRand < 0.97) type = 'treasure'; else type = 'pearl';
-                } else {
-                    if (colorRand < 0.1) type = 'air'; else if (colorRand < 0.2) type = 'oxygen'; else if (colorRand < 0.35) type = 'purple'; else if (colorRand < 0.5) type = 'yellow'; else if (colorRand < 0.65) type = 'green'; else if (colorRand < 0.75) type = 'orange'; else if (colorRand < 0.9) type = 'treasure'; else type = 'pearl';
-                }
-                bubbleConfig = coloredBubbles[type];
-                if (type === 'pearl' || type === 'treasure') { horizontalMovement = (Math.random() - 0.5) * 1.5; }
-            }
-            const newBubble: Bubble = {
-                id: Date.now() + Math.random(), x: Math.random() * (gameArea.width - bubbleConfig.size), y: gameArea.height + bubbleConfig.size,
-                size: bubbleConfig.size + (Math.random() * 10 - 5), speed: 2, color: bubbleConfig.color, points: bubbleConfig.points,
-                type: type, popped: false, opacity: 1, horizontalMovement: horizontalMovement
-            };
-            setBubbles(prev => [...prev, newBubble]);
-            setBubblesSpawned(prev => prev + 1);
-            setBubblesRemaining(prev => prev - 1);
-        };
-
-        const spawnInterval = setInterval(() => {
-            if (bubblesSpawned < config.totalBubbles) {
-                createBubble();
-            }
-        }, config.spawnRate);
-
-        return () => clearInterval(spawnInterval);
-    }, [isPlaying, currentLevel, bubblesSpawned, levelConfigs, coloredBubbles, gameAreaRef]);
-
-    useEffect(() => {
-        if (!isPlaying) return;
-        const config = levelConfigs[currentLevel - 1];
-        const drainInterval = setInterval(() => {
-            setOxygenLevel(prev => {
-                const newLevel = Math.max(0, prev - config.oxygenDrain);
-                if (newLevel === 0) {
-                    endGame();
-                }
-                return newLevel;
-            });
-        }, 1000);
-        return () => clearInterval(drainInterval);
-    }, [isPlaying, currentLevel, levelConfigs, endGame]);
-
-    useEffect(() => {
-        if (!isPlaying) return;
-        const config = levelConfigs[currentLevel - 1];
-        if (bubblesSpawned >= config.totalBubbles && bubbles.length === 0) {
-            if (currentLevel < 5) {
-                setCompletedLevels(prev => [...prev, currentLevel]);
-                setLevelMessage(`🌊 Profundidade ${config.depth} Completa!`);
-                setShowLevelTransition(true);
-                setTimeout(() => {
-                    const nextLevel = currentLevel + 1;
-                    const nextConfig = levelConfigs[nextLevel - 1];
-                    setCurrentLevel(nextLevel);
-                    setShowLevelTransition(false);
-                    setBubbles([]);
-                    setParticles([]);
-                    setCombo(0);
-                    setBubblesSpawned(0);
-                    setBubblesRemaining(nextConfig.totalBubbles);
-                    setOxygenLevel(100);
-                }, 2500);
-            } else {
-                endGame();
-            }
-        }
-    }, [isPlaying, bubbles, currentLevel, bubblesSpawned, levelConfigs, endGame]);
-
-    return {
-        isPlaying, score, combo, oxygenLevel, bubbles, particles, currentLevel,
-        showResults, salvando, poppedBubbles, bubblesRemaining, accuracy, maxCombo,
-        showLevelTransition, levelMessage, levelConfigs, completedLevels,
-        startActivity, handleInteraction, handleSaveSession, voltarInicio,
-        toggleAudio, audioEnabled, jogoIniciado
-    };
-}
