@@ -1,4 +1,3 @@
-// app/bubble-pop/components/ResultsScreen.tsx
 'use client';
 import React from 'react';
 import { Save } from 'lucide-react';
@@ -6,34 +5,34 @@ import { Save } from 'lucide-react';
 interface ResultsScreenProps {
     score: number;
     maxCombo: number;
-    completedLevels: number[];
+    completedLevels?: number[];
     salvando: boolean;
     onRestart: () => void;
     handleSaveSession: () => void;
     accuracy: number;
     poppedBubbles: number;
-    fishCollection: Array<{id: number, name: string, type: string}>;
-    unlockedGear: Array<{level: number, item: string, icon: string}>;
-    levelConfigs: Array<{name: string, depth: string}>;
+    fishCollection?: Array<{id: number, name: string, type: string}>;
+    unlockedGear?: Array<{level: number, item: string, icon: string}>;
+    levelConfigs?: Array<{name: string, depth: string}>;
 }
 
 export const ResultsScreen = React.memo(({ 
     score, 
     maxCombo, 
-    completedLevels, 
+    completedLevels = [],
     salvando, 
     onRestart, 
     handleSaveSession, 
     accuracy,
     poppedBubbles,
-    fishCollection,
-    unlockedGear,
-    levelConfigs
+    fishCollection = [],
+    unlockedGear = [],
+    levelConfigs = []
 }: ResultsScreenProps) => {
-    
-    const maxLevelReached = Math.max(...completedLevels, 1);
+    // Safe fallback sempre
+    const maxLevelReached = Math.max(...(completedLevels.length ? completedLevels : [1]));
     const allLevelsCompleted = completedLevels.length === 5;
-    
+
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 max-w-md w-full">
@@ -49,7 +48,7 @@ export const ResultsScreen = React.memo(({
                          'Aventura Concluída!'}
                     </h3>
                     <p className="text-sm text-gray-600">
-                        Profundidade máxima: {levelConfigs[maxLevelReached - 1]?.depth || '0m'}
+                        Profundidade máxima: {levelConfigs[maxLevelReached - 1]?.depth ?? '0m'}
                     </p>
                 </div>
                 
@@ -71,9 +70,8 @@ export const ResultsScreen = React.memo(({
                         <div className="text-xs text-purple-600">Precisão</div>
                     </div>
                 </div>
-
                 {/* Peixes e criaturas coletadas */}
-                {fishCollection.length > 0 && (
+                {(fishCollection?.length ?? 0) > 0 && (
                     <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 mb-4">
                         <h4 className="font-bold text-gray-800 mb-2 text-sm">
                             🐠 Criaturas Nomeadas ({fishCollection.length}):
@@ -88,9 +86,8 @@ export const ResultsScreen = React.memo(({
                         </div>
                     </div>
                 )}
-
                 {/* Equipamentos desbloqueados */}
-                {unlockedGear.length > 0 && (
+                {(unlockedGear?.length ?? 0) > 0 && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
                         <h4 className="font-bold text-gray-800 mb-2 text-sm">
                             🤿 Equipamentos Coletados:
@@ -104,7 +101,6 @@ export const ResultsScreen = React.memo(({
                         </div>
                     </div>
                 )}
-
                 {/* Relatório de Níveis */}
                 <div className="bg-gray-50 rounded-lg p-3 mb-4">
                     <h4 className="font-bold text-gray-800 mb-2 text-sm">🌊 Níveis Completados:</h4>
@@ -113,9 +109,9 @@ export const ResultsScreen = React.memo(({
                             <div 
                                 key={level}
                                 className={`flex-1 h-8 rounded flex items-center justify-center text-xs font-bold
-                                    ${completedLevels.includes(level) 
+                                    ${(completedLevels?.includes(level) 
                                         ? 'bg-blue-500 text-white' 
-                                        : 'bg-gray-300 text-gray-500'}`}
+                                        : 'bg-gray-300 text-gray-500')}`}
                             >
                                 {level}
                             </div>
@@ -147,5 +143,4 @@ export const ResultsScreen = React.memo(({
         </div>
     );
 });
-
 ResultsScreen.displayName = 'ResultsScreen';
