@@ -1,11 +1,9 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { GameAudioManager } from '@/utils/gameAudioManager';
-
 interface InstructionsScreenProps {
   onPlay: () => void;
 }
-
 const instrucoes = [
   { emoji: '🫧', texto: "Estoure as bolhas clicando nelas!" },
   { emoji: '💙', texto: "Colete bolhas azuis: recuperam muito oxigênio!" },
@@ -19,20 +17,26 @@ export function InstructionsScreen({ onPlay }: InstructionsScreenProps) {
   const [milaFalando, setMilaFalando] = useState(true);
   const [falaConcluida, setFalaConcluida] = useState(false);
 
-  // Fala cada instrução em sequência, só libera "Vamos jogar" no fim!
   useEffect(() => {
     let cancelled = false;
+
+    async function falarFrase(frase: string) {
+      return new Promise<void>(resolve => {
+        GameAudioManager.getInstance().falarMila(frase, () => resolve());
+      });
+    }
+
     async function narrarInstrucoes() {
       setMilaFalando(true);
-      const audio = GameAudioManager.getInstance();
       for (const item of instrucoes) {
         if (cancelled) return;
-        await audio.falarMila(`${item.texto}`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // pequeno delay entre frases
+        await falarFrase(item.texto);
+        await new Promise(resolve => setTimeout(resolve, 500)); // pequeno delay extra
       }
       setFalaConcluida(true);
       setMilaFalando(false);
     }
+
     narrarInstrucoes();
     return () => { cancelled = true; };
   }, []);
