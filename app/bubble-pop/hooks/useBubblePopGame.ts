@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabaseClient';
 import { GameAudioManager } from '@/utils/gameAudioManager';
@@ -199,7 +199,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             x: Math.random() * (gameArea.width - bubbleConfig.size),
             y: gameArea.height + bubbleConfig.size,
             size: bubbleConfig.size + (Math.random() * 10 - 5),
-            speed: finalSpeed, // VELOCIDADE VARIÁVEL
+            speed: finalSpeed,
             color: bubbleConfig.color,
             points: bubbleConfig.points,
             type: type,
@@ -430,8 +430,8 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                 Math.pow(y - bubbleCenterY, 2)
             );
 
-            // Considerar uma margem de erro (aumentar o raio em 30% para facilitar o clique)
-            const hitRadius = bubble.size / 2 * 1.3;
+            // Considerar uma margem de erro (aumentar o raio em 25% para facilitar o clique)
+            const hitRadius = bubble.size / 2 * 1.25;
 
             if (distance <= hitRadius && distance < closestDistance) {
                 closestDistance = distance;
@@ -441,8 +441,8 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
 
         if (closestBubble) {
             const now = Date.now();
-            // Verificar se a mesma bolha não foi clicada nos últimos 150ms
-            if (lastClickedBubble !== closestBubble.id || now - lastClickTime > 150) {
+            // Verificar se a mesma bolha não foi clicada nos últimos 100ms
+            if (lastClickedBubble !== closestBubble.id || now - lastClickTime > 100) {
                 popBubble(closestBubble, x, y);
                 setLastClickedBubble(closestBubble.id);
                 setLastClickTime(now);
@@ -622,17 +622,13 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, []);
 
-    // Memoizar a lista de bolhas e partículas para melhor performance
-    const memoizedBubbles = useMemo(() => bubbles, [bubbles]);
-    const memoizedParticles = useMemo(() => particles, [particles]);
-
     return {
         isPlaying,
         score,
         combo,
         oxygenLevel,
-        bubbles: memoizedBubbles,
-        particles: memoizedParticles,
+        bubbles,
+        particles,
         currentLevel,
         showResults,
         salvando,
