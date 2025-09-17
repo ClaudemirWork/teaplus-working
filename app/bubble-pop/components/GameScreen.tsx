@@ -1,11 +1,12 @@
-// app/bubble-pop/components/GameScreen.tsx
 'use client';
 import React, { forwardRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Save, Volume2, VolumeX } from 'lucide-react';
 
 // Componente do Header
-const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton, onToggleAudio, audioEnabled }: any) => (
+const GameHeader = ({
+    onSave, isSaveDisabled, title, icon, showSaveButton, onToggleAudio, audioEnabled
+}: any) => (
     <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between h-16">
@@ -50,15 +51,35 @@ const GameHeader = ({ onSave, isSaveDisabled, title, icon, showSaveButton, onTog
 );
 
 export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
+    // Use valores default para evitar quebra caso alguma prop venha undefined
     const {
-        isPlaying, score, combo, oxygenLevel, bubbles, particles, currentLevel,
-        showResults, salvando, poppedBubbles, bubblesRemaining, showLevelTransition,
-        levelMessage, levelConfigs, completedLevels, handleInteraction,
-        handleSaveSession, voltarInicio, jogoIniciado, startActivity,
-        unlockedGear, activeGearItems, toggleAudio, audioEnabled
+        isPlaying = false,
+        score = 0,
+        combo = 0,
+        oxygenLevel = 100,
+        bubbles = [],
+        particles = [],
+        currentLevel = 1,
+        showResults = false,
+        salvando = false,
+        poppedBubbles = 0,
+        bubblesRemaining = 0,
+        showLevelTransition = false,
+        levelMessage = '',
+        levelConfigs = [],
+        completedLevels = [],
+        handleInteraction = () => {},
+        handleSaveSession = () => {},
+        voltarInicio = () => {},
+        jogoIniciado = false,
+        startActivity = () => {},
+        unlockedGear = [],
+        activeGearItems = [],
+        toggleAudio = () => {},
+        audioEnabled = true
     } = props;
 
-    const currentLevelConfig = levelConfigs[currentLevel - 1];
+    const currentLevelConfig = levelConfigs?.[currentLevel - 1] || { name: '', depth: '', bgGradient: 'from-blue-400 to-blue-500' };
 
     // Função auxiliar para obter o ícone da bolha
     const getBubbleIcon = (type: string) => {
@@ -72,8 +93,7 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
             default: return null;
         }
     };
-
-    // Função auxiliar para obter o gradiente da bolha
+    // Funções auxiliares...
     const getBubbleGradient = (type: string) => {
         switch(type) {
             case 'mine': return 'radial-gradient(circle, #8B0000, #4B0000)';
@@ -85,8 +105,6 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
             default: return null;
         }
     };
-
-    // Função auxiliar para obter a borda da bolha
     const getBubbleBorder = (type: string) => {
         switch(type) {
             case 'pearl': return '2px solid #FFD700';
@@ -98,8 +116,6 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
             default: return '1px solid rgba(255,255,255,0.3)';
         }
     };
-
-    // Função auxiliar para obter o box-shadow da bolha
     const getBubbleBoxShadow = (type: string) => {
         switch(type) {
             case 'pearl': return '0 0 20px #FFF0F5';
@@ -170,11 +186,9 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
             </div>
         );
     }
-
     if (showResults) {
         return null;
     }
-
     return (
         <div className="min-h-screen bg-gray-50">
             <GameHeader
@@ -186,16 +200,13 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                 onToggleAudio={toggleAudio}
                 audioEnabled={audioEnabled}
             />
-
             <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
                 <div className="space-y-4">
-                    {/* Nome da Fase */}
                     <div className="text-center">
                         <h2 className="text-xl font-bold text-blue-700">
                             {currentLevelConfig.name}
                         </h2>
                     </div>
-
                     {/* Status */}
                     <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4">
                         <div className="grid grid-cols-5 gap-2">
@@ -223,9 +234,8 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                             </div>
                         </div>
                     </div>
-
                     {/* Equipamentos desbloqueados */}
-                    {unlockedGear.length > 0 && (
+                    {(unlockedGear?.length || 0) > 0 && (
                         <div className="bg-white rounded-lg p-2 flex items-center justify-center gap-2">
                             <span className="text-sm font-bold">Equipamentos:</span>
                             {unlockedGear.map((gear, idx) => (
@@ -235,7 +245,6 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                             ))}
                         </div>
                     )}
-
                     {/* Barra de Oxigênio */}
                     <div className="bg-white rounded-lg shadow p-3">
                         <div className="flex items-center gap-2">
@@ -253,7 +262,6 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                             <span className="text-sm font-bold">{Math.round(oxygenLevel)}%</span>
                         </div>
                     </div>
-
                     {/* Área do jogo */}
                     <div
                         ref={ref}
@@ -272,7 +280,6 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                 backgroundRepeat: 'no-repeat'
                             }}
                         />
-
                         {/* Transição de nível */}
                         {showLevelTransition && (
                             <div className="absolute inset-0 bg-white/95 flex items-center justify-center z-30">
@@ -282,14 +289,13 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                         {levelMessage}
                                     </div>
                                     <div className="text-base text-gray-600 mt-2">
-                                        Descendo para: {levelConfigs[currentLevel]?.name}
+                                        Descendo para: {levelConfigs?.[currentLevel]?.name || ''}
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Itens de mergulho ativos */}
-                        {activeGearItems.map((gear, index) => (
+                        {(activeGearItems ?? []).map((gear, index) => (
                             <div
                                 key={index}
                                 className="absolute cursor-pointer animate-bounce"
@@ -303,14 +309,11 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                 {gear.icon}
                             </div>
                         ))}
-
-                        {/* Bolhas */}
-                        {bubbles.map(bubble => {
+                        {(bubbles ?? []).map(bubble => {
                             const icon = getBubbleIcon(bubble.type);
                             const gradient = getBubbleGradient(bubble.type);
                             const border = getBubbleBorder(bubble.type);
                             const boxShadow = getBubbleBoxShadow(bubble.type);
-
                             return (
                                 <div
                                     key={bubble.id}
@@ -329,14 +332,11 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                         transform: `scale(${bubble.popped ? 1.5 : 1})`,
                                     }}
                                 >
-                                    {/* Ícone da bolha especial */}
                                     {icon && (
                                         <div className="absolute inset-0 flex items-center justify-center text-xl font-bold">
                                             {icon}
                                         </div>
                                     )}
-                                    
-                                    {/* Pontos para bolhas normais */}
                                     {!['mine', 'pearl', 'treasure', 'pufferfish', 'starfish', 'octopus'].includes(bubble.type) && (
                                         <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xs">
                                             +{bubble.points}
@@ -345,9 +345,7 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                 </div>
                             );
                         })}
-
-                        {/* Partículas */}
-                        {particles.map(particle => (
+                        {(particles ?? []).map(particle => (
                             <div
                                 key={particle.id}
                                 className="absolute rounded-full pointer-events-none"
@@ -361,8 +359,6 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                 }}
                             />
                         ))}
-
-                        {/* Aviso de oxigênio baixo */}
                         {oxygenLevel < 30 && (
                             <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
                                 <div className="bg-red-500 text-white px-4 py-2 rounded-full font-bold animate-pulse">
@@ -370,8 +366,6 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                 </div>
                             </div>
                         )}
-
-                        {/* Combo display */}
                         {combo > 5 && (
                             <div className="absolute top-12 left-1/2 transform -translate-x-1/2 animate-bounce">
                                 <div className="bg-yellow-400 text-black px-4 py-2 rounded-full font-bold text-lg">
@@ -380,21 +374,20 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                             </div>
                         )}
                     </div>
-
                     {/* Indicador de níveis com nomes */}
                     <div className="flex justify-center gap-2">
                         {[1, 2, 3, 4, 5].map((level) => (
                             <div key={level} className="text-center">
                                 <div
                                     className={`w-16 h-10 rounded-lg flex flex-col items-center justify-center text-xs font-bold
-                                        ${completedLevels.includes(level) ? 'bg-blue-500 text-white' :
+                                        ${completedLevels?.includes(level) ? 'bg-blue-500 text-white' :
                                         level === currentLevel ? 'bg-cyan-400 text-black animate-pulse' :
                                         'bg-gray-300 text-gray-600'}`}
                                 >
-                                    <div>{levelConfigs[level - 1].depth}</div>
+                                    <div>{levelConfigs?.[level - 1]?.depth || ''}</div>
                                 </div>
                                 <p className="text-xs mt-1 text-gray-600">
-                                    {levelConfigs[level - 1].name.split('(')[0].trim()}
+                                    {levelConfigs?.[level - 1]?.name?.split('(')[0]?.trim() || ''}
                                 </p>
                             </div>
                         ))}
@@ -404,5 +397,4 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
         </div>
     );
 });
-
 GameScreen.displayName = 'GameScreen';
