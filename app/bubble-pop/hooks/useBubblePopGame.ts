@@ -73,33 +73,61 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     audioManager.current = GameAudioManager.getInstance();
   }, []);
 
-  // Função para som de bolha estourando (RESTAURADO)
+  // ✅ SOM PERFEITO DE BOLHA ESTOURANDO
   const playBubblePopSound = useCallback(() => {
-    if (!audioEnabled || !audioManager.current) return;
+    if (!audioEnabled) return;
     
-    // Som sintético de bolha estourando
     try {
-      const audioContext = audioManager.current.audioContext;
-      if (audioContext && audioContext.state === 'running') {
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        // Configuração do som de bolha
-        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.1);
-        
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-        
-        oscillator.type = 'sine';
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.15);
-      }
+      // Criar AudioContext local se não existir
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Criar osciladores para som mais realista
+      const osc1 = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      const filterNode = audioCtx.createBiquadFilter();
+      
+      // Conectar: osc1 + osc2 → filter → gain → output
+      osc1.connect(filterNode);
+      osc2.connect(filterNode);
+      filterNode.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      // Configurar filtro para som mais suave
+      filterNode.type = 'lowpass';
+      filterNode.frequency.setValueAtTime(1000, audioCtx.currentTime);
+      filterNode.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+      
+      // Oscilador principal (bolha estourando)
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(400, audioCtx.currentTime);
+      osc1.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
+      osc1.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+      
+      // Oscilador secundário (efeito de "pop")
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(800, audioCtx.currentTime);
+      osc2.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.02);
+      
+      // Envelope de volume (ataque rápido, decaimento suave)
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.005); // Ataque
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15); // Decaimento
+      
+      // Tocar sons
+      osc1.start(audioCtx.currentTime);
+      osc2.start(audioCtx.currentTime);
+      
+      // Parar sons
+      osc1.stop(audioCtx.currentTime + 0.15);
+      osc2.stop(audioCtx.currentTime + 0.02);
+      
+      // Limpar contexto após uso
+      setTimeout(() => {
+        audioCtx.close();
+      }, 200);
     } catch (error) {
-      console.log('Erro ao tocar som de bolha:', error);
+      console.log('Erro no som sintetizado:', error);
     }
   }, [audioEnabled]);
 
@@ -292,8 +320,12 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
   const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!isPlaying) return;
 
-    e.preventDefault();
-    e.stopPropagation();
+    try {
+      e.preventDefault();
+      e.stopPropagation();
+    } catch (error) {
+      // Ignorar erros de preventDefault
+    }
 
     const gameArea = gameAreaRef.current;
     if (!gameArea) return;
@@ -333,7 +365,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     // Verificar marcos de pontuação
     checkScoreMilestone(newScore);
 
-    // Som de bolha estourando (RESTAURADO)
+    // ✅ SOM DE BOLHA PERFEITO
     playBubblePopSound();
 
     // Processar efeitos especiais
@@ -501,7 +533,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     }
   }, [score, maxCombo, completedLevels, poppedBubbles, missedBubbles, fishCollection, unlockedGear, supabase, audioEnabled]);
 
-  // Controle de progressão de níveis (RESTAURADO)
+  // ✅ CONTROLE DE PROGRESSÃO DE NÍVEIS PERFEITO
   useEffect(() => {
     const activeBubbles = bubbles.filter(b => !b.popped).length;
     setBubblesRemaining(activeBubbles);
