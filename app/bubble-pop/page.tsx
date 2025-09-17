@@ -43,7 +43,8 @@ export default function BubblePopPage() {
     useEffect(() => {
         if (game.showResults) {
             // Atualiza os recordes no final do jogo
-            const newStars = totalStars + (game.savedFish * 10);
+            // ALTERADO: Agora calcula estrelas baseado na pontuação (100 pontos = 1 estrela)
+            const newStars = totalStars + Math.floor(game.score / 100);
             localStorage.setItem('bubblePop_totalStars', newStars.toString());
             setTotalStars(newStars);
 
@@ -53,7 +54,7 @@ export default function BubblePopPage() {
             }
             setCurrentScreen('results');
         }
-    }, [game.showResults, game.savedFish, game.score, totalStars, bestScore]);
+    }, [game.showResults, game.score, totalStars, bestScore]);
 
     // 4. Lógica de renderização: mostra um componente de cada vez
     if (currentScreen === 'title') {
