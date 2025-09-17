@@ -19,6 +19,7 @@ interface GameScreenProps {
   toggleAudio: () => void;
   showLevelTransition: boolean;
   levelMessage: string;
+  fishCollection?: Array<{id: number, name: string, type: string}>;
 }
 
 export const GameScreen = forwardRef<HTMLDivElement, GameScreenProps>(
@@ -37,6 +38,7 @@ export const GameScreen = forwardRef<HTMLDivElement, GameScreenProps>(
       toggleAudio,
       showLevelTransition,
       levelMessage,
+      fishCollection = [],
     } = props;
 
     const config = levelConfigs[currentLevel - 1];
@@ -52,6 +54,17 @@ export const GameScreen = forwardRef<HTMLDivElement, GameScreenProps>(
         </div>
       );
     }
+
+    // ✅ FUNÇÃO SEGURA DE INTERAÇÃO
+    const handleSafeInteraction = (e: React.MouseEvent | React.TouchEvent) => {
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+        handleInteraction(e);
+      } catch (error) {
+        console.log('Erro na interação:', error);
+      }
+    };
 
     return (
       <div className={`min-h-screen bg-gradient-to-b ${config.bgGradient} relative overflow-hidden`}>
@@ -93,24 +106,28 @@ export const GameScreen = forwardRef<HTMLDivElement, GameScreenProps>(
           </div>
         </div>
 
-        {/* ÁREA DO JOGO - CONFIGURAÇÃO CRÍTICA DOS EVENTOS */}
+        {/* Peixes Salvos (Contador) */}
+        {fishCollection.length > 0 && (
+          <div className="absolute top-24 left-4 z-10">
+            <div className="bg-cyan-500/80 text-white px-3 py-2 rounded-lg text-sm flex items-center space-x-2">
+              <span>🐠</span>
+              <span>Salvos: {fishCollection.length}</span>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ ÁREA DO JOGO - SEM ERROS DE PREVENTDEFAULT */}
         <div
           ref={ref}
-          className="absolute inset-0 touch-none select-none" // Importante: touch-none e select-none
-          onClick={handleInteraction}
-          onTouchStart={handleInteraction}
-          onTouchEnd={(e) => e.preventDefault()} // Previne comportamentos padrão
-          onTouchMove={(e) => e.preventDefault()} // Previne scroll durante o jogo
-          onContextMenu={(e) => e.preventDefault()} // Previne menu de contexto
+          className="absolute inset-0 cursor-crosshair"
+          onMouseDown={handleSafeInteraction}
+          onTouchStart={handleSafeInteraction}
           style={{
-            WebkitTouchCallout: 'none', // Desabilita callout no iOS
-            WebkitUserSelect: 'none', // Desabilita seleção no WebKit
-            MozUserSelect: 'none', // Desabilita seleção no Firefox
-            msUserSelect: 'none', // Desabilita seleção no IE/Edge
-            userSelect: 'none', // Desabilita seleção de texto
-            touchAction: 'none', // Desabilita ações de toque padrão
-            cursor: 'crosshair', // Cursor de mira para indicar área interativa
-            WebkitTapHighlightColor: 'transparent', // Remove highlight no tap (mobile)
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            touchAction: 'none',
+            WebkitTouchCallout: 'none',
+            WebkitTapHighlightColor: 'transparent'
           }}
         >
           {/* Renderização das Bolhas */}
@@ -124,8 +141,8 @@ export const GameScreen = forwardRef<HTMLDivElement, GameScreenProps>(
                 width: `${bubble.size}px`,
                 height: `${bubble.size}px`,
                 opacity: bubble.opacity,
-                pointerEvents: 'none', // Crítico: evita interferência com detecção
-                transform: 'translate3d(0,0,0)', // Hardware acceleration
+                pointerEvents: 'none',
+                transform: 'translate3d(0,0,0)',
               }}
             >
               <div
@@ -172,7 +189,7 @@ export const GameScreen = forwardRef<HTMLDivElement, GameScreenProps>(
                   {bubble.type === 'orange' && '🧡'}
                 </span>
                 
-                {/* Pontos das bolhas - PRINCIPAL CORREÇÃO */}
+                {/* Pontos das bolhas */}
                 <span className={`text-xs font-bold ${bubble.points < 0 ? 'text-red-200' : 'text-white'} drop-shadow-md leading-none mt-1 select-none`} style={{ userSelect: 'none' }}>
                   {bubble.points > 0 ? '+' : ''}{bubble.points}
                 </span>
@@ -193,18 +210,11 @@ export const GameScreen = forwardRef<HTMLDivElement, GameScreenProps>(
                 backgroundColor: particle.color,
                 opacity: particle.life,
                 pointerEvents: 'none',
-                transform: 'translate3d(0,0,0)', // Hardware acceleration
+                transform: 'translate3d(0,0,0)',
                 boxShadow: '0 0 4px rgba(255,255,255,0.5)',
               }}
             />
           ))}
-
-          {/* Indicador de Clique/Toque (Debug - remover em produção) */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="absolute bottom-4 left-4 text-white text-xs bg-black/50 p-2 rounded">
-              Debug: Clique/Toque para estourar bolhas
-            </div>
-          )}
         </div>
       </div>
     );
