@@ -367,7 +367,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             x: Math.random() * (gameArea.width - bubbleConfig.size),
             y: gameArea.height + bubbleConfig.size,
             size: bubbleConfig.size + (Math.random() * 10 - 5),
-            speed: 1.2, // VELOCIDADE BAIXA E CONSTANTE
+            speed: 3.5, // VELOCIDADE ADEQUADA E CONSTANTE
             color: bubbleConfig.color,
             points: bubbleConfig.points,
             type: type,
