@@ -40,12 +40,12 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
 
     // Configuração dos níveis - VELOCIDADE BAIXA E CONSTANTE
     const levelConfigs = [
-        { level: 1, name: 'Superfície (0-10m)', depth: '0-10m', totalBubbles: 200, minePercentage: 0.05, spawnRate: 600, oxygenDrain: 0.3, bgGradient: 'from-cyan-300 to-blue-400' },
-        { level: 2, name: 'Águas Rasas (10-30m)', depth: '10-30m', totalBubbles: 150, minePercentage: 0.15, spawnRate: 700, oxygenDrain: 0.5, bgGradient: 'from-blue-400 to-blue-500' },
-        { level: 3, name: 'Zona Média (30-60m)', depth: '30-60m', totalBubbles: 100, minePercentage: 0.30, spawnRate: 800, oxygenDrain: 0.7, bgGradient: 'from-blue-500 to-blue-700' },
-        { level: 4, name: 'Águas Fundas (60-100m)', depth: '60-100m', totalBubbles: 60, minePercentage: 0.45, spawnRate: 900, oxygenDrain: 0.9, bgGradient: 'from-blue-700 to-indigo-900' },
-        { level: 5, name: 'Zona Abissal (100m+)', depth: '100m+', totalBubbles: 40, minePercentage: 0.60, spawnRate: 1000, oxygenDrain: 1.1, bgGradient: 'from-indigo-900 to-black' }
-    ];
+    { level: 1, name: 'Superfície (0-10m)', depth: '0-10m', totalBubbles: 150, minePercentage: 0.05, spawnRate: 350, oxygenDrain: 0.3, bgGradient: 'from-cyan-300 to-blue-400' },
+    { level: 2, name: 'Águas Rasas (10-30m)', depth: '10-30m', totalBubbles: 120, minePercentage: 0.15, spawnRate: 400, oxygenDrain: 0.5, bgGradient: 'from-blue-400 to-blue-500' },
+    { level: 3, name: 'Zona Média (30-60m)', depth: '30-60m', totalBubbles: 100, minePercentage: 0.30, spawnRate: 450, oxygenDrain: 0.7, bgGradient: 'from-blue-500 to-blue-700' },
+    { level: 4, name: 'Águas Fundas (60-100m)', depth: '60-100m', totalBubbles: 80, minePercentage: 0.45, spawnRate: 500, oxygenDrain: 0.9, bgGradient: 'from-blue-700 to-indigo-900' },
+    { level: 5, name: 'Zona Abissal (100m+)', depth: '100m+', totalBubbles: 60, minePercentage: 0.60, spawnRate: 550, oxygenDrain: 1.1, bgGradient: 'from-indigo-900 to-black' }
+];
 
     const coloredBubbles = {
         air: { color: '#E0F2FE', points: 5, size: 40 },
