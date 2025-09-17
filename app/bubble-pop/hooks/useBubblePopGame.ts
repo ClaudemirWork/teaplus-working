@@ -72,71 +72,6 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     audioManager.current = GameAudioManager.getInstance();
   }, []);
 
-  // Sistema de áudio inteligente para marcos de pontuação
-  const handleScoreMilestone = useCallback((newScore: number) => {
-    if (!audioEnabled || !audioManager.current) return;
-
-    const milestones = [200, 500, 1000, 1500, 2000, 3000, 5000];
-    const phrases = [
-      '200 pontos, valeu!',
-      '500 pontos, ótimo!',
-      '1000 pontos, você é fera!',
-      '1500 pontos, incrível!',
-      '2000 pontos, fantástico!',
-      '3000 pontos, você é um expert!',
-      '5000 pontos, simplesmente perfeito!'
-    ];
-
-    for (let i = milestones.length - 1; i >= 0; i--) {
-      if (newScore >= milestones[i] && lastScoreMilestone.current < milestones[i]) {
-        lastScoreMilestone.current = milestones[i];
-        audioManager.current.falarMila(phrases[i]);
-        break;
-      }
-    }
-  }, [audioEnabled]);
-
-  // Sistema de áudio para animais capturados
-  const handleAnimalCaptured = useCallback((animalType: string) => {
-    if (!audioEnabled || !audioManager.current) return;
-
-    const animalPhrases = {
-      pufferfish: 'Salvou um baiacu!',
-      starfish: 'Salvou uma estrela do mar!',
-      octopus: 'Salvou um polvo!',
-      whale: 'Salvou uma baleia!',
-      shark: 'Salvou um tubarão!',
-      turtle: 'Salvou uma tartaruga!',
-      dolphin: 'Salvou um golfinho!'
-    };
-
-    if (animalPhrases[animalType as keyof typeof animalPhrases]) {
-      audioManager.current.falarMila(animalPhrases[animalType as keyof typeof animalPhrases]);
-    }
-  }, [audioEnabled]);
-
-  // Sistema de áudio para equipamentos
-  const handleGearUnlocked = useCallback((gearType: string) => {
-    if (!audioEnabled || !audioManager.current) return;
-    audioManager.current.falarMila('Conseguiu um item de mergulho!');
-  }, [audioEnabled]);
-
-  // Sistema de áudio para transição de nível
-  const handleLevelTransition = useCallback((nextLevel: number) => {
-    if (!audioEnabled || !audioManager.current) return;
-    
-    const levelPhrases = [
-      'Ai sim, vamos para a fase 2!',
-      'Ai sim, vamos para a fase 3!',
-      'Ai sim, vamos para a fase 4!',
-      'Ai sim, vamos para a fase 5!'
-    ];
-
-    if (nextLevel >= 2 && nextLevel <= 5) {
-      audioManager.current.falarMila(levelPhrases[nextLevel - 2]);
-    }
-  }, [audioEnabled]);
-
   // Função para criar bolhas
   const createBubble = useCallback((): Bubble => {
     const gameArea = gameAreaRef.current;
@@ -254,6 +189,74 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     return null;
   }, [bubbles]);
 
+  // Função para criar partículas
+  const createParticles = useCallback((x: number, y: number, color: string) => {
+    const newParticles: Particle[] = [];
+    for (let i = 0; i < 8; i++) {
+      newParticles.push({
+        id: Date.now() + i,
+        x: x + (Math.random() - 0.5) * 20,
+        y: y + (Math.random() - 0.5) * 20,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4,
+        color,
+        life: 1.0
+      });
+    }
+    setParticles(prev => [...prev, ...newParticles]);
+  }, []);
+
+  // Sistema de áudio para marcos de pontuação
+  const checkScoreMilestone = useCallback((newScore: number) => {
+    if (!audioEnabled || !audioManager.current) return;
+
+    const milestones = [200, 500, 1000, 1500, 2000, 3000, 5000];
+    const phrases = [
+      '200 pontos, valeu!',
+      '500 pontos, ótimo!',
+      '1000 pontos, você é fera!',
+      '1500 pontos, incrível!',
+      '2000 pontos, fantástico!',
+      '3000 pontos, você é um expert!',
+      '5000 pontos, simplesmente perfeito!'
+    ];
+
+    for (let i = milestones.length - 1; i >= 0; i--) {
+      if (newScore >= milestones[i] && lastScoreMilestone.current < milestones[i]) {
+        lastScoreMilestone.current = milestones[i];
+        setTimeout(() => {
+          if (audioManager.current) {
+            audioManager.current.falarMila(phrases[i]);
+          }
+        }, 100);
+        break;
+      }
+    }
+  }, [audioEnabled]);
+
+  // Sistema de áudio para animais
+  const playAnimalSound = useCallback((animalType: string) => {
+    if (!audioEnabled || !audioManager.current) return;
+
+    const animalPhrases: { [key: string]: string } = {
+      pufferfish: 'Salvou um baiacu!',
+      starfish: 'Salvou uma estrela do mar!',
+      octopus: 'Salvou um polvo!',
+      whale: 'Salvou uma baleia!',
+      shark: 'Salvou um tubarão!',
+      turtle: 'Salvou uma tartaruga!',
+      dolphin: 'Salvou um golfinho!'
+    };
+
+    if (animalPhrases[animalType]) {
+      setTimeout(() => {
+        if (audioManager.current) {
+          audioManager.current.falarMila(animalPhrases[animalType]);
+        }
+      }, 200);
+    }
+  }, [audioEnabled]);
+
   // Manipulador de interação (clique/toque)
   const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!isPlaying) return;
@@ -288,12 +291,13 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     ));
 
     // Processar pontuação
-    const newScore = score + clickedBubble.points + (combo * 5);
+    const bonusPoints = combo * 5;
+    const newScore = score + clickedBubble.points + bonusPoints;
     setScore(newScore);
     setPoppedBubbles(prev => prev + 1);
 
     // Verificar marcos de pontuação
-    handleScoreMilestone(newScore);
+    checkScoreMilestone(newScore);
 
     // Processar efeitos especiais
     if (clickedBubble.type === 'oxygen') {
@@ -302,14 +306,17 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
       setOxygenLevel(prev => Math.max(0, prev - 15));
       setCombo(0);
     } else {
-      setCombo(prev => prev + 1);
-      setMaxCombo(prev => Math.max(prev, combo + 1));
+      setCombo(prev => {
+        const newCombo = prev + 1;
+        setMaxCombo(current => Math.max(current, newCombo));
+        return newCombo;
+      });
     }
 
     // Captura de animais
     const animalTypes = ['pufferfish', 'starfish', 'octopus', 'whale', 'shark', 'turtle', 'dolphin'];
     if (animalTypes.includes(clickedBubble.type)) {
-      const animalNames = {
+      const animalNames: { [key: string]: string } = {
         pufferfish: 'Baiacu',
         starfish: 'Estrela do Mar',
         octopus: 'Polvo',
@@ -321,18 +328,25 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
 
       setFishCollection(prev => [...prev, {
         id: Date.now(),
-        name: animalNames[clickedBubble.type as keyof typeof animalNames],
+        name: animalNames[clickedBubble.type],
         type: clickedBubble.type
       }]);
 
-      handleAnimalCaptured(clickedBubble.type);
+      playAnimalSound(clickedBubble.type);
     }
 
     // Equipamentos especiais
     if (clickedBubble.type === 'treasure') {
       const gear = { level: currentLevel, item: 'Equipamento de Mergulho', icon: '🤿' };
       setUnlockedGear(prev => [...prev, gear]);
-      handleGearUnlocked('diving_gear');
+      
+      if (audioEnabled && audioManager.current) {
+        setTimeout(() => {
+          if (audioManager.current) {
+            audioManager.current.falarMila('Conseguiu um item de mergulho!');
+          }
+        }, 300);
+      }
     }
 
     // Criar partículas
@@ -342,24 +356,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     if (audioEnabled && audioManager.current) {
       audioManager.current.tocarSom('bubble_pop');
     }
-  }, [isPlaying, score, combo, detectBubbleClick, handleScoreMilestone, handleAnimalCaptured, handleGearUnlocked, audioEnabled]);
-
-  // Função para criar partículas
-  const createParticles = useCallback((x: number, y: number, color: string) => {
-    const newParticles: Particle[] = [];
-    for (let i = 0; i < 8; i++) {
-      newParticles.push({
-        id: Date.now() + i,
-        x: x + (Math.random() - 0.5) * 20,
-        y: y + (Math.random() - 0.5) * 20,
-        vx: (Math.random() - 0.5) * 4,
-        vy: (Math.random() - 0.5) * 4,
-        color,
-        life: 1.0
-      });
-    }
-    setParticles(prev => [...prev, ...newParticles]);
-  }, []);
+  }, [isPlaying, score, combo, detectBubbleClick, checkScoreMilestone, playAnimalSound, createParticles, audioEnabled, currentLevel]);
 
   // Loop principal do jogo
   const gameLoop = useCallback(() => {
@@ -391,52 +388,57 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
       return Math.max(0, newLevel);
     });
 
-    // Atualizar bolhas restantes
+    animationRef.current = requestAnimationFrame(gameLoop);
+  }, [isPlaying, currentLevel]);
+
+  // Atualizar contador de bolhas
+  useEffect(() => {
     const activeBubbles = bubbles.filter(b => !b.popped).length;
     setBubblesRemaining(activeBubbles);
 
-    // Verificar condições de fim de nível
-    if (activeBubbles === 0) {
-      completeLevel();
-    } else if (oxygenLevel <= 0) {
-      endGame();
-    }
-
-    animationRef.current = requestAnimationFrame(gameLoop);
-  }, [isPlaying, bubbles, currentLevel, oxygenLevel]);
-
-  // Completar nível
-  const completeLevel = useCallback(() => {
-    setIsPlaying(false);
-    setCompletedLevels(prev => [...prev, currentLevel]);
-
-    if (currentLevel < 5) {
-      setShowLevelTransition(true);
-      setLevelMessage(`Nível ${currentLevel} Completo!`);
-      
-      setTimeout(() => {
-        setCurrentLevel(prev => prev + 1);
-        handleLevelTransition(currentLevel + 1);
-        setShowLevelTransition(false);
-        setOxygenLevel(100);
-        setBubbles([]);
-        setCombo(0);
-        setTimeout(() => setIsPlaying(true), 1000);
-      }, 3000);
-    } else {
-      // Jogo completo
-      setShowResults(true);
-      if (audioEnabled && audioManager.current) {
-        audioManager.current.falarMila('Parabéns! Você completou todos os níveis!');
+    // Verificar condições de fim de nível/jogo
+    if (isPlaying) {
+      if (activeBubbles === 0 || oxygenLevel <= 0) {
+        setIsPlaying(false);
+        
+        if (currentLevel < 5 && activeBubbles === 0) {
+          // Nível completo
+          setCompletedLevels(prev => [...prev, currentLevel]);
+          setShowLevelTransition(true);
+          setLevelMessage(`Nível ${currentLevel} Completo!`);
+          
+          setTimeout(() => {
+            const nextLevel = currentLevel + 1;
+            setCurrentLevel(nextLevel);
+            
+            if (audioEnabled && audioManager.current) {
+              const levelPhrases = [
+                'Ai sim, vamos para a fase 2!',
+                'Ai sim, vamos para a fase 3!',
+                'Ai sim, vamos para a fase 4!',
+                'Ai sim, vamos para a fase 5!'
+              ];
+              if (nextLevel >= 2 && nextLevel <= 5) {
+                audioManager.current.falarMila(levelPhrases[nextLevel - 2]);
+              }
+            }
+            
+            setShowLevelTransition(false);
+            setOxygenLevel(100);
+            setBubbles([]);
+            setCombo(0);
+            setTimeout(() => setIsPlaying(true), 1000);
+          }, 3000);
+        } else {
+          // Fim do jogo
+          setShowResults(true);
+          if (currentLevel >= 5 && audioEnabled && audioManager.current) {
+            audioManager.current.falarMila('Parabéns! Você completou todos os níveis!');
+          }
+        }
       }
     }
-  }, [currentLevel, audioEnabled, handleLevelTransition]);
-
-  // Finalizar jogo
-  const endGame = useCallback(() => {
-    setIsPlaying(false);
-    setShowResults(true);
-  }, []);
+  }, [bubbles, isPlaying, currentLevel, oxygenLevel, audioEnabled]);
 
   // Iniciar jogo
   const startGame = useCallback(() => {
