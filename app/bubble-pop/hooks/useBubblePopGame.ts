@@ -93,6 +93,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
             bgGradient: 'from-indigo-900 to-black'
         }
     ];
+    
     const coloredBubbles = {
         air: { color: '#E0F2FE', points: 5, size: 40 },
         oxygen: { color: '#60A5FA', points: 15, size: 55 },
@@ -346,7 +347,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
     }, [combo, createParticles, playPopSound, audioEnabled]);
 
-    // Função handleInteraction corrigida
+    // FUNÇÃO HANDLEINTERACTION CORRIGIDA
     const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
         if (!gameAreaRef.current || !isPlaying) return;
         
@@ -356,13 +357,17 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         const x = clientX - rect.left;
         const y = clientY - rect.top;
         
-        // Adicionando log para depuração
+        // Log para depuração
         console.log(`Clique em: (${x}, ${y})`);
         
         let closestBubble: Bubble | null = null;
         let closestDistance = Infinity;
         
-        // Usar uma cópia atualizada das bolhas para evitar problemas de sincronização
+        // IMPORTANTE: Adicionar margem de tolerância para melhorar a detecção
+        const CLICK_TOLERANCE = 1.3; // Aumenta a área de clique em 30%
+        const MOBILE_EXTRA_TOLERANCE = 'ontouchstart' in window ? 1.2 : 1.0; // 20% extra para mobile
+        
+        // Usar uma cópia atualizada das bolhas
         const currentBubbles = [...bubbles];
         
         for (let i = 0; i < currentBubbles.length; i++) {
@@ -379,31 +384,51 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
                 Math.pow(y - bubbleCenterY, 2)
             );
             
-            // Log para depuração
-            console.log(`Verificando bolha ${i}: ID=${bubble.id}, Centro=(${bubbleCenterX},${bubbleCenterY}), Distância=${distance}`);
+            // CORREÇÃO PRINCIPAL: Aumentar o raio efetivo de detecção
+            // Considera o tamanho real da bolha + tolerância + tolerância mobile
+            const baseRadius = bubble.size / 2;
+            const hitRadius = baseRadius * CLICK_TOLERANCE * MOBILE_EXTRA_TOLERANCE;
             
-            // CORREÇÃO: Usar metade do tamanho como raio de colisão
-            const hitRadius = bubble.size / 2;
+            // Log detalhado para depuração
+            console.log(`Bolha ${i}: ID=${bubble.id}, Centro=(${bubbleCenterX.toFixed(1)},${bubbleCenterY.toFixed(1)}), ` +
+                       `Distância=${distance.toFixed(1)}, Raio Base=${baseRadius.toFixed(1)}, ` +
+                       `Raio Efetivo=${hitRadius.toFixed(1)}, Hit=${distance <= hitRadius ? 'SIM' : 'NÃO'}`);
             
-            // Verificar se o clique está dentro do raio da bolha
-            if (distance <= hitRadius && distance < closestDistance) {
-                closestDistance = distance;
-                closestBubble = bubble;
+            // Verificar se o clique está dentro do raio expandido da bolha
+            if (distance <= hitRadius) {
+                // Priorizar a bolha mais próxima se houver sobreposição
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestBubble = bubble;
+                    console.log(`Nova bolha mais próxima: ID=${bubble.id}`);
+                }
             }
         }
         
         if (closestBubble) {
-            console.log(`Bolha mais próxima: ID=${closestBubble.id}, Distância=${closestDistance}`);
+            console.log(`✅ Bolha atingida: ID=${closestBubble.id}, Tipo=${closestBubble.type}, Distância=${closestDistance.toFixed(1)}`);
+            
             const now = Date.now();
+            // Evitar duplo clique na mesma bolha
             if (lastClickedBubble !== closestBubble.id || now - lastClickTime > 100) {
+                // Feedback háptico para dispositivos móveis (se suportado)
+                if ('vibrate' in navigator && 'ontouchstart' in window) {
+                    navigator.vibrate(20); // Vibração curta de 20ms
+                }
+                
                 popBubble(closestBubble, x, y);
                 setLastClickedBubble(closestBubble.id);
                 setLastClickTime(now);
+            } else {
+                console.log("⚠️ Duplo clique ignorado");
             }
         } else {
-            console.log("Nenhuma bolha encontrada dentro do raio de clique");
+            console.log("❌ Nenhuma bolha atingida");
+            
+            // Feedback visual de clique falhado
+            createParticles(x, y, '#CCCCCC', false); // Partículas cinzas para indicar clique vazio
         }
-    }, [isPlaying, bubbles, popBubble, gameAreaRef, lastClickedBubble, lastClickTime]);
+    }, [isPlaying, bubbles, popBubble, gameAreaRef, lastClickedBubble, lastClickTime, createParticles]);
 
     // Spawn, loop, término e outras funções
     useEffect(() => {
