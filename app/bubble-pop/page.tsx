@@ -25,12 +25,12 @@ export default function BubblePopPage() {
   const handleStart = () => setCurrentScreen('instructions');
 
   const handlePlay = () => {
-    game.startGame(); // ✅ FUNÇÃO CORRETA
+    game.startActivity(); // ✅ FUNÇÃO ORIGINAL CORRETA
     setCurrentScreen('game');
   };
 
   const handleRestart = () => {
-    game.restartGame(); // ✅ FUNÇÃO CORRETA
+    game.voltarInicio(); // ✅ FUNÇÃO ORIGINAL CORRETA
     setCurrentScreen('title');
   };
 
@@ -64,7 +64,21 @@ export default function BubblePopPage() {
     return (
       <GameScreen 
         ref={gameAreaRef} 
-        {...game} 
+        isPlaying={game.isPlaying}
+        score={game.score}
+        combo={game.combo}
+        oxygenLevel={game.oxygenLevel}
+        bubbles={game.bubbles}
+        particles={game.particles}
+        currentLevel={game.currentLevel}
+        bubblesRemaining={game.bubblesRemaining}
+        levelConfigs={game.levelConfigs}
+        handleInteraction={game.handleInteraction}
+        audioEnabled={game.audioEnabled}
+        toggleAudio={game.toggleAudio}
+        showLevelTransition={game.showLevelTransition}
+        levelMessage={game.levelMessage}
+        fishCollection={game.fishCollection}
       />
     );
   }
@@ -72,8 +86,17 @@ export default function BubblePopPage() {
   if (currentScreen === 'results') {
     return (
       <ResultsScreen 
-        {...game} 
-        onRestart={handleRestart} 
+        score={game.score}
+        maxCombo={game.maxCombo}
+        completedLevels={game.completedLevels}
+        salvando={game.salvando}
+        onRestart={handleRestart}
+        handleSaveSession={game.handleSaveSession}
+        accuracy={game.accuracy}
+        poppedBubbles={game.poppedBubbles}
+        fishCollection={game.fishCollection}
+        unlockedGear={game.unlockedGear}
+        levelConfigs={game.levelConfigs}
       />
     );
   }
