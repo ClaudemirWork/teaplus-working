@@ -55,10 +55,9 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
         showResults, salvando, poppedBubbles, bubblesRemaining, showLevelTransition,
         levelMessage, levelConfigs, completedLevels, handleInteraction,
         handleSaveSession, voltarInicio, jogoIniciado, startActivity,
-        namingFish, nameFish, unlockedGear, activeGearItems, toggleAudio, audioEnabled
+        unlockedGear, activeGearItems, toggleAudio, audioEnabled
     } = props;
 
-    const [fishName, setFishName] = React.useState('');
     const currentLevelConfig = levelConfigs[currentLevel - 1];
 
     // Função auxiliar para obter o ícone da bolha
@@ -137,7 +136,7 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
                                     <h3 className="font-semibold text-gray-800 mb-1">🎯 Objetivo:</h3>
                                     <p className="text-sm text-gray-600">
-                                        Colete bolhas coloridas e peixes especiais!
+                                        Colete bolhas coloridas e criaturas especiais!
                                     </p>
                                 </div>
                                 <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 sm:p-4">
@@ -285,37 +284,6 @@ export const GameScreen = forwardRef<HTMLDivElement, any>((props, ref) => {
                                     <div className="text-base text-gray-600 mt-2">
                                         Descendo para: {levelConfigs[currentLevel]?.name}
                                     </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Modal de nomear peixe/pérola */}
-                        {namingFish && (
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-40">
-                                <div className="bg-white rounded-xl p-6 max-w-sm">
-                                    <h3 className="text-lg font-bold mb-4">
-                                        Dê um nome para sua {namingFish.type === 'pearl' ? 'pérola' : 
-                                                             namingFish.type === 'treasure' ? 'tesouro' : 'descoberta'}!
-                                    </h3>
-                                    <input
-                                        type="text"
-                                        value={fishName}
-                                        onChange={(e) => setFishName(e.target.value)}
-                                        className="w-full p-2 border rounded mb-4"
-                                        placeholder="Digite um nome..."
-                                        autoFocus
-                                    />
-                                    <button
-                                        onClick={() => {
-                                            if (fishName.trim()) {
-                                                nameFish(namingFish.id, fishName);
-                                                setFishName('');
-                                            }
-                                        }}
-                                        className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-                                    >
-                                        Confirmar Nome
-                                    </button>
                                 </div>
                             </div>
                         )}
