@@ -383,13 +383,14 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
 
     // Handle de clique/toque
     const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-        if (!gameAreaRef.current || !isPlaying) return;
+    if (!gameAreaRef.current || !isPlaying) return;
 
-        const rect = gameAreaRef.current.getBoundingClientRect();
-        const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-        const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+    const rect = gameAreaRef.current.getBoundingClientRect();
+    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
+    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
 
-        bubbles.forEach(bubble => {
+    const currentBubbles = [...bubbles];  // ADICIONE ESTA LINHA
+    currentBubbles.forEach(bubble => {    // MUDE bubbles PARA currentBubbles
             if (bubble.popped) return;
 
             const bubbleCenterX = bubble.x + bubble.size / 2;
