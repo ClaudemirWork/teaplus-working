@@ -62,7 +62,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     audioManager.current = GameAudioManager.getInstance();
   }, []);
 
-  // Som de bolha estourando
+  // Som de bolha estourando - VERSÃO MELHORADA
   const playBubblePopSound = useCallback(() => {
     if (!audioEnabled) return;
 
@@ -71,38 +71,37 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
       const osc1 = audioCtx.createOscillator();
       const osc2 = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
-      const filterNode = audioCtx.createBiquadFilter();
 
-      osc1.connect(filterNode);
-      osc2.connect(filterNode);
-      filterNode.connect(gainNode);
+      // Conectar osciladores
+      osc1.connect(gainNode);
+      osc2.connect(gainNode);
       gainNode.connect(audioCtx.destination);
 
-      filterNode.type = 'lowpass';
-      filterNode.frequency.setValueAtTime(1000, audioCtx.currentTime);
-      filterNode.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
-
+      // SOM PRINCIPAL - mais agudo e "pop"
       osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(400, audioCtx.currentTime);
-      osc1.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
+      osc1.frequency.setValueAtTime(800, audioCtx.currentTime); // Mais agudo
+      osc1.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.02); // Queda rápida
       osc1.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
 
+      // SOM SECUNDÁRIO - harmônico
       osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(800, audioCtx.currentTime);
-      osc2.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.02);
+      osc2.frequency.setValueAtTime(1200, audioCtx.currentTime); // Bem agudo
+      osc2.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.01); // Queda muito rápida
 
+      // Envelope mais "pop" - ataque instantâneo, queda suave
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.005);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.001); // Ataque muito rápido
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08); // Queda suave
 
+      // Duração mais curta para ser mais "pop"
       osc1.start(audioCtx.currentTime);
       osc2.start(audioCtx.currentTime);
-      osc1.stop(audioCtx.currentTime + 0.15);
-      osc2.stop(audioCtx.currentTime + 0.02);
+      osc1.stop(audioCtx.currentTime + 0.08);
+      osc2.stop(audioCtx.currentTime + 0.01);
 
       setTimeout(() => {
         audioCtx.close();
-      }, 200);
+      }, 100);
     } catch (error) {
       console.log('Erro no som sintetizado:', error);
     }
@@ -653,10 +652,10 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         const newCombo = prev + 1;
         setMaxCombo(current => Math.max(current, newCombo));
         
-        // Feedback de combo apenas para combos altos
-        if (newCombo >= 15 && newCombo % 5 === 0 && audioEnabled && audioManager.current) {
-          audioManager.current.falarMila(`Combo incrível de ${newCombo}!`);
-        }
+        // REMOVIDO - Feedback de combo (irritava)
+        // if (newCombo >= 15 && newCombo % 5 === 0 && audioEnabled && audioManager.current) {
+        //   audioManager.current.falarMila(`Combo incrível de ${newCombo}!`);
+        // }
         
         return newCombo;
       });
