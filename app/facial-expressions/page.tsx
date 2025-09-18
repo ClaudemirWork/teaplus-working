@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Volume2, VolumeX, Trophy, ArrowLeft } from 'lucide-react';
+// Importação corrigida do GameAudioManager
 import { GameAudioManager } from '@/utils/gameAudioManager';
-import styles from './emotionrecognition.module.css'; // CAMINHO CORRETO
+import styles from './emotionrecognition.module.css';
 
 // --- EFEITO DE CONFETE SIMPLIFICADO ---
 const confetti = (opts = {}) => {
@@ -71,16 +72,25 @@ const confetti = (opts = {}) => {
 };
 
 const ConfettiEffect = () => {
-  const audioManager = useMemo(() => GameAudioManager.getInstance(), []);
+  const audioManager = useMemo(() => {
+    try {
+      return GameAudioManager.getInstance();
+    } catch (error) {
+      console.error('Erro ao obter instância do GameAudioManager:', error);
+      return null;
+    }
+  }, []);
   
   useEffect(() => {
     try {
-      // audioManager.playSoundEffect('celebration', 0.6); // Desabilitado temporariamente
+      if (audioManager && soundEnabled) {
+        // audioManager.playSoundEffect('celebration', 0.6); // Desabilitado temporariamente
+      }
       confetti();
     } catch (error) {
       console.warn('Erro no ConfettiEffect:', error);
     }
-  }, [audioManager]);
+  }, [audioManager, soundEnabled]);
 
   return null;
 };
@@ -162,8 +172,7 @@ const shuffleArray = (array) => [...array].sort(() => Math.random() - 0.5);
 
 // --- COMPONENTE PRINCIPAL ---
 export default function FacialExpressionsGame() {
-  const audioManager = useMemo(() => GameAudioManager.getInstance(), []);
-
+  const [audioManager, setAudioManager] = useState(null);
   const [gameState, setGameState] = useState('titleScreen');
   const [autoIntroStep, setAutoIntroStep] = useState(0);
   const [leoMessage, setLeoMessage] = useState('');
@@ -171,7 +180,6 @@ export default function FacialExpressionsGame() {
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
-
   const [cardsForPhase, setCardsForPhase] = useState([]);
   const [targetSequence, setTargetSequence] = useState([]);
   const [currentTargetIndex, setCurrentTargetIndex] = useState(0);
@@ -186,23 +194,52 @@ export default function FacialExpressionsGame() {
     "Vamos começar e ficar craques, para identificar as emoções!"
   ];
 
+  // Inicialização do gerenciador de áudio
+  useEffect(() => {
+    const initializeAudio = async () => {
+      try {
+        const manager = GameAudioManager.getInstance();
+        await manager.forceInitialize();
+        setAudioManager(manager);
+      } catch (error) {
+        console.error('Erro ao inicializar o gerenciador de áudio:', error);
+        setAudioManager(null);
+      }
+    };
+
+    initializeAudio();
+  }, []);
+
   const leoSpeak = useCallback((message, callback) => {
     setLeoMessage(message);
     setLeoSpeaking(true);
     
-    if (soundEnabled) {
-      audioManager.falarLeo(message, () => {
+    if (soundEnabled && audioManager) {
+      try {
+        audioManager.falarLeo(message, () => {
+          setLeoSpeaking(false);
+          callback?.();
+        });
+      } catch (error) {
+        console.error('Erro ao reproduzir áudio:', error);
         setLeoSpeaking(false);
-        callback?.();
-      });
+        setTimeout(() => callback?.(), 1000);
+      }
     } else {
       setLeoSpeaking(false);
       setTimeout(() => callback?.(), 1000);
     }
   }, [soundEnabled, audioManager]);
 
-  const handleStartIntro = async () => {
-    await audioManager.forceInitialize();
+  const handleStartIntro = useCallback(async () => {
+    if (audioManager) {
+      try {
+        await audioManager.forceInitialize();
+      } catch (error) {
+        console.error('Erro ao forçar inicialização do áudio:', error);
+      }
+    }
+    
     setGameState('autoIntro');
     setAutoIntroStep(0);
     
@@ -229,7 +266,7 @@ export default function FacialExpressionsGame() {
         });
       }, 1000);
     });
-  };
+  }, [leoSpeak, audioManager]);
 
   const preparePhase = useCallback((phaseIndex) => {
     const phaseConfig = GAME_PHASES[phaseIndex];
@@ -255,11 +292,11 @@ export default function FacialExpressionsGame() {
     leoSpeak(startMessage);
   }, [leoSpeak]);
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     setCurrentPhaseIndex(0);
     setTotalScore(0);
     setGameState('playing');
-  };
+  }, []);
 
   useEffect(() => {
     if (gameState === 'playing') {
@@ -280,7 +317,14 @@ export default function FacialExpressionsGame() {
       setFeedback('correct');
       setTotalScore(prev => prev + GAME_PHASES[currentPhaseIndex].points);
       
-      // audioManager.playSoundEffect('correct', 0.4); // Desabilitado temporariamente
+      // Tocar som de acerto se o áudio estiver habilitado e o gerenciador disponível
+      if (soundEnabled && audioManager) {
+        try {
+          // audioManager.playSoundEffect('correct', 0.4); // Desabilitado temporariamente
+        } catch (error) {
+          console.error('Erro ao reproduzir som de acerto:', error);
+        }
+      }
       
       setTimeout(() => {
         const nextTargetIndex = currentTargetIndex + 1;
@@ -297,7 +341,15 @@ export default function FacialExpressionsGame() {
     } else {
       setFeedback('wrong');
       
-      // audioManager.playSoundEffect('wrong', 0.4); // Desabilitado temporariamente
+      // Tocar som de erro se o áudio estiver habilitado e o gerenciador disponível
+      if (soundEnabled && audioManager) {
+        try {
+          // audioManager.playSoundEffect('wrong', 0.4); // Desabilitado temporariamente
+        } catch (error) {
+          console.error('Erro ao reproduzir som de erro:', error);
+        }
+      }
+      
       leoSpeak("Ops, tente novamente!");
 
       setTimeout(() => {
@@ -306,9 +358,9 @@ export default function FacialExpressionsGame() {
         setIsDisabled(false);
       }, 1500);
     }
-  }, [isDisabled, targetSequence, currentTargetIndex, currentPhaseIndex, leoSpeak, audioManager]);
+  }, [isDisabled, targetSequence, currentTargetIndex, currentPhaseIndex, leoSpeak, soundEnabled, audioManager]);
 
-  const nextPhase = () => {
+  const nextPhase = useCallback(() => {
     const nextPhaseIndex = currentPhaseIndex + 1;
     if (nextPhaseIndex < GAME_PHASES.length) {
       setCurrentPhaseIndex(nextPhaseIndex);
@@ -316,7 +368,7 @@ export default function FacialExpressionsGame() {
     } else {
       setGameState('gameComplete');
     }
-  };
+  }, [currentPhaseIndex]);
 
   useEffect(() => {
     if (gameState === 'phaseComplete') {
@@ -329,10 +381,10 @@ export default function FacialExpressionsGame() {
     }
   }, [gameState, currentPhaseIndex, totalScore, leoSpeak]);
 
-  const toggleSound = () => {
-    const isNowEnabled = audioManager.toggleAudio();
+  const toggleSound = useCallback(() => {
+    const isNowEnabled = audioManager ? audioManager.toggleAudio() : false;
     setSoundEnabled(isNowEnabled);
-  };
+  }, [audioManager]);
 
   // --- RENDERIZAÇÃO ---
   const renderTitleScreen = () => (
