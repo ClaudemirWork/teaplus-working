@@ -3,9 +3,92 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, VolumeX, Trophy, ArrowLeft } from 'lucide-react';
-import { GameAudioManager } from '@/utils/gameAudioManager'; // CAMINHO CORRIGIDO
 
-// --- EFEITO DE CONFETE (sem alterações) ---
+// --- SIMULAÇÃO DO GAMEAUDIOMANAGER ---
+class GameAudioManager {
+  static instance = null;
+  
+  static getInstance() {
+    if (!GameAudioManager.instance) {
+      GameAudioManager.instance = new GameAudioManager();
+    }
+    return GameAudioManager.instance;
+  }
+  
+  constructor() {
+    this.audioEnabled = true;
+    this.synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
+  }
+  
+  async forceInitialize() {
+    if (this.synth) {
+      this.synth.cancel();
+    }
+  }
+  
+  falarLeo(texto, callback) {
+    if (!this.audioEnabled || !this.synth) {
+      callback?.();
+      return;
+    }
+    
+    this.synth.cancel();
+    const utterance = new SpeechSynthesisUtterance(texto);
+    utterance.lang = 'pt-BR';
+    utterance.rate = 0.9;
+    utterance.pitch = 1.1;
+    utterance.volume = 0.8;
+    
+    utterance.onend = () => callback?.();
+    utterance.onerror = () => callback?.();
+    
+    this.synth.speak(utterance);
+  }
+  
+  playSound(type) {
+    if (!this.audioEnabled) return;
+    
+    // Simula sons usando Web Audio API ou fallback
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    if (type === 'correct') {
+      oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+      oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+      oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+    } else if (type === 'wrong') {
+      oscillator.frequency.setValueAtTime(220, audioContext.currentTime); // A3
+      oscillator.frequency.setValueAtTime(185, audioContext.currentTime + 0.15); // F#3
+    } else if (type === 'explosion') {
+      // Som de explosão/confete
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.3);
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    }
+    
+    oscillator.type = type === 'explosion' ? 'sawtooth' : 'sine';
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + (type === 'explosion' ? 0.3 : 0.2));
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + (type === 'explosion' ? 0.3 : 0.2));
+  }
+  
+  toggleAudio() {
+    this.audioEnabled = !this.audioEnabled;
+    if (!this.audioEnabled && this.synth) {
+      this.synth.cancel();
+    }
+    return this.audioEnabled;
+  }
+}
+
+// --- EFEITO DE CONFETE ---
 const confetti = (opts = {}) => {
   if (typeof window === 'undefined') return;
   
@@ -109,8 +192,13 @@ const confetti = (opts = {}) => {
 };
 
 const ConfettiEffect = () => {
+  const audioManager = useMemo(() => GameAudioManager.getInstance(), []);
+  
   useEffect(() => {
     try {
+      // Som de explosão/confete
+      audioManager.playSound('explosion');
+      
       const fire = (p, o) => confetti({ particleCount: Math.floor(200*p), ...o });
       fire(0.25, { spread: 30, startVelocity: 60, origin: { x: 0, y: 0.7 } });
       fire(0.2, { spread: 60, origin: { x: 0.5, y: 0.6 } });
@@ -118,34 +206,45 @@ const ConfettiEffect = () => {
     } catch (error) {
       console.warn('Erro no ConfettiEffect:', error);
     }
-  }, []);
+  }, [audioManager]);
 
   return null;
 };
 
-
-// --- COMPONENTES DE UI (sem alterações) ---
-const Card = React.memo(({ emotion, onClick, isCorrect, isWrong, isDisabled }) => (
-  <motion.button
-    onClick={onClick}
-    disabled={isDisabled}
-    className={`emotionCard ${isCorrect ? 'cardCorrect' : ''} ${isWrong ? 'cardWrong' : ''}`}
-    initial={{ opacity: 0, scale: 0.5 }}
-    animate={{ opacity: 1, scale: 1 }}
-    exit={{ opacity: 0, scale: 0.5 }}
-    transition={{ duration: 0.4 }}
-    layout
-  >
-    <div className="card-image-wrapper">
-      <img 
-        src={emotion.path} 
-        alt={emotion.label} 
-        onError={(e) => { e.currentTarget.src = 'https://placehold.co/150x150/EBF4FA/333?text=?'; }} 
-      />
-    </div>
-    <span className="card-label">{emotion.label}</span>
-  </motion.button>
-));
+// --- COMPONENTES DE UI ---
+const Card = React.memo(({ emotion, onClick, isCorrect, isWrong, isDisabled }) => {
+  const audioManager = useMemo(() => GameAudioManager.getInstance(), []);
+  
+  const handleClick = () => {
+    if (!isDisabled) {
+      // Som de clique na carta
+      audioManager.playSound(isCorrect ? 'correct' : 'wrong');
+      onClick();
+    }
+  };
+  
+  return (
+    <motion.button
+      onClick={handleClick}
+      disabled={isDisabled}
+      className={`emotionCard ${isCorrect ? 'cardCorrect' : ''} ${isWrong ? 'cardWrong' : ''}`}
+      initial={{ opacity: 0, scale: 0.5 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.5 }}
+      transition={{ duration: 0.4 }}
+      layout
+    >
+      <div className="card-image-wrapper">
+        <img 
+          src={emotion.path} 
+          alt={emotion.label} 
+          onError={(e) => { e.currentTarget.src = 'https://placehold.co/150x150/EBF4FA/333?text=?'; }} 
+        />
+      </div>
+      <span className="card-label">{emotion.label}</span>
+    </motion.button>
+  );
+});
 
 const ProgressBar = React.memo(({ current, total }) => {
   const progress = total > 0 ? (current / total) * 100 : 0;
@@ -159,28 +258,47 @@ const ProgressBar = React.memo(({ current, total }) => {
 });
 
 // --- CONFIGURAÇÕES E DADOS DO JOGO ---
-const IMAGE_BASE_PATH = '/images/cards/emocoes/';
+const IMAGE_BASE_PATH = 'https://placehold.co/150x150/';
 
 const EMOTION_CARDS = [
-  { id: 'homem_feliz', label: 'Feliz', path: `${IMAGE_BASE_PATH}homem_feliz.webp` },
-  { id: 'homem_triste', label: 'Triste', path: `${IMAGE_BASE_PATH}homem_triste.webp` },
-  { id: 'homem_medo', label: 'Medo', path: `${IMAGE_BASE_PATH}homem_medo.webp` },
-  { id: 'homem_surpreso', label: 'Surpreso', path: `${IMAGE_BASE_PATH}homem_surpreso.webp` },
-  { id: 'homem_furioso', label: 'Furioso', path: `${IMAGE_BASE_PATH}homem_furioso.webp` },
-  { id: 'mulher_animada', label: 'Animada', path: `${IMAGE_BASE_PATH}mulher_animada.webp` },
-  { id: 'mulher_calma', label: 'Calma', path: `${IMAGE_BASE_PATH}mulher_calma.webp` },
-  { id: 'homem_confuso', label: 'Confuso', path: `${IMAGE_BASE_PATH}homem_confuso.webp` },
-  { id: 'mulher_preocupada', label: 'Preocupada', path: `${IMAGE_BASE_PATH}mulher_preocupada.webp` },
-  { id: 'homem_focado', label: 'Focado', path: `${IMAGE_BASE_PATH}homem_focado.webp` },
+  { id: 'homem_feliz', label: 'Feliz', path: `${IMAGE_BASE_PATH}FFD54F/333?text=😊` },
+  { id: 'homem_triste', label: 'Triste', path: `${IMAGE_BASE_PATH}90CAF9/333?text=😢` },
+  { id: 'homem_medo', label: 'Medo', path: `${IMAGE_BASE_PATH}FFAB91/333?text=😨` },
+  { id: 'homem_surpreso', label: 'Surpreso', path: `${IMAGE_BASE_PATH}CE93D8/333?text=😲` },
+  { id: 'homem_furioso', label: 'Furioso', path: `${IMAGE_BASE_PATH}FFCDD2/333?text=😡` },
+  { id: 'mulher_animada', label: 'Animada', path: `${IMAGE_BASE_PATH}C8E6C9/333?text=🤩` },
+  { id: 'mulher_calma', label: 'Calma', path: `${IMAGE_BASE_PATH}B2DFDB/333?text=😌` },
+  { id: 'homem_confuso', label: 'Confuso', path: `${IMAGE_BASE_PATH}FFF9C4/333?text=😕` },
+  { id: 'mulher_preocupada', label: 'Preocupada', path: `${IMAGE_BASE_PATH}F8BBD9/333?text=😟` },
+  { id: 'homem_focado', label: 'Focado', path: `${IMAGE_BASE_PATH}E1BEE7/333?text=🧐` },
 ];
 
+// EXPANDIDO PARA 10 FASES
 const GAME_PHASES = [
-  { phase: 1, numCards: 2, numRounds: 2, points: 100 },
-  { phase: 2, numCards: 3, numRounds: 3, points: 120 },
-  { phase: 3, numCards: 4, numRounds: 3, points: 140 },
+  { phase: 1, numCards: 2, numRounds: 3, points: 100 },
+  { phase: 2, numCards: 3, numRounds: 4, points: 120 },
+  { phase: 3, numCards: 4, numRounds: 4, points: 140 },
   { phase: 4, numCards: 5, numRounds: 5, points: 160 },
   { phase: 5, numCards: 6, numRounds: 5, points: 180 },
-  { phase: 6, numCards: 8, numRounds: 6, points: 200 },
+  { phase: 6, numCards: 7, numRounds: 6, points: 200 },
+  { phase: 7, numCards: 8, numRounds: 6, points: 220 },
+  { phase: 8, numCards: 9, numRounds: 7, points: 240 },
+  { phase: 9, numCards: 10, numRounds: 7, points: 260 },
+  { phase: 10, numCards: 10, numRounds: 8, points: 300 },
+];
+
+// MENSAGENS DE INCENTIVO VARIADAS
+const PHASE_COMPLETION_MESSAGES = [
+  "Isso aí amigão, agora vamos para a fase 2!",
+  "Você é um super craque na identificação de emoções, vamos para a fase 3!",
+  "Meu amigo, você é um detetive de emoções, caramba, vamos para a fase 4!",
+  "Incrível! Você está dominando as emoções, fase 5 te espera!",
+  "Nem preciso dizer, vou contratar você para ser perito nesta área! Fase 6!",
+  "Que talento impressionante! As emoções não têm segredos para você! Fase 7!",
+  "Agora sim, estamos diante de um campeão mundial de detectar emoções! Fase 8!",
+  "Você é uma máquina de identificar emoções! Rumo à fase 9!",
+  "Simplesmente espetacular! Você é o mestre das expressões! Última fase!",
+  "INACREDITÁVEL! Você completou todas as fases! Você é o CAMPEÃO das emoções!"
 ];
 
 const shuffleArray = (array) => [...array].sort(() => Math.random() - 0.5);
@@ -190,8 +308,9 @@ export default function FacialExpressionsGame() {
   const audioManager = useMemo(() => GameAudioManager.getInstance(), []);
 
   const [gameState, setGameState] = useState('titleScreen');
-  const [introStep, setIntroStep] = useState(0);
+  const [autoIntroStep, setAutoIntroStep] = useState(0);
   const [leoMessage, setLeoMessage] = useState('');
+  const [leoSpeaking, setLeoSpeaking] = useState(false);
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -204,51 +323,59 @@ export default function FacialExpressionsGame() {
   const [feedback, setFeedback] = useState(null);
   const [isDisabled, setIsDisabled] = useState(false);
 
+  // NOVOS TEXTOS MELHORADOS
   const introMessages = [
-    "Olá! Eu sou o Leo. Vamos aprender sobre as emoções juntos?",
-    "É bem fácil! Eu vou falar uma emoção, como 'Feliz' ou 'Triste'.",
-    "Você só precisa de clicar na imagem certa que aparece no ecrã.",
-    "A cada fase, mais emoções aparecem! Vamos começar a diversão?"
+    "Olá, eu sou o Leo e vou te ajudar a identificar várias emoções, e fazer isto, de forma divertida!",
+    "É bem fácil! Eu vou mostrar cartões com rostos e as emoções que eles estão exprimindo. Eu vou falar uma emoção, como 'feliz', ou 'triste', e você só precisa identificar o cartão correspondente na tela, e clicar nele, marcando pontos.",
+    "E posso pedir o mesmo cartão da emoção, mais de uma vez, fique atento!",
+    "Vamos começar e ficar craques, para identificar as emoções!"
   ];
 
   const leoSpeak = useCallback((message, callback) => {
     setLeoMessage(message);
+    setLeoSpeaking(true);
+    
     if (soundEnabled) {
-      audioManager.falarLeo(message, callback);
-    } else {
+      audioManager.falarLeo(message, () => {
+        setLeoSpeaking(false);
         callback?.();
+      });
+    } else {
+      setLeoSpeaking(false);
+      setTimeout(() => callback?.(), 1000);
     }
   }, [soundEnabled, audioManager]);
 
   const handleStartIntro = async () => {
     await audioManager.forceInitialize();
-    setGameState('intro');
-    leoSpeak("Bem-vindo ao mundo das Expressões Faciais!", () => {
-        setTimeout(() => leoSpeak(introMessages[0]), 500);
+    setGameState('autoIntro');
+    setAutoIntroStep(0);
+    
+    // Mensagem inicial da primeira página
+    leoSpeak("Bem-vindo ao incrível mundo das Expressões Faciais! Prepare-se para uma aventura emocionante!", () => {
+      setTimeout(() => {
+        setAutoIntroStep(1);
+        leoSpeak(introMessages[0], () => {
+          setTimeout(() => {
+            setAutoIntroStep(2);
+            leoSpeak(introMessages[1], () => {
+              setTimeout(() => {
+                setAutoIntroStep(3);
+                leoSpeak(introMessages[2], () => {
+                  setTimeout(() => {
+                    setAutoIntroStep(4);
+                    leoSpeak(introMessages[3], () => {
+                      setTimeout(() => startGame(), 2000);
+                    });
+                  }, 2000);
+                });
+              }, 2000);
+            });
+          }, 1500);
+        });
+      }, 1000);
     });
   };
-
-  const handleIntroNext = () => {
-    const nextStep = introStep + 1;
-    if (nextStep < introMessages.length) {
-      setIntroStep(nextStep);
-      leoSpeak(introMessages[nextStep]);
-    } else {
-      startGame();
-    }
-  };
-  
-  useEffect(() => {
-    if (gameState === 'phaseComplete') {
-        const phaseInfo = GAME_PHASES[currentPhaseIndex];
-        const message = `Fase ${phaseInfo.phase} completa! Você ganhou ${phaseInfo.points} pontos!`;
-        leoSpeak(message);
-    } else if (gameState === 'gameComplete') {
-        const message = `Incrível! Você completou todas as fases e fez ${totalScore} pontos! Parabéns!`;
-        leoSpeak(message);
-    }
-  }, [gameState, currentPhaseIndex, totalScore, leoSpeak]);
-
 
   const preparePhase = useCallback((phaseIndex) => {
     const phaseConfig = GAME_PHASES[phaseIndex];
@@ -267,9 +394,9 @@ export default function FacialExpressionsGame() {
     setSelectedCardId(null);
     setIsDisabled(false);
     
-    const startMessage = phaseIndex > 0 
-      ? `Muito bem! Agora com ${phaseConfig.numCards} emoções. Encontre ${sequence[0].label}`
-      : `Vamos começar! Encontre ${sequence[0].label}`;
+    const startMessage = phaseIndex === 0 
+      ? `Vamos começar! Encontre: ${sequence[0].label}`
+      : `Fase ${phaseConfig.phase}! Agora com ${phaseConfig.numCards} emoções. Encontre: ${sequence[0].label}`;
     
     leoSpeak(startMessage);
 
@@ -300,8 +427,8 @@ export default function FacialExpressionsGame() {
       setFeedback('correct');
       setTotalScore(prev => prev + GAME_PHASES[currentPhaseIndex].points);
       
-      leoSpeak("Isso mesmo!");
-
+      // Som de acerto já tocado no componente Card
+      
       setTimeout(() => {
         const nextTargetIndex = currentTargetIndex + 1;
         if (nextTargetIndex < targetSequence.length) {
@@ -309,21 +436,22 @@ export default function FacialExpressionsGame() {
           setFeedback(null);
           setSelectedCardId(null);
           setIsDisabled(false);
-          leoSpeak(targetSequence[nextTargetIndex].label);
+          leoSpeak(`Agora encontre: ${targetSequence[nextTargetIndex].label}`);
         } else {
           setGameState('phaseComplete');
         }
-      }, 1200);
+      }, 1500);
     } else {
       setFeedback('wrong');
       
-      leoSpeak("Opa, tente de novo.");
+      // Som de erro já tocado no componente Card
+      leoSpeak("Ops, tente novamente!");
 
       setTimeout(() => {
         setFeedback(null);
         setSelectedCardId(null);
         setIsDisabled(false);
-      }, 1000);
+      }, 1500);
     }
   }, [isDisabled, targetSequence, currentTargetIndex, currentPhaseIndex, leoSpeak]);
 
@@ -337,21 +465,45 @@ export default function FacialExpressionsGame() {
     }
   };
 
+  useEffect(() => {
+    if (gameState === 'phaseComplete') {
+      const message = PHASE_COMPLETION_MESSAGES[currentPhaseIndex] || 
+                     `Fase ${GAME_PHASES[currentPhaseIndex].phase} completa! Você ganhou ${GAME_PHASES[currentPhaseIndex].points} pontos!`;
+      leoSpeak(message);
+    } else if (gameState === 'gameComplete') {
+      const message = `INACREDITÁVEL! Você completou todas as 10 fases e fez ${totalScore} pontos! Você é o verdadeiro CAMPEÃO das emoções!`;
+      leoSpeak(message);
+    }
+  }, [gameState, currentPhaseIndex, totalScore, leoSpeak]);
+
   const toggleSound = () => {
     const isNowEnabled = audioManager.toggleAudio();
     setSoundEnabled(isNowEnabled);
-  }
+  };
 
   // --- RENDERIZAÇÃO ---
   const renderTitleScreen = () => (
     <div className="screen-center">
       <div className="stars-bg"></div>
-      <motion.div className="animate-float" style={{zIndex: 10}}>
+      <motion.div 
+        className="title-leo-container animate-float" 
+        style={{zIndex: 10}}
+        animate={{ 
+          scale: leoSpeaking ? [1, 1.05, 1] : 1,
+          filter: leoSpeaking ? "drop-shadow(0 0 20px #4CAF50)" : "drop-shadow(0 15px 30px rgba(0,0,0,0.4))"
+        }}
+        transition={{ duration: leoSpeaking ? 0.5 : 2, repeat: leoSpeaking ? Infinity : 0 }}
+      >
         <img 
-          src="/images/mascotes/leo/Leo_emocoes_espelho.webp" 
+          src="https://placehold.co/300x400/4CAF50/ffffff?text=LEO+😊"
           alt="Leo Mascote Emoções" 
           className="intro-mascot title-mascot" 
         />
+        {leoMessage && (
+          <div className="title-speech-bubble">
+            <p>{leoMessage}</p>
+          </div>
+        )}
       </motion.div>
       <h1 className="intro-main-title">Expressões Faciais</h1>
       <p className="intro-main-subtitle">Aprenda e divirta-se com as emoções!</p>
@@ -360,23 +512,48 @@ export default function FacialExpressionsGame() {
         className="intro-start-button" 
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
+        disabled={gameState !== 'titleScreen'}
       >
         Começar Aventura
       </motion.button>
     </div>
   );
 
-  const renderIntroScreen = () => (
+  const renderAutoIntroScreen = () => (
     <div className="screen-center intro-explanation">
       <div className="intro-content-wrapper">
         <div className="intro-mascot-container">
-          <img src="/images/mascotes/leo/Leo_apoio.webp" alt="Leo" className="intro-mascot" />
+          <motion.img 
+            src="https://placehold.co/200x200/4CAF50/ffffff?text=LEO+😊" 
+            alt="Leo" 
+            className="intro-mascot"
+            animate={{ 
+              scale: leoSpeaking ? [1, 1.1, 1] : 1,
+              filter: leoSpeaking ? "drop-shadow(0 0 15px #4CAF50)" : "none"
+            }}
+            transition={{ duration: 0.5, repeat: leoSpeaking ? Infinity : 0 }}
+          />
         </div>
-        <div className="speech-bubble"><p>{leoMessage}</p></div>
+        <motion.div 
+          className="speech-bubble"
+          key={autoIntroStep}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <p>{leoMessage}</p>
+        </motion.div>
       </div>
-      <button onClick={handleIntroNext} className="intro-next-button">
-        {introStep < introMessages.length - 1 ? 'Próximo →' : 'Vamos Começar!'}
-      </button>
+      <div className="intro-progress">
+        <div className="intro-dots">
+          {[1,2,3,4].map(dot => (
+            <div 
+              key={dot}
+              className={`intro-dot ${autoIntroStep >= dot ? 'active' : ''}`}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 
@@ -385,10 +562,21 @@ export default function FacialExpressionsGame() {
       <ProgressBar current={currentTargetIndex + 1} total={targetSequence.length} />
       <div className="game-area">
         <div className="instruction-container">
-          <img src="/images/mascotes/leo/leo_rosto_resultado.webp" alt="Leo" className="instruction-mascot"/>
-          <div className="instruction-box"><h2>{leoMessage}</h2></div>
+          <motion.img 
+            src="https://placehold.co/80x80/4CAF50/ffffff?text=LEO+😊" 
+            alt="Leo" 
+            className="instruction-mascot"
+            animate={{ 
+              scale: leoSpeaking ? [1, 1.1, 1] : 1,
+              filter: leoSpeaking ? "drop-shadow(0 0 10px #4CAF50)" : "drop-shadow(0 4px 10px rgba(0,0,0,0.1))"
+            }}
+            transition={{ duration: 0.5, repeat: leoSpeaking ? Infinity : 0 }}
+          />
+          <div className={`instruction-box ${leoSpeaking ? 'speaking' : ''}`}>
+            <h2>{leoMessage}</h2>
+          </div>
         </div>
-        <div className={`cards-grid cols-${Math.ceil(cardsForPhase.length / 2)}`}>
+        <div className={`cards-grid cols-${Math.min(Math.ceil(cardsForPhase.length / 2), 5)}`}>
           <AnimatePresence>
             {cardsForPhase.map((card) => (
               <Card 
@@ -409,11 +597,32 @@ export default function FacialExpressionsGame() {
   const renderPhaseCompleteScreen = () => (
     <div className="screen-center">
       <ConfettiEffect />
-      <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className="modal-container">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.7 }} 
+        animate={{ opacity: 1, scale: 1 }} 
+        className="modal-container"
+      >
+        <motion.img 
+          src="https://placehold.co/100x100/FFD700/333?text=🏆" 
+          alt="Leo Comemorando"
+          className="modal-mascot"
+          animate={{ 
+            rotate: [0, -10, 10, -10, 0],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
         <h2 className="modal-title">Fase {GAME_PHASES[currentPhaseIndex].phase} Completa!</h2>
         <div className="modal-icon">🎉</div>
-        <p>Pontuação: <span className="total-score-highlight">{totalScore}</span></p>
-        <button onClick={nextPhase} className="modal-button next-level">Próxima Fase</button>
+        <p>Pontuação Total: <span className="total-score-highlight">{totalScore}</span></p>
+        <motion.button 
+          onClick={nextPhase} 
+          className="modal-button next-level"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {currentPhaseIndex < GAME_PHASES.length - 1 ? 'Próxima Fase' : 'Fase Final'}
+        </motion.button>
       </motion.div>
     </div>
   );
@@ -421,11 +630,34 @@ export default function FacialExpressionsGame() {
   const renderGameCompleteScreen = () => (
     <div className="screen-center">
       <ConfettiEffect />
-      <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className="modal-container">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.7 }} 
+        animate={{ opacity: 1, scale: 1 }} 
+        className="modal-container"
+      >
+        <motion.img 
+          src="https://placehold.co/120x120/FFD700/333?text=🏆👑" 
+          alt="Leo Campeão"
+          className="modal-mascot champion"
+          animate={{ 
+            rotate: [0, 5, -5, 0],
+            scale: [1, 1.2, 1],
+            filter: ["hue-rotate(0deg)", "hue-rotate(360deg)"]
+          }}
+          transition={{ duration: 3, repeat: Infinity }}
+        />
         <Trophy className="modal-trophy" />
-        <h2 className="modal-title congrats">PARABÉNS!</h2>
+        <h2 className="modal-title congrats">CAMPEÃO DAS EMOÇÕES!</h2>
         <p className="final-score">Pontuação Final: {totalScore}</p>
-        <button onClick={startGame} className="modal-button play-again">Jogar Novamente</button>
+        <p className="completion-message">Você dominou todas as 10 fases!</p>
+        <motion.button 
+          onClick={startGame} 
+          className="modal-button play-again"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          Jogar Novamente
+        </motion.button>
       </motion.div>
     </div>
   );
@@ -433,7 +665,7 @@ export default function FacialExpressionsGame() {
   const renderContent = () => {
     switch (gameState) {
       case 'titleScreen': return renderTitleScreen();
-      case 'intro': return renderIntroScreen();
+      case 'autoIntro': return renderAutoIntroScreen();
       case 'playing': return renderGameScreen();
       case 'phaseComplete': return renderPhaseCompleteScreen();
       case 'gameComplete': return renderGameCompleteScreen();
@@ -478,11 +710,14 @@ export default function FacialExpressionsGame() {
       padding: 8px; 
       border-radius: 50%; 
       cursor: pointer; 
-      transition: background-color 0.2s; 
+      transition: all 0.3s ease; 
       color: #555; 
     }
     
-    .header-button:hover { background-color: rgba(0,0,0,0.1); }
+    .header-button:hover { 
+      background-color: rgba(0,0,0,0.1); 
+      transform: scale(1.1);
+    }
     
     .game-title { 
       font-size: 1.5rem; 
@@ -499,7 +734,7 @@ export default function FacialExpressionsGame() {
       color: #004D40; 
     }
     
-    /* ESTILOS DA TELA DE TÍTULO E INTRO */
+    /* MELHORIAS NA TELA DE TÍTULO */
     .game-container.intro-mode { 
       background: linear-gradient(160deg, #1d2b64 0%, #3f51b5 100%); 
     }
@@ -524,21 +759,49 @@ export default function FacialExpressionsGame() {
       animation: zoom 40s infinite; 
     }
     
-    @keyframes zoom { 
-      0% { transform: scale(1); } 
-      50% { transform: scale(1.1); } 
-      100% { transform: scale(1); } 
+    .title-leo-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .title-speech-bubble {
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      padding: 15px 20px;
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      max-width: 300px;
+      text-align: center;
+      font-weight: 600;
+      color: #333;
+      z-index: 15;
+    }
+    
+    .title-speech-bubble::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 10px;
+      border-style: solid;
+      border-color: white transparent transparent transparent;
     }
     
     .intro-mascot { 
       max-width: 70vw; 
       max-height: 400px;
-      filter: drop-shadow(0 15px 30px rgba(0,0,0,0.4)); 
       object-fit: contain;
+      border-radius: 20px;
     }
     
     .title-mascot { 
-      width: clamp(250px, 40vw, 450px); 
+      width: clamp(250px, 40vw, 350px); 
       height: auto;
       margin-bottom: -20px; 
     }
@@ -575,6 +838,12 @@ export default function FacialExpressionsGame() {
       animation: introPulse 2.5s infinite; 
     }
     
+    .intro-start-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      animation: none;
+    }
+    
     .intro-explanation { 
       background: linear-gradient(135deg, #a8e0ff 0%, #c4f5c7 100%); 
     }
@@ -583,27 +852,29 @@ export default function FacialExpressionsGame() {
       display: flex; 
       flex-direction: column; 
       align-items: center; 
-      gap: 1rem; 
+      gap: 1.5rem; 
       max-width: 600px;
       margin: 0 auto;
       padding: 0 20px;
     }
     
     .intro-mascot-container { 
-      width: clamp(150px, 30vw, 180px); 
+      width: clamp(150px, 30vw, 200px); 
     }
     
     .speech-bubble { 
       background: white; 
-      padding: 20px; 
+      padding: 25px 30px; 
       border-radius: 20px; 
       box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
       position: relative; 
-      max-width: 400px; 
+      max-width: 500px; 
       text-align: center; 
-      font-size: clamp(1rem, 3vw, 1.2rem); 
+      font-size: clamp(1rem, 3vw, 1.3rem); 
       color: #333; 
-      line-height: 1.5;
+      line-height: 1.6;
+      font-weight: 600;
+      border: 3px solid #4CAF50;
     }
     
     .speech-bubble::after { 
@@ -617,34 +888,32 @@ export default function FacialExpressionsGame() {
       border-color: white transparent transparent transparent; 
     }
     
-    .intro-next-button { 
-      margin-top: 2rem; 
-      background: #4CAF50; 
-      color: white; 
-      padding: 12px 30px; 
-      border-radius: 30px; 
-      font-size: clamp(1rem, 3vw, 1.2rem); 
-      font-weight: 700; 
-      border: none; 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
-      cursor: pointer;
+    .intro-progress {
+      margin-top: 2rem;
+    }
+    
+    .intro-dots {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    
+    .intro-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
       transition: all 0.3s ease;
     }
-
-    .intro-next-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+    
+    .intro-dot.active {
+      background: #4CAF50;
+      transform: scale(1.3);
     }
     
-    @keyframes float { 
-      0%, 100% { transform: translateY(0); } 
-      50% { transform: translateY(-15px); } 
-    }
-    
-    @keyframes introPulse { 
-      0%, 100% { transform: scale(1); } 
-      50% { transform: scale(1.05); } 
-    }
+    @keyframes zoom { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+    @keyframes introPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
     
     .animate-float { animation: float 4s ease-in-out infinite; }
     
@@ -658,7 +927,7 @@ export default function FacialExpressionsGame() {
       padding: 20px; 
     }
     
-    /* ESTILOS DO JOGO */
+    /* MELHORIAS NO JOGO */
     .progressBar { 
       position: sticky; 
       top: 85px; 
@@ -703,6 +972,7 @@ export default function FacialExpressionsGame() {
       border-radius: 50%; 
       border: 4px solid white; 
       box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+      transition: all 0.3s ease;
     }
     
     .instruction-box { 
@@ -712,6 +982,13 @@ export default function FacialExpressionsGame() {
       text-align: center; 
       box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
       max-width: 400px;
+      transition: all 0.3s ease;
+    }
+    
+    .instruction-box.speaking {
+      background: rgba(76, 175, 80, 0.1);
+      border: 2px solid #4CAF50;
+      box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
     }
     
     .instruction-box h2 { 
@@ -738,12 +1015,13 @@ export default function FacialExpressionsGame() {
     .cols-2 { grid-template-columns: repeat(2, 1fr); }
     .cols-3 { grid-template-columns: repeat(3, 1fr); }
     .cols-4 { grid-template-columns: repeat(4, 1fr); }
+    .cols-5 { grid-template-columns: repeat(5, 1fr); }
     
     @media (max-width: 600px) { 
-      .cols-3, .cols-4 { grid-template-columns: repeat(2, 1fr); } 
+      .cols-3, .cols-4, .cols-5 { grid-template-columns: repeat(2, 1fr); } 
     }
     
-    /* CARDS */
+    /* CARDS COM SONS */
     .emotionCard { 
       border-radius: 20px; 
       background: white; 
@@ -774,7 +1052,8 @@ export default function FacialExpressionsGame() {
     .emotionCard img { 
       width: 100%; 
       height: 100%; 
-      object-fit: contain; 
+      object-fit: cover; 
+      border-radius: 10px;
     }
     
     .card-label { 
@@ -786,31 +1065,40 @@ export default function FacialExpressionsGame() {
     }
     
     .cardCorrect { 
-      animation: correctPulse 0.5s ease; 
+      animation: correctPulse 0.8s ease; 
       border-color: #4CAF50; 
       background: #C8E6C9; 
+      box-shadow: 0 0 30px rgba(76, 175, 80, 0.6);
     }
     
     .cardWrong { 
-      animation: wrongShake 0.5s ease; 
+      animation: wrongShake 0.8s ease; 
       border-color: #F44336; 
       background: #FFCDD2; 
+      box-shadow: 0 0 30px rgba(244, 67, 54, 0.6);
     }
     
     @keyframes correctPulse { 
       0%, 100% { transform: scale(1); } 
+      25% { transform: scale(1.15); } 
       50% { transform: scale(1.1); } 
+      75% { transform: scale(1.15); } 
     }
     
     @keyframes wrongShake { 
       0%, 100% { transform: translateX(0); } 
-      20% { transform: translateX(-8px); } 
-      40% { transform: translateX(8px); } 
-      60% { transform: translateX(-8px); } 
-      80% { transform: translateX(8px); } 
+      10% { transform: translateX(-10px) rotate(-2deg); } 
+      20% { transform: translateX(10px) rotate(2deg); } 
+      30% { transform: translateX(-10px) rotate(-2deg); } 
+      40% { transform: translateX(10px) rotate(2deg); } 
+      50% { transform: translateX(-8px) rotate(-1deg); } 
+      60% { transform: translateX(8px) rotate(1deg); } 
+      70% { transform: translateX(-6px); } 
+      80% { transform: translateX(6px); } 
+      90% { transform: translateX(-4px); } 
     }
     
-    /* MODAIS */
+    /* MODAIS MELHORADOS */
     .modal-container { 
       background: rgba(255, 255, 255, 0.95); 
       backdrop-filter: blur(15px); 
@@ -823,6 +1111,20 @@ export default function FacialExpressionsGame() {
       text-align: center;
     }
     
+    .modal-mascot {
+      width: clamp(80px, 20vw, 120px);
+      height: clamp(80px, 20vw, 120px);
+      margin: 0 auto 1rem auto;
+      border-radius: 50%;
+      border: 4px solid #FFD700;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+    
+    .modal-mascot.champion {
+      border: 4px solid #FF6B6B;
+      box-shadow: 0 0 30px rgba(255, 107, 107, 0.7);
+    }
+    
     .modal-title { 
       font-size: clamp(1.8rem, 5vw, 2.5rem); 
       font-weight: 900; 
@@ -830,7 +1132,10 @@ export default function FacialExpressionsGame() {
       color: #004D40; 
     }
     
-    .modal-title.congrats { color: #FFA000; }
+    .modal-title.congrats { 
+      color: #FFA000; 
+      text-shadow: 0 2px 4px rgba(255, 160, 0, 0.3);
+    }
     
     .modal-icon { 
       font-size: clamp(3rem, 8vw, 5rem); 
@@ -851,6 +1156,13 @@ export default function FacialExpressionsGame() {
       color: #00796B; 
       margin-bottom: 1.5rem; 
       display: block; 
+    }
+    
+    .completion-message {
+      font-size: clamp(1rem, 3vw, 1.2rem);
+      color: #666;
+      margin-bottom: 2rem;
+      font-weight: 600;
     }
     
     .modal-button { 
@@ -903,11 +1215,25 @@ export default function FacialExpressionsGame() {
       .modal-container {
         padding: 20px 25px;
       }
+      
+      .title-speech-bubble {
+        position: static;
+        transform: none;
+        margin-bottom: 20px;
+      }
+    }
+    
+    /* PREFERS REDUCED MOTION */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
     }
   `;
 
   return (
-    <div className={`game-container ${gameState === 'titleScreen' || gameState === 'intro' ? 'intro-mode' : ''}`}>
+    <div className={`game-container ${gameState === 'titleScreen' || gameState === 'autoIntro' ? 'intro-mode' : ''}`}>
       <style>{cssStyles}</style>
       <header className="game-header">
         <a href="/dashboard" className="header-button"><ArrowLeft size={24} /></a>
