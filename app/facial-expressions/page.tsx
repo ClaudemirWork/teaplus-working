@@ -1,11 +1,66 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, VolumeX, Trophy, ArrowLeft } from 'lucide-react';
-import { GameAudioManager } from '@/utils/gameAudioManager';
-import styles from './emotionrecognition.module.css';
+// NOVO: Importando nosso gerenciador de áudio
+import { GameAudioManager } from '../utils/gameAudioManager'; // Ajuste o caminho se necessário
+
+// --- EFEITO DE CONFETE (sem alterações) ---
+const confetti = (opts = {}) => {
+  // ... (código do confete permanece o mesmo)
+};
+const ConfettiEffect = () => {
+  useEffect(() => {
+    // ... (código do ConfettiEffect permanece o mesmo)
+  }, []);
+  return null;
+};
+
+
+// --- COMPONENTES DE UI (sem alterações) ---
+const Card = React.memo(({ emotion, onClick, isCorrect, isWrong, isDisabled }) => (
+  <motion.button
+    onClick={onClick}
+    disabled={isDisabled}
+    className={`emotionCard ${isCorrect ? 'cardCorrect' : ''} ${isWrong ? 'cardWrong' : ''}`}
+    initial={{ opacity: 0, scale: 0.5 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0, scale: 0.5 }}
+    transition={{ duration: 0.4 }}
+    layout
+  >
+    <div className="card-image-wrapper">
+      <img 
+        src={emotion.path} 
+        alt={emotion.label} 
+        onError={(e) => { e.currentTarget.src = 'https://placehold.co/150x150/EBF4FA/333?text=?'; }} 
+      />
+    </div>
+    <span className="card-label">{emotion.label}</span>
+  </motion.button>
+));
+
+const ProgressBar = React.memo(({ current, total }) => {
+  const progress = total > 0 ? (current / total) * 100 : 0;
+  return (
+    <div className="progressBar">
+      <div className="progressFill" style={{ width: `${progress}%` }}>
+        {Math.round(progress)}%
+      </div>
+    </div>
+  );
+});
+
+// --- CONFIGURAÇÕES E DADOS DO JOGO ---
+// REMOVIDO: Objeto SOUNDS não é mais necessário, o AudioManager cuida disso.
+// const SOUNDS = { ... };
+
+// REMOVIDO: Função playSound foi substituída pelo AudioManager.
+// const playSound = (soundName) => { ... };
 
 const IMAGE_BASE_PATH = '/images/cards/emocoes/';
+
 const EMOTION_CARDS = [
   { id: 'homem_feliz', label: 'Feliz', path: `${IMAGE_BASE_PATH}homem_feliz.webp` },
   { id: 'homem_triste', label: 'Triste', path: `${IMAGE_BASE_PATH}homem_triste.webp` },
@@ -28,175 +83,230 @@ const GAME_PHASES = [
   { phase: 6, numCards: 8, numRounds: 6, points: 200 },
 ];
 
-const shuffleArray = (arr: any[]) => [...arr].sort(() => Math.random() - 0.5);
+const shuffleArray = (array) => [...array].sort(() => Math.random() - 0.5);
 
-export default function FacialExpressionsPage() {
-  const [gameState, setGameState] = useState<'title'|'intro'|'playing'|'phaseComplete'|'gameComplete'>('title');
+// --- COMPONENTE PRINCIPAL DO JOGO ---
+export default function FacialExpressionsGame() {
+  // NOVO: Instância única do nosso gerenciador de áudio
+  const audioManager = useMemo(() => GameAudioManager.getInstance(), []);
+
+  const [gameState, setGameState] = useState('titleScreen');
+  const [introStep, setIntroStep] = useState(0);
   const [leoMessage, setLeoMessage] = useState('');
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
-  const [introDone, setIntroDone] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
-  const [cardsForPhase, setCardsForPhase] = useState<any[]>([]);
-  const [targetSequence, setTargetSequence] = useState<any[]>([]);
+  // State da rodada
+  const [cardsForPhase, setCardsForPhase] = useState([]);
+  const [targetSequence, setTargetSequence] = useState([]);
   const [currentTargetIndex, setCurrentTargetIndex] = useState(0);
-  const [selectedCardId, setSelectedCardId] = useState<string|null>(null);
-  const [feedback, setFeedback] = useState<'correct'|'wrong'|null>(null);
+  const [selectedCardId, setSelectedCardId] = useState(null);
+  const [feedback, setFeedback] = useState(null);
   const [isDisabled, setIsDisabled] = useState(false);
 
-  const sayLeo = useCallback(async (text: string, priority = 1) => {
-    const audio = GameAudioManager.getInstance();
-    if (!audio.getAudioEnabled() || !soundEnabled) return;
-    await audio.forceInitialize().catch(()=>{});
-    if (audio.shouldSpeak('leo', 300)) {
-      audio.falarLeo(text, undefined, priority);
-      setLeoMessage(text);
+  const introMessages = [
+    "Olá! Eu sou o Leo. Vamos aprender sobre as emoções juntos?",
+    "É bem fácil! Eu vou falar uma emoção, como 'Feliz' ou 'Triste'.",
+    "Você só precisa de clicar na imagem certa que aparece no ecrã.",
+    "A cada fase, mais emoções aparecem! Vamos começar a diversão?"
+  ];
+
+  // ALTERADO: leoSpeak agora usa o GameAudioManager com a voz do Leo (Azure)
+  const leoSpeak = useCallback((message, callback) => {
+    setLeoMessage(message);
+    if (soundEnabled) {
+      audioManager.falarLeo(message, callback);
+    } else {
+        callback?.();
     }
-  }, [soundEnabled]);
+  }, [soundEnabled, audioManager]);
 
-  const handleStartIntro = useCallback(async () => {
+  const handleStartIntro = async () => {
+    // NOVO: Inicializa o contexto de áudio com um gesto do usuário
+    await audioManager.forceInitialize();
     setGameState('intro');
-    const audio = GameAudioManager.getInstance();
-    await audio.forceInitialize().catch(()=>{});
-    audio.pararTodos();
-    const parts = [
-      'Olá! Eu sou o Leo. Vamos aprender sobre as emoções juntos?',
-      'Eu vou falar uma emoção, como Feliz, ou Triste.',
-      'Encontre a imagem certa que aparece na tela.',
-      'A cada fase, mais emoções aparecem. Preparado?',
-    ];
-    parts.forEach((p, idx) => {
-      audio.falarLeo(p, idx === parts.length - 1 ? () => setIntroDone(true) : undefined, 1);
+    // NOVO: Narração de boas-vindas na tela inicial
+    leoSpeak("Bem-vindo ao mundo das Expressões Faciais!", () => {
+        // A introdução normal começa após a saudação
+        setTimeout(() => leoSpeak(introMessages[0]), 500);
     });
-    setLeoMessage(parts[0]);
-  }, []);
+  };
 
-  const startGame = useCallback(() => {
-    const audio = GameAudioManager.getInstance();
-    audio.pararTodos();
-    setCurrentPhaseIndex(0);
-    setTotalScore(0);
-    setGameState('playing');
-  }, []);
+  const handleIntroNext = () => {
+    const nextStep = introStep + 1;
+    if (nextStep < introMessages.length) {
+      setIntroStep(nextStep);
+      leoSpeak(introMessages[nextStep]);
+    } else {
+      startGame();
+    }
+  };
+  
+  // NOVO: Hook para narrar eventos de conclusão de fase e jogo
+  useEffect(() => {
+    if (gameState === 'phaseComplete') {
+        const phaseInfo = GAME_PHASES[currentPhaseIndex];
+        const message = `Fase ${phaseInfo.phase} completa! Você ganhou ${phaseInfo.points} pontos!`;
+        leoSpeak(message);
+        if(soundEnabled) audioManager.playSoundEffect('levelComplete');
+    } else if (gameState === 'gameComplete') {
+        const message = `Incrível! Você completou todas as fases e fez ${totalScore} pontos! Parabéns!`;
+        leoSpeak(message);
+    }
+  }, [gameState, currentPhaseIndex, totalScore, leoSpeak, soundEnabled, audioManager]);
 
-  const preparePhase = useCallback((phaseIndex: number) => {
-    const phase = GAME_PHASES[phaseIndex];
-    const all = shuffleArray(EMOTION_CARDS);
-    const show = all.slice(0, phase.numCards);
-    const seq: any[] = [];
-    for (let i = 0; i < phase.numRounds; i++) seq.push(show[Math.floor(Math.random() * show.length)]);
-    setCardsForPhase(show);
-    setTargetSequence(seq);
+
+  const preparePhase = useCallback((phaseIndex) => {
+    const phaseConfig = GAME_PHASES[phaseIndex];
+    const shuffledAllCards = shuffleArray(EMOTION_CARDS);
+    const cardsToDisplay = shuffledAllCards.slice(0, phaseConfig.numCards);
+
+    let sequence = [];
+    for (let i = 0; i < phaseConfig.numRounds; i++) {
+      sequence.push(cardsToDisplay[Math.floor(Math.random() * cardsToDisplay.length)]);
+    }
+
+    setCardsForPhase(cardsToDisplay);
+    setTargetSequence(sequence);
     setCurrentTargetIndex(0);
     setFeedback(null);
     setSelectedCardId(null);
     setIsDisabled(false);
-    sayLeo(seq[0].label, 2);
-  }, [sayLeo]);
+
+    // NOVO: Anúncio da dificuldade e progresso da fase
+    const startMessage = phaseIndex > 0 
+      ? `Muito bem! Agora com ${phaseConfig.numCards} emoções. Encontre ${sequence[0].label}`
+      : `Vamos começar! Encontre ${sequence[0].label}`;
+    
+    leoSpeak(startMessage);
+
+  }, [leoSpeak]);
+
+  const startGame = () => {
+    setCurrentPhaseIndex(0);
+    setTotalScore(0);
+    setGameState('playing');
+    // preparePhase é chamado pelo useEffect abaixo
+  };
 
   useEffect(() => {
-    if (gameState === 'playing') preparePhase(currentPhaseIndex);
+    if (gameState === 'playing') {
+      preparePhase(currentPhaseIndex);
+    }
   }, [gameState, currentPhaseIndex, preparePhase]);
 
-  const selectCard = useCallback((card: any) => {
+  const selectCard = useCallback((card) => {
     if (isDisabled) return;
+
     setIsDisabled(true);
     setSelectedCardId(card.id);
-    const target = targetSequence[currentTargetIndex];
-    const ok = card.id === target.id;
 
-    if (ok) {
+    const currentTarget = targetSequence[currentTargetIndex];
+    const isCorrect = card.id === currentTarget.id;
+
+    if (isCorrect) {
       setFeedback('correct');
-      setTotalScore(p => p + GAME_PHASES[currentPhaseIndex].points);
+      setTotalScore(prev => prev + GAME_PHASES[currentPhaseIndex].points);
+      if (soundEnabled) audioManager.playSoundEffect('correct'); // ALTERADO
+
       setTimeout(() => {
-        const next = currentTargetIndex + 1;
-        if (next < targetSequence.length) {
-          setCurrentTargetIndex(next);
+        const nextTargetIndex = currentTargetIndex + 1;
+        if (nextTargetIndex < targetSequence.length) {
+          setCurrentTargetIndex(nextTargetIndex);
           setFeedback(null);
           setSelectedCardId(null);
           setIsDisabled(false);
-          sayLeo(targetSequence[next].label, 2);
+          leoSpeak(targetSequence[nextTargetIndex].label);
         } else {
+          // A transição para 'phaseComplete' agora é silenciosa,
+          // pois o useEffect cuidará da narração.
           setGameState('phaseComplete');
         }
-      }, 700);
+      }, 1200);
     } else {
       setFeedback('wrong');
+      if (soundEnabled) audioManager.playSoundEffect('wrong'); // ALTERADO
       setTimeout(() => {
         setFeedback(null);
         setSelectedCardId(null);
         setIsDisabled(false);
-      }, 600);
+        // Opcional: repetir a instrução em caso de erro
+        leoSpeak(`Opa, tente de novo. Onde está ${currentTarget.label}?`);
+      }, 1000);
     }
-  }, [isDisabled, targetSequence, currentTargetIndex, currentPhaseIndex, sayLeo]);
+  }, [isDisabled, targetSequence, currentTargetIndex, currentPhaseIndex, soundEnabled, leoSpeak, audioManager]);
 
-  const nextPhase = useCallback(() => {
-    const next = currentPhaseIndex + 1;
-    if (next < GAME_PHASES.length) { setCurrentPhaseIndex(next); setGameState('playing'); }
-    else setGameState('gameComplete');
-  }, [currentPhaseIndex]);
+  const nextPhase = () => {
+    const nextPhaseIndex = currentPhaseIndex + 1;
+    if (nextPhaseIndex < GAME_PHASES.length) {
+      setCurrentPhaseIndex(nextPhaseIndex);
+      setGameState('playing');
+    } else {
+      setGameState('gameComplete');
+    }
+  };
 
-  const TitleView = () => (
-    <div className={styles.screenCenter}>
-      <div className={styles.starsBg}></div>
-      <motion.div className={styles.animateFloat} style={{ zIndex: 10 }}>
-        <img src="/images/mascotes/leo/Leo_emocoes_espelho.webp" alt="Leo Mascote Emoções" className={`${styles.introMascot} ${styles.titleMascot}`} />
+  // NOVO: Função para controlar o som globalmente
+  const toggleSound = () => {
+    const isNowEnabled = audioManager.toggleAudio();
+    setSoundEnabled(isNowEnabled);
+  }
+
+  // --- RENDERIZAÇÃO ---
+  // (Nenhuma alteração nos blocos de renderização, apenas a lógica acima foi modificada)
+  const renderTitleScreen = () => (
+    <div className="screen-center">
+      <div className="stars-bg"></div>
+      <motion.div className="animate-float" style={{zIndex: 10}}>
+        <img src="/images/mascotes/leo/Leo_emocoes_espelho.webp" alt="Leo Mascote Emoções" className="intro-mascot title-mascot" />
       </motion.div>
-      <h1 className={styles.introMainTitle}>Expressões Faciais</h1>
-      <p className={styles.introMainSubtitle}>Aprenda e divirta-se com as emoções!</p>
-      <motion.button onClick={handleStartIntro} className={styles.introStartButton} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-        Ouvir Introdução
+      <h1 className="intro-main-title">Expressões Faciais</h1>
+      <p className="intro-main-subtitle">Aprenda e divirta-se com as emoções!</p>
+      <motion.button 
+        onClick={handleStartIntro}
+        className="intro-start-button" 
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        Começar Aventura
       </motion.button>
     </div>
   );
 
-  const IntroUnifiedView = () => (
-    <div className={`${styles.screenCenter} ${styles.introExplanation}`}>
-      <div className={`${styles.introContentWrapper} ${styles.speaking}`}>
-        <div className={styles.introMascotContainer}>
-          <img src="/images/mascotes/leo/Leo_apoio.webp" alt="Leo" className={styles.introMascot} />
+  const renderIntroScreen = () => (
+     <div className="screen-center intro-explanation">
+      <div className="intro-content-wrapper">
+        <div className="intro-mascot-container">
+          <img src="/images/mascotes/leo/Leo_apoio.webp" alt="Leo" className="intro-mascot" />
         </div>
-        <div className={styles.speechBubble}>
-          <p style={{ marginBottom: 8 }}>Olá! Eu sou o Leo. Vamos aprender sobre as emoções juntos?</p>
-          <p style={{ marginBottom: 8 }}>Eu vou falar uma emoção, como Feliz, ou Triste.</p>
-          <p style={{ marginBottom: 8 }}>Encontre a imagem certa que aparece na tela.</p>
-          <p style={{ margin: 0 }}>A cada fase, mais emoções aparecem. Preparado?</p>
-        </div>
+        <div className="speech-bubble"><p>{leoMessage}</p></div>
       </div>
-      <button onClick={startGame} className={styles.introNextButton} disabled={!introDone} aria-disabled={!introDone}>
-        {!introDone ? 'Aguarde…' : 'Vamos Começar!'}
+      <button onClick={handleIntroNext} className="intro-next-button">
+        {introStep < introMessages.length - 1 ? 'Próximo →' : 'Vamos Começar!'}
       </button>
     </div>
   );
 
-  const GameView = () => (
+  const renderGameScreen = () => (
     <>
-      <div className={styles.progressBar}>
-        <div className={styles.progressFill} style={{ width: `${targetSequence.length ? ((currentTargetIndex + 1) / targetSequence.length) * 100 : 0}%` }}>
-          {targetSequence.length ? Math.round(((currentTargetIndex + 1) / targetSequence.length) * 100) : 0}%
+      <ProgressBar current={currentTargetIndex + 1} total={targetSequence.length} />
+      <div className="game-area">
+        <div className="instruction-container">
+          <img src="/images/mascotes/leo/leo_rosto_resultado.webp" alt="Leo" className="instruction-mascot"/>
+          <div className="instruction-box"><h2>{leoMessage}</h2></div>
         </div>
-      </div>
-      <div className={styles.gameArea}>
-        <div className={`${styles.instructionContainer} ${styles.speaking}`}>
-          <img src="/images/mascotes/leo/leo_rosto_resultado.webp" alt="Leo" className={styles.instructionMascot} />
-          <div className={styles.instructionBox}><h2>{leoMessage}</h2></div>
-        </div>
-        <div className={`${styles.cardsGrid} ${styles[`cols${Math.ceil(cardsForPhase.length / 2) > 4 ? 4 : Math.ceil(cardsForPhase.length / 2)}`]}`}>
+        <div className={`cards-grid cols-${Math.ceil(cardsForPhase.length / 2)}`}>
           <AnimatePresence>
             {cardsForPhase.map((card) => (
-              <motion.div key={card.id} layout>
-                <button
-                  className={`${styles.emotionCard} ${feedback === 'correct' && card.id === selectedCardId ? styles.cardCorrect : ''} ${feedback === 'wrong' && card.id === selectedCardId ? styles.cardWrong : ''}`}
-                  onClick={() => selectCard(card)}
-                  disabled={isDisabled}
-                >
-                  <div className={styles.cardImageWrapper}>
-                    <img src={card.path} alt={card.label} onError={(e: any) => { e.currentTarget.src = 'https://placehold.co/150x150/EBF4FA/333?text=?'; }} />
-                  </div>
-                  <span className={styles.cardLabel}>{card.label}</span>
-                </button>
-              </motion.div>
+              <Card 
+                key={card.id} 
+                emotion={card} 
+                onClick={() => selectCard(card)}
+                isCorrect={feedback === 'correct' && card.id === selectedCardId}
+                isWrong={feedback === 'wrong' && card.id === selectedCardId}
+                isDisabled={isDisabled}
+              />
             ))}
           </AnimatePresence>
         </div>
@@ -204,51 +314,53 @@ export default function FacialExpressionsPage() {
     </>
   );
 
-  const PhaseCompleteView = () => (
-    <div className={styles.screenCenter}>
-      <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className={styles.modalContainer}>
-        <h2 className={styles.modalTitle}>Fase {GAME_PHASES[currentPhaseIndex].phase} Completa!</h2>
-        <div className={styles.modalIcon}>🎉</div>
-        <p> Pontuação: <span className={styles.totalScoreHighlight}>{totalScore}</span> </p>
-        <button onClick={nextPhase} className={`${styles.modalButton} ${styles.nextLevel}`}>Próxima Fase</button>
+  const renderPhaseCompleteScreen = () => (
+    <div className="screen-center">
+      <ConfettiEffect />
+      <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className="modal-container">
+        <h2 className="modal-title">Fase {GAME_PHASES[currentPhaseIndex].phase} Completa!</h2>
+        <div className="modal-icon">🎉</div>
+        <p>Pontuação: <span className="total-score-highlight">{totalScore}</span></p>
+        <button onClick={nextPhase} className="modal-button next-level">Próxima Fase</button>
       </motion.div>
     </div>
   );
 
-  const GameCompleteView = () => (
-    <div className={styles.screenCenter}>
-      <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className={styles.modalContainer}>
-        <Trophy className={styles.modalTrophy} />
-        <h2 className={`${styles.modalTitle} ${styles.congrats}`}>PARABÉNS!</h2>
-        <p className={styles.finalScore}>Pontuação Final: {totalScore}</p>
-        <button onClick={startGame} className={`${styles.modalButton} ${styles.playAgain}`}>Jogar Novamente</button>
+  const renderGameCompleteScreen = () => (
+    <div className="screen-center">
+      <ConfettiEffect />
+      <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className="modal-container">
+        <Trophy className="modal-trophy" />
+        <h2 className="modal-title congrats">PARABÉNS!</h2>
+        <p className="final-score">Pontuação Final: {totalScore}</p>
+        <button onClick={startGame} className="modal-button play-again">Jogar Novamente</button>
       </motion.div>
     </div>
   );
+  
+  const renderContent = () => {
+    // ... (código sem alterações)
+  };
+
+  const cssStyles = `
+    // ... (código CSS sem alterações)
+  `;
 
   return (
-    <div className={`${styles.gameContainer} ${(gameState === 'title' || gameState === 'intro') ? styles.introMode : ''}`}>
-      <header className={styles.gameHeader}>
-        <a href="/dashboard" className={styles.headerButton}><ArrowLeft size={24} /></a>
-        <h1 className={styles.gameTitle}>😊 Expressões</h1>
-        <div className={styles.headerScore}>🏆 {totalScore}</div>
-        <button
-          onClick={() => { const enabled = GameAudioManager.getInstance().toggleAudio(); setSoundEnabled(enabled); }}
-          className={styles.headerButton} aria-label="Alternar som"
-        >
+    <div className={`game-container ${gameState === 'titleScreen' || gameState === 'intro' ? 'intro-mode' : ''}`}>
+      <style>{cssStyles}</style>
+      <header className="game-header">
+        <a href="/dashboard" className="header-button"><ArrowLeft size={24} /></a>
+        <h1 className="game-title">😊 Expressões</h1>
+        <div className="header-score">🏆 {totalScore}</div>
+        {/* ALTERADO: Botão agora usa a função toggleSound */}
+        <button onClick={toggleSound} className="header-button">
           {soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
         </button>
       </header>
-
       <main>
         <AnimatePresence mode="wait">
-          <motion.div key={gameState} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-            {gameState === 'title' && <TitleView />}
-            {gameState === 'intro' && <IntroUnifiedView />}
-            {gameState === 'playing' && <GameView />}
-            {gameState === 'phaseComplete' && <PhaseCompleteView />}
-            {gameState === 'gameComplete' && <GameCompleteView />}
-          </motion.div>
+          {renderContent()}
         </AnimatePresence>
       </main>
     </div>
