@@ -1,10 +1,11 @@
-/* FacialExpressions.module.css - VERSÃO ATUALIZADA */
+/* FacialExpressions.module.css - VERSÃO CORRIGIDA */
 
 /* ===========================================
    1. VARIÁVEIS GLOBAIS E ESTILOS BASE
    =========================================== */
 
-:root {
+/* Alteração: substituímos :root por uma classe local */
+.emotionGameRoot {
   --color-primary: #4CAF50;
   --color-primary-dark: #00796B;
   --color-primary-darker: #004D40;
