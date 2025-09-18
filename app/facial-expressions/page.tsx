@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, VolumeX, Trophy, ArrowLeft } from 'lucide-react';
 import { GameAudioManager } from '@/utils/gameAudioManager';
-import './emotionrecognition.module.css';
+import styles from './emotionrecognition.module.css';
 
 const IMAGE_BASE_PATH = '/images/cards/emocoes/';
 const EMOTION_CARDS = [
@@ -45,7 +45,6 @@ export default function FacialExpressionsPage() {
   const [feedback, setFeedback] = useState<'correct'|'wrong'|null>(null);
   const [isDisabled, setIsDisabled] = useState(false);
 
-  // Fala do Leo com fila; cooldown leve para evitar cortes
   const sayLeo = useCallback(async (text: string, priority = 1) => {
     const audio = GameAudioManager.getInstance();
     if (!audio.getAudioEnabled() || !soundEnabled) return;
@@ -56,12 +55,11 @@ export default function FacialExpressionsPage() {
     }
   }, [soundEnabled]);
 
-  // Introdução unificada
   const handleStartIntro = useCallback(async () => {
     setGameState('intro');
     const audio = GameAudioManager.getInstance();
     await audio.forceInitialize().catch(()=>{});
-    audio.pararTodos(); // evita restos de outra tela
+    audio.pararTodos();
     const parts = [
       'Olá! Eu sou o Leo. Vamos aprender sobre as emoções juntos?',
       'Eu vou falar uma emoção, como Feliz, ou Triste.',
@@ -74,16 +72,14 @@ export default function FacialExpressionsPage() {
     setLeoMessage(parts[0]);
   }, []);
 
-  // Começar jogo (limpa fila antes de tocar a primeira instrução)
   const startGame = useCallback(() => {
     const audio = GameAudioManager.getInstance();
-    audio.pararTodos(); // flush da fila de intro
+    audio.pararTodos();
     setCurrentPhaseIndex(0);
     setTotalScore(0);
     setGameState('playing');
   }, []);
 
-  // Preparação de fase
   const preparePhase = useCallback((phaseIndex: number) => {
     const phase = GAME_PHASES[phaseIndex];
     const all = shuffleArray(EMOTION_CARDS);
@@ -103,7 +99,6 @@ export default function FacialExpressionsPage() {
     if (gameState === 'playing') preparePhase(currentPhaseIndex);
   }, [gameState, currentPhaseIndex, preparePhase]);
 
-  // Seleção
   const selectCard = useCallback((card: any) => {
     if (isDisabled) return;
     setIsDisabled(true);
@@ -142,35 +137,34 @@ export default function FacialExpressionsPage() {
     else setGameState('gameComplete');
   }, [currentPhaseIndex]);
 
-  // Views
   const TitleView = () => (
-    <div className="screen-center">
-      <div className="stars-bg"></div>
-      <motion.div className="animate-float" style={{ zIndex: 10 }}>
-        <img src="/images/mascotes/leo/Leo_emocoes_espelho.webp" alt="Leo Mascote Emoções" className="intro-mascot title-mascot" />
+    <div className={styles.screenCenter}>
+      <div className={styles.starsBg}></div>
+      <motion.div className={styles.animateFloat} style={{ zIndex: 10 }}>
+        <img src="/images/mascotes/leo/Leo_emocoes_espelho.webp" alt="Leo Mascote Emoções" className={`${styles.introMascot} ${styles.titleMascot}`} />
       </motion.div>
-      <h1 className="intro-main-title">Expressões Faciais</h1>
-      <p className="intro-main-subtitle">Aprenda e divirta-se com as emoções!</p>
-      <motion.button onClick={handleStartIntro} className="intro-start-button" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+      <h1 className={styles.introMainTitle}>Expressões Faciais</h1>
+      <p className={styles.introMainSubtitle}>Aprenda e divirta-se com as emoções!</p>
+      <motion.button onClick={handleStartIntro} className={styles.introStartButton} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
         Ouvir Introdução
       </motion.button>
     </div>
   );
 
   const IntroUnifiedView = () => (
-    <div className="screen-center intro-explanation">
-      <div className="intro-content-wrapper speaking">
-        <div className="intro-mascot-container">
-          <img src="/images/mascotes/leo/Leo_apoio.webp" alt="Leo" className="intro-mascot" />
+    <div className={`${styles.screenCenter} ${styles.introExplanation}`}>
+      <div className={`${styles.introContentWrapper} ${styles.speaking}`}>
+        <div className={styles.introMascotContainer}>
+          <img src="/images/mascotes/leo/Leo_apoio.webp" alt="Leo" className={styles.introMascot} />
         </div>
-        <div className="speech-bubble">
+        <div className={styles.speechBubble}>
           <p style={{ marginBottom: 8 }}>Olá! Eu sou o Leo. Vamos aprender sobre as emoções juntos?</p>
           <p style={{ marginBottom: 8 }}>Eu vou falar uma emoção, como Feliz, ou Triste.</p>
           <p style={{ marginBottom: 8 }}>Encontre a imagem certa que aparece na tela.</p>
           <p style={{ margin: 0 }}>A cada fase, mais emoções aparecem. Preparado?</p>
         </div>
       </div>
-      <button onClick={startGame} className="intro-next-button" disabled={!introDone} aria-disabled={!introDone}>
+      <button onClick={startGame} className={styles.introNextButton} disabled={!introDone} aria-disabled={!introDone}>
         {!introDone ? 'Aguarde…' : 'Vamos Começar!'}
       </button>
     </div>
@@ -178,29 +172,29 @@ export default function FacialExpressionsPage() {
 
   const GameView = () => (
     <>
-      <div className="progressBar">
-        <div className="progressFill" style={{ width: `${targetSequence.length ? ((currentTargetIndex + 1) / targetSequence.length) * 100 : 0}%` }}>
+      <div className={styles.progressBar}>
+        <div className={styles.progressFill} style={{ width: `${targetSequence.length ? ((currentTargetIndex + 1) / targetSequence.length) * 100 : 0}%` }}>
           {targetSequence.length ? Math.round(((currentTargetIndex + 1) / targetSequence.length) * 100) : 0}%
         </div>
       </div>
-      <div className="game-area">
-        <div className="instruction-container speaking">
-          <img src="/images/mascotes/leo/leo_rosto_resultado.webp" alt="Leo" className="instruction-mascot" />
-          <div className="instruction-box"><h2>{leoMessage}</h2></div>
+      <div className={styles.gameArea}>
+        <div className={`${styles.instructionContainer} ${styles.speaking}`}>
+          <img src="/images/mascotes/leo/leo_rosto_resultado.webp" alt="Leo" className={styles.instructionMascot} />
+          <div className={styles.instructionBox}><h2>{leoMessage}</h2></div>
         </div>
-        <div className={`cards-grid cols-${Math.ceil(cardsForPhase.length / 2)}`}>
+        <div className={`${styles.cardsGrid} ${styles[`cols${Math.ceil(cardsForPhase.length / 2) > 4 ? 4 : Math.ceil(cardsForPhase.length / 2)}`]}`}>
           <AnimatePresence>
             {cardsForPhase.map((card) => (
               <motion.div key={card.id} layout>
                 <button
-                  className={`emotionCard ${feedback === 'correct' && card.id === selectedCardId ? 'cardCorrect' : ''} ${feedback === 'wrong' && card.id === selectedCardId ? 'cardWrong' : ''}`}
+                  className={`${styles.emotionCard} ${feedback === 'correct' && card.id === selectedCardId ? styles.cardCorrect : ''} ${feedback === 'wrong' && card.id === selectedCardId ? styles.cardWrong : ''}`}
                   onClick={() => selectCard(card)}
                   disabled={isDisabled}
                 >
-                  <div className="card-image-wrapper">
+                  <div className={styles.cardImageWrapper}>
                     <img src={card.path} alt={card.label} onError={(e: any) => { e.currentTarget.src = 'https://placehold.co/150x150/EBF4FA/333?text=?'; }} />
                   </div>
-                  <span className="card-label">{card.label}</span>
+                  <span className={styles.cardLabel}>{card.label}</span>
                 </button>
               </motion.div>
             ))}
@@ -211,36 +205,36 @@ export default function FacialExpressionsPage() {
   );
 
   const PhaseCompleteView = () => (
-    <div className="screen-center">
-      <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className="modal-container">
-        <h2 className="modal-title">Fase {GAME_PHASES[currentPhaseIndex].phase} Completa!</h2>
-        <div className="modal-icon">🎉</div>
-        <p> Pontuação: <span className="total-score-highlight">{totalScore}</span> </p>
-        <button onClick={nextPhase} className="modal-button next-level">Próxima Fase</button>
+    <div className={styles.screenCenter}>
+      <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className={styles.modalContainer}>
+        <h2 className={styles.modalTitle}>Fase {GAME_PHASES[currentPhaseIndex].phase} Completa!</h2>
+        <div className={styles.modalIcon}>🎉</div>
+        <p> Pontuação: <span className={styles.totalScoreHighlight}>{totalScore}</span> </p>
+        <button onClick={nextPhase} className={`${styles.modalButton} ${styles.nextLevel}`}>Próxima Fase</button>
       </motion.div>
     </div>
   );
 
   const GameCompleteView = () => (
-    <div className="screen-center">
-      <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className="modal-container">
-        <Trophy className="modal-trophy" />
-        <h2 className="modal-title congrats">PARABÉNS!</h2>
-        <p className="final-score">Pontuação Final: {totalScore}</p>
-        <button onClick={startGame} className="modal-button play-again">Jogar Novamente</button>
+    <div className={styles.screenCenter}>
+      <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className={styles.modalContainer}>
+        <Trophy className={styles.modalTrophy} />
+        <h2 className={`${styles.modalTitle} ${styles.congrats}`}>PARABÉNS!</h2>
+        <p className={styles.finalScore}>Pontuação Final: {totalScore}</p>
+        <button onClick={startGame} className={`${styles.modalButton} ${styles.playAgain}`}>Jogar Novamente</button>
       </motion.div>
     </div>
   );
 
   return (
-    <div className={`game-container ${gameState === 'title' || gameState === 'intro' ? 'intro-mode' : ''}`}>
-      <header className="game-header">
-        <a href="/dashboard" className="header-button"><ArrowLeft size={24} /></a>
-        <h1 className="game-title">😊 Expressões</h1>
-        <div className="header-score">🏆 {totalScore}</div>
+    <div className={`${styles.gameContainer} ${(gameState === 'title' || gameState === 'intro') ? styles.introMode : ''}`}>
+      <header className={styles.gameHeader}>
+        <a href="/dashboard" className={styles.headerButton}><ArrowLeft size={24} /></a>
+        <h1 className={styles.gameTitle}>😊 Expressões</h1>
+        <div className={styles.headerScore}>🏆 {totalScore}</div>
         <button
           onClick={() => { const enabled = GameAudioManager.getInstance().toggleAudio(); setSoundEnabled(enabled); }}
-          className="header-button" aria-label="Alternar som"
+          className={styles.headerButton} aria-label="Alternar som"
         >
           {soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
         </button>
@@ -248,13 +242,7 @@ export default function FacialExpressionsPage() {
 
       <main>
         <AnimatePresence mode="wait">
-          <motion.div
-            key={gameState}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
+          <motion.div key={gameState} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
             {gameState === 'title' && <TitleView />}
             {gameState === 'intro' && <IntroUnifiedView />}
             {gameState === 'playing' && <GameView />}
