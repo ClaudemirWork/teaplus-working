@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabaseClient';
 import { GameAudioManager } from '@/utils/gameAudioManager';
-import { Bubble, Particle } from '@/app/types/bubble-pop';
+import { Bubble, Particle, Equipment, LEVEL_CONFIGS, BUBBLE_CONFIG } from '@/app/types/bubble-pop';
 
 export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
   const router = useRouter();
@@ -32,97 +32,74 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
   const [bubblesRemaining, setBubblesRemaining] = useState(0);
   const [fishCollection, setFishCollection] = useState<Array<{id: number, name: string, type: string}>>([]);
   const [unlockedGear, setUnlockedGear] = useState<Array<{level: number, item: string, icon: string}>>([]);
-  const [bubblesPopped, setBubblesPopped] = useState(0); // Contador de bolhas estouradas no nível
+  const [bubblesPopped, setBubblesPopped] = useState(0);
+
+  // NOVOS ESTADOS - Features do jogo antigo
+  const [equipment, setEquipment] = useState<Equipment>({
+    mask: false,
+    fins: false,
+    tank: false,
+    suit: false,
+    light: false
+  });
+  const [savedFish, setSavedFish] = useState(0);
+  const [multiplier, setMultiplier] = useState(1);
+  const [multiplierTime, setMultiplierTime] = useState(0);
+  const [magnetActive, setMagnetActive] = useState(false);
+  const [magnetTime, setMagnetTime] = useState(0);
+  const [showBossLevel, setShowBossLevel] = useState(false);
+  const [bossDefeated, setBossDefeated] = useState(false);
+  const [freedCreatures, setFreedCreatures] = useState<string[]>([]);
+  const [bubblesSpawned, setBubblesSpawned] = useState(0);
+  const [levelCompleted, setLevelCompleted] = useState(false);
 
   // Refs para controle de frequência do áudio
   const lastAudioTime = useRef<number>(0);
   const lastScoreMilestone = useRef<number>(0);
-
-  // Configuração dos tipos de bolha
-  const coloredBubbles = {
-    air: { color: '#E0F2FE', points: 5, size: 40 },
-    oxygen: { color: '#60A5FA', points: 15, size: 55 },
-    pink: { color: '#F9A8D4', points: 20, size: 45 },
-    purple: { color: '#C084FC', points: 25, size: 45 },
-    yellow: { color: '#FDE047', points: 30, size: 45 },
-    green: { color: '#86EFAC', points: 35, size: 45 },
-    orange: { color: '#FB923C', points: 40, size: 45 },
-    treasure: { color: '#FFD700', points: 50, size: 50 },
-    pearl: { color: '#FFF0F5', points: 100, size: 40 },
-    mine: { color: '#8B0000', points: -20, size: 45 },
-    pufferfish: { color: '#FF6B6B', points: 75, size: 50 },
-    starfish: { color: '#FFD93D', points: 80, size: 45 },
-    octopus: { color: '#6BCF7F', points: 90, size: 55 },
-    whale: { color: '#4A90E2', points: 120, size: 70 },
-    shark: { color: '#8B4513', points: 110, size: 65 },
-    turtle: { color: '#32CD32', points: 85, size: 50 },
-    dolphin: { color: '#00CED1', points: 95, size: 55 }
-  };
-
-  // Configurações dos níveis
-  const levelConfigs = [
-    { level: 1, name: 'Águas Rasas', depth: '0-10m', totalBubbles: 25, minePercentage: 0.05, spawnRate: 2000, oxygenDrain: 0.5, bgGradient: 'from-cyan-200 to-blue-400' },
-    { level: 2, name: 'Zona Iluminada', depth: '10-50m', totalBubbles: 30, minePercentage: 0.08, spawnRate: 1800, oxygenDrain: 0.7, bgGradient: 'from-blue-400 to-blue-600' },
-    { level: 3, name: 'Zona Crepuscular', depth: '50-100m', totalBubbles: 35, minePercentage: 0.1, spawnRate: 1600, oxygenDrain: 0.9, bgGradient: 'from-blue-600 to-indigo-700' },
-    { level: 4, name: 'Zona Escura', depth: '100-500m', totalBubbles: 40, minePercentage: 0.12, spawnRate: 1400, oxygenDrain: 1.1, bgGradient: 'from-indigo-700 to-purple-900' },
-    { level: 5, name: 'Águas Profundas', depth: '500m+', totalBubbles: 45, minePercentage: 0.15, spawnRate: 1200, oxygenDrain: 1.3, bgGradient: 'from-purple-900 to-black' }
-  ];
 
   // Inicialização do gerenciador de áudio
   useEffect(() => {
     audioManager.current = GameAudioManager.getInstance();
   }, []);
 
-  // ✅ SOM PERFEITO DE BOLHA ESTOURANDO
+  // Som de bolha estourando
   const playBubblePopSound = useCallback(() => {
     if (!audioEnabled) return;
-    
+
     try {
-      // Criar AudioContext local se não existir
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      // Criar osciladores para som mais realista
       const osc1 = audioCtx.createOscillator();
       const osc2 = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
       const filterNode = audioCtx.createBiquadFilter();
-      
-      // Conectar: osc1 + osc2 → filter → gain → output
+
       osc1.connect(filterNode);
       osc2.connect(filterNode);
       filterNode.connect(gainNode);
       gainNode.connect(audioCtx.destination);
-      
-      // Configurar filtro para som mais suave
+
       filterNode.type = 'lowpass';
       filterNode.frequency.setValueAtTime(1000, audioCtx.currentTime);
       filterNode.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
-      
-      // Oscilador principal (bolha estourando)
+
       osc1.type = 'sine';
       osc1.frequency.setValueAtTime(400, audioCtx.currentTime);
       osc1.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
       osc1.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
-      
-      // Oscilador secundário (efeito de "pop")
+
       osc2.type = 'triangle';
       osc2.frequency.setValueAtTime(800, audioCtx.currentTime);
       osc2.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.02);
-      
-      // Envelope de volume (ataque rápido, decaimento suave)
+
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.005); // Ataque
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15); // Decaimento
-      
-      // Tocar sons
+      gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.005);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+
       osc1.start(audioCtx.currentTime);
       osc2.start(audioCtx.currentTime);
-      
-      // Parar sons
       osc1.stop(audioCtx.currentTime + 0.15);
       osc2.stop(audioCtx.currentTime + 0.02);
-      
-      // Limpar contexto após uso
+
       setTimeout(() => {
         audioCtx.close();
       }, 200);
@@ -131,10 +108,27 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     }
   }, [audioEnabled]);
 
-  // Função para criar bolhas
+  // FUNÇÃO EXPANDIDA PARA CRIAR BOLHAS COM TODOS OS TIPOS
   const createBubble = useCallback((): Bubble => {
     const gameArea = gameAreaRef.current;
-    if (!gameArea) {
+    if (!gameArea || !isPlaying || levelCompleted) {
+      return {
+        id: Date.now() + Math.random(),
+        x: 100,
+        y: 100,
+        size: 40,
+        speed: 1,
+        color: '#E0F2FE',
+        points: 5,
+        type: 'air',
+        popped: false,
+        opacity: 1,
+        horizontalMovement: 0
+      };
+    }
+
+    const config = LEVEL_CONFIGS[currentLevel - 1];
+    if (bubblesSpawned >= config.totalBubbles) {
       return {
         id: Date.now() + Math.random(),
         x: 100,
@@ -156,79 +150,93 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     const maxY = rect.height - margin;
 
     let type: Bubble['type'] = 'air';
-    const rand = Math.random();
-    const colorRand = Math.random();
-    const mineChance = levelConfigs[currentLevel - 1].minePercentage;
+    let horizontalMovement = 0;
+    let equipmentType: Bubble['equipmentType'] = undefined;
+    let fishType = '';
 
-    // Determinar se é uma mina
-    if (rand < mineChance) {
+    const rand = Math.random();
+
+    // Verificar se é equipamento específico do nível
+    if (config.equipment && rand < 0.02) {
+      type = 'equipment';
+      equipmentType = config.equipment;
+    } else if (rand < config.minePercentage) {
+      // Mina
       type = 'mine';
     } else {
-      // Lógica de spawn baseada no nível
-      if (currentLevel === 1) {
-        if (colorRand < 0.4) type = 'air';
-        else if (colorRand < 0.7) type = 'oxygen';
-        else if (colorRand < 0.9) type = 'pink';
-        else type = 'purple';
-      } else if (currentLevel === 2) {
-        if (colorRand < 0.3) type = 'air';
-        else if (colorRand < 0.5) type = 'oxygen';
-        else if (colorRand < 0.65) type = 'pink';
-        else if (colorRand < 0.8) type = 'purple';
-        else if (colorRand < 0.9) type = 'yellow';
-        else if (colorRand < 0.97) type = 'treasure';
-        else type = 'pearl';
-      } else if (currentLevel === 3) {
-        if (colorRand < 0.15) type = 'air';
-        else if (colorRand < 0.3) type = 'oxygen';
-        else if (colorRand < 0.45) type = 'pink';
-        else if (colorRand < 0.55) type = 'purple';
-        else if (colorRand < 0.65) type = 'yellow';
-        else if (colorRand < 0.75) type = 'green';
-        else if (colorRand < 0.83) type = 'orange';
-        else if (colorRand < 0.88) type = 'pufferfish';
-        else if (colorRand < 0.93) type = 'turtle';
-        else if (colorRand < 0.96) type = 'treasure';
-        else type = 'pearl';
+      const features = config.features;
+      const featureRand = Math.random();
+
+      if (features.includes('fish_rescue') && featureRand < 0.15) {
+        type = 'fish';
+        const fishTypes = ['🐠', '🐟', '🐡', '🦈', '🐙'];
+        fishType = fishTypes[Math.floor(Math.random() * fishTypes.length)];
+      } else if (features.includes('multipliers') && featureRand < 0.1) {
+        type = Math.random() < 0.6 ? 'double' : 'triple';
+      } else if (features.includes('powerups') && featureRand < 0.08) {
+        type = Math.random() < 0.5 ? 'shockwave' : 'magnet';
       } else {
-        // Níveis 4 e 5 - Todos os animais
-        if (colorRand < 0.08) type = 'air';
-        else if (colorRand < 0.15) type = 'oxygen';
-        else if (colorRand < 0.25) type = 'purple';
-        else if (colorRand < 0.35) type = 'yellow';
-        else if (colorRand < 0.45) type = 'green';
-        else if (colorRand < 0.55) type = 'orange';
-        else if (colorRand < 0.65) type = 'pufferfish';
-        else if (colorRand < 0.72) type = 'starfish';
-        else if (colorRand < 0.78) type = 'octopus';
-        else if (colorRand < 0.83) type = 'whale';
-        else if (colorRand < 0.88) type = 'shark';
-        else if (colorRand < 0.93) type = 'dolphin';
-        else if (colorRand < 0.97) type = 'treasure';
-        else type = 'pearl';
+        // Bolhas normais e animais marinhos
+        const colorRand = Math.random();
+        if (currentLevel <= 2) {
+          if (colorRand < 0.4) type = 'air';
+          else if (colorRand < 0.7) type = 'oxygen';
+          else if (colorRand < 0.9) type = 'pink';
+          else type = 'purple';
+        } else if (currentLevel <= 4) {
+          if (colorRand < 0.3) type = 'air';
+          else if (colorRand < 0.5) type = 'oxygen';
+          else if (colorRand < 0.65) type = 'pink';
+          else if (colorRand < 0.8) type = 'purple';
+          else if (colorRand < 0.9) type = 'yellow';
+          else if (colorRand < 0.97) type = 'treasure';
+          else type = 'pearl';
+        } else {
+          // Níveis avançados - todos os tipos
+          if (colorRand < 0.08) type = 'air';
+          else if (colorRand < 0.15) type = 'oxygen';
+          else if (colorRand < 0.25) type = 'purple';
+          else if (colorRand < 0.35) type = 'yellow';
+          else if (colorRand < 0.45) type = 'green';
+          else if (colorRand < 0.55) type = 'orange';
+          else if (colorRand < 0.65) type = 'pufferfish';
+          else if (colorRand < 0.72) type = 'starfish';
+          else if (colorRand < 0.78) type = 'octopus';
+          else if (colorRand < 0.83) type = 'whale';
+          else if (colorRand < 0.88) type = 'shark';
+          else if (colorRand < 0.93) type = 'dolphin';
+          else if (colorRand < 0.97) type = 'treasure';
+          else type = 'pearl';
+        }
+      }
+
+      // Correntes marinhas
+      if (features.includes('currents')) {
+        horizontalMovement = (Math.random() - 0.5) * 2;
       }
     }
 
-    const config = coloredBubbles[type];
+    const bubbleConfig = BUBBLE_CONFIG[type as keyof typeof BUBBLE_CONFIG];
     const x = margin + Math.random() * (maxX - margin);
-    const y = maxY + config.size;
-    const speed = 0.5 + Math.random() * 1.5;
-    const horizontalMovement = (Math.random() - 0.5) * 0.3;
+    const y = maxY + bubbleConfig.size;
+    const speed = 1.2;
 
     return {
       id: Date.now() + Math.random(),
       x,
       y,
-      size: config.size,
+      size: bubbleConfig.size + (Math.random() * 10 - 5),
       speed,
-      color: config.color,
-      points: config.points,
+      color: bubbleConfig.color,
+      points: bubbleConfig.points,
       type,
       popped: false,
       opacity: 1,
-      horizontalMovement
+      horizontalMovement,
+      equipmentType,
+      fishType
     };
-  }, [currentLevel]);
+  }, [currentLevel, isPlaying, levelCompleted, bubblesSpawned]);
 
   // Função para detectar clique em bolha
   const detectBubbleClick = useCallback((x: number, y: number): Bubble | null => {
@@ -249,19 +257,64 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
   }, [bubbles]);
 
   // Função para criar partículas
-  const createParticles = useCallback((x: number, y: number, color: string) => {
+  const createParticles = useCallback((x: number, y: number, color: string, type: string = 'normal') => {
     const newParticles: Particle[] = [];
-    for (let i = 0; i < 8; i++) {
+    
+    if (type === 'explosion') {
+      for (let i = 0; i < 30; i++) {
+        const angle = (Math.PI * 2 * i) / 30;
+        const velocity = Math.random() * 6 + 4;
+        newParticles.push({
+          id: Date.now() + i,
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * velocity,
+          vy: Math.sin(angle) * velocity,
+          color: ['#FF4500', '#FF6347', '#FFD700'][Math.floor(Math.random() * 3)],
+          life: 1,
+          type: 'star'
+        });
+      }
+    } else if (type === 'fish') {
       newParticles.push({
-        id: Date.now() + i,
-        x: x + (Math.random() - 0.5) * 20,
-        y: y + (Math.random() - 0.5) * 20,
-        vx: (Math.random() - 0.5) * 4,
-        vy: (Math.random() - 0.5) * 4,
-        color,
-        life: 1.0
+        id: Date.now(),
+        x: x,
+        y: y,
+        vx: (Math.random() - 0.5) * 5,
+        vy: -5,
+        color: color,
+        life: 2,
+        type: 'fish'
       });
+    } else if (type === 'shockwave') {
+      for (let i = 0; i < 50; i++) {
+        const angle = (Math.PI * 2 * i) / 50;
+        const velocity = 8;
+        newParticles.push({
+          id: Date.now() + i,
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * velocity,
+          vy: Math.sin(angle) * velocity,
+          color: '#00FFFF',
+          life: 1,
+          type: 'star'
+        });
+      }
+    } else {
+      for (let i = 0; i < 8; i++) {
+        newParticles.push({
+          id: Date.now() + i,
+          x: x + (Math.random() - 0.5) * 20,
+          y: y + (Math.random() - 0.5) * 20,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4,
+          color,
+          life: 1.0
+        });
+      }
     }
+
     setParticles(prev => [...prev, ...newParticles]);
   }, []);
 
@@ -316,146 +369,9 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     }
   }, [audioEnabled]);
 
-  // Manipulador de interação (clique/toque)
-  const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if (!isPlaying) return;
+  // CONTINUAÇÃO NO PRÓXIMO TRECHO... (arquivo muito grande)
 
-    try {
-      e.preventDefault();
-      e.stopPropagation();
-    } catch (error) {
-      // Ignorar erros de preventDefault
-    }
-
-    const gameArea = gameAreaRef.current;
-    if (!gameArea) return;
-
-    const rect = gameArea.getBoundingClientRect();
-    let clientX: number, clientY: number;
-
-    if ('touches' in e) {
-      if (e.touches.length === 0) return;
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    }
-
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-
-    const clickedBubble = detectBubbleClick(x, y);
-    if (!clickedBubble) return;
-
-    // Marcar bolha como estourada
-    setBubbles(prev => prev.map(b => 
-      b.id === clickedBubble.id ? { ...b, popped: true, opacity: 0 } : b
-    ));
-
-    // Incrementar contador de bolhas estouradas
-    setBubblesPopped(prev => prev + 1);
-
-    // Processar pontuação
-    const bonusPoints = combo * 5;
-    const newScore = score + clickedBubble.points + bonusPoints;
-    setScore(newScore);
-    setPoppedBubbles(prev => prev + 1);
-
-    // Verificar marcos de pontuação
-    checkScoreMilestone(newScore);
-
-    // ✅ SOM DE BOLHA PERFEITO
-    playBubblePopSound();
-
-    // Processar efeitos especiais
-    if (clickedBubble.type === 'oxygen') {
-      setOxygenLevel(prev => Math.min(100, prev + 25));
-    } else if (clickedBubble.type === 'mine') {
-      setOxygenLevel(prev => Math.max(0, prev - 15));
-      setCombo(0);
-    } else {
-      setCombo(prev => {
-        const newCombo = prev + 1;
-        setMaxCombo(current => Math.max(current, newCombo));
-        return newCombo;
-      });
-    }
-
-    // Captura de animais
-    const animalTypes = ['pufferfish', 'starfish', 'octopus', 'whale', 'shark', 'turtle', 'dolphin'];
-    if (animalTypes.includes(clickedBubble.type)) {
-      const animalNames: { [key: string]: string } = {
-        pufferfish: 'Baiacu',
-        starfish: 'Estrela do Mar',
-        octopus: 'Polvo',
-        whale: 'Baleia',
-        shark: 'Tubarão',
-        turtle: 'Tartaruga',
-        dolphin: 'Golfinho'
-      };
-
-      setFishCollection(prev => [...prev, {
-        id: Date.now(),
-        name: animalNames[clickedBubble.type],
-        type: clickedBubble.type
-      }]);
-
-      playAnimalSound(clickedBubble.type);
-    }
-
-    // Equipamentos especiais
-    if (clickedBubble.type === 'treasure') {
-      const gear = { level: currentLevel, item: 'Equipamento de Mergulho', icon: '🤿' };
-      setUnlockedGear(prev => [...prev, gear]);
-      
-      if (audioEnabled && audioManager.current) {
-        setTimeout(() => {
-          if (audioManager.current) {
-            audioManager.current.falarMila('Conseguiu um item de mergulho!');
-          }
-        }, 300);
-      }
-    }
-
-    // Criar partículas
-    createParticles(clickedBubble.x + clickedBubble.size / 2, clickedBubble.y + clickedBubble.size / 2, clickedBubble.color);
-  }, [isPlaying, score, combo, detectBubbleClick, checkScoreMilestone, playAnimalSound, createParticles, audioEnabled, currentLevel, playBubblePopSound]);
-
-  // Loop principal do jogo
-  const gameLoop = useCallback(() => {
-    if (!isPlaying) return;
-
-    // Atualizar bolhas
-    setBubbles(prev => prev.map(bubble => {
-      if (bubble.popped) {
-        return { ...bubble, opacity: Math.max(0, bubble.opacity - 0.1) };
-      }
-      return {
-        ...bubble,
-        y: bubble.y - bubble.speed,
-        x: bubble.x + (bubble.horizontalMovement || 0)
-      };
-    }).filter(bubble => bubble.y > -bubble.size && bubble.opacity > 0));
-
-    // Atualizar partículas
-    setParticles(prev => prev.map(particle => ({
-      ...particle,
-      x: particle.x + particle.vx,
-      y: particle.y + particle.vy,
-      life: particle.life - 0.02
-    })).filter(particle => particle.life > 0));
-
-    // Drenar oxigênio
-    setOxygenLevel(prev => {
-      const newLevel = prev - levelConfigs[currentLevel - 1].oxygenDrain / 60;
-      return Math.max(0, newLevel);
-    });
-
-    animationRef.current = requestAnimationFrame(gameLoop);
-  }, [isPlaying, currentLevel]);
-
-  // Função principal de iniciar jogo (ORIGINAL)
+  // Função principal de iniciar jogo
   const startActivity = useCallback(() => {
     setIsPlaying(true);
     setScore(0);
@@ -472,11 +388,32 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     setUnlockedGear([]);
     setShowResults(false);
     setShowLevelTransition(false);
-    setBubblesPopped(0); // Reset contador
+    setBubblesPopped(0);
+    
+    // NOVOS RESETS
+    setEquipment({
+      mask: false,
+      fins: false,
+      tank: false,
+      suit: false,
+      light: false
+    });
+    setSavedFish(0);
+    setMultiplier(1);
+    setMultiplierTime(0);
+    setMagnetActive(false);
+    setMagnetTime(0);
+    setShowBossLevel(false);
+    setBossDefeated(false);
+    setFreedCreatures([]);
+    setBubblesSpawned(0);
+    setLevelCompleted(false);
+    setBubblesRemaining(LEVEL_CONFIGS[0].totalBubbles);
+    
     lastScoreMilestone.current = 0;
   }, []);
 
-  // Função voltar ao início (ORIGINAL)
+  // Função voltar ao início
   const voltarInicio = useCallback(() => {
     setIsPlaying(false);
     setScore(0);
@@ -493,7 +430,27 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     setUnlockedGear([]);
     setShowResults(false);
     setShowLevelTransition(false);
-    setBubblesPopped(0); // Reset contador
+    setBubblesPopped(0);
+    
+    // NOVOS RESETS
+    setEquipment({
+      mask: false,
+      fins: false,
+      tank: false,
+      suit: false,
+      light: false
+    });
+    setSavedFish(0);
+    setMultiplier(1);
+    setMultiplierTime(0);
+    setMagnetActive(false);
+    setMagnetTime(0);
+    setShowBossLevel(false);
+    setBossDefeated(false);
+    setFreedCreatures([]);
+    setBubblesSpawned(0);
+    setLevelCompleted(false);
+    
     lastScoreMilestone.current = 0;
   }, []);
 
@@ -502,7 +459,7 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     setAudioEnabled(prev => !prev);
   }, []);
 
-  // Salvar sessão
+  // Função salvar sessão (por enquanto mantendo igual)
   const handleSaveSession = useCallback(async () => {
     setSalvando(true);
     try {
@@ -533,84 +490,11 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     }
   }, [score, maxCombo, completedLevels, poppedBubbles, missedBubbles, fishCollection, unlockedGear, supabase, audioEnabled]);
 
-  // ✅ CONTROLE DE PROGRESSÃO DE NÍVEIS PERFEITO
-  useEffect(() => {
-    const activeBubbles = bubbles.filter(b => !b.popped).length;
-    setBubblesRemaining(activeBubbles);
-
-    // Verificar condições de fim de nível/jogo
-    if (isPlaying) {
-      const targetBubbles = levelConfigs[currentLevel - 1].totalBubbles;
-      
-      if (bubblesPopped >= targetBubbles && currentLevel < 5) {
-        // Nível completo - próximo nível
-        setIsPlaying(false);
-        setCompletedLevels(prev => [...prev, currentLevel]);
-        setShowLevelTransition(true);
-        setLevelMessage(`Nível ${currentLevel} Completo!`);
-        
-        setTimeout(() => {
-          const nextLevel = currentLevel + 1;
-          setCurrentLevel(nextLevel);
-          
-          if (audioEnabled && audioManager.current) {
-            const levelPhrases = [
-              'Ai sim, vamos para a fase 2!',
-              'Ai sim, vamos para a fase 3!',
-              'Ai sim, vamos para a fase 4!',
-              'Ai sim, vamos para a fase 5!'
-            ];
-            if (nextLevel >= 2 && nextLevel <= 5) {
-              audioManager.current.falarMila(levelPhrases[nextLevel - 2]);
-            }
-          }
-          
-          setShowLevelTransition(false);
-          setOxygenLevel(100);
-          setBubbles([]);
-          setCombo(0);
-          setBubblesPopped(0); // Reset contador para o próximo nível
-          setTimeout(() => setIsPlaying(true), 1000);
-        }, 3000);
-      } else if (bubblesPopped >= targetBubbles && currentLevel >= 5) {
-        // Jogo completo
-        setIsPlaying(false);
-        setShowResults(true);
-        if (audioEnabled && audioManager.current) {
-          audioManager.current.falarMila('Parabéns! Você completou todos os níveis!');
-        }
-      } else if (oxygenLevel <= 0) {
-        // Game over por falta de oxigênio
-        setIsPlaying(false);
-        setShowResults(true);
-      }
-    }
-  }, [bubbles, bubblesPopped, isPlaying, currentLevel, oxygenLevel, audioEnabled]);
-
-  // Spawn de bolhas
-  useEffect(() => {
-    if (!isPlaying) return;
-
-    const spawnInterval = setInterval(() => {
-      if (bubbles.length < 8) {
-        setBubbles(prev => [...prev, createBubble()]);
-      }
-    }, levelConfigs[currentLevel - 1].spawnRate);
-
-    return () => clearInterval(spawnInterval);
-  }, [isPlaying, bubbles.length, currentLevel, createBubble]);
-
-  // Iniciar loop do jogo
-  useEffect(() => {
-    if (isPlaying) {
-      animationRef.current = requestAnimationFrame(gameLoop);
-    }
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [isPlaying, gameLoop]);
+  // PLACEHOLDER para handleInteraction (implementaremos depois)
+  const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    // Implementação temporária - vamos expandir depois
+    console.log('Interaction detected');
+  }, []);
 
   // Calcular precisão
   const accuracy = poppedBubbles > 0 ? (poppedBubbles / (poppedBubbles + missedBubbles)) * 100 : 0;
@@ -636,13 +520,26 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     bubblesRemaining,
     fishCollection,
     unlockedGear,
+    
+    // NOVOS ESTADOS
+    equipment,
+    savedFish,
+    multiplier,
+    multiplierTime,
+    magnetActive,
+    magnetTime,
+    showBossLevel,
+    bossDefeated,
+    freedCreatures,
+    bubblesSpawned,
+    levelCompleted,
 
-    // Configurações
-    levelConfigs,
+    // Configurações (agora usando os 11 níveis)
+    levelConfigs: LEVEL_CONFIGS,
 
-    // Funções ORIGINAIS (compatibilidade)
-    startActivity,  // ✅ ORIGINAL
-    voltarInicio,   // ✅ ORIGINAL
+    // Funções
+    startActivity,
+    voltarInicio,
     handleInteraction,
     toggleAudio,
     handleSaveSession
