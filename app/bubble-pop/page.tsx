@@ -1,5 +1,3 @@
-// app/bubble-pop/page.tsx
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -79,8 +77,6 @@ export default function BubblePopPage() {
         showLevelTransition={game.showLevelTransition}
         levelMessage={game.levelMessage}
         fishCollection={game.fishCollection}
-        
-        {/* NOVOS PROPS QUE ESTAVAM FALTANDO */}
         equipment={game.equipment}
         savedFish={game.savedFish}
         multiplier={game.multiplier}
