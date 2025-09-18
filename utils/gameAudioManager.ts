@@ -25,11 +25,11 @@ export class GameAudioManager {
   private queue: SpeechItem[] = [];
   private isSpeaking: boolean = false;
 
-  // Timestamps para debounce por etiqueta (ex.: 'levelComplete')
+  // Debounce por etiqueta
   private lastSpokenAt: Record<string, number> = {};
 
-  // Configurações
-  private outputFormat: string = 'audio-16khz-128kbitrate-mono-mp3';
+  // Configurações (ajustadas para timbre natural)
+  private outputFormat: string = 'audio-24khz-160kbitrate-mono-mp3';
   private userAgent: string = 'LudiTEA-App/1.0';
 
   private constructor() {
@@ -93,7 +93,7 @@ export class GameAudioManager {
     }
   }
 
-  // Debounce por etiqueta de evento (ajuda a evitar spam)
+  // Debounce por etiqueta de evento
   shouldSpeak(tag: string, windowMs: number = 2000): boolean {
     const now = Date.now();
     const last = this.lastSpokenAt[tag] || 0;
@@ -102,10 +102,10 @@ export class GameAudioManager {
     return true;
   }
 
-  // Enfileirar fala (prioridade mais alta entra na frente)
+  // Enfileirar fala (com prioridade)
   private enqueue(item: SpeechItem) {
     if (!item.text || !item.text.trim()) return;
-    // Inserção por prioridade (2 > 1 > 0)
+
     let inserted = false;
     for (let i = 0; i < this.queue.length; i++) {
       if (item.priority > this.queue[i].priority) {
@@ -115,6 +115,7 @@ export class GameAudioManager {
       }
     }
     if (!inserted) this.queue.push(item);
+
     this.processQueue();
   }
 
@@ -135,8 +136,7 @@ export class GameAudioManager {
     this.isSpeaking = true;
 
     try {
-      const voiceName =
-        next.voice === 'mila' ? 'pt-BR-FranciscaNeural' : 'pt-BR-AntonioNeural';
+      const voiceName = next.voice === 'mila' ? 'pt-BR-FranciscaNeural' : 'pt-BR-AntonioNeural';
       const buffer = await this.synthesizeAzureSpeech(next.text, voiceName);
       await this.playAudioBuffer(buffer, () => {
         next.onEnd?.();
@@ -146,15 +146,13 @@ export class GameAudioManager {
       next.onEnd?.();
     } finally {
       this.isSpeaking = false;
-      // Processa o próximo
       if (this.queue.length > 0) {
-        // Pequena pausa entre falas para não parecer colado
         setTimeout(() => this.processQueue(), 120);
       }
     }
   }
 
-  // Fala pública (prioridade normal)
+  // Fala pública
   async falarMila(texto: string, onEnd?: () => void, priority: number = 1): Promise<void> {
     if (!this.isEnabled) {
       onEnd?.();
@@ -171,13 +169,12 @@ export class GameAudioManager {
     this.enqueue({ text: texto, voice: 'leo', priority, onEnd });
   }
 
-  // Efeitos sonoros: separados do TTS
+  // Efeitos sonoros (fora do TTS)
   playSoundEffect(soundName: string, volume: number = 0.5): void {
     if (!this.isEnabled) return;
     try {
       const sound = new Audio(`/audio/effects/${soundName}.mp3`);
       sound.volume = volume;
-      // Evita bloquear por autoplay (depende de interação prévia)
       sound.play().catch((e) => console.error('Erro ao tocar efeito:', e));
     } catch (error) {
       console.error(`❌ Erro ao carregar o som: ${soundName}`, error);
@@ -199,16 +196,13 @@ export class GameAudioManager {
 
   // ====== Azure TTS ======
   private buildSSML(texto: string, voiceName: string): string {
-    // Prosódia levemente lenta e pausas suaves para compreensão
-    // Inserimos pequenas pausas após pontos e vírgulas
-    const sanitized = texto
-      .replace(/\s+/g, ' ')
-      .replace(/([,.!?;:])\s*/g, '$1 <break time="300ms"/> ');
+    // Texto limpo e prosódia suave: mais lento e um pouco mais grave
+    const sanitized = texto.replace(/\s+/g, ' ').trim();
 
     return `
 <speak version="1.0" xml:lang="pt-BR">
   <voice name="${voiceName}">
-    <prosody rate="85%" pitch="+2st">
+    <prosody rate="75%" pitch="-1st">
       ${sanitized}
     </prosody>
   </voice>
@@ -277,11 +271,10 @@ export class GameAudioManager {
 
   private async decodeArrayBuffer(buffer: ArrayBuffer): Promise<AudioBuffer> {
     if (!this.audioContext) throw new Error('AudioContext não disponível');
-    // Em alguns navegadores, decodeAudioData com Promise exige cópia
     return await new Promise((resolve, reject) => {
       try {
         const cloned = buffer.slice(0);
-        // @ts-ignore - assinaturas diferentes em browsers
+        // @ts-ignore
         this.audioContext!.decodeAudioData(
           cloned,
           (decoded: AudioBuffer) => resolve(decoded),
