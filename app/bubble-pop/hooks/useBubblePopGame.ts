@@ -367,9 +367,130 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
         }
       }, 200);
     }
-  }, [audioEnabled]);
+ // Função para estourar bolhas próximas (onda de choque)
+  const popAllNearbyBubbles = useCallback((x: number, y: number, radius: number) => {
+    setBubbles(prev => prev.map(bubble => {
+      if (bubble.type !== 'mine' && !bubble.popped) {
+        const distance = Math.sqrt(
+          Math.pow(bubble.x + bubble.size/2 - x, 2) +
+          Math.pow(bubble.y + bubble.size/2 - y, 2)
+        );
+        if (distance < radius) {
+          createParticles(bubble.x + bubble.size/2, bubble.y + bubble.size/2, bubble.color);
+          setPoppedBubbles(p => p + 1);
+          setScore(s => s + (bubble.points * multiplier));
+          return { ...bubble, popped: true };
+        }
+      }
+      return bubble;
+    }));
+  }, [multiplier, createParticles]);
 
-  // CONTINUAÇÃO NO PRÓXIMO TRECHO... (arquivo muito grande)
+  // Função para verificar desbloqueio do boss
+  const checkForBossUnlock = useCallback(() => {
+    const hasAllEquipment = equipment.mask && equipment.fins && 
+                           equipment.tank && equipment.suit && equipment.light;
+    if (hasAllEquipment && currentLevel === 10 && !showBossLevel) {
+      setLevelMessage('🔓 FASE SECRETA DESBLOQUEADA!');
+      if (audioEnabled && audioManager.current) {
+        audioManager.current.falarMila("Fase secreta desbloqueada! Você coletou todos os equipamentos!");
+      }
+      setShowBossLevel(true);
+      setTimeout(() => setLevelMessage(''), 3000);
+    }
+  }, [equipment, currentLevel, showBossLevel, audioEnabled]);
+
+  // Função para resetar nível (quando acerta mina)
+  const resetLevel = useCallback(() => {
+    setIsPlaying(false);
+    setLevelMessage('💣 BOMBA! Reiniciando nível...');
+    setShowLevelTransition(true);
+    
+    if (audioEnabled && audioManager.current) {
+      audioManager.current.falarMila("Ops! Você tocou numa bomba. Vamos tentar de novo!");
+    }
+
+    setTimeout(() => {
+      const config = LEVEL_CONFIGS[currentLevel - 1];
+      setBubbles([]);
+      setParticles([]);
+      setCombo(0);
+      setBubblesSpawned(0);
+      setBubblesRemaining(config.totalBubbles);
+      setOxygenLevel(100);
+      setMultiplier(1);
+      setMagnetActive(false);
+      setShowLevelTransition(false);
+      setIsPlaying(true);
+      setLevelCompleted(false);
+    }, 2000);
+  }, [currentLevel, audioEnabled]);
+
+  // Loop principal do jogo
+  const gameLoop = useCallback(() => {
+    if (!isPlaying) return;
+
+    // Atualizar bolhas
+    setBubbles(prev => prev.map(bubble => {
+      if (bubble.popped) {
+        return { ...bubble, opacity: Math.max(0, bubble.opacity - 0.1) };
+      }
+      
+      let newY = bubble.y - bubble.speed;
+      let newX = bubble.x;
+
+      // Movimento horizontal (correntes)
+      if (bubble.horizontalMovement) {
+        newX += bubble.horizontalMovement;
+        const gameArea = gameAreaRef.current;
+        if (gameArea) {
+          const rect = gameArea.getBoundingClientRect();
+          if (newX <= 0 || newX >= rect.width - bubble.size) {
+            bubble.horizontalMovement = -bubble.horizontalMovement;
+            newX = Math.max(0, Math.min(rect.width - bubble.size, newX));
+          }
+        }
+      }
+
+      // Efeito magnético
+      if (magnetActive && bubble.type !== 'mine' && gameAreaRef.current) {
+        const rect = gameAreaRef.current.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const dx = centerX - (newX + bubble.size / 2);
+        const dy = centerY - (bubble.y + bubble.size / 2);
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 200) {
+          newX += dx * 0.02;
+          newY -= dy * 0.02;
+        }
+      }
+
+      // Bolha saiu da tela
+      if (newY < -bubble.size) {
+        if (!bubble.popped && bubble.type !== 'mine') {
+          setMissedBubbles(prev => prev + 1);
+          setCombo(0);
+          setOxygenLevel(prev => Math.max(0, prev - 1));
+        }
+        return { ...bubble, y: newY, opacity: 0 };
+      }
+
+      return { ...bubble, y: newY, x: newX };
+    }).filter(bubble => bubble.opacity > 0));
+
+    // Atualizar partículas
+    setParticles(prev => prev.map(particle => ({
+      ...particle,
+      x: particle.x + particle.vx,
+      y: particle.y + particle.vy,
+      vy: particle.type === 'fish' ? particle.vy : particle.vy + 0.2,
+      life: particle.life - 0.03
+    })).filter(particle => particle.life > 0));
+
+    animationRef.current = requestAnimationFrame(gameLoop);
+  }, [isPlaying, magnetActive]);
 
   // Função principal de iniciar jogo
   const startActivity = useCallback(() => {
@@ -490,11 +611,213 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     }
   }, [score, maxCombo, completedLevels, poppedBubbles, missedBubbles, fishCollection, unlockedGear, supabase, audioEnabled]);
 
-  // PLACEHOLDER para handleInteraction (implementaremos depois)
-  const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    // Implementação temporária - vamos expandir depois
-    console.log('Interaction detected');
-  }, []);
+  // FUNÇÃO PRINCIPAL DE INTERAÇÃO
+const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+  if (!isPlaying || !gameAreaRef.current) return;
+
+  try {
+    e.preventDefault();
+    e.stopPropagation();
+  } catch (error) {
+    // Ignorar erros de preventDefault
+  }
+
+  const rect = gameAreaRef.current.getBoundingClientRect();
+  let clientX: number, clientY: number;
+
+  if ('touches' in e) {
+    if (e.touches.length === 0) return;
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
+
+  const x = clientX - rect.left;
+  const y = clientY - rect.top;
+
+  const clickedBubble = detectBubbleClick(x, y);
+  if (!clickedBubble) return;
+
+  // Marcar bolha como estourada
+  setBubbles(prev => prev.map(b =>
+    b.id === clickedBubble.id ? { ...b, popped: true, opacity: 0 } : b
+  ));
+
+  // Som de bolha
+  playBubblePopSound();
+
+  // Processar diferentes tipos de bolha
+  if (clickedBubble.type === 'mine') {
+    createParticles(x, y, clickedBubble.color, 'explosion');
+    
+    if (equipment.suit) {
+      // Roupa protege contra mina
+      setEquipment(prev => ({ ...prev, suit: false }));
+      setLevelMessage('⚠️ Proteção do Traje Perdida!');
+      if (audioEnabled && audioManager.current) {
+        audioManager.current.falarMila("Sua roupa de mergulho te protegeu!");
+      }
+      setTimeout(() => setLevelMessage(''), 2000);
+    } else {
+      // Resetar nível
+      resetLevel();
+      return;
+    }
+  } else if (clickedBubble.type === 'equipment') {
+    createParticles(x, y, '#FFD700', 'shockwave');
+    setEquipment(prev => ({
+      ...prev,
+      [clickedBubble.equipmentType || '']: true
+    }));
+    
+    const equipmentNames: {[key: string]: string} = {
+      'mask': 'máscara de mergulho',
+      'fins': 'nadadeiras',
+      'tank': 'tanque de oxigênio',
+      'suit': 'roupa de proteção',
+      'light': 'lanterna submarina'
+    };
+    
+    const equipmentName = equipmentNames[clickedBubble.equipmentType || ''] || 'equipamento';
+    setLevelMessage(`🎯 ${equipmentName.toUpperCase()} Coletado!`);
+    
+    if (audioEnabled && audioManager.current) {
+      audioManager.current.falarMila(`Coletou ${equipmentName}!`);
+    }
+    
+    setTimeout(() => setLevelMessage(''), 2000);
+    checkForBossUnlock();
+    
+  } else if (clickedBubble.type === 'fish') {
+    createParticles(x, y, '#00CED1', 'fish');
+    setSavedFish(prev => prev + 1);
+    setScore(prev => prev + (clickedBubble.points * multiplier));
+    setPoppedBubbles(prev => prev + 1);
+    setCombo(prev => prev + 1);
+    setLevelMessage(`🐠 Peixe Salvo! +${clickedBubble.points * multiplier}`);
+    
+    if (audioEnabled && audioManager.current) {
+      audioManager.current.falarMila("Peixe salvo!");
+    }
+    
+    setFishCollection(prev => [...prev, {
+      id: Date.now(),
+      name: clickedBubble.fishType || 'Peixe',
+      type: 'fish'
+    }]);
+    
+    setTimeout(() => setLevelMessage(''), 1500);
+    
+  } else if (clickedBubble.type === 'double') {
+    createParticles(x, y, clickedBubble.color, 'shockwave');
+    setMultiplier(2);
+    setMultiplierTime(10);
+    setLevelMessage('✨ PONTOS x2 ATIVADO!');
+    
+    if (audioEnabled && audioManager.current) {
+      audioManager.current.falarMila("Multiplicador duplo ativado!");
+    }
+    
+    setTimeout(() => setLevelMessage(''), 2000);
+    
+  } else if (clickedBubble.type === 'triple') {
+    createParticles(x, y, clickedBubble.color, 'shockwave');
+    setMultiplier(3);
+    setMultiplierTime(7);
+    setLevelMessage('🌟 PONTOS x3 ATIVADO!');
+    
+    if (audioEnabled && audioManager.current) {
+      audioManager.current.falarMila("Multiplicador triplo ativado!");
+    }
+    
+    setTimeout(() => setLevelMessage(''), 2000);
+    
+  } else if (clickedBubble.type === 'shockwave') {
+    createParticles(x, y, clickedBubble.color, 'shockwave');
+    popAllNearbyBubbles(x, y, 150);
+    setLevelMessage('💥 ONDA DE CHOQUE!');
+    
+    if (audioEnabled && audioManager.current) {
+      audioManager.current.falarMila("Onda de choque ativada!");
+    }
+    
+    setTimeout(() => setLevelMessage(''), 1500);
+    
+  } else if (clickedBubble.type === 'magnet') {
+    createParticles(x, y, clickedBubble.color, 'shockwave');
+    setMagnetActive(true);
+    setMagnetTime(8);
+    setLevelMessage('🧲 ÍMÃ ATIVADO!');
+    
+    if (audioEnabled && audioManager.current) {
+      audioManager.current.falarMila("Ímã magnético ativado!");
+    }
+    
+    setTimeout(() => setLevelMessage(''), 2000);
+    
+  } else {
+    // Bolhas normais e animais marinhos
+    createParticles(x, y, clickedBubble.color);
+    setBubblesPopped(prev => prev + 1);
+    setPoppedBubbles(prev => prev + 1);
+    
+    setCombo(prev => {
+      const newCombo = prev + 1;
+      setMaxCombo(current => Math.max(current, newCombo));
+      
+      // Feedback de combo apenas para combos altos
+      if (newCombo >= 15 && newCombo % 5 === 0 && audioEnabled && audioManager.current) {
+        audioManager.current.falarMila(`Combo incrível de ${newCombo}!`);
+      }
+      
+      return newCombo;
+    });
+
+    const finalPoints = Math.round(clickedBubble.points * multiplier);
+    setScore(prev => prev + finalPoints);
+    
+    // Processar oxigênio
+    if (clickedBubble.type === 'oxygen') {
+      setOxygenLevel(prev => Math.min(100, prev + 10));
+    } else if (clickedBubble.type === 'pearl') {
+      setOxygenLevel(prev => Math.min(100, prev + 20));
+      if (audioEnabled && audioManager.current) {
+        audioManager.current.falarMila("Pérola rara encontrada!");
+      }
+    } else {
+      setOxygenLevel(prev => Math.min(100, prev + 3));
+    }
+
+    // Captura de animais marinhos
+    const animalTypes = ['pufferfish', 'starfish', 'octopus', 'whale', 'shark', 'turtle', 'dolphin'];
+    if (animalTypes.includes(clickedBubble.type)) {
+      const animalNames: { [key: string]: string } = {
+        pufferfish: 'Baiacu',
+        starfish: 'Estrela do Mar',
+        octopus: 'Polvo',
+        whale: 'Baleia',
+        shark: 'Tubarão',
+        turtle: 'Tartaruga',
+        dolphin: 'Golfinho'
+      };
+
+      setFishCollection(prev => [...prev, {
+        id: Date.now(),
+        name: animalNames[clickedBubble.type],
+        type: clickedBubble.type
+      }]);
+
+      playAnimalSound(clickedBubble.type);
+    }
+
+    // Verificar marcos de pontuação
+    checkScoreMilestone(score + finalPoints);
+  }
+}, [isPlaying, detectBubbleClick, playBubblePopSound, equipment, audioEnabled, multiplier, 
+    createParticles, resetLevel, checkForBossUnlock, popAllNearbyBubbles, playAnimalSound, 
+    checkScoreMilestone, score]);
 
   // Calcular precisão
   const accuracy = poppedBubbles > 0 ? (poppedBubbles / (poppedBubbles + missedBubbles)) * 100 : 0;
