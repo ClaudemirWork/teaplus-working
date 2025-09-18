@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Volume2, VolumeX, Trophy, ArrowLeft } from 'lucide-react';
 import { GameAudioManager } from '@/utils/gameAudioManager';
-import styles from './emotionrecognition.module.css'; // CAMINHO CORRIGIDO
+import './emotionrecognition.css'; // CSS GLOBAL - não module
 
 // --- EFEITO DE CONFETE SIMPLIFICADO ---
 const confetti = (opts = {}) => {
@@ -91,16 +91,16 @@ const Card = React.memo(({ emotion, onClick, isCorrect, isWrong, isDisabled }) =
     <button
       onClick={onClick}
       disabled={isDisabled}
-      className={`${styles.emotionCard} ${isCorrect ? styles.cardCorrect : ''} ${isWrong ? styles.cardWrong : ''}`}
+      className={`emotionCard ${isCorrect ? 'cardCorrect' : ''} ${isWrong ? 'cardWrong' : ''}`}
     >
-      <div className={styles.cardImageWrapper}>
+      <div className="cardImageWrapper">
         <img 
           src={emotion.path} 
           alt={emotion.label} 
           onError={(e) => { e.currentTarget.src = 'https://placehold.co/150x150/EBF4FA/333?text=?'; }} 
         />
       </div>
-      <span className={styles.cardLabel}>{emotion.label}</span>
+      <span className="cardLabel">{emotion.label}</span>
     </button>
   );
 });
@@ -108,8 +108,8 @@ const Card = React.memo(({ emotion, onClick, isCorrect, isWrong, isDisabled }) =
 const ProgressBar = React.memo(({ current, total }) => {
   const progress = total > 0 ? (current / total) * 100 : 0;
   return (
-    <div className={styles.progressBar}>
-      <div className={styles.progressFill} style={{ width: `${progress}%` }}>
+    <div className="progressBar">
+      <div className="progressFill" style={{ width: `${progress}%` }}>
         {Math.round(progress)}%
       </div>
     </div>
@@ -336,13 +336,13 @@ export default function FacialExpressionsGame() {
 
   // --- RENDERIZAÇÃO ---
   const renderTitleScreen = () => (
-    <div className={styles.screenCenter}>
-      <div className={styles.starsBg}></div>
-      <div className={`${styles.titleLeoContainer} ${styles.animateFloat}`}>
+    <div className="screenCenter">
+      <div className="starsBg"></div>
+      <div className="titleLeoContainer animateFloat">
         <img 
           src="/images/mascotes/leo/Leo_emocoes_espelho.webp"
           alt="Leo Mascote Emoções" 
-          className={`${styles.introMascot} ${styles.titleMascot}`}
+          className="introMascot titleMascot"
           style={{
             transform: leoSpeaking ? 'scale(1.05)' : 'scale(1)',
             filter: leoSpeaking ? 'drop-shadow(0 0 20px #4CAF50)' : 'drop-shadow(0 15px 30px rgba(0,0,0,0.4))',
@@ -350,16 +350,16 @@ export default function FacialExpressionsGame() {
           }}
         />
         {leoMessage && (
-          <div className={styles.titleSpeechBubble}>
+          <div className="titleSpeechBubble">
             <p>{leoMessage}</p>
           </div>
         )}
       </div>
-      <h1 className={styles.introMainTitle}>Expressões Faciais</h1>
-      <p className={styles.introMainSubtitle}>Aprenda e divirta-se com as emoções!</p>
+      <h1 className="introMainTitle">Expressões Faciais</h1>
+      <p className="introMainSubtitle">Aprenda e divirta-se com as emoções!</p>
       <button 
         onClick={handleStartIntro}
-        className={styles.introStartButton}
+        className="introStartButton"
         disabled={gameState !== 'titleScreen'}
       >
         Começar Aventura
@@ -368,13 +368,13 @@ export default function FacialExpressionsGame() {
   );
 
   const renderAutoIntroScreen = () => (
-    <div className={`${styles.screenCenter} ${styles.introExplanation}`}>
-      <div className={styles.introContentWrapper}>
-        <div className={styles.introMascotContainer}>
+    <div className="screenCenter introExplanation">
+      <div className="introContentWrapper">
+        <div className="introMascotContainer">
           <img 
             src="/images/mascotes/leo/Leo_apoio.webp" 
             alt="Leo" 
-            className={styles.introMascot}
+            className="introMascot"
             style={{
               transform: leoSpeaking ? 'scale(1.1)' : 'scale(1)',
               filter: leoSpeaking ? 'drop-shadow(0 0 15px #4CAF50)' : 'none',
@@ -382,16 +382,16 @@ export default function FacialExpressionsGame() {
             }}
           />
         </div>
-        <div className={styles.speechBubble}>
+        <div className="speechBubble">
           <p>{leoMessage}</p>
         </div>
       </div>
-      <div className={styles.introProgress}>
-        <div className={styles.introDots}>
+      <div className="introProgress">
+        <div className="introDots">
           {[1,2,3,4].map(dot => (
             <div 
               key={dot}
-              className={`${styles.introDot} ${autoIntroStep >= dot ? styles.active : ''}`}
+              className={`introDot ${autoIntroStep >= dot ? 'active' : ''}`}
             />
           ))}
         </div>
@@ -402,23 +402,23 @@ export default function FacialExpressionsGame() {
   const renderGameScreen = () => (
     <>
       <ProgressBar current={currentTargetIndex + 1} total={targetSequence.length} />
-      <div className={styles.gameArea}>
-        <div className={styles.instructionContainer}>
+      <div className="gameArea">
+        <div className="instructionContainer">
           <img 
             src="/images/mascotes/leo/leo_rosto_resultado.webp" 
             alt="Leo" 
-            className={styles.instructionMascot}
+            className="instructionMascot"
             style={{
               transform: leoSpeaking ? 'scale(1.1)' : 'scale(1)',
               filter: leoSpeaking ? 'drop-shadow(0 0 10px #4CAF50)' : 'drop-shadow(0 4px 10px rgba(0,0,0,0.1))',
               transition: 'all 0.5s ease'
             }}
           />
-          <div className={`${styles.instructionBox} ${leoSpeaking ? styles.speaking : ''}`}>
+          <div className={`instructionBox ${leoSpeaking ? 'speaking' : ''}`}>
             <h2>{leoMessage}</h2>
           </div>
         </div>
-        <div className={`${styles.cardsGrid} ${styles[`cols${Math.min(Math.ceil(cardsForPhase.length / 2), 5)}`]}`}>
+        <div className={`cardsGrid cols${Math.min(Math.ceil(cardsForPhase.length / 2), 5)}`}>
           {cardsForPhase.map((card) => (
             <Card 
               key={card.id} 
@@ -435,20 +435,20 @@ export default function FacialExpressionsGame() {
   );
 
   const renderPhaseCompleteScreen = () => (
-    <div className={styles.screenCenter}>
+    <div className="screenCenter">
       <ConfettiEffect />
-      <div className={styles.modalContainer}>
+      <div className="modalContainer">
         <img 
           src="/images/mascotes/leo/Leo_apoio.webp" 
           alt="Leo Comemorando"
-          className={styles.modalMascot}
+          className="modalMascot"
         />
-        <h2 className={styles.modalTitle}>Fase {GAME_PHASES[currentPhaseIndex].phase} Completa!</h2>
-        <div className={styles.modalIcon}>🎉</div>
-        <p>Pontuação Total: <span className={styles.totalScoreHighlight}>{totalScore}</span></p>
+        <h2 className="modalTitle">Fase {GAME_PHASES[currentPhaseIndex].phase} Completa!</h2>
+        <div className="modalIcon">🎉</div>
+        <p>Pontuação Total: <span className="totalScoreHighlight">{totalScore}</span></p>
         <button 
           onClick={nextPhase} 
-          className={`${styles.modalButton} ${styles.nextLevel}`}
+          className="modalButton nextLevel"
         >
           {currentPhaseIndex < GAME_PHASES.length - 1 ? 'Próxima Fase' : 'Fase Final'}
         </button>
@@ -457,21 +457,21 @@ export default function FacialExpressionsGame() {
   );
 
   const renderGameCompleteScreen = () => (
-    <div className={styles.screenCenter}>
+    <div className="screenCenter">
       <ConfettiEffect />
-      <div className={styles.modalContainer}>
+      <div className="modalContainer">
         <img 
           src="/images/mascotes/leo/Leo_emocoes_espelho.webp" 
           alt="Leo Campeão"
-          className={`${styles.modalMascot} ${styles.champion}`}
+          className="modalMascot champion"
         />
-        <Trophy className={styles.modalTrophy} />
-        <h2 className={`${styles.modalTitle} ${styles.congrats}`}>CAMPEÃO DAS EMOÇÕES!</h2>
-        <p className={styles.finalScore}>Pontuação Final: {totalScore}</p>
-        <p className={styles.completionMessage}>Você dominou todas as 10 fases!</p>
+        <Trophy className="modalTrophy" />
+        <h2 className="modalTitle congrats">CAMPEÃO DAS EMOÇÕES!</h2>
+        <p className="finalScore">Pontuação Final: {totalScore}</p>
+        <p className="completionMessage">Você dominou todas as 10 fases!</p>
         <button 
           onClick={startGame} 
-          className={`${styles.modalButton} ${styles.playAgain}`}
+          className="modalButton playAgain"
         >
           Jogar Novamente
         </button>
@@ -491,12 +491,12 @@ export default function FacialExpressionsGame() {
   };
 
   return (
-    <div className={`${styles.gameContainer} ${gameState === 'titleScreen' || gameState === 'autoIntro' ? styles.introMode : ''}`}>
-      <header className={styles.gameHeader}>
-        <a href="/dashboard" className={styles.headerButton}><ArrowLeft size={24} /></a>
-        <h1 className={styles.gameTitle}>😊 Expressões</h1>
-        <div className={styles.headerScore}>🏆 {totalScore}</div>
-        <button onClick={toggleSound} className={styles.headerButton}>
+    <div className={`gameContainer ${gameState === 'titleScreen' || gameState === 'autoIntro' ? 'introMode' : ''}`}>
+      <header className="gameHeader">
+        <a href="/dashboard" className="headerButton"><ArrowLeft size={24} /></a>
+        <h1 className="gameTitle">😊 Expressões</h1>
+        <div className="headerScore">🏆 {totalScore}</div>
+        <button onClick={toggleSound} className="headerButton">
           {soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
         </button>
       </header>
