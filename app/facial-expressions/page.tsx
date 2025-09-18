@@ -114,8 +114,8 @@ const ConfettiEffect = () => {
   
   useEffect(() => {
     try {
-      // Som de explosão/confete usando o GameAudioManager real
-      audioManager.playSound('explosion');
+      // Som de explosão/confete usando o método correto
+      audioManager.playSoundEffect('celebration', 0.6);
       
       const fire = (p, o) => confetti({ particleCount: Math.floor(200*p), ...o });
       fire(0.25, { spread: 30, startVelocity: 60, origin: { x: 0, y: 0.7 } });
@@ -131,19 +131,9 @@ const ConfettiEffect = () => {
 
 // --- COMPONENTES DE UI ---
 const Card = React.memo(({ emotion, onClick, isCorrect, isWrong, isDisabled }) => {
-  const audioManager = useMemo(() => GameAudioManager.getInstance(), []);
-  
-  const handleClick = () => {
-    if (!isDisabled) {
-      // Som de clique na carta usando GameAudioManager real
-      audioManager.playSound(isCorrect ? 'correct' : 'wrong');
-      onClick();
-    }
-  };
-  
   return (
     <motion.button
-      onClick={handleClick}
+      onClick={onClick}
       disabled={isDisabled}
       className={`${styles.emotionCard} ${isCorrect ? styles.cardCorrect : ''} ${isWrong ? styles.cardWrong : ''}`}
       initial={{ opacity: 0, scale: 0.5 }}
@@ -345,7 +335,8 @@ export default function FacialExpressionsGame() {
       setFeedback('correct');
       setTotalScore(prev => prev + GAME_PHASES[currentPhaseIndex].points);
       
-      // Som de acerto já tocado no componente Card
+      // Som de acerto usando GameAudioManager correto
+      audioManager.playSoundEffect('correct', 0.4);
       
       setTimeout(() => {
         const nextTargetIndex = currentTargetIndex + 1;
@@ -362,7 +353,8 @@ export default function FacialExpressionsGame() {
     } else {
       setFeedback('wrong');
       
-      // Som de erro já tocado no componente Card
+      // Som de erro usando GameAudioManager correto
+      audioManager.playSoundEffect('wrong', 0.4);
       leoSpeak("Ops, tente novamente!");
 
       setTimeout(() => {
@@ -371,7 +363,7 @@ export default function FacialExpressionsGame() {
         setIsDisabled(false);
       }, 1500);
     }
-  }, [isDisabled, targetSequence, currentTargetIndex, currentPhaseIndex, leoSpeak]);
+  }, [isDisabled, targetSequence, currentTargetIndex, currentPhaseIndex, leoSpeak, audioManager]);
 
   const nextPhase = () => {
     const nextPhaseIndex = currentPhaseIndex + 1;
