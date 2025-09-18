@@ -2,40 +2,36 @@
 type SpeechItem = {
   text: string;
   voice: 'mila' | 'leo';
-  priority: number; // 0=baixo, 1=normal, 2=alto (alertas)
+  priority: number;
   onEnd?: () => void;
 };
+
+type VoiceProfile = 'neutral' | 'soft';
 
 export class GameAudioManager {
   private static instance: GameAudioManager;
 
-  // Estado global de áudio (fonte da verdade)
   private isEnabled: boolean = true;
-
-  // Credenciais Azure (ambiente)
   private azureKey: string;
   private azureRegion: string;
 
-  // Áudio
   private audioContext: AudioContext | null = null;
   private isInitialized: boolean = false;
   private currentSource: AudioBufferSourceNode | null = null;
 
-  // Fila de TTS
   private queue: SpeechItem[] = [];
   private isSpeaking: boolean = false;
-
-  // Debounce por etiqueta
   private lastSpokenAt: Record<string, number> = {};
 
-  // Configurações (ajustadas para timbre natural)
   private outputFormat: string = 'audio-24khz-160kbitrate-mono-mp3';
   private userAgent: string = 'LudiTEA-App/1.0';
+
+  // Perfil de voz (padrão neutro e seguro)
+  private milaProfile: VoiceProfile = 'neutral';
 
   private constructor() {
     this.azureKey = process.env.NEXT_PUBLIC_AZURE_SPEECH_KEY || '';
     this.azureRegion = process.env.NEXT_PUBLIC_AZURE_SPEECH_REGION || '';
-
     console.log('🔊 GameAudioManager inicializado');
     if (!this.azureKey || !this.azureRegion) {
       console.error('❌ ERRO CRÍTICO: Chaves do Azure não encontradas!');
@@ -52,7 +48,6 @@ export class GameAudioManager {
     return GameAudioManager.instance;
   }
 
-  // Expor estado atual (para UI)
   getAudioEnabled(): boolean {
     return this.isEnabled;
   }
@@ -66,16 +61,19 @@ export class GameAudioManager {
     return this.isEnabled;
   }
 
-  // Inicialização segura (chamar após primeiro clique/toque)
+  // Permite alternar perfis se quiser testar depois
+  setMilaProfile(profile: VoiceProfile) {
+    this.milaProfile = profile;
+  }
+
   async forceInitialize(): Promise<void> {
     await this.initializeAudioContext();
   }
 
   private async initializeAudioContext(): Promise<void> {
     if (this.isInitialized && this.audioContext?.state === 'running') return;
-
     try {
-      // @ts-ignore - webkitAudioContext em iOS
+      // @ts-ignore
       const Ctx = window.AudioContext || (window as any).webkitAudioContext;
       if (!this.audioContext || this.audioContext.state === 'closed') {
         this.audioContext = new Ctx();
@@ -93,7 +91,6 @@ export class GameAudioManager {
     }
   }
 
-  // Debounce por etiqueta de evento
   shouldSpeak(tag: string, windowMs: number = 2000): boolean {
     const now = Date.now();
     const last = this.lastSpokenAt[tag] || 0;
@@ -102,10 +99,8 @@ export class GameAudioManager {
     return true;
   }
 
-  // Enfileirar fala (com prioridade)
   private enqueue(item: SpeechItem) {
     if (!item.text || !item.text.trim()) return;
-
     let inserted = false;
     for (let i = 0; i < this.queue.length; i++) {
       if (item.priority > this.queue[i].priority) {
@@ -115,7 +110,6 @@ export class GameAudioManager {
       }
     }
     if (!inserted) this.queue.push(item);
-
     this.processQueue();
   }
 
@@ -132,27 +126,20 @@ export class GameAudioManager {
     }
     const next = this.queue.shift();
     if (!next) return;
-
     this.isSpeaking = true;
-
     try {
       const voiceName = next.voice === 'mila' ? 'pt-BR-FranciscaNeural' : 'pt-BR-AntonioNeural';
       const buffer = await this.synthesizeAzureSpeech(next.text, voiceName);
-      await this.playAudioBuffer(buffer, () => {
-        next.onEnd?.();
-      });
+      await this.playAudioBuffer(buffer, () => next.onEnd?.());
     } catch (e) {
       console.error('❌ Falha ao falar item da fila:', e);
       next.onEnd?.();
     } finally {
       this.isSpeaking = false;
-      if (this.queue.length > 0) {
-        setTimeout(() => this.processQueue(), 120);
-      }
+      if (this.queue.length > 0) setTimeout(() => this.processQueue(), 120);
     }
   }
 
-  // Fala pública
   async falarMila(texto: string, onEnd?: () => void, priority: number = 1): Promise<void> {
     if (!this.isEnabled) {
       onEnd?.();
@@ -169,7 +156,6 @@ export class GameAudioManager {
     this.enqueue({ text: texto, voice: 'leo', priority, onEnd });
   }
 
-  // Efeitos sonoros (fora do TTS)
   playSoundEffect(soundName: string, volume: number = 0.5): void {
     if (!this.isEnabled) return;
     try {
@@ -187,22 +173,44 @@ export class GameAudioManager {
         this.currentSource.onended = null;
         this.currentSource.stop();
         this.currentSource.disconnect();
-      } catch {
-        // no-op
-      }
+      } catch {}
       this.currentSource = null;
     }
   }
 
   // ====== Azure TTS ======
   private buildSSML(texto: string, voiceName: string): string {
-    // Texto limpo e prosódia suave: mais lento e um pouco mais grave
     const sanitized = texto.replace(/\s+/g, ' ').trim();
 
+    // Perfil neutro: leve ajuste de rate, pitch neutro
+    if (this.milaProfile === 'neutral' && voiceName === 'pt-BR-FranciscaNeural') {
+      return `
+<speak version="1.0" xml:lang="pt-BR">
+  <voice name="${voiceName}">
+    <prosody rate="85%" pitch="+0st">
+      ${sanitized}
+    </prosody>
+  </voice>
+</speak>`.trim();
+    }
+
+    // Perfil suave (opcional): um pouco mais lento, sem mexer em pitch
+    if (this.milaProfile === 'soft' && voiceName === 'pt-BR-FranciscaNeural') {
+      return `
+<speak version="1.0" xml:lang="pt-BR">
+  <voice name="${voiceName}">
+    <prosody rate="80%" pitch="+0st">
+      ${sanitized}
+    </prosody>
+  </voice>
+</speak>`.trim();
+    }
+
+    // Leo e demais vozes: neutro
     return `
 <speak version="1.0" xml:lang="pt-BR">
   <voice name="${voiceName}">
-    <prosody rate="75%" pitch="-1st">
+    <prosody rate="100%" pitch="+0st">
       ${sanitized}
     </prosody>
   </voice>
@@ -215,7 +223,6 @@ export class GameAudioManager {
     }
     const endpoint = `https://${this.azureRegion}.tts.speech.microsoft.com/cognitiveservices/v1`;
     const ssml = this.buildSSML(texto, voiceName);
-
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -227,7 +234,6 @@ export class GameAudioManager {
         },
         body: ssml,
       });
-
       if (!response.ok) {
         const errTxt = await response.text().catch(() => '');
         throw new Error(`Azure TTS Error: ${response.status} - ${errTxt}`);
@@ -243,24 +249,16 @@ export class GameAudioManager {
     try {
       await this.initializeAudioContext();
       if (!this.audioContext) throw new Error('AudioContext não disponível');
-
-      // Para a fala anterior (não afeta efeitos sonoros via <audio>)
       this.pararTodos();
-
       const audioBuffer = await this.decodeArrayBuffer(buffer);
       const source = this.audioContext.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(this.audioContext.destination);
-
       this.currentSource = source;
-
       source.onended = () => {
-        if (this.currentSource === source) {
-          this.currentSource = null;
-        }
+        if (this.currentSource === source) this.currentSource = null;
         onEnd?.();
       };
-
       source.start(0);
     } catch (error) {
       console.error('❌ Erro ao reproduzir áudio:', error);
