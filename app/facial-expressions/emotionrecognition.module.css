@@ -479,9 +479,9 @@
   }
 }
 
-/* NOVA REGRA PARA MOTION REDUZIDO */
+/* CORREÇÃO: NOVA REGRA PARA MOTION REDUZIDO */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  .emotionGameRoot * {
     animation: none !important;
     transition: none !important;
   }
