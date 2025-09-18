@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Volume2, VolumeX, Trophy, ArrowLeft } from 'lucide-react';
-// Importação corrigida do GameAudioManager
 import { GameAudioManager } from '@/utils/gameAudioManager';
 import styles from './emotionrecognition.module.css';
 
@@ -71,7 +70,8 @@ const confetti = (opts = {}) => {
   }
 };
 
-const ConfettiEffect = () => {
+// Componente ConfettiEffect corrigido
+const ConfettiEffect = ({ soundEnabled }) => {
   const audioManager = useMemo(() => {
     try {
       return GameAudioManager.getInstance();
@@ -199,7 +199,6 @@ export default function FacialExpressionsGame() {
     const initializeAudio = async () => {
       try {
         const manager = GameAudioManager.getInstance();
-        await manager.forceInitialize();
         setAudioManager(manager);
       } catch (error) {
         console.error('Erro ao inicializar o gerenciador de áudio:', error);
@@ -232,6 +231,7 @@ export default function FacialExpressionsGame() {
   }, [soundEnabled, audioManager]);
 
   const handleStartIntro = useCallback(async () => {
+    // Inicializar o áudio após a interação do usuário
     if (audioManager) {
       try {
         await audioManager.forceInitialize();
@@ -410,7 +410,17 @@ export default function FacialExpressionsGame() {
       <h1 className={styles.introMainTitle}>Expressões Faciais</h1>
       <p className={styles.introMainSubtitle}>Aprenda e divirta-se com as emoções!</p>
       <button 
-        onClick={handleStartIntro}
+        onClick={async () => {
+          // Inicializar o áudio no clique do botão
+          if (audioManager) {
+            try {
+              await audioManager.forceInitialize();
+            } catch (error) {
+              console.error('Erro ao forçar inicialização do áudio:', error);
+            }
+          }
+          handleStartIntro();
+        }}
         className={styles.introStartButton}
         disabled={gameState !== 'titleScreen'}
       >
@@ -488,7 +498,7 @@ export default function FacialExpressionsGame() {
 
   const renderPhaseCompleteScreen = () => (
     <div className={styles.screenCenter}>
-      <ConfettiEffect />
+      <ConfettiEffect soundEnabled={soundEnabled} />
       <div className={styles.modalContainer}>
         <img 
           src="/images/mascotes/leo/Leo_apoio.webp" 
@@ -510,7 +520,7 @@ export default function FacialExpressionsGame() {
 
   const renderGameCompleteScreen = () => (
     <div className={styles.screenCenter}>
-      <ConfettiEffect />
+      <ConfettiEffect soundEnabled={soundEnabled} />
       <div className={styles.modalContainer}>
         <img 
           src="/images/mascotes/leo/Leo_emocoes_espelho.webp" 
@@ -543,7 +553,7 @@ export default function FacialExpressionsGame() {
   };
 
   return (
-    <div className={`${styles.gameContainer} ${gameState === 'titleScreen' || gameState === 'autoIntro' ? styles.introMode : ''}`}>
+    <div className={`${styles.gameContainer} ${styles.emotionGameRoot} ${gameState === 'titleScreen' || gameState === 'autoIntro' ? styles.introMode : ''}`}>
       <header className={styles.gameHeader}>
         <a href="/dashboard" className={styles.headerButton}><ArrowLeft size={24} /></a>
         <h1 className={styles.gameTitle}>😊 Expressões</h1>
