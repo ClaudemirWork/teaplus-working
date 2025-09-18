@@ -428,11 +428,11 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
     }, 2000);
   }, [currentLevel, audioEnabled]);
 
-  // Loop principal do jogo
-  const gameLoop = useCallback(() => {
-    if (!isPlaying) return;
+  // Função para atualizar bolhas
+  const updateBubbles = useCallback(() => {
+    if (!gameAreaRef.current) return;
 
-    // Atualizar bolhas
+    const gameArea = gameAreaRef.current.getBoundingClientRect();
     setBubbles(prev => prev.map(bubble => {
       if (bubble.popped) {
         return { ...bubble, opacity: Math.max(0, bubble.opacity - 0.1) };
@@ -444,21 +444,16 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
       // Movimento horizontal (correntes)
       if (bubble.horizontalMovement) {
         newX += bubble.horizontalMovement;
-        const gameArea = gameAreaRef.current;
-        if (gameArea) {
-          const rect = gameArea.getBoundingClientRect();
-          if (newX <= 0 || newX >= rect.width - bubble.size) {
-            bubble.horizontalMovement = -bubble.horizontalMovement;
-            newX = Math.max(0, Math.min(rect.width - bubble.size, newX));
-          }
+        if (newX <= 0 || newX >= gameArea.width - bubble.size) {
+          bubble.horizontalMovement = -bubble.horizontalMovement;
+          newX = Math.max(0, Math.min(gameArea.width - bubble.size, newX));
         }
       }
 
       // Efeito magnético
-      if (magnetActive && bubble.type !== 'mine' && gameAreaRef.current) {
-        const rect = gameAreaRef.current.getBoundingClientRect();
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
+      if (magnetActive && bubble.type !== 'mine') {
+        const centerX = gameArea.width / 2;
+        const centerY = gameArea.height / 2;
         const dx = centerX - (newX + bubble.size / 2);
         const dy = centerY - (bubble.y + bubble.size / 2);
         const distance = Math.sqrt(dx * dx + dy * dy);
@@ -481,8 +476,10 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
 
       return { ...bubble, y: newY, x: newX };
     }).filter(bubble => bubble.opacity > 0));
+  }, [magnetActive]);
 
-    // Atualizar partículas
+  // Função para atualizar partículas
+  const updateParticles = useCallback(() => {
     setParticles(prev => prev.map(particle => ({
       ...particle,
       x: particle.x + particle.vx,
@@ -490,9 +487,15 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
       vy: particle.type === 'fish' ? particle.vy : particle.vy + 0.2,
       life: particle.life - 0.03
     })).filter(particle => particle.life > 0));
+  }, []);
 
+  // Loop principal do jogo
+  const gameLoop = useCallback(() => {
+    if (!isPlaying) return;
+    updateBubbles();
+    updateParticles();
     animationRef.current = requestAnimationFrame(gameLoop);
-  }, [isPlaying, magnetActive]);
+  }, [isPlaying, updateBubbles, updateParticles]);
 
   // FUNÇÃO PRINCIPAL DE INTERAÇÃO
   const handleInteraction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -823,6 +826,207 @@ export function useBubblePopGame(gameAreaRef: React.RefObject<HTMLDivElement>) {
 
   // Calcular precisão
   const accuracy = poppedBubbles > 0 ? (poppedBubbles / (poppedBubbles + missedBubbles)) * 100 : 0;
+
+  // ========== TODOS OS useEFFECTS DO JOGO ==========
+
+  // 1. Loop principal do jogo
+  useEffect(() => {
+    if (!isPlaying) return;
+    animationRef.current = requestAnimationFrame(gameLoop);
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isPlaying, gameLoop]);
+
+  // 2. Spawn de bolhas
+  useEffect(() => {
+    if (!isPlaying || levelCompleted) return;
+
+    const spawnInterval = setInterval(() => {
+      if (bubblesSpawned < LEVEL_CONFIGS[currentLevel - 1].totalBubbles && !levelCompleted) {
+        setBubbles(prev => [...prev, createBubble()]);
+        setBubblesSpawned(prev => prev + 1);
+      }
+    }, LEVEL_CONFIGS[currentLevel - 1].spawnRate);
+
+    return () => clearInterval(spawnInterval);
+  }, [isPlaying, currentLevel, bubblesSpawned, levelCompleted, createBubble]);
+
+  // 3. Sistema de oxigênio (não drena no boss)
+  useEffect(() => {
+    if (!isPlaying || currentLevel === 11) return;
+
+    const config = LEVEL_CONFIGS[currentLevel - 1];
+    let drainRate = config.oxygenDrain;
+
+    // Tanque reduz consumo pela metade
+    if (equipment.tank) {
+      drainRate *= 0.5;
+    }
+
+    const drainInterval = setInterval(() => {
+      setOxygenLevel(prev => {
+        const newLevel = Math.max(0, prev - drainRate);
+        if (newLevel === 0) {
+          // Game over por falta de oxigênio
+          setIsPlaying(false);
+          setShowResults(true);
+          if (audioEnabled && audioManager.current) {
+            audioManager.current.falarMila("Sem oxigênio! Tente novamente!");
+          }
+        }
+        return newLevel;
+      });
+    }, 1000);
+
+    return () => clearInterval(drainInterval);
+  }, [isPlaying, currentLevel, equipment.tank, audioEnabled]);
+
+  // 4. Timer do multiplicador
+  useEffect(() => {
+    if (multiplierTime <= 0) {
+      setMultiplier(1);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setMultiplierTime(prev => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [multiplierTime]);
+
+  // 5. Timer do ímã
+  useEffect(() => {
+    if (magnetTime <= 0) {
+      setMagnetActive(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setMagnetTime(prev => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [magnetTime]);
+
+  // 6. PROGRESSÃO DE NÍVEIS - O MAIS IMPORTANTE
+  useEffect(() => {
+    if (!isPlaying || levelCompleted) return;
+
+    const config = LEVEL_CONFIGS[currentLevel - 1];
+    const activeBubbles = bubbles.filter(b => !b.popped).length;
+    setBubblesRemaining(activeBubbles);
+
+    // Verificar condições de fim de nível/jogo
+    if (bubblesSpawned >= config.totalBubbles && activeBubbles === 0) {
+      setLevelCompleted(true);
+
+      if (currentLevel === 11) {
+        // BOSS DERROTADO - SEQUÊNCIA DE VITÓRIA
+        setBossDefeated(true);
+        setIsPlaying(false);
+        setLevelMessage('🎉 SENHOR DOS MARES DERROTADO!');
+        
+        if (audioEnabled && audioManager.current) {
+          audioManager.current.falarMila("Você derrotou o Senhor dos Mares! O oceano está salvo!");
+        }
+
+        // Liberar criaturas
+        const creatures = ['🐠', '🐟', '🐡', '🦈', '🐙', '🦑', '🦀', '🦞', '🐢', '🐳', '🐬', '🦭'];
+        let index = 0;
+        const releaseInterval = setInterval(() => {
+          if (index < creatures.length) {
+            setFreedCreatures(prev => [...prev, creatures[index]]);
+            index++;
+            if (index === 1 && audioEnabled && audioManager.current) {
+              audioManager.current.falarMila("As criaturas estão sendo libertadas!");
+            }
+          } else {
+            clearInterval(releaseInterval);
+            setTimeout(() => {
+              if (audioEnabled && audioManager.current) {
+                audioManager.current.falarMila("Você salvou todo o oceano! Parabéns!");
+              }
+              setShowResults(true);
+            }, 3000);
+          }
+        }, 200);
+
+      } else if (currentLevel < 10) {
+        // NÍVEL NORMAL COMPLETO
+        setCompletedLevels(prev => [...prev, currentLevel]);
+        setLevelMessage(`🌊 ${config.name} Completo!`);
+        setShowLevelTransition(true);
+        
+        if (audioEnabled && audioManager.current) {
+          audioManager.current.falarMila(`Nível ${currentLevel} completo!`);
+        }
+
+        setTimeout(() => {
+          const nextLevel = currentLevel + 1;
+          const nextConfig = LEVEL_CONFIGS[nextLevel - 1];
+          setCurrentLevel(nextLevel);
+          setShowLevelTransition(false);
+          setBubbles([]);
+          setParticles([]);
+          setCombo(0);
+          setBubblesSpawned(0);
+          setBubblesRemaining(nextConfig.totalBubbles);
+          setOxygenLevel(100);
+          setMultiplier(1);
+          setMagnetActive(false);
+          setLevelCompleted(false);
+          setIsPlaying(true);
+
+          if (audioEnabled && audioManager.current) {
+            audioManager.current.falarMila(`Agora no nível ${nextLevel}!`);
+          }
+        }, 3000);
+
+      } else if (currentLevel === 10) {
+        // NÍVEL 10 COMPLETO
+        setCompletedLevels(prev => [...prev, currentLevel]);
+        
+        if (showBossLevel) {
+          // IR PARA O BOSS
+          setLevelMessage('🌊 ENTRANDO NO REINO DO SENHOR DOS MARES!');
+          setShowLevelTransition(true);
+          
+          if (audioEnabled && audioManager.current) {
+            audioManager.current.falarMila("Fase final! Vamos derrotar o Senhor dos Mares!");
+          }
+
+          setTimeout(() => {
+            setCurrentLevel(11);
+            const bossConfig = LEVEL_CONFIGS[10];
+            setBubblesSpawned(0);
+            setBubblesRemaining(bossConfig.totalBubbles);
+            setShowLevelTransition(false);
+            setOxygenLevel(100);
+            setLevelCompleted(false);
+            setIsPlaying(true);
+          }, 3000);
+        } else {
+          // FIM NORMAL DO JOGO
+          setShowResults(true);
+          if (audioEnabled && audioManager.current) {
+            audioManager.current.falarMila("Parabéns! Você completou todos os níveis!");
+          }
+        }
+      }
+    }
+  }, [isPlaying, currentLevel, bubblesSpawned, bubbles, showBossLevel, levelCompleted, audioEnabled]);
+
+  // 7. Atualizar bolhas restantes
+  useEffect(() => {
+    if (isPlaying) {
+      const activeBubbles = bubbles.filter(b => !b.popped).length;
+      setBubblesRemaining(activeBubbles);
+    }
+  }, [bubbles, isPlaying]);
 
   return {
     // Estados do jogo
