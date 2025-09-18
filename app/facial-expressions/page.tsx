@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, VolumeX, Trophy, ArrowLeft } from 'lucide-react';
-import { GameAudioManager } from '@/utils/gameAudioManager'; // IMPORTAÇÃO ORIGINAL
-import styles from './FacialExpressions.module.css'; // IMPORTAÇÃO DO CSS
+import { GameAudioManager } from '@/utils/gameAudioManager';
+import styles from './FacialExpressions.module.css';
 
-// --- EFEITO DE CONFETE ---
+// --- EFEITO DE CONFETE SIMPLIFICADO ---
 const confetti = (opts = {}) => {
   if (typeof window === 'undefined') return;
   
@@ -26,82 +25,44 @@ const confetti = (opts = {}) => {
 
     const W = canvas.width = window.innerWidth;
     const H = canvas.height = window.innerHeight;
-
-    const COLORS = ['#FFC107', '#FF9800', '#FF5722', '#F44336', '#E91E63', 
-                   '#9C27B0', '#673AB7', '#3F51B5', '#2196F3', '#03A9F4', 
-                   '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B'];
+    const COLORS = ['#FFC107', '#FF9800', '#FF5722', '#F44336', '#E91E63', '#9C27B0', '#3F51B5', '#4CAF50'];
 
     const particles = [];
-    const particleCount = opts.particleCount || 150;
-    const origin = opts.origin || { x: 0.5, y: 0.5 };
-    const spread = opts.spread || 90;
-    const startVelocity = opts.startVelocity || 45;
-    const decay = opts.decay || 0.92;
-    const gravity = opts.gravity || 0.7;
-
-    const randomRange = (min, max) => Math.random() * (max - min) + min;
-
-    class Particle {
-      constructor() {
-        this.x = W * origin.x;
-        this.y = H * origin.y;
-        this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
-        this.size = randomRange(5, 12);
-        this.velocity = { 
-          x: randomRange(-spread / 2, spread / 2), 
-          y: randomRange(-startVelocity, -startVelocity / 2) 
-        };
-        this.gravity = gravity;
-        this.friction = decay;
-        this.rotation = Math.random() * 360;
-        this.rotationSpeed = randomRange(-5, 5);
-        this.opacity = 1;
-      }
-
-      update() {
-        this.velocity.y += this.gravity;
-        this.velocity.x *= this.friction;
-        this.velocity.y *= this.friction;
-        this.x += this.velocity.x;
-        this.y += this.velocity.y;
-        this.rotation += this.rotationSpeed;
-        this.opacity -= 0.01;
-      }
-
-      draw() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation * Math.PI / 180);
-        ctx.globalAlpha = this.opacity;
-        ctx.fillStyle = this.color;
-        ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
-        ctx.restore();
-      }
+    for (let i = 0; i < 100; i++) {
+      particles.push({
+        x: W * 0.5,
+        y: H * 0.5,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        size: Math.random() * 8 + 4,
+        vx: (Math.random() - 0.5) * 20,
+        vy: Math.random() * -15 - 5,
+        opacity: 1
+      });
     }
 
     const animate = () => {
       ctx.clearRect(0, 0, W, H);
-      particles.forEach((particle, i) => {
-        if (particle.opacity > 0) { 
-          particle.update(); 
-          particle.draw(); 
-        } else { 
-          particles.splice(i, 1); 
-        }
-      });
+      
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.vy += 0.3; // gravity
+        p.x += p.vx;
+        p.y += p.vy;
+        p.opacity -= 0.008;
+        
+        ctx.globalAlpha = p.opacity;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+        
+        if (p.opacity <= 0) particles.splice(i, 1);
+      }
 
-      if (particles.length > 0) { 
-        requestAnimationFrame(animate); 
-      } else { 
-        if (document.body.contains(canvas)) {
-          document.body.removeChild(canvas); 
-        }
+      if (particles.length > 0) {
+        requestAnimationFrame(animate);
+      } else {
+        document.body.removeChild(canvas);
       }
     };
-
-    for (let i = 0; i < particleCount; i++) { 
-      particles.push(new Particle()); 
-    }
 
     animate();
   } catch (error) {
@@ -114,13 +75,8 @@ const ConfettiEffect = () => {
   
   useEffect(() => {
     try {
-      // Som de explosão/confete usando o método correto
-      audioManager.playSoundEffect('celebration', 0.6);
-      
-      const fire = (p, o) => confetti({ particleCount: Math.floor(200*p), ...o });
-      fire(0.25, { spread: 30, startVelocity: 60, origin: { x: 0, y: 0.7 } });
-      fire(0.2, { spread: 60, origin: { x: 0.5, y: 0.6 } });
-      fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8, origin: { x: 1, y: 0.7 } });
+      // audioManager.playSoundEffect('celebration', 0.6); // Desabilitado temporariamente
+      confetti();
     } catch (error) {
       console.warn('Erro no ConfettiEffect:', error);
     }
@@ -129,18 +85,13 @@ const ConfettiEffect = () => {
   return null;
 };
 
-// --- COMPONENTES DE UI ---
+// --- COMPONENTES SIMPLIFICADOS ---
 const Card = React.memo(({ emotion, onClick, isCorrect, isWrong, isDisabled }) => {
   return (
-    <motion.button
+    <button
       onClick={onClick}
       disabled={isDisabled}
       className={`${styles.emotionCard} ${isCorrect ? styles.cardCorrect : ''} ${isWrong ? styles.cardWrong : ''}`}
-      initial={{ opacity: 0, scale: 0.5 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.5 }}
-      transition={{ duration: 0.4 }}
-      layout
     >
       <div className={styles.cardImageWrapper}>
         <img 
@@ -150,7 +101,7 @@ const Card = React.memo(({ emotion, onClick, isCorrect, isWrong, isDisabled }) =
         />
       </div>
       <span className={styles.cardLabel}>{emotion.label}</span>
-    </motion.button>
+    </button>
   );
 });
 
@@ -165,7 +116,7 @@ const ProgressBar = React.memo(({ current, total }) => {
   );
 });
 
-// --- CONFIGURAÇÕES E DADOS DO JOGO ---
+// --- DADOS DO JOGO ---
 const IMAGE_BASE_PATH = '/images/cards/emocoes/';
 
 const EMOTION_CARDS = [
@@ -181,7 +132,6 @@ const EMOTION_CARDS = [
   { id: 'homem_focado', label: 'Focado', path: `${IMAGE_BASE_PATH}homem_focado.webp` },
 ];
 
-// EXPANDIDO PARA 10 FASES
 const GAME_PHASES = [
   { phase: 1, numCards: 2, numRounds: 3, points: 100 },
   { phase: 2, numCards: 3, numRounds: 4, points: 120 },
@@ -195,7 +145,6 @@ const GAME_PHASES = [
   { phase: 10, numCards: 10, numRounds: 8, points: 300 },
 ];
 
-// MENSAGENS DE INCENTIVO VARIADAS
 const PHASE_COMPLETION_MESSAGES = [
   "Isso aí amigão, agora vamos para a fase 2!",
   "Você é um super craque na identificação de emoções, vamos para a fase 3!",
@@ -211,7 +160,7 @@ const PHASE_COMPLETION_MESSAGES = [
 
 const shuffleArray = (array) => [...array].sort(() => Math.random() - 0.5);
 
-// --- COMPONENTE PRINCIPAL DO JOGO ---
+// --- COMPONENTE PRINCIPAL ---
 export default function FacialExpressionsGame() {
   const audioManager = useMemo(() => GameAudioManager.getInstance(), []);
 
@@ -223,7 +172,6 @@ export default function FacialExpressionsGame() {
   const [totalScore, setTotalScore] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // State da rodada
   const [cardsForPhase, setCardsForPhase] = useState([]);
   const [targetSequence, setTargetSequence] = useState([]);
   const [currentTargetIndex, setCurrentTargetIndex] = useState(0);
@@ -231,7 +179,6 @@ export default function FacialExpressionsGame() {
   const [feedback, setFeedback] = useState(null);
   const [isDisabled, setIsDisabled] = useState(false);
 
-  // NOVOS TEXTOS MELHORADOS
   const introMessages = [
     "Olá, eu sou o Leo e vou te ajudar a identificar várias emoções, e fazer isto, de forma divertida!",
     "É bem fácil! Eu vou mostrar cartões com rostos e as emoções que eles estão exprimindo. Eu vou falar uma emoção, como 'feliz', ou 'triste', e você só precisa identificar o cartão correspondente na tela, e clicar nele, marcando pontos.",
@@ -259,7 +206,6 @@ export default function FacialExpressionsGame() {
     setGameState('autoIntro');
     setAutoIntroStep(0);
     
-    // Mensagem inicial da primeira página
     leoSpeak("Bem-vindo ao incrível mundo das Expressões Faciais! Prepare-se para uma aventura emocionante!", () => {
       setTimeout(() => {
         setAutoIntroStep(1);
@@ -307,7 +253,6 @@ export default function FacialExpressionsGame() {
       : `Fase ${phaseConfig.phase}! Agora com ${phaseConfig.numCards} emoções. Encontre: ${sequence[0].label}`;
     
     leoSpeak(startMessage);
-
   }, [leoSpeak]);
 
   const startGame = () => {
@@ -335,8 +280,7 @@ export default function FacialExpressionsGame() {
       setFeedback('correct');
       setTotalScore(prev => prev + GAME_PHASES[currentPhaseIndex].points);
       
-      // Som de acerto usando GameAudioManager correto
-      audioManager.playSoundEffect('correct', 0.4);
+      // audioManager.playSoundEffect('correct', 0.4); // Desabilitado temporariamente
       
       setTimeout(() => {
         const nextTargetIndex = currentTargetIndex + 1;
@@ -353,8 +297,7 @@ export default function FacialExpressionsGame() {
     } else {
       setFeedback('wrong');
       
-      // Som de erro usando GameAudioManager correto
-      audioManager.playSoundEffect('wrong', 0.4);
+      // audioManager.playSoundEffect('wrong', 0.4); // Desabilitado temporariamente
       leoSpeak("Ops, tente novamente!");
 
       setTimeout(() => {
@@ -395,36 +338,32 @@ export default function FacialExpressionsGame() {
   const renderTitleScreen = () => (
     <div className={styles.screenCenter}>
       <div className={styles.starsBg}></div>
-      <motion.div 
-        className={`${styles.titleLeoContainer} ${styles.animateFloat}`}
-        animate={{ 
-          scale: leoSpeaking ? [1, 1.05, 1] : 1,
-          filter: leoSpeaking ? "drop-shadow(0 0 20px #4CAF50)" : "drop-shadow(0 15px 30px rgba(0,0,0,0.4))"
-        }}
-        transition={{ duration: leoSpeaking ? 0.5 : 2, repeat: leoSpeaking ? Infinity : 0 }}
-      >
+      <div className={`${styles.titleLeoContainer} ${styles.animateFloat}`}>
         <img 
           src="/images/mascotes/leo/Leo_emocoes_espelho.webp"
           alt="Leo Mascote Emoções" 
           className={`${styles.introMascot} ${styles.titleMascot}`}
+          style={{
+            transform: leoSpeaking ? 'scale(1.05)' : 'scale(1)',
+            filter: leoSpeaking ? 'drop-shadow(0 0 20px #4CAF50)' : 'drop-shadow(0 15px 30px rgba(0,0,0,0.4))',
+            transition: 'all 0.5s ease'
+          }}
         />
         {leoMessage && (
           <div className={styles.titleSpeechBubble}>
             <p>{leoMessage}</p>
           </div>
         )}
-      </motion.div>
+      </div>
       <h1 className={styles.introMainTitle}>Expressões Faciais</h1>
       <p className={styles.introMainSubtitle}>Aprenda e divirta-se com as emoções!</p>
-      <motion.button 
+      <button 
         onClick={handleStartIntro}
         className={styles.introStartButton}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
         disabled={gameState !== 'titleScreen'}
       >
         Começar Aventura
-      </motion.button>
+      </button>
     </div>
   );
 
@@ -432,26 +371,20 @@ export default function FacialExpressionsGame() {
     <div className={`${styles.screenCenter} ${styles.introExplanation}`}>
       <div className={styles.introContentWrapper}>
         <div className={styles.introMascotContainer}>
-          <motion.img 
+          <img 
             src="/images/mascotes/leo/Leo_apoio.webp" 
             alt="Leo" 
             className={styles.introMascot}
-            animate={{ 
-              scale: leoSpeaking ? [1, 1.1, 1] : 1,
-              filter: leoSpeaking ? "drop-shadow(0 0 15px #4CAF50)" : "none"
+            style={{
+              transform: leoSpeaking ? 'scale(1.1)' : 'scale(1)',
+              filter: leoSpeaking ? 'drop-shadow(0 0 15px #4CAF50)' : 'none',
+              transition: 'all 0.5s ease'
             }}
-            transition={{ duration: 0.5, repeat: leoSpeaking ? Infinity : 0 }}
           />
         </div>
-        <motion.div 
-          className={styles.speechBubble}
-          key={autoIntroStep}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-        >
+        <div className={styles.speechBubble}>
           <p>{leoMessage}</p>
-        </motion.div>
+        </div>
       </div>
       <div className={styles.introProgress}>
         <div className={styles.introDots}>
@@ -471,33 +404,31 @@ export default function FacialExpressionsGame() {
       <ProgressBar current={currentTargetIndex + 1} total={targetSequence.length} />
       <div className={styles.gameArea}>
         <div className={styles.instructionContainer}>
-          <motion.img 
+          <img 
             src="/images/mascotes/leo/leo_rosto_resultado.webp" 
             alt="Leo" 
             className={styles.instructionMascot}
-            animate={{ 
-              scale: leoSpeaking ? [1, 1.1, 1] : 1,
-              filter: leoSpeaking ? "drop-shadow(0 0 10px #4CAF50)" : "drop-shadow(0 4px 10px rgba(0,0,0,0.1))"
+            style={{
+              transform: leoSpeaking ? 'scale(1.1)' : 'scale(1)',
+              filter: leoSpeaking ? 'drop-shadow(0 0 10px #4CAF50)' : 'drop-shadow(0 4px 10px rgba(0,0,0,0.1))',
+              transition: 'all 0.5s ease'
             }}
-            transition={{ duration: 0.5, repeat: leoSpeaking ? Infinity : 0 }}
           />
           <div className={`${styles.instructionBox} ${leoSpeaking ? styles.speaking : ''}`}>
             <h2>{leoMessage}</h2>
           </div>
         </div>
         <div className={`${styles.cardsGrid} ${styles[`cols${Math.min(Math.ceil(cardsForPhase.length / 2), 5)}`]}`}>
-          <AnimatePresence>
-            {cardsForPhase.map((card) => (
-              <Card 
-                key={card.id} 
-                emotion={card} 
-                onClick={() => selectCard(card)}
-                isCorrect={feedback === 'correct' && card.id === selectedCardId}
-                isWrong={feedback === 'wrong' && card.id === selectedCardId}
-                isDisabled={isDisabled}
-              />
-            ))}
-          </AnimatePresence>
+          {cardsForPhase.map((card) => (
+            <Card 
+              key={card.id} 
+              emotion={card} 
+              onClick={() => selectCard(card)}
+              isCorrect={feedback === 'correct' && card.id === selectedCardId}
+              isWrong={feedback === 'wrong' && card.id === selectedCardId}
+              isDisabled={isDisabled}
+            />
+          ))}
         </div>
       </div>
     </>
@@ -506,68 +437,45 @@ export default function FacialExpressionsGame() {
   const renderPhaseCompleteScreen = () => (
     <div className={styles.screenCenter}>
       <ConfettiEffect />
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.7 }} 
-        animate={{ opacity: 1, scale: 1 }} 
-        className={styles.modalContainer}
-      >
-        <motion.img 
+      <div className={styles.modalContainer}>
+        <img 
           src="/images/mascotes/leo/Leo_apoio.webp" 
           alt="Leo Comemorando"
           className={styles.modalMascot}
-          animate={{ 
-            rotate: [0, -10, 10, -10, 0],
-            scale: [1, 1.1, 1]
-          }}
-          transition={{ duration: 2, repeat: Infinity }}
         />
         <h2 className={styles.modalTitle}>Fase {GAME_PHASES[currentPhaseIndex].phase} Completa!</h2>
         <div className={styles.modalIcon}>🎉</div>
         <p>Pontuação Total: <span className={styles.totalScoreHighlight}>{totalScore}</span></p>
-        <motion.button 
+        <button 
           onClick={nextPhase} 
           className={`${styles.modalButton} ${styles.nextLevel}`}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
         >
           {currentPhaseIndex < GAME_PHASES.length - 1 ? 'Próxima Fase' : 'Fase Final'}
-        </motion.button>
-      </motion.div>
+        </button>
+      </div>
     </div>
   );
 
   const renderGameCompleteScreen = () => (
     <div className={styles.screenCenter}>
       <ConfettiEffect />
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.7 }} 
-        animate={{ opacity: 1, scale: 1 }} 
-        className={styles.modalContainer}
-      >
-        <motion.img 
+      <div className={styles.modalContainer}>
+        <img 
           src="/images/mascotes/leo/Leo_emocoes_espelho.webp" 
           alt="Leo Campeão"
           className={`${styles.modalMascot} ${styles.champion}`}
-          animate={{ 
-            rotate: [0, 5, -5, 0],
-            scale: [1, 1.2, 1],
-            filter: ["hue-rotate(0deg)", "hue-rotate(360deg)"]
-          }}
-          transition={{ duration: 3, repeat: Infinity }}
         />
         <Trophy className={styles.modalTrophy} />
         <h2 className={`${styles.modalTitle} ${styles.congrats}`}>CAMPEÃO DAS EMOÇÕES!</h2>
         <p className={styles.finalScore}>Pontuação Final: {totalScore}</p>
         <p className={styles.completionMessage}>Você dominou todas as 10 fases!</p>
-        <motion.button 
+        <button 
           onClick={startGame} 
           className={`${styles.modalButton} ${styles.playAgain}`}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
         >
           Jogar Novamente
-        </motion.button>
-      </motion.div>
+        </button>
+      </div>
     </div>
   );
 
@@ -593,9 +501,7 @@ export default function FacialExpressionsGame() {
         </button>
       </header>
       <main>
-        <AnimatePresence mode="wait">
-          {renderContent()}
-        </AnimatePresence>
+        {renderContent()}
       </main>
     </div>
   );
