@@ -3,96 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, VolumeX, Trophy, ArrowLeft } from 'lucide-react';
 import { GameAudioManager } from '@/utils/gameAudioManager';
-import styles from './emotionrecognition.module.css';
+import './emotionrecognition.module.css';
 
-// Confete simples e estável
-const confetti = (opts: any = {}) => {
-  if (typeof window === 'undefined') return;
-  try {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!canvas || !ctx) return;
-    canvas.style.position = 'fixed';
-    canvas.style.top = '0';
-    canvas.style.left = '0';
-    canvas.style.width = '100vw';
-    canvas.style.height = '100vh';
-    canvas.style.zIndex = '9999';
-    canvas.style.pointerEvents = 'none';
-    document.body.appendChild(canvas);
-
-    const W = (canvas.width = window.innerWidth);
-    const H = (canvas.height = window.innerHeight);
-    const COLORS = ['#FFC107','#FF9800','#FF5722','#F44336','#E91E63','#9C27B0','#673AB7','#3F51B5','#2196F3','#03A9F4','#00BCD4','#009688','#4CAF50','#8BC34A','#CDDC39','#FFEB3B'];
-
-    const particles: any[] = [];
-    const particleCount = opts.particleCount || 150;
-    const origin = opts.origin || { x: 0.5, y: 0.5 };
-    const spread = opts.spread || 90;
-    const startVelocity = opts.startVelocity || 45;
-    const decay = opts.decay || 0.92;
-    const gravity = opts.gravity || 0.7;
-
-    const rand = (min: number, max: number) => Math.random() * (max - min) + min;
-
-    class Particle {
-      x: number; y: number; color: string; size: number;
-      vx: number; vy: number; rot: number; rotSpeed: number; op: number;
-      constructor() {
-        this.x = W * origin.x; this.y = H * origin.y;
-        this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
-        this.size = rand(5, 12);
-        this.vx = rand(-spread / 2, spread / 2);
-        this.vy = rand(-startVelocity, -startVelocity / 2);
-        this.rot = Math.random() * 360;
-        this.rotSpeed = rand(-5, 5);
-        this.op = 1;
-      }
-      update() {
-        this.vy += gravity;
-        this.vx *= decay; this.vy *= decay;
-        this.x += this.vx; this.y += this.vy;
-        this.rot += this.rotSpeed;
-        this.op -= 0.01;
-      }
-      draw() {
-        ctx!.save();
-        ctx!.translate(this.x, this.y);
-        ctx!.rotate((this.rot * Math.PI) / 180);
-        ctx!.globalAlpha = this.op;
-        ctx!.fillStyle = this.color;
-        ctx!.fillRect(-this.size/2, -this.size/2, this.size, this.size);
-        ctx!.restore();
-      }
-    }
-
-    const animate = () => {
-      ctx!.clearRect(0,0,W,H);
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        if (p.op > 0) { p.update(); p.draw(); }
-        else particles.splice(i,1);
-      }
-      if (particles.length > 0) requestAnimationFrame(animate);
-      else if (document.body.contains(canvas)) document.body.removeChild(canvas);
-    };
-
-    for (let i = 0; i < particleCount; i++) particles.push(new Particle());
-    animate();
-  } catch {}
-};
-
-const ConfettiEffect = () => {
-  useEffect(() => {
-    const fire = (p: number, o: any) => confetti({ particleCount: Math.floor(200*p), ...o });
-    fire(0.25, { spread: 30, startVelocity: 60, origin: { x: 0, y: 0.7 } });
-    fire(0.2, { spread: 60, origin: { x: 0.5, y: 0.6 } });
-    fire(0.35, { spread: 100, decay: 0.91, origin: { x: 1, y: 0.7 } });
-  }, []);
-  return null;
-};
-
-// Dados
 const IMAGE_BASE_PATH = '/images/cards/emocoes/';
 const EMOTION_CARDS = [
   { id: 'homem_feliz', label: 'Feliz', path: `${IMAGE_BASE_PATH}homem_feliz.webp` },
@@ -118,14 +30,6 @@ const GAME_PHASES = [
 
 const shuffleArray = (arr: any[]) => [...arr].sort(() => Math.random() - 0.5);
 
-// Efeitos breves
-const SOUNDS = {
-  correct: 'https://freesound.org/data/previews/391/391715_5674468-lq.mp3',
-  wrong: 'https://freesound.org/data/previews/174/174414_3229994-lq.mp3',
-  levelComplete: 'https://freesound.org/data/previews/270/270333_5123851-lq.mp3',
-};
-const playSound = (name: keyof typeof SOUNDS) => { try { const a = new Audio(SOUNDS[name]); a.play().catch(()=>{}); } catch {} };
-
 export default function FacialExpressionsPage() {
   const [gameState, setGameState] = useState<'title'|'intro'|'playing'|'phaseComplete'|'gameComplete'>('title');
   const [leoMessage, setLeoMessage] = useState('');
@@ -141,19 +45,23 @@ export default function FacialExpressionsPage() {
   const [feedback, setFeedback] = useState<'correct'|'wrong'|null>(null);
   const [isDisabled, setIsDisabled] = useState(false);
 
-  // Fala do Leo via Azure
+  // Fala do Leo com fila; cooldown leve para evitar cortes
   const sayLeo = useCallback(async (text: string, priority = 1) => {
     const audio = GameAudioManager.getInstance();
     if (!audio.getAudioEnabled() || !soundEnabled) return;
     await audio.forceInitialize().catch(()=>{});
-    audio.falarLeo(text, undefined, priority);
-    setLeoMessage(text);
+    if (audio.shouldSpeak('leo', 300)) {
+      audio.falarLeo(text, undefined, priority);
+      setLeoMessage(text);
+    }
   }, [soundEnabled]);
 
+  // Introdução unificada
   const handleStartIntro = useCallback(async () => {
     setGameState('intro');
     const audio = GameAudioManager.getInstance();
     await audio.forceInitialize().catch(()=>{});
+    audio.pararTodos(); // evita restos de outra tela
     const parts = [
       'Olá! Eu sou o Leo. Vamos aprender sobre as emoções juntos?',
       'Eu vou falar uma emoção, como Feliz, ou Triste.',
@@ -166,12 +74,16 @@ export default function FacialExpressionsPage() {
     setLeoMessage(parts[0]);
   }, []);
 
+  // Começar jogo (limpa fila antes de tocar a primeira instrução)
   const startGame = useCallback(() => {
+    const audio = GameAudioManager.getInstance();
+    audio.pararTodos(); // flush da fila de intro
     setCurrentPhaseIndex(0);
     setTotalScore(0);
     setGameState('playing');
   }, []);
 
+  // Preparação de fase
   const preparePhase = useCallback((phaseIndex: number) => {
     const phase = GAME_PHASES[phaseIndex];
     const all = shuffleArray(EMOTION_CARDS);
@@ -191,6 +103,7 @@ export default function FacialExpressionsPage() {
     if (gameState === 'playing') preparePhase(currentPhaseIndex);
   }, [gameState, currentPhaseIndex, preparePhase]);
 
+  // Seleção
   const selectCard = useCallback((card: any) => {
     if (isDisabled) return;
     setIsDisabled(true);
@@ -201,7 +114,6 @@ export default function FacialExpressionsPage() {
     if (ok) {
       setFeedback('correct');
       setTotalScore(p => p + GAME_PHASES[currentPhaseIndex].points);
-      if (soundEnabled) playSound('correct');
       setTimeout(() => {
         const next = currentTargetIndex + 1;
         if (next < targetSequence.length) {
@@ -211,20 +123,18 @@ export default function FacialExpressionsPage() {
           setIsDisabled(false);
           sayLeo(targetSequence[next].label, 2);
         } else {
-          if (soundEnabled) playSound('levelComplete');
           setGameState('phaseComplete');
         }
-      }, 900);
+      }, 700);
     } else {
       setFeedback('wrong');
-      if (soundEnabled) playSound('wrong');
       setTimeout(() => {
         setFeedback(null);
         setSelectedCardId(null);
         setIsDisabled(false);
-      }, 800);
+      }, 600);
     }
-  }, [isDisabled, targetSequence, currentTargetIndex, currentPhaseIndex, soundEnabled, sayLeo]);
+  }, [isDisabled, targetSequence, currentTargetIndex, currentPhaseIndex, sayLeo]);
 
   const nextPhase = useCallback(() => {
     const next = currentPhaseIndex + 1;
@@ -234,7 +144,7 @@ export default function FacialExpressionsPage() {
 
   // Views
   const TitleView = () => (
-    <div className={styles.screenCenter}>
+    <div className="screen-center">
       <div className="stars-bg"></div>
       <motion.div className="animate-float" style={{ zIndex: 10 }}>
         <img src="/images/mascotes/leo/Leo_emocoes_espelho.webp" alt="Leo Mascote Emoções" className="intro-mascot title-mascot" />
@@ -302,7 +212,6 @@ export default function FacialExpressionsPage() {
 
   const PhaseCompleteView = () => (
     <div className="screen-center">
-      <ConfettiEffect />
       <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className="modal-container">
         <h2 className="modal-title">Fase {GAME_PHASES[currentPhaseIndex].phase} Completa!</h2>
         <div className="modal-icon">🎉</div>
@@ -314,7 +223,6 @@ export default function FacialExpressionsPage() {
 
   const GameCompleteView = () => (
     <div className="screen-center">
-      <ConfettiEffect />
       <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} className="modal-container">
         <Trophy className="modal-trophy" />
         <h2 className="modal-title congrats">PARABÉNS!</h2>
