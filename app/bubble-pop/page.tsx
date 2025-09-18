@@ -1,4 +1,5 @@
 // app/bubble-pop/page.tsx
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -7,7 +8,6 @@ import { TitleScreen } from './components/TitleScreen';
 import { InstructionsScreen } from './components/InstructionsScreen';
 import { GameScreen } from './components/GameScreen';
 import { ResultsScreen } from './components/ResultsScreen';
-import styles from './bubble-pop.module.css';
 
 export default function BubblePopPage() {
   const [currentScreen, setCurrentScreen] = useState<'title' | 'instructions' | 'game' | 'results'>('title');
@@ -25,12 +25,12 @@ export default function BubblePopPage() {
   const handleStart = () => setCurrentScreen('instructions');
 
   const handlePlay = () => {
-    game.startActivity(); // ✅ FUNÇÃO ORIGINAL CORRETA
+    game.startActivity();
     setCurrentScreen('game');
   };
 
   const handleRestart = () => {
-    game.voltarInicio(); // ✅ FUNÇÃO ORIGINAL CORRETA
+    game.voltarInicio();
     setCurrentScreen('title');
   };
 
@@ -46,12 +46,12 @@ export default function BubblePopPage() {
 
   if (currentScreen === 'title') {
     return (
-      <TitleScreen 
-        onStart={handleStart} 
+      <TitleScreen
+        onStart={handleStart}
         toggleAudio={game.toggleAudio}
         audioEnabled={game.audioEnabled}
         totalStarsCollected={totalStars}
-        bestScore={bestScore} 
+        bestScore={bestScore}
       />
     );
   }
@@ -62,8 +62,8 @@ export default function BubblePopPage() {
 
   if (currentScreen === 'game') {
     return (
-      <GameScreen 
-        ref={gameAreaRef} 
+      <GameScreen
+        ref={gameAreaRef}
         isPlaying={game.isPlaying}
         score={game.score}
         combo={game.combo}
@@ -79,13 +79,26 @@ export default function BubblePopPage() {
         showLevelTransition={game.showLevelTransition}
         levelMessage={game.levelMessage}
         fishCollection={game.fishCollection}
+        
+        {/* NOVOS PROPS QUE ESTAVAM FALTANDO */}
+        equipment={game.equipment}
+        savedFish={game.savedFish}
+        multiplier={game.multiplier}
+        multiplierTime={game.multiplierTime}
+        magnetActive={game.magnetActive}
+        magnetTime={game.magnetTime}
+        showBossLevel={game.showBossLevel}
+        bossDefeated={game.bossDefeated}
+        freedCreatures={game.freedCreatures}
+        bubblesSpawned={game.bubblesSpawned}
+        levelCompleted={game.levelCompleted}
       />
     );
   }
 
   if (currentScreen === 'results') {
     return (
-      <ResultsScreen 
+      <ResultsScreen
         score={game.score}
         maxCombo={game.maxCombo}
         completedLevels={game.completedLevels}
