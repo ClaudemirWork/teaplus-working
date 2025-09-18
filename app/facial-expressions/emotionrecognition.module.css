@@ -615,3 +615,56 @@
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
 }
+/* Acessibilidade: respeita redução de movimento */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .intro-start-button,
+  .modal-trophy,
+  .progressFill,
+  .emotionCard:not([disabled]):hover {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+  .gameTitle,
+  .intro-main-title {
+    animation: none !important;
+  }
+}
+
+/* Indicador leve quando o Leo está falando (aplique a classe via React) */
+.speaking {
+  outline: 3px solid rgba(33, 150, 243, 0.35);
+  box-shadow: 0 0 0 6px rgba(33, 150, 243, 0.15) !important;
+  transition: box-shadow 0.3s ease;
+}
+.speaking .instruction-box,
+.speaking .speech-bubble {
+  box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.25), 0 4px 15px rgba(0,0,0,0.1) !important;
+}
+
+/* Foco visível para teclado */
+.startButton:focus,
+.backButton:focus,
+.nextButton:focus,
+.controlButton:focus,
+.emotionCard:focus {
+  outline: 3px solid #1976D2;
+  outline-offset: 3px;
+}
+
+/* Estado desabilitado mais claro (quando aguardando narração terminar) */
+.intro-next-button[aria-disabled="true"],
+.startButton:disabled,
+.nextButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Micro transições mais suaves na grade e cards */
+.emotionsGrid {
+  transition: padding 0.2s ease, gap 0.2s ease;
+}
+.emotionCard {
+  will-change: transform, box-shadow;
+}
