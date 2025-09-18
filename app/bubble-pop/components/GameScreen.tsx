@@ -287,7 +287,7 @@ export const GameScreen = forwardRef<HTMLDivElement, GameScreenProps>(({
               </div>
             )}
 
-            {/* BOLHAS */}
+            {/* BOLHAS COM ÍCONES DOS ANIMAIS CORRIGIDOS */}
             {bubbles.map(bubble => (
               <div
                 key={bubble.id}
@@ -365,6 +365,54 @@ export const GameScreen = forwardRef<HTMLDivElement, GameScreenProps>(({
                     🧲
                   </div>
                 )}
+                
+                {/* ÍCONES DOS ANIMAIS MARINHOS - CORREÇÃO PRINCIPAL */}
+                {bubble.type === 'pufferfish' && (
+                  <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                    🐡
+                  </div>
+                )}
+                {bubble.type === 'starfish' && (
+                  <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                    ⭐
+                  </div>
+                )}
+                {bubble.type === 'octopus' && (
+                  <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                    🐙
+                  </div>
+                )}
+                {bubble.type === 'whale' && (
+                  <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                    🐳
+                  </div>
+                )}
+                {bubble.type === 'shark' && (
+                  <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                    🦈
+                  </div>
+                )}
+                {bubble.type === 'turtle' && (
+                  <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                    🐢
+                  </div>
+                )}
+                {bubble.type === 'dolphin' && (
+                  <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                    🐬
+                  </div>
+                )}
+                {bubble.type === 'treasure' && (
+                  <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                    💰
+                  </div>
+                )}
+                {bubble.type === 'pearl' && (
+                  <div className="absolute inset-0 flex items-center justify-center text-2xl">
+                    🦪
+                  </div>
+                )}
+                
                 {['air', 'oxygen', 'pink', 'purple', 'yellow', 'green', 'orange'].includes(bubble.type) && (
                   <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xs">
                     +{bubble.points}
