@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Volume2, VolumeX, Trophy, ArrowLeft } from 'lucide-react';
 import { GameAudioManager } from '@/utils/gameAudioManager';
-import styles from './FacialExpressions.module.css';
+import styles from './emotionrecognition.module.css'; // CAMINHO CORRIGIDO
 
 // --- EFEITO DE CONFETE SIMPLIFICADO ---
 const confetti = (opts = {}) => {
