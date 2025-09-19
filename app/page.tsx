@@ -63,21 +63,21 @@ export default function LandingPage() {
                     </div>
                 </header>
 
-                {/* Seção Principal (Hero) com Leo e Mila */}
+                {/* Seção Principal (Hero) com Leo e Mila - AGORA RESPONSIVA */}
                 <main className="hero-section">
                     <div className="container mx-auto px-6 py-16 sm:py-24 text-center">
-                        <div className="flex flex-col lg:flex-row items-center justify-center gap-8">
+                        {/* A classe 'lg:flex-row' garante que o layout só mude em telas grandes */}
+                        <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12">
                             {/* Imagem dos Mascotes */}
                             <div className="w-full lg:w-1/2 flex justify-center animate-fade-in-up">
-                                {/* CAMINHO DA IMAGEM CORRIGIDO */}
-                                <Image src="/images/Leo_Mila_e_LudiTEA.webp" alt="Mascotes Leo e Mila com o logo do LudiTEA" width={512} height={350} className="max-w-md lg:max-w-lg w-full rounded-lg" priority />
+                                <Image src="/images/Leo_Mila_e_LudiTEA.webp" alt="Mascotes Leo e Mila com o logo do LudiTEA" width={512} height={350} className="max-w-sm sm:max-w-md lg:max-w-lg w-full rounded-lg" priority />
                             </div>
                             {/* Texto da Seção Principal */}
-                            <div className="w-full lg:w-1/2 lg:text-left">
-                                <h1 className="text-4xl md:text-6xl font-black text-gray-800 leading-tight animate-fade-in-up delay-1">
+                            <div className="w-full lg:w-1/2 lg:text-left mt-8 lg:mt-0">
+                                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-gray-800 leading-tight animate-fade-in-up delay-1">
                                     Uma jornada de <span className="text-indigo-600">descobertas</span> e <span className="text-green-500">desenvolvimento</span>
                                 </h1>
-                                <p className="mt-4 text-lg text-gray-600 max-w-xl animate-fade-in-up delay-2">
+                                <p className="mt-4 text-lg text-gray-600 max-w-xl mx-auto lg:mx-0 animate-fade-in-up delay-2">
                                     A primeira plataforma brasileira integrada para o desenvolvimento de habilidades em pessoas com TEA e TDAH, com foco na individualidade e no aprendizado divertido.
                                 </p>
                                 <div className="mt-8 animate-fade-in-up delay-3">
