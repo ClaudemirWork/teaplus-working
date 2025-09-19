@@ -10,54 +10,66 @@ import confetti from 'canvas-confetti';
 // Mundos em ordem de progressão
 const WORLD_ORDER = ['starter', 'sports', 'fantasy', 'heroes', 'digital', 'multicultural'];
 
-// Avatares VERIFICADOS E SEGUROS (apenas os que sabemos que existem)
+// Avatares REAIS E VERIFICADOS (baseados na lista fornecida)
 const AVATAR_WORLDS = {
   starter: {
     name: 'Mundo Inicial',
     emoji: '🌟',
     avatars: [
-      'Face_1', 'Face_2', 'Cartoon_1', 'Cartoon_2',
-      'Funny_1', 'Funny_2', 'Pet_1', 'Pet_2'
+      'Face_1', 'Face_4', 'Funny_1', 'Funny_4', 
+      'Pet_2', 'Pet_4', 'Doctor_1', 'Cartoon_2',
+      // Incluindo Leo e Mila no mundo inicial
+      'mascotes/leo/leo_feliz_resultado', 'mascotes/mila/mila_joinha_resultado'
     ]
   },
   sports: {
     name: 'Arena dos Campeões',
     emoji: '⚽',
     avatars: [
-      'Futebol_1', 'Futebol_2', 'Basquete_1', 'Basquete_2',
-      'Chess_1', 'Chess_2', 'Player_16bits_1', 'Player_16bits_2'
+      'Basquete_1', 'Basquete_2', 'Futebol_1', 'Futebol_4',
+      'Chess_1', 'Chess_3', 'Player_16bits_2', 'Player_16bits_3',
+      // Leo e Mila esportivos
+      'mascotes/leo/leo_joinha_resultado', 'mascotes/mila/mila_apoio_resultado'
     ]
   },
   fantasy: {
     name: 'Reino Encantado',
     emoji: '🏰',
     avatars: [
-      'Fada_1', 'Fada_2', 'princesa_1', 'princesa_2',
-      'Guerreiro_1', 'Guerreiro_2', 'Fada_3', 'princesa_3'
+      'Fada_2', 'Fada_4', 'princesa_1', 'princesa_2',
+      'Guerreiro_2', 'Guerreiro_3', 'Manga_2', 'Manga_3',
+      // Leo e Mila mágicos
+      'mascotes/leo/leo_mago_resultado', 'mascotes/mila/mila_feiticeira_resultado'
     ]
   },
   heroes: {
     name: 'Liga dos Heróis',
     emoji: '🦸',
     avatars: [
-      'Heroi_1', 'Heroi_2', 'Heroi_3', 'Heroi_4',
-      'Fighting_1', 'Fighting_2', 'Heroi_5', 'Fighting_3'
+      'Heroi_2', 'Heroi_4', 'Heroi_6', 'Heroi_8',
+      'Fighting_2', 'Fighting_3', 'Futurista_2', 'Futurista_3',
+      // Leo e Mila heróicos
+      'mascotes/leo/leo_apontando_resultado', 'mascotes/mila/mila_forca_resultado'
     ]
   },
   digital: {
     name: 'Mundo Digital',
     emoji: '🎮',
     avatars: [
-      'Minecraft_1', 'Minecraft_2', 'Roblox_1', 'Roblox_2',
-      'Player_16bits_3', 'Player_16bits_4', 'Minecraft_3', 'Roblox_3'
+      'Minecraft_1', 'Minecraft_3', 'Roblox_2', 'Roblox_3',
+      'Mascote PC_1', 'Mascote PC_3', 'Teenager_1', 'Teenager_2',
+      // Leo e Mila digitais
+      'mascotes/leo/leo_torre', 'mascotes/mila/mila_puzzle'
     ]
   },
   multicultural: {
     name: 'Aldeia Global',
     emoji: '🌍',
     avatars: [
-      'menina_brasil_1', 'menino_brasil_2', 'menina_japao_1', 'menino_japao_2',
-      'menina_indigena_1', 'menina_indigena_2', 'menina_brasil_3', 'menino_japao_3'
+      'menina_brasil_1', 'menino_brasil_2', 'menina_japao_3', 'menino_japao_2',
+      'menina_indigena_2', 'menino_indigena_2', 'menina_chinesa_1', 'menino_chines_2',
+      // Leo e Mila multiculturais
+      'mascotes/leo/leo_boas_vindas_resultado', 'mascotes/mila/mila_boas_vindas_resultado'
     ]
   }
 };
@@ -113,7 +125,7 @@ export default function MemoryGame() {
   const getCurrentWorld = () => WORLD_ORDER[currentWorldIndex];
   const getCurrentWorldData = () => AVATAR_WORLDS[getCurrentWorld() as keyof typeof AVATAR_WORLDS];
 
-  // Inicialização
+  // INICIALIZAÇÃO OTIMIZADA DO ÁUDIO (reduzindo delay)
   useEffect(() => {
     const initAudio = async () => {
       try {
@@ -123,8 +135,9 @@ export default function MemoryGame() {
             audioManagerRef.current = GameAudioManager.getInstance();
             audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
             setIsReady(true);
+            console.log('✅ Áudio inicializado com sucesso');
           } catch (err) {
-            console.warn('Erro na inicialização de áudio:', err);
+            console.warn('⚠️ Erro na inicialização de áudio:', err);
             setIsReady(true);
           }
           document.removeEventListener('click', enableAudio);
@@ -134,6 +147,7 @@ export default function MemoryGame() {
         document.addEventListener('click', enableAudio);
         document.addEventListener('touchstart', enableAudio);
         
+        // TIMEOUT REDUZIDO - de 1000ms para 300ms
         setTimeout(() => {
           if (!isReady) {
             try {
@@ -141,14 +155,15 @@ export default function MemoryGame() {
               audioManagerRef.current = GameAudioManager.getInstance();
               audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
               setIsReady(true);
+              console.log('✅ Áudio inicializado via fallback');
             } catch (err) {
-              console.warn('Erro na inicialização de áudio:', err);
+              console.warn('⚠️ Erro na inicialização de áudio via fallback:', err);
               setIsReady(true);
             }
           }
-        }, 1000);
+        }, 300); // REDUZIDO!
       } catch (err) {
-        console.warn('Erro na inicialização de áudio:', err);
+        console.warn('⚠️ Erro na inicialização de áudio:', err);
         setIsReady(true);
       }
     };
@@ -213,26 +228,43 @@ export default function MemoryGame() {
     }
   }, [isSoundOn]);
 
-  // Função para o Leo falar
+  // Função OTIMIZADA para o Leo falar (com timeout reduzido)
   const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
     if (!isSoundOn || !audioManagerRef.current) {
-      console.log('Áudio desativado ou não inicializado, pulando fala do Leo');
+      console.log('🔇 Áudio desativado, executando callback imediatamente');
       onEnd?.();
       return;
     }
     
     try {
-      console.log('Leo falando:', text);
-      audioManagerRef.current.falarLeo(text, onEnd);
+      console.log('🎤 Leo falando:', text);
+      // TIMEOUT PARA FALA - se demorar mais que 500ms, prosseguir
+      const timeout = setTimeout(() => {
+        console.log('⏰ Timeout na fala do Leo, prosseguindo...');
+        onEnd?.();
+      }, 500);
+      
+      audioManagerRef.current.falarLeo(text, () => {
+        clearTimeout(timeout);
+        onEnd?.();
+      });
     } catch (error) {
-      console.error('Erro ao chamar falarLeo:', error);
+      console.error('❌ Erro ao chamar falarLeo:', error);
       onEnd?.();
     }
   }, [isSoundOn]);
 
-  // FUNÇÃO PRINCIPAL PARA CRIAR JOGO - AGORA TOTALMENTE SÍNCRONA
+  // FUNÇÃO PARA OBTER CAMINHO CORRETO DA IMAGEM
+  const getImagePath = useCallback((avatar: string) => {
+    if (avatar.startsWith('mascotes/')) {
+      return `/images/${avatar}.webp`;
+    }
+    return `/images/avatares/${avatar}.webp`;
+  }, []);
+
+  // FUNÇÃO PRINCIPAL PARA CRIAR JOGO - AGORA COM AVATARES ÚNICOS GARANTIDOS
   const createGameWithConfig = useCallback((worldIndex: number, difficulty: Difficulty) => {
-    console.log('=== CRIANDO JOGO ===');
+    console.log('🎮 === CRIANDO JOGO ===');
     console.log('Mundo:', worldIndex, 'Dificuldade:', difficulty);
     
     const settings = DIFFICULTY_SETTINGS[difficulty];
@@ -243,40 +275,53 @@ export default function MemoryGame() {
     console.log('Mundo data:', world);
     
     if (!world) {
-      console.error('World not found:', worldKey);
+      console.error('❌ World not found:', worldKey);
       return [];
     }
     
-    // Embaralhar avatares e selecionar
+    // GARANTIR AVATARES ÚNICOS - embaralhar e selecionar sem repetição
     const availableAvatars = [...world.avatars];
+    
+    if (availableAvatars.length < settings.pairs) {
+      console.warn(`⚠️ Poucos avatares disponíveis! Mundo: ${world.name}, Disponíveis: ${availableAvatars.length}, Necessários: ${settings.pairs}`);
+    }
+    
+    // Embaralhar e selecionar avatares únicos
     const shuffledAvatars = availableAvatars.sort(() => Math.random() - 0.5);
     const selectedAvatars = shuffledAvatars.slice(0, settings.pairs);
     
-    console.log('Avatares selecionados:', selectedAvatars);
+    // VERIFICAR SE TEMOS AVATARES ÚNICOS
+    const uniqueAvatars = [...new Set(selectedAvatars)];
+    if (uniqueAvatars.length !== selectedAvatars.length) {
+      console.warn('⚠️ Avatares duplicados detectados! Removendo duplicatas...');
+    }
+    
+    console.log('✅ Avatares selecionados (únicos):', uniqueAvatars);
     console.log('Pares necessários:', settings.pairs);
     
-    // Criar pares
+    // Criar pares com avatares únicos
     const gameCards: Card[] = [];
-    selectedAvatars.forEach((avatar, index) => {
+    uniqueAvatars.slice(0, settings.pairs).forEach((avatar, index) => {
       gameCards.push({
-        id: `${difficulty}-${worldIndex}-${avatar}-1-${Date.now()}`,
+        id: `${difficulty}-${worldIndex}-${avatar}-1-${Date.now()}-${index}`,
         avatar,
         isFlipped: false,
         isMatched: false
       });
       gameCards.push({
-        id: `${difficulty}-${worldIndex}-${avatar}-2-${Date.now()}`,
+        id: `${difficulty}-${worldIndex}-${avatar}-2-${Date.now()}-${index}`,
         avatar,
         isFlipped: false,
         isMatched: false
       });
     });
     
-    // Embaralhar cartas
+    // Embaralhar cartas finais
     const shuffledCards = gameCards.sort(() => Math.random() - 0.5);
     
-    console.log('=== CARTAS FINAIS ===');
+    console.log('🃏 === CARTAS FINAIS ===');
     console.log('Total:', shuffledCards.length, 'Esperado:', settings.pairs * 2);
+    console.log('Avatares únicos usados:', uniqueAvatars.length);
     console.log('Cartas:', shuffledCards.map(c => ({ id: c.id, avatar: c.avatar })));
     
     return shuffledCards;
@@ -284,7 +329,7 @@ export default function MemoryGame() {
 
   // FUNÇÃO PARA INICIALIZAR JOGO COMPLETO
   const initializeGameComplete = useCallback((worldIndex: number, difficulty: Difficulty, keepScore: boolean = false) => {
-    console.log('🎮 INICIALIZANDO JOGO COMPLETO');
+    console.log('🚀 INICIALIZANDO JOGO COMPLETO');
     console.log('Mundo:', worldIndex, 'Dificuldade:', difficulty, 'Manter Score:', keepScore);
     
     // Criar cartas
@@ -317,8 +362,9 @@ export default function MemoryGame() {
     setGameStarted(true);
     setIsTimerActive(true);
     
-    leoSpeak("Bem-vindo ao Mundo Inicial! Vamos começar no modo fácil!");
-  }, [initializeGameComplete]);
+    // FALA MAIS RÁPIDA COM FALLBACK
+    leoSpeak("Bem-vindo ao Mundo Inicial! Vamos começar!");
+  }, [initializeGameComplete, leoSpeak]);
 
   // Timer
   useEffect(() => {
@@ -424,48 +470,45 @@ export default function MemoryGame() {
     
     setTotalScore(prev => prev + score);
     
-    // PROGRESSÃO SÍNCRONA
+    // PROGRESSÃO SÍNCRONA OTIMIZADA
     if (currentDifficulty === 'easy') {
       console.log('📈 PROGREDINDO PARA MÉDIO');
       setTimeout(() => {
         leoSpeak("Parabéns! Agora vamos para o nível médio!", () => {
-          // DIRETAMENTE criar novo jogo com médio
           initializeGameComplete(currentWorldIndex, 'medium', true);
           setGameStarted(true);
           setIsTimerActive(true);
         });
-      }, 2000);
+      }, 1500); // REDUZIDO de 2000 para 1500
     } else if (currentDifficulty === 'medium') {
       console.log('📈 PROGREDINDO PARA DIFÍCIL');
       setTimeout(() => {
         leoSpeak("Incrível! Agora vamos para o modo difícil!", () => {
-          // DIRETAMENTE criar novo jogo com difícil
           initializeGameComplete(currentWorldIndex, 'hard', true);
           setGameStarted(true);
           setIsTimerActive(true);
         });
-      }, 2000);
+      }, 1500);
     } else {
       // Completou mundo
       if (currentWorldIndex < WORLD_ORDER.length - 1) {
         console.log('🌍 PROGREDINDO PARA PRÓXIMO MUNDO');
         setCompletedWorlds(prev => [...prev, currentWorldIndex]);
         setTimeout(() => {
-          leoSpeak("Fantástico! Você completou todo o mundo! Vamos para o próximo!", () => {
-            // DIRETAMENTE criar novo jogo com próximo mundo
+          leoSpeak("Fantástico! Vamos para o próximo mundo!", () => {
             initializeGameComplete(currentWorldIndex + 1, 'easy', true);
             setGameStarted(true);
             setIsTimerActive(true);
           });
-        }, 2000);
+        }, 1500);
       } else {
         console.log('🏁 JOGO COMPLETO');
         setCompletedWorlds(prev => [...prev, currentWorldIndex]);
         setTimeout(() => {
-          leoSpeak("Você é um verdadeiro mestre da memória! Completou todos os mundos!", () => {
+          leoSpeak("Você é um mestre da memória!", () => {
             setShowResults(true);
           });
-        }, 2000);
+        }, 1500);
       }
     }
   };
@@ -476,7 +519,6 @@ export default function MemoryGame() {
     
     leoSpeak("Que pena, o tempo acabou! Vamos tentar de novo?", () => {
       setTimeout(() => {
-        // Reiniciar com mesma configuração
         initializeGameComplete(currentWorldIndex, currentDifficulty, false);
         setGameStarted(true);
         setIsTimerActive(true);
@@ -540,7 +582,7 @@ export default function MemoryGame() {
     setCompletedWorlds([]);
   };
 
-  // Handler da tela inicial
+  // Handler da tela inicial OTIMIZADO
   const handleStartIntro = async () => {
     if (isInteracting || !isReady) return;
     setIsInteracting(true);
@@ -554,7 +596,8 @@ export default function MemoryGame() {
         await audioManagerRef.current.forceInitialize();
       }
 
-      leoSpeak("Olá! Sou o Leo! Vamos exercitar nossa memória e nos divertir!", () => {
+      // FALA MAIS CURTA E RÁPIDA
+      leoSpeak("Olá! Sou o Leo! Vamos exercitar nossa memória!", () => {
         setIsInteracting(false);
         setCurrentScreen('instructions');
       });
@@ -627,17 +670,16 @@ export default function MemoryGame() {
     </div>
   );
 
-  // Tela de instruções
+  // Tela de instruções OTIMIZADA
   const InstructionsScreen = () => {
     const [leoFalando, setLeoFalando] = useState(true);
     const [falaConcluida, setFalaConcluida] = useState(false);
 
     const instrucoes = [
-      { emoji: '🃏', texto: "Clique nas cartas para virá-las e revelar os avatares!" },
-      { emoji: '👯', texto: "Encontre os pares - duas cartas com o mesmo avatar!" },
-      { emoji: '⏰', texto: "Corra contra o tempo para encontrar todos os pares!" },
-      { emoji: '🔥', texto: "Faça combos encontrando pares consecutivos para mais pontos!" },
-      { emoji: '🌍', texto: "Explore diferentes mundos com avatares únicos!" }
+      { emoji: '🃏', texto: "Clique nas cartas para virá-las!" },
+      { emoji: '👯', texto: "Encontre os pares iguais!" },
+      { emoji: '⏰', texto: "Corra contra o tempo!" },
+      { emoji: '🔥', texto: "Faça combos para mais pontos!" }
     ];
 
     useEffect(() => {
@@ -655,7 +697,7 @@ export default function MemoryGame() {
         for (const item of instrucoes) {
           if (cancelled) return;
           await falarFrase(item.texto);
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 300)); // REDUZIDO
         }
         
         setFalaConcluida(true);
@@ -775,12 +817,12 @@ export default function MemoryGame() {
             )}
 
             {/* DEBUG INFO - removível em produção */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="bg-yellow-100 p-2 rounded text-xs">
-                <div><strong>DEBUG:</strong></div>
+            {process.env.NODE_ENV === 'development' && gameStarted && (
+              <div className="bg-green-100 p-2 rounded text-xs">
+                <div><strong>✅ DEBUG INFO:</strong></div>
                 <div>Cartas: {cards.length} | Esperado: {DIFFICULTY_SETTINGS[currentDifficulty].pairs * 2}</div>
                 <div>Dificuldade: {currentDifficulty} | Mundo: {currentWorldIndex}</div>
-                <div>Matches: {matches} | Necessário: {DIFFICULTY_SETTINGS[currentDifficulty].pairs}</div>
+                <div>Avatares únicos: {[...new Set(cards.map(c => c.avatar))].length}</div>
               </div>
             )}
 
@@ -834,12 +876,14 @@ export default function MemoryGame() {
                           }}
                         >
                           <img
-                            src={`/images/avatares/${card.avatar}.webp`}
+                            src={getImagePath(card.avatar)}
                             alt={`Avatar ${card.avatar}`}
                             className="w-full h-full object-cover rounded"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              console.warn(`❌ Erro ao carregar: ${card.avatar}.webp`);
+                              console.warn(`❌ Erro ao carregar: ${card.avatar}`);
+                              console.warn(`🔧 Tentando carregar: ${getImagePath(card.avatar)}`);
+                              // Fallback para Face_1 que sabemos que existe
                               target.src = '/images/avatares/Face_1.webp';
                             }}
                           />
