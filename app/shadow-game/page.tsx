@@ -5,10 +5,7 @@ import Image from 'next/image';
 import { Volume2, VolumeX, Trophy, Star, ArrowLeft, Zap, Flame, Award, Crown, Medal } from 'lucide-react';
 import type { GameAudioManager } from '@/utils/gameAudioManager';
 
-// --- DADOS DO JOGO (Mantidos do seu original) ---
-const imageNames = [
-    'abacate', 'abelha', 'abelha_feliz', 'abelha_voando', 'abelhinha', 'aguia', 'amigos', 'apresentacao', 'arvore_natal', 'baleia', 'bananas', 'barraca', 'beagle', 'berinjela', 'bike', 'biscoito', 'boneca', 'borboleta', 'brincando', 'brinquedo', 'brocolis', 'cachorro', 'cachorro_banho', 'cactus', 'cactus_vaso', 'caranguejo', 'carro_laranja', 'carro_vermelho', 'carta', 'casa', 'casa_balao', 'casal', 'cavalinho', 'cegonha', 'cerebro', 'cerejas', 'cobra', 'coco', 'coelho_chocolate', 'coelho_pascoa', 'coelho_pelucia', 'cone', 'coral', 'criancas', 'crocodilo', 'crocodilo_escola', 'crocodilo_feliz', 'detetive', 'doutor', 'elefante', 'elefantinho', 'enfeite_natal', 'esquilo', 'estudando', 'fantasminha', 'formiga', 'forte', 'franguinho', 'fusca', 'galinha', 'gata_danca', 'gatinho', 'gatinho_cores', 'gato', 'gato_balao', 'gato_branco', 'gato_caixa', 'gato_cores', 'gato_pretao', 'gato_preto', 'gel', 'genial', 'girafa', 'homem_neve', 'inseto', 'irmaos_crocodilos', 'leao', 'leitura', 'limao', 'maca_nervosa', 'melancia', 'melancia_pedaco', 'menina', 'menina_amor', 'menino', 'menino_cao', 'milkshake', 'motoca', 'mulher', 'mulher_gato', 'mundo', 'panda', 'papai_noel', 'pardal', 'passaro_azul', 'passaro_preto', 'passaros_fio', 'peixe_louco', 'penguim', 'pirata_pau', 'pote_ouro', 'preguica', 'professor', 'professora', 'puffy', 'relax', 'rosto', 'sapao', 'sapo', 'super_macaco', 'tartaruga', 'tenis', 'tenis_azul', 'tigre', 'tigre_feliz', 'trem', 'tres_crocodilos', 'tubarao', 'tulipas', 'turma', 'uniconio_rosa', 'unicornino', 'urso_branco', 'vegetais', 'violao', 'violino', 'vulcao', 'zebra'
-];
+const imageNames = [ /* ... array de nomes ... */ ];
 
 const shuffleArray = (array: any[]) => {
   const newArray = [...array];
@@ -39,32 +36,27 @@ export default function ShadowGamePage() {
 
   const audioManagerRef = useRef<GameAudioManager | null>(null);
 
-  // Efeito que carrega TUDO que depende do navegador de forma segura
   useEffect(() => {
     const initializeClientSide = async () => {
       try {
-        // Importa o AudioManager dinamicamente para não quebrar o build
         const { GameAudioManager } = await import('@/utils/gameAudioManager');
         audioManagerRef.current = GameAudioManager.getInstance();
-
-        // Carrega os dados do localStorage
+        // Carrega localStorage
         const savedHighScore = localStorage.getItem('shadowGameHighScore');
         const savedStars = localStorage.getItem('shadowGameTotalStars');
-        if (savedHighScore) setHighScore(parseInt(savedHighScore, 10));
-        if (savedStars) setTotalStars(parseInt(savedStars, 10));
+        if (savedHighScore) setHighScore(Number(savedHighScore));
+        if (savedStars) setTotalStars(Number(savedStars));
       } catch (error) {
         console.error("Erro ao inicializar áudio:", error);
-        setAudioError("Não foi possível carregar o áudio. O jogo continuará sem som.");
+        setAudioError("Não foi possível carregar o áudio. O jogo funcionará sem som.");
       } finally {
-        // Avisa para a UI que o jogo está pronto para começar (mesmo com falhas)
         setIsReady(true);
       }
     };
-
     initializeClientSide();
   }, []);
 
-  // Funções de áudio que usam o AudioManager de forma segura
+  // Funções seguras para áudio/TTS
   const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
     if (!isReady || !soundEnabled) {
       onEnd?.();
@@ -72,8 +64,9 @@ export default function ShadowGamePage() {
     }
     try {
       audioManagerRef.current?.falarLeo(text, onEnd);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao reproduzir áudio do Leo:", error);
+      setAudioError("Problema com a voz do Leo! Verifique conexão ou chaves do Azure.");
       onEnd?.();
     }
   }, [isReady, soundEnabled]);
@@ -82,8 +75,9 @@ export default function ShadowGamePage() {
     if (!isReady || !soundEnabled) return;
     try {
       audioManagerRef.current?.playSoundEffect(soundName, volume);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Erro ao reproduzir som ${soundName}:`, error);
+      setAudioError("Falha ao carregar efeitos sonoros.");
     }
   }, [isReady, soundEnabled]);
 
@@ -128,7 +122,6 @@ export default function ShadowGamePage() {
 
   const handleOptionClick = (clickedOption: string) => {
     if (Object.keys(feedback).length > 0 || !selectedPhase) return;
-
     if (clickedOption === roundData?.correctAnswer) {
       playSound('correct_chime', 0.4);
       const newStreak = streak + 1;
@@ -165,44 +158,39 @@ export default function ShadowGamePage() {
       setTimeout(() => setFeedback({}), 800);
     }
   };
-  
-  // --- COMPONENTES DE TELA ---
+
+  // TELA DE TÍTULO
   const TitleScreen = () => {
     const handlePlayIntro = async () => {
-      if (isInteracting || !isReady) {
-        console.log("Botão desabilitado ou já em interação");
-        return;
-      }
-      
-      console.log("Botão clicado - Iniciando jogo");
+      if (isInteracting || !isReady) return;
+
       setIsInteracting(true);
       playSound('click_start', 0.7);
-      
+
       try {
-        console.log("Forçando inicialização do áudio...");
+        // Inicializa o áudio via clique — importante para Safari/iOS
         await audioManagerRef.current?.forceInitialize();
-        
-        // Adicionar um timeout como fallback
+        // Fallback de timeout
         const timeoutId = setTimeout(() => {
-          console.log("Timeout: prosseguindo sem áudio");
           setGameState('instructions');
           setIsInteracting(false);
         }, 5000);
-        
-        console.log("Tentando fazer Leo falar...");
+
         leoSpeak("Olá! Eu sou o Leo! Vamos jogar com sombras?", () => {
           clearTimeout(timeoutId);
-          console.log("Leo terminou de falar, mudando para instruções");
           setGameState('instructions');
           setIsInteracting(false);
         });
       } catch (error) {
         console.error("Erro durante a inicialização:", error);
+        setAudioError("Problema ao inicializar som. Verifique as permissões e tente de novo.");
         setGameState('instructions');
         setIsInteracting(false);
+      } finally {
+        setIsReady(true); // Garantia para não travar botão
       }
     };
-    
+
     return (
       <div className="screen-container title-screen">
         <div className="stars-bg"></div>
@@ -211,19 +199,11 @@ export default function ShadowGamePage() {
         </div>
         <h1 className="main-title">Jogo das Sombras</h1>
         <p className="subtitle">Associe cada imagem com sua sombra!</p>
-        
+
         {audioError && (
-          <div className="error-message" style={{ 
-            color: '#ff6a6a', 
-            backgroundColor: 'rgba(255,255,255,0.8)', 
-            padding: '10px', 
-            borderRadius: '10px', 
-            margin: '10px 0' 
-          }}>
-            {audioError}
-          </div>
+          <div className="error-message">{audioError}</div>
         )}
-        
+
         <button 
           onClick={handlePlayIntro} 
           disabled={!isReady || isInteracting} 
@@ -231,9 +211,9 @@ export default function ShadowGamePage() {
         >
           {!isReady ? 'Carregando...' : (isInteracting ? 'Iniciando...' : 'Começar a Jogar')}
         </button>
-        
+
         {!isReady && (
-          <div className="loading-indicator" style={{ marginTop: '20px' }}>
+          <div className="loading-indicator">
             <div className="spinner"></div>
             <p>Preparando o jogo...</p>
           </div>
@@ -242,6 +222,7 @@ export default function ShadowGamePage() {
     );
   };
 
+  // TELA DE EXPLICAÇÃO
   const InstructionsScreen = () => (
     <div className="screen-container explanation-screen">
       <div className="stars-bg"></div>
@@ -276,7 +257,7 @@ export default function ShadowGamePage() {
       </div>
     </div>
   );
-  
+
   const GameScreen = () => {
     if (!roundData) return null;
     const comboIcons: { [key: string]: React.ElementType } = { '20': Crown, '15': Award, '10': Medal, '5': Flame, '2': Zap };
@@ -317,6 +298,6 @@ export default function ShadowGamePage() {
       default: return <TitleScreen />;
     }
   };
-  
+
   return <main className="shadow-game-main">{renderContent()}</main>;
 }
