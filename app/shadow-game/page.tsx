@@ -10,13 +10,30 @@ import { Trophy, Star, ArrowLeft, Volume2, VolumeX } from 'lucide-react';
 type GameState = 'loading' | 'intro' | 'instructions' | 'phase-selection' | 'playing';
 type RoundType = 'imageToShadow' | 'shadowToImage';
 
+// NOVA LISTA DE IMAGENS - SINCRONIZADA COM SEUS ARQUIVOS REAIS
 const imageNames = [
- 'abacate', 'abelha', 'abelha_voando', 'aguia', 'amigos',
- 'arvore_natal', 'baleia', 'bicicleta', 'borboleta', 'cachorro',
- 'casa', 'cavalo', 'elefante', 'flor', 'gato', 'girassol',
- 'leao', 'passaro', 'peixe', 'sol', 'tartaruga', 'urso',
- 'vaca', 'zebra', 'coelho', 'formiga', 'galinha'
+    'abacate', 'abelha', 'abelha_feliz', 'abelha_voando', 'abelhinha', 'aguia', 'amigos', 
+    'apresentacao', 'arvore_natal', 'baleia', 'bananas', 'barraca', 'beagle', 'berinjela', 
+    'bike', 'biscoito', 'boneca', 'borboleta', 'brincando', 'brinquedo', 'brocolis', 
+    'cachorro', 'cachorro_banho', 'cactus', 'cactus_vaso', 'caranguejo', 'carro_laranja', 
+    'carro_vermelho', 'carta', 'casa', 'casa_balao', 'casal', 'cavalinho', 'cegonha', 
+    'cerebro', 'cerejas', 'cobra', 'coco', 'coelho_chocolate', 'coelho_pascoa', 
+    'coelho_pelucia', 'cone', 'coral', 'criancas', 'crocodilo', 'crocodilo_escola', 
+    'crocodilo_feliz', 'detetive', 'doutor', 'elefante', 'elefantinho', 'enfeite_natal', 
+    'esquilo', 'estudando', 'fantasminha', 'formiga', 'forte', 'franguinho', 'fusca', 
+    'galinha', 'gata_danca', 'gatinho', 'gatinho_cores', 'gato', 'gato_balao', 
+    'gato_branco', 'gato_caixa', 'gato_cores', 'gato_pretao', 'gato_preto', 'gel', 
+    'genial', 'girafa', 'homem_neve', 'inseto', 'irmaos_crocodilos', 'leao', 'leitura', 
+    'limao', 'maca_nervosa', 'melancia', 'melancia_pedaco', 'menina', 'menina_amor', 
+    'menino', 'menino_cao', 'milkshake', 'motoca', 'mulher', 'mulher_gato', 'mundo', 
+    'panda', 'papai_noel', 'pardal', 'passaro_azul', 'passaro_preto', 'passaros_fio', 
+    'peixe_louco', 'penguim', 'pirata_pau', 'pote_ouro', 'preguica', 'professor', 
+    'professora', 'puffy', 'relax', 'rosto', 'sapao', 'sapo', 'super_macaco', 'tartaruga', 
+    'tenis', 'tenis_azul', 'tigre', 'tigre_feliz', 'trem', 'tres_crocodilos', 'tubarao', 
+    'tulipas', 'turma', 'uniconio_rosa', 'unicornino', 'urso_branco', 'vegetais', 'violao', 
+    'violino', 'vulcao', 'zebra'
 ];
+
 
 const shuffleArray = (array: any[]) => {
  const newArray = [...array];
@@ -94,7 +111,6 @@ export default function ShadowGamePage() {
   let roundType: RoundType = phase === 1 ? 'imageToShadow' : phase === 2 ? 'shadowToImage' : (Math.random() < 0.5 ? 'imageToShadow' : 'shadowToImage');
   let mainItem, correctAnswer, options;
 
-  // CORREÇÃO DOS CAMINHOS DAS IMAGENS
   if (roundType === 'imageToShadow') {
    mainItem = `/shadow-game/images/${correctImage}.webp`;
    correctAnswer = `/shadow-game/shadows/${correctImage}_black.webp`;
@@ -211,12 +227,10 @@ export default function ShadowGamePage() {
     setScore(score + 100);
     setStreak(streak + 1);
     
-    // Feedback de voz apenas em combos para não ser repetitivo
-    if ((streak + 1) % 5 === 0) {
+    if ((streak + 1) % 5 === 0 && streak > 0) {
         leoSpeak(`Uau! Sequência de ${streak + 1}!`);
     }
 
-    // Avança para a próxima rodada com um pequeno delay
     setTimeout(() => startNewRound(selectedPhase!), 300);
 
    } else {
