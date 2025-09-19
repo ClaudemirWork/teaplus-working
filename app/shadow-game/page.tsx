@@ -5,7 +5,10 @@ import Image from 'next/image';
 import { Volume2, VolumeX, Trophy, Star, ArrowLeft, Zap, Flame, Award, Crown, Medal } from 'lucide-react';
 import type { GameAudioManager } from '@/utils/gameAudioManager';
 
-const imageNames = [ /* ... array de nomes ... */ ];
+// Substitua pelo array verdadeiro:
+const imageNames = [
+    'abacate', 'abelha', 'abelha_feliz', 'abelha_voando', 'abelhinha', 'aguia', 'amigos', 'apresentacao', 'arvore_natal', 'baleia', // ... etc
+];
 
 const shuffleArray = (array: any[]) => {
   const newArray = [...array];
@@ -30,7 +33,7 @@ export default function ShadowGamePage() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [highScore, setHighScore] = useState(0);
   const [totalStars, setTotalStars] = useState(0);
-  const [isReady, setIsReady] = useState(false); // Controla se o áudio está pronto
+  const [isReady, setIsReady] = useState(false);
   const [isInteracting, setIsInteracting] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
 
@@ -41,13 +44,11 @@ export default function ShadowGamePage() {
       try {
         const { GameAudioManager } = await import('@/utils/gameAudioManager');
         audioManagerRef.current = GameAudioManager.getInstance();
-        // Carrega localStorage
         const savedHighScore = localStorage.getItem('shadowGameHighScore');
         const savedStars = localStorage.getItem('shadowGameTotalStars');
         if (savedHighScore) setHighScore(Number(savedHighScore));
         if (savedStars) setTotalStars(Number(savedStars));
       } catch (error) {
-        console.error("Erro ao inicializar áudio:", error);
         setAudioError("Não foi possível carregar o áudio. O jogo funcionará sem som.");
       } finally {
         setIsReady(true);
@@ -56,7 +57,6 @@ export default function ShadowGamePage() {
     initializeClientSide();
   }, []);
 
-  // Funções seguras para áudio/TTS
   const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
     if (!isReady || !soundEnabled) {
       onEnd?.();
@@ -64,8 +64,7 @@ export default function ShadowGamePage() {
     }
     try {
       audioManagerRef.current?.falarLeo(text, onEnd);
-    } catch (error: any) {
-      console.error("Erro ao reproduzir áudio do Leo:", error);
+    } catch (error) {
       setAudioError("Problema com a voz do Leo! Verifique conexão ou chaves do Azure.");
       onEnd?.();
     }
@@ -75,8 +74,7 @@ export default function ShadowGamePage() {
     if (!isReady || !soundEnabled) return;
     try {
       audioManagerRef.current?.playSoundEffect(soundName, volume);
-    } catch (error: any) {
-      console.error(`Erro ao reproduzir som ${soundName}:`, error);
+    } catch (error) {
       setAudioError("Falha ao carregar efeitos sonoros.");
     }
   }, [isReady, soundEnabled]);
@@ -162,32 +160,23 @@ export default function ShadowGamePage() {
   // TELA DE TÍTULO
   const TitleScreen = () => {
     const handlePlayIntro = async () => {
-      if (isInteracting || !isReady) return;
-
       setIsInteracting(true);
-      playSound('click_start', 0.7);
-
       try {
-        // Inicializa o áudio via clique — importante para Safari/iOS
         await audioManagerRef.current?.forceInitialize();
-        // Fallback de timeout
-        const timeoutId = setTimeout(() => {
-          setGameState('instructions');
-          setIsInteracting(false);
-        }, 5000);
-
-        leoSpeak("Olá! Eu sou o Leo! Vamos jogar com sombras?", () => {
-          clearTimeout(timeoutId);
-          setGameState('instructions');
-          setIsInteracting(false);
+        const leoSpeakPromise = new Promise<void>((resolve) => {
+          leoSpeak("Olá! Eu sou o Leo! Vamos jogar com sombras?", resolve);
         });
-      } catch (error) {
-        console.error("Erro durante a inicialização:", error);
-        setAudioError("Problema ao inicializar som. Verifique as permissões e tente de novo.");
+        await Promise.race([
+          leoSpeakPromise,
+          new Promise(resolve => setTimeout(resolve, 5000)),
+        ]);
         setGameState('instructions');
-        setIsInteracting(false);
+      } catch (error) {
+        setAudioError("Falha ao inicializar som. Tente atualizar a página.");
+        setGameState('instructions');
       } finally {
-        setIsReady(true); // Garantia para não travar botão
+        setIsInteracting(false);
+        setIsReady(true);
       }
     };
 
@@ -199,19 +188,16 @@ export default function ShadowGamePage() {
         </div>
         <h1 className="main-title">Jogo das Sombras</h1>
         <p className="subtitle">Associe cada imagem com sua sombra!</p>
-
         {audioError && (
           <div className="error-message">{audioError}</div>
         )}
-
         <button 
           onClick={handlePlayIntro} 
-          disabled={!isReady || isInteracting} 
+          disabled={!isReady || isInteracting}
           className="start-button"
         >
-          {!isReady ? 'Carregando...' : (isInteracting ? 'Iniciando...' : 'Começar a Jogar')}
+          {!isReady ? 'Carregando...' : isInteracting ? 'Iniciando...' : 'Começar a Jogar'}
         </button>
-
         {!isReady && (
           <div className="loading-indicator">
             <div className="spinner"></div>
@@ -222,7 +208,6 @@ export default function ShadowGamePage() {
     );
   };
 
-  // TELA DE EXPLICAÇÃO
   const InstructionsScreen = () => (
     <div className="screen-container explanation-screen">
       <div className="stars-bg"></div>
