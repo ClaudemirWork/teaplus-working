@@ -578,9 +578,9 @@ export default function MemoryGame() {
             <Image 
               src="/images/mascotes/leo/leo_memoria.webp" 
               alt="Leo Memória" 
-              width={200} 
-              height={200} 
-              className="w-48 h-48 sm:w-56 sm:h-56 drop-shadow-2xl" 
+              width={280} 
+              height={280} 
+              className="w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 drop-shadow-2xl" 
               priority 
             />
           </div>
@@ -614,7 +614,7 @@ export default function MemoryGame() {
           <button 
             onClick={handleStartIntro} 
             disabled={!isReady || isInteracting}
-            className="w-full max-w-xs text-lg font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full px-6 py-4 shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full max-w-xs text-base sm:text-lg font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full px-6 py-3 sm:py-4 shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {!isReady ? 'Carregando Áudio...' : (isInteracting ? 'Ouvindo Leo...' : 'Começar Aventura da Memória')}
           </button>
