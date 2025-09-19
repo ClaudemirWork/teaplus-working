@@ -272,34 +272,24 @@ export default function MemoryGame() {
     if (audioContextRef.current?.state === 'suspended') await audioContextRef.current.resume();
     if (audioManagerRef.current) await audioManagerRef.current.forceInitialize();
     
-    const fallback = setTimeout(() => { 
-      setIsInteracting(false); 
-      setGameState('instructions'); 
-    }, 6000);
-    
     leoSpeak("Olá! Sou o Leo, e agora, vamos nos divertir e exercitar nossa memória. Vamos nos tornar um super cérebro!", () => { 
-      clearTimeout(fallback); 
       setIsInteracting(false); 
       setGameState('instructions'); 
     });
   };
 
   const handleNextInstruction = () => {
-    const fallback = setTimeout(() => setGameState('selection'), 8000);
+    setIsInteracting(true);
     leoSpeak("Clique nas cartas para virá-las e revelar os avatares. Encontre os pares, duas cartas com o mesmo avatar. Corra contra o tempo para encontrar todos os pares. Faça combos encontrando pares consecutivos para mais pontos. Explore diferentes mundos com avatares únicos!", () => { 
-      clearTimeout(fallback); 
+      setIsInteracting(false);
       setGameState('selection'); 
     });
   };
 
   const handleStartGame = () => {
-    const fallback = setTimeout(() => {
-      setGameState('playing');
-      initializeGame();
-    }, 8000);
-    
-    leoSpeak("Nós temos vários mundos para explorar, com maravilhas e descobertas únicas. Vamos começar pelo mundo inicial no fácil. Assim que ficarmos craques, passamos para o nível médio até chegar ao difícil. E assim vamos nessa incrível jornada juntos. Vamos começar?", () => {
-      clearTimeout(fallback);
+    setIsInteracting(true);
+    leoSpeak("Vamos começar pelo mundo inicial no fácil. Assim que completarmos, passaremos automaticamente para o médio e depois para o difícil. Vamos nessa jornada juntos!", () => {
+      setIsInteracting(false);
       setGameState('playing');
       initializeGame();
     });
@@ -441,20 +431,11 @@ export default function MemoryGame() {
   // Vitória
   const handleVictory = () => {
     setIsTimerActive(false);
-    setGameState('results');
     
     playSound('victory');
     setShowConfetti(true);
     
-    const celebrationPhrases = [
-      "Isso aí amigão, vamos para mais uma rodada, sei que pode ir muitoooo mais longe!",
-      "Parabéns! Você é um verdadeiro mestre da memória!",
-      "Incrível! Sua memória está ficando cada vez melhor!",
-      "Que demais! Você encontrou todos os pares!"
-    ];
-    
-    leoSpeak(celebrationPhrases[Math.floor(Math.random() * celebrationPhrases.length)]);
-    
+    // Salvar recordes
     const newPairs = totalPairsFound + matches;
     setTotalPairsFound(newPairs);
     localStorage.setItem('memoryGame_totalPairs', newPairs.toString());
@@ -462,6 +443,40 @@ export default function MemoryGame() {
     if (score > bestScore) {
       setBestScore(score);
       localStorage.setItem('memoryGame_bestScore', score.toString());
+    }
+    
+    // Progressão automática: Fácil → Médio → Difícil → Final
+    if (difficulty === 'easy') {
+      setTimeout(() => {
+        leoSpeak("Parabéns! Agora vamos para o nível médio. Vai ficar mais desafiador!", () => {
+          setDifficulty('medium');
+          setGameState('playing');
+          initializeGame();
+          setTimeout(() => {
+            setGameStarted(true);
+            setIsTimerActive(true);
+          }, 500);
+        });
+      }, 2000);
+    } else if (difficulty === 'medium') {
+      setTimeout(() => {
+        leoSpeak("Incrível! Agora vamos para o modo difícil do mundo inicial. Este é o desafio final!", () => {
+          setDifficulty('hard');
+          setGameState('playing');
+          initializeGame();
+          setTimeout(() => {
+            setGameStarted(true);
+            setIsTimerActive(true);
+          }, 500);
+        });
+      }, 2000);
+    } else {
+      // Completou modo difícil - vai para tela final
+      setTimeout(() => {
+        leoSpeak("Isso aí amigão! Você é um verdadeiro mestre da memória! Completou todos os níveis!", () => {
+          setGameState('results');
+        });
+      }, 2000);
     }
     
     setTimeout(() => setShowConfetti(false), 4000);
@@ -540,7 +555,7 @@ export default function MemoryGame() {
 
   if (gameState === 'intro') {
     return (
-      <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-indigo-300 via-purple-400 to-pink-400 overflow-hidden">
+      <div className="min-h-screen flex flex-col justify-center items-center p-4 bg-gradient-to-br from-indigo-300 via-purple-400 to-pink-400 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           {[...Array(25)].map((_, i) => (
             <div
@@ -558,38 +573,38 @@ export default function MemoryGame() {
           ))}
         </div>
         
-        <div className="relative z-10 flex flex-col items-center text-center">
-          <div className="mb-6 animate-bounce-slow">
+        <div className="relative z-10 flex flex-col items-center text-center max-w-sm sm:max-w-md">
+          <div className="mb-4 animate-bounce-slow">
             <Image 
               src="/images/mascotes/leo/leo_memoria.webp" 
               alt="Leo Memória" 
-              width={280} 
-              height={280} 
-              className="drop-shadow-2xl" 
+              width={200} 
+              height={200} 
+              className="w-48 h-48 sm:w-56 sm:h-56 drop-shadow-2xl" 
               priority 
             />
           </div>
           
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white drop-shadow-lg mb-2">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold text-white drop-shadow-lg mb-2">
             Jogo da Memória
           </h1>
-          <p className="text-xl sm:text-2xl text-white/90 mt-2 mb-6 drop-shadow-md">
+          <p className="text-lg sm:text-xl text-white/90 mb-6 drop-shadow-md">
             Encontre todos os pares com Leo!
           </p>
           
           {(totalPairsFound > 0 || bestScore > 0) && (
-            <div className="bg-white/90 rounded-2xl p-6 mb-6 shadow-xl backdrop-blur-sm border border-purple-200">
-              <div className="flex items-center gap-6">
+            <div className="bg-white/90 rounded-2xl p-4 mb-6 shadow-xl backdrop-blur-sm border border-purple-200 w-full max-w-xs">
+              <div className="flex items-center justify-center gap-4 text-sm">
                 {totalPairsFound > 0 && (
                   <div className="flex items-center gap-2">
-                    <Star className="w-6 h-6 text-yellow-500" fill="currentColor" />
+                    <Star className="w-5 h-5 text-yellow-500" fill="currentColor" />
                     <span className="font-bold text-purple-800">{totalPairsFound} pares</span>
                   </div>
                 )}
                 {bestScore > 0 && (
                   <div className="flex items-center gap-2">
-                    <Trophy className="w-6 h-6 text-yellow-600" />
-                    <span className="font-bold text-purple-800">Recorde: {bestScore}</span>
+                    <Trophy className="w-5 h-5 text-yellow-600" />
+                    <span className="font-bold text-purple-800">{bestScore}</span>
                   </div>
                 )}
               </div>
@@ -599,7 +614,7 @@ export default function MemoryGame() {
           <button 
             onClick={handleStartIntro} 
             disabled={!isReady || isInteracting}
-            className="text-xl font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full px-12 py-5 shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-1 hover:shadow-2xl disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full max-w-xs text-lg font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full px-6 py-4 shadow-xl transition-all duration-300 hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {!isReady ? 'Carregando Áudio...' : (isInteracting ? 'Ouvindo Leo...' : 'Começar Aventura da Memória')}
           </button>
@@ -610,37 +625,38 @@ export default function MemoryGame() {
 
   if (gameState === 'instructions') {
     return (
-      <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-300 via-indigo-300 to-blue-300">
-        <div className="bg-white/95 rounded-3xl p-8 max-w-2xl shadow-2xl text-center backdrop-blur-sm">
-          <h2 className="text-4xl font-bold mb-6 text-indigo-600">Como Jogar</h2>
-          <div className="text-lg text-gray-700 space-y-6 mb-6 text-left">
-            <p className="flex items-center gap-4">
-              <span className="text-4xl">🃏</span>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-300 via-indigo-300 to-blue-300">
+        <div className="bg-white/95 rounded-3xl p-6 sm:p-8 max-w-lg sm:max-w-2xl w-full shadow-2xl text-center backdrop-blur-sm">
+          <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6 text-indigo-600">Como Jogar</h2>
+          <div className="text-base sm:text-lg text-gray-700 space-y-4 sm:space-y-6 mb-4 sm:mb-6 text-left">
+            <p className="flex items-center gap-3 sm:gap-4">
+              <span className="text-2xl sm:text-4xl">🃏</span>
               <span><b>Clique nas cartas</b> para virá-las e revelar os avatares!</span>
             </p>
-            <p className="flex items-center gap-4">
-              <span className="text-4xl">👯</span>
+            <p className="flex items-center gap-3 sm:gap-4">
+              <span className="text-2xl sm:text-4xl">👯</span>
               <span><b>Encontre os pares</b> - duas cartas com o mesmo avatar!</span>
             </p>
-            <p className="flex items-center gap-4">
-              <span className="text-4xl">⏰</span>
+            <p className="flex items-center gap-3 sm:gap-4">
+              <span className="text-2xl sm:text-4xl">⏰</span>
               <span><b>Corra contra o tempo</b> para encontrar todos os pares!</span>
             </p>
-            <p className="flex items-center gap-4">
-              <span className="text-4xl">🔥</span>
+            <p className="flex items-center gap-3 sm:gap-4">
+              <span className="text-2xl sm:text-4xl">🔥</span>
               <span><b>Faça combos</b> encontrando pares consecutivos para mais pontos!</span>
             </p>
-            <p className="flex items-center gap-4">
-              <span className="text-4xl">🌍</span>
+            <p className="flex items-center gap-3 sm:gap-4">
+              <span className="text-2xl sm:text-4xl">🌍</span>
               <span><b>Explore diferentes mundos</b> com avatares únicos!</span>
             </p>
           </div>
           
           <button 
             onClick={handleNextInstruction} 
-            className="w-full text-xl font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full py-4 shadow-xl hover:scale-105 transition-transform"
+            disabled={isInteracting}
+            className="w-full text-lg sm:text-xl font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full py-3 sm:py-4 shadow-xl hover:scale-105 transition-transform disabled:opacity-60"
           >
-            Vamos Jogar!
+            {isInteracting ? 'Leo está explicando...' : 'Vamos Jogar!'}
           </button>
         </div>
       </div>
