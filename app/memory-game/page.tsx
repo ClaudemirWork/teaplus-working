@@ -597,8 +597,8 @@ export default function MemoryGame() {
         await audioManagerRef.current.forceInitialize();
       }
 
-      // AGUARDAR LEO TERMINAR DE FALAR COMPLETAMENTE
-      leoSpeak("Olá! Sou o Leo! Vamos exercitar nossa memória!", () => {
+      // FRASE MAIS LONGA E NATURAL DO LEO
+      leoSpeak("Eu sou o Léo, e vamos praticar o jogo da memória", () => {
         console.log('✅ Leo terminou de falar na tela inicial');
         // DELAY ADICIONAL para garantir que terminou
         setTimeout(() => {
