@@ -230,6 +230,14 @@ export default function MemoryGame() {
     init();
   }, []);
 
+  // Efeito para iniciar automaticamente a fala das instruções quando a tela de instruções for exibida
+  useEffect(() => {
+    // Quando a tela de instruções for exibida, inicia automaticamente a fala do Leo
+    if (gameState === 'instructions' && isReady && !isInteracting) {
+      handleNextInstruction();
+    }
+  }, [gameState, isReady, isInteracting]);
+
   // Leo falar - CORRIGIDO
   const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
     if (!isSoundOn || !audioManagerRef.current) {
@@ -788,7 +796,7 @@ export default function MemoryGame() {
             </p>
           </div>
 
-          {/* Removemos o botão e deixamos apenas um indicador de que o jogo vai começar */}
+          {/* Indicador de status */}
           <div className="text-lg text-indigo-600 font-medium">
             {isInteracting ? 'Leo está explicando...' : 'Preparando o jogo...'}
           </div>
