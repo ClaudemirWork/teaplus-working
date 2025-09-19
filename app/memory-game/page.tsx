@@ -261,8 +261,9 @@ export default function MemoryGame() {
     }
   }, [isSoundOn]);
 
-  // Inicializar jogo
+  // Inicializar jogo - CORRIGIDA
   const initializeGame = useCallback(() => {
+    console.log('Inicializando jogo');
     const settings = DIFFICULTY_SETTINGS[currentDifficulty];
     const world = getCurrentWorldData();
     
@@ -306,15 +307,24 @@ export default function MemoryGame() {
     setIsTimerActive(false);
     setGameStarted(false);
     setShowResults(false);
+    
+    console.log('Jogo inicializado com', shuffledCards.length, 'cartas');
   }, [currentDifficulty, currentWorldIndex]);
 
-  // Iniciar atividade
+  // Iniciar atividade - CORRIGIDA
   const startActivity = () => {
+    console.log('Iniciando atividade do jogo');
     setCurrentScreen('game');
+    
+    // Inicializar o jogo primeiro
     initializeGame();
     
-    // Falar após o jogo estar pronto
+    // Garantir que o jogo seja iniciado após um pequeno delay
     setTimeout(() => {
+      setGameStarted(true);
+      setIsTimerActive(true);
+      
+      // Falar após o jogo estar pronto
       const worldData = getCurrentWorldData();
       leoSpeak(`Bem-vindo ao ${worldData.name}! Vamos começar no modo fácil!`);
     }, 500);
@@ -683,6 +693,7 @@ export default function MemoryGame() {
   const InstructionsScreen = () => {
     const [leoFalando, setLeoFalando] = useState(true);
     const [falaConcluida, setFalaConcluida] = useState(false);
+    const [jogoIniciado, setJogoIniciado] = useState(false);
 
     useEffect(() => {
       let cancelled = false;
@@ -719,6 +730,15 @@ export default function MemoryGame() {
           console.log('Todas as instruções foram concluídas');
           setFalaConcluida(true);
           setLeoFalando(false);
+          
+          // Iniciar o jogo automaticamente após as instruções
+          setTimeout(() => {
+            if (!cancelled && !jogoIniciado) {
+              console.log('Iniciando jogo automaticamente');
+              setJogoIniciado(true);
+              startActivity();
+            }
+          }, 1000);
         }
       }
 
@@ -728,12 +748,12 @@ export default function MemoryGame() {
         cancelled = true;
         console.log('Efeito de instrução limpo');
       };
-    }, []);
+    }, [jogoIniciado]);
 
     // Adicionar um fallback para garantir que o jogo possa começar mesmo se houver problemas com o áudio
     useEffect(() => {
       const fallbackTimer = setTimeout(() => {
-        if (!falaConcluida) {
+        if (!falaConcluida && !jogoIniciado) {
           console.log('Fallback: ativando botão após 15 segundos');
           setFalaConcluida(true);
           setLeoFalando(false);
@@ -741,7 +761,7 @@ export default function MemoryGame() {
       }, 15000); // 15 segundos
 
       return () => clearTimeout(fallbackTimer);
-    }, [falaConcluida]);
+    }, [falaConcluida, jogoIniciado]);
 
     return (
       <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-300 via-indigo-300 to-blue-300">
@@ -786,15 +806,16 @@ export default function MemoryGame() {
           
           <button
             onClick={() => {
-              if (!leoFalando && falaConcluida) {
+              if (!leoFalando && falaConcluida && !jogoIniciado) {
+                setJogoIniciado(true);
                 startActivity();
               }
             }}
-            disabled={!falaConcluida}
+            disabled={!falaConcluida || jogoIniciado}
             className={`w-full text-xl font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full py-4 shadow-xl
-              hover:scale-105 transition-transform ${!falaConcluida ? "opacity-50 cursor-not-allowed" : ""}`}
+              hover:scale-105 transition-transform ${(!falaConcluida || jogoIniciado) ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            {leoFalando ? "Leo está explicando..." : "Vamos Começar a Aventura!"}
+            {jogoIniciado ? "Iniciando jogo..." : (leoFalando ? "Leo está explicando..." : "Vamos Começar a Aventura!")}
           </button>
           
           {/* Mensagem de fallback */}
@@ -809,6 +830,18 @@ export default function MemoryGame() {
   };
 
   const GameScreen = () => {
+    // Garantir que o jogo seja iniciado quando a tela for carregada
+    useEffect(() => {
+      if (!gameStarted && cards.length === 0) {
+        console.log('Iniciando jogo na GameScreen');
+        initializeGame();
+        setTimeout(() => {
+          setGameStarted(true);
+          setIsTimerActive(true);
+        }, 1000);
+      }
+    }, [gameStarted, cards.length, initializeGame]);
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200">
         <header className="bg-white/90 backdrop-blur-sm border-b border-purple-200 sticky top-0 z-10">
