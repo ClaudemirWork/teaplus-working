@@ -26,7 +26,49 @@
     overflow: hidden;
     position: relative;
 }
+@media (max-width: 768px) {
+  .shadow-game-main {
+    padding: 0.5rem;
+    min-height: 100vh;
+    min-height: 100dvh; /* Fix iPhone */
+  }
+  
+  .playing-screen {
+    max-width: 100%;
+    padding: 1rem;
+  }
+  
+  .main-item-container {
+    padding: 0.5rem;
+  }
+  
+  .options-container {
+    gap: 0.8rem;
+  }
+  
+  .option-button {
+    min-height: 80px;
+    padding: 0.5rem;
+  }
+}
 
+@media (max-width: 480px) {
+  .phase-container button {
+    font-size: 1.4rem;
+    padding: 1rem;
+  }
+  
+  .options-container {
+    gap: 0.6rem;
+  }
+  
+  .option-button {
+    min-height: 70px;
+  }
+}
+
+/* Fix iPhone zoom */
+button { font-size: 16px !important; }
 .screen-container {
     width: 100%;
     max-width: 500px;
