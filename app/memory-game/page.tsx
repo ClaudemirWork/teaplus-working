@@ -11,7 +11,7 @@ import styles from './memory-game.module.css';
 // Mundos em ordem de progressão
 const WORLD_ORDER = ['starter', 'sports', 'fantasy', 'heroes', 'digital', 'multicultural'];
 
-// Avatares organizados por mundo/categoria - CORRIGIDOS PARA EVITAR REPETIÇÃO
+// Avatares organizados por mundo/categoria
 const AVATAR_WORLDS = {
   starter: {
     name: 'Mundo Inicial',
@@ -58,16 +58,16 @@ const AVATAR_WORLDS = {
     emoji: '🌍',
     avatars: [
       'menina_brasil_1', 'menino_brasil_2', 'menina_japao_1', 'menino_japao_2',
-      'menina_indigena_1', 'menino_indigena_2', 'menina_brasil_3', 'menino_japao_3'
+      'menina_indigena_1', 'menina_indigena_2', 'menina_brasil_3', 'menino_japao_3'
     ]
   }
 };
 
-// Configurações de dificuldade - CORRIGIDAS
+// Configurações de dificuldade
 const DIFFICULTY_SETTINGS = {
   easy: {
     name: 'Fácil',
-    pairs: 2, // 2 pares = 4 cartas
+    pairs: 2,
     gridCols: 4,
     gridRows: 2,
     time: 60,
@@ -75,7 +75,7 @@ const DIFFICULTY_SETTINGS = {
   },
   medium: {
     name: 'Médio',
-    pairs: 3, // 3 pares = 6 cartas
+    pairs: 3,
     gridCols: 4,
     gridRows: 3,
     time: 90,
@@ -83,7 +83,7 @@ const DIFFICULTY_SETTINGS = {
   },
   hard: {
     name: 'Difícil',
-    pairs: 4, // 4 pares = 8 cartas
+    pairs: 4,
     gridCols: 4,
     gridRows: 4,
     time: 120,
@@ -203,6 +203,10 @@ export default function MemoryGame() {
   const [salvando, setSalvando] = useState(false);
   const [isSoundOn, setIsSoundOn] = useState(true);
 
+  // Controle para evitar chamadas duplicadas
+  const lastActionRef = useRef<string>('');
+  const isProcessingRef = useRef<boolean>(false);
+
   // Getter para mundo atual
   const getCurrentWorld = () => WORLD_ORDER[currentWorldIndex];
   const getCurrentWorldData = () => AVATAR_WORLDS[getCurrentWorld() as keyof typeof AVATAR_WORLDS];
@@ -230,23 +234,26 @@ export default function MemoryGame() {
     init();
   }, []);
 
-  // Efeito para iniciar automaticamente a fala das instruções quando a tela de instruções for exibida
-  useEffect(() => {
-    // Quando a tela de instruções for exibida, inicia automaticamente a fala do Leo
-    if (gameState === 'instructions' && isReady && !isInteracting) {
-      handleNextInstruction();
-    }
-  }, [gameState, isReady, isInteracting]);
-
-  // Leo falar - CORRIGIDO
-  const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
+  // Leo falar - CORRIGIDO COM CONTROLE DE DUPLICATAS
+  const leoSpeak = useCallback((text: string, onEnd?: () => void, actionId?: string) => {
     if (!isSoundOn || !audioManagerRef.current) {
       console.log('🔇 Áudio desativado ou gerenciador não disponível, ignorando fala do Leo');
       onEnd?.();
       return;
     }
     
-    console.log(`🗣️ Solicitando fala do Leo: "${text.substring(0, 30)}..."`);
+    // Verificar se já estamos processando esta ação
+    if (actionId && lastActionRef.current === actionId && isProcessingRef.current) {
+      console.log(`⚠️ Ação ${actionId} já está em andamento, ignorando`);
+      return;
+    }
+    
+    if (actionId) {
+      lastActionRef.current = actionId;
+      isProcessingRef.current = true;
+    }
+    
+    console.log(`🗣️ Solicitando fala do Leo: "${text.substring(0, 30)}..."${actionId ? ` (ID: ${actionId})` : ''}`);
     
     // Garantir que o callback seja chamado apenas uma vez
     let called = false;
@@ -254,6 +261,9 @@ export default function MemoryGame() {
       if (!called) {
         called = true;
         console.log('✅ Callback do Leo chamado');
+        if (actionId) {
+          isProcessingRef.current = false;
+        }
         onEnd?.();
       }
     };
@@ -262,6 +272,9 @@ export default function MemoryGame() {
       audioManagerRef.current.falarLeo(text, wrappedCallback);
     } catch (error) {
       console.error('❌ Erro ao chamar falarLeo:', error);
+      if (actionId) {
+        isProcessingRef.current = false;
+      }
       wrappedCallback();
     }
   }, [isSoundOn]);
@@ -334,10 +347,11 @@ export default function MemoryGame() {
     }
   }, [isSoundOn]);
 
-  // Handler da tela inicial
+  // Handler da tela inicial - SIMPLIFICADO
   const handleStartIntro = async () => {
     if (isInteracting || !isReady) return;
     setIsInteracting(true);
+    
     try {
       if (audioContextRef.current?.state === 'suspended') await audioContextRef.current.resume();
       if (audioManagerRef.current) await audioManagerRef.current.forceInitialize();
@@ -345,23 +359,38 @@ export default function MemoryGame() {
       leoSpeak("Olá! Sou o Leo, e agora, vamos nos divertir e exercitar nossa memória. Vamos nos tornar um super cérebro!", () => {
         setIsInteracting(false);
         setGameState('instructions');
-      });
+        
+        // Iniciar automaticamente a fala de instruções após um pequeno delay
+        setTimeout(() => {
+          if (gameState === 'instructions') {
+            handleNextInstruction();
+          }
+        }, 500);
+      }, 'start-intro');
     } catch (error) {
       console.error('Erro ao inicializar áudio:', error);
       setIsInteracting(false);
       setGameState('instructions');
+      
+      // Iniciar automaticamente a fala de instruções após um pequeno delay
+      setTimeout(() => {
+        if (gameState === 'instructions') {
+          handleNextInstruction();
+        }
+      }, 500);
     }
   };
 
-  // Handler de instruções - SEM BOTÃO, TRANSIÇÃO AUTOMÁTICA
+  // Handler de instruções - COM CONTROLE DE DUPLICATAS
   const handleNextInstruction = () => {
     if (isInteracting) return;
     setIsInteracting(true);
+    
     try {
       leoSpeak("Vamos explorar mundos incríveis juntos! Começaremos pelo Mundo Inicial no modo fácil, depois médio, depois difícil. Quando completarmos um mundo inteiro, passaremos automaticamente para o próximo desafio. Vamos nessa jornada!", () => {
         setIsInteracting(false);
         startCurrentWorld();
-      });
+      }, 'instructions');
     } catch (error) {
       console.error('Erro ao reproduzir áudio:', error);
       setIsInteracting(false);
@@ -369,15 +398,16 @@ export default function MemoryGame() {
     }
   };
 
-  // Iniciar mundo atual
+  // Iniciar mundo atual - COM CONTROLE DE DUPLICATAS
   const startCurrentWorld = () => {
     setDifficulty('easy');
     const worldData = getCurrentWorldData();
+    
     try {
       leoSpeak(`Bem-vindo ao ${worldData.name}! Vamos começar no modo fácil!`, () => {
         setGameState('playing');
         initializeGame();
-      });
+      }, 'start-world');
     } catch (error) {
       console.error('Erro ao reproduzir áudio:', error);
       setGameState('playing');
@@ -385,7 +415,7 @@ export default function MemoryGame() {
     }
   };
 
-  // Inicializar jogo - CORRIGIDO
+  // Inicializar jogo
   const initializeGame = useCallback(() => {
     const settings = DIFFICULTY_SETTINGS[difficulty];
     const world = getCurrentWorldData();
@@ -453,7 +483,7 @@ export default function MemoryGame() {
     const settings = DIFFICULTY_SETTINGS[difficulty];
     console.log(`Checando vitória - Matches: ${matches}, Required: ${settings.pairs}, GameStarted: ${gameStarted}, GameState: ${gameState}`);
 
-    if (matches === settings.pairs && matches > 0 && gameStarted && gameState === 'playing') {
+    if (matches === settings.pares && matches > 0 && gameStarted && gameState === 'playing') {
       console.log('VITÓRIA DETECTADA!');
       handleVictory();
     }
@@ -510,12 +540,14 @@ export default function MemoryGame() {
         }
 
         if (newCombo === 5) {
-          leoSpeak("Incrível! Combo de 5 acertos seguidos!");
+          leoSpeak("Incrível! Combo de 5 acertos seguidos!", () => {
+            setShowConfetti(false);
+          }, 'combo-5');
           setShowConfetti(true);
           playSound('celebration');
           setTimeout(() => setShowConfetti(false), 3000);
         } else if (newCombo === 3) {
-          leoSpeak("Muito bem! Combo de 3!");
+          leoSpeak("Muito bem! Combo de 3!", () => {}, 'combo-3');
         }
 
         const newMatches = matches + 1;
@@ -573,7 +605,7 @@ export default function MemoryGame() {
               setIsTimerActive(true);
             }, 500);
           }, 100);
-        });
+        }, 'victory-easy');
       }, 2000);
     } else if (difficulty === 'medium') {
       setTimeout(() => {
@@ -587,7 +619,7 @@ export default function MemoryGame() {
               setIsTimerActive(true);
             }, 500);
           }, 100);
-        });
+        }, 'victory-medium');
       }, 2000);
     } else {
       // Completou modo difícil - próximo mundo ou fim
@@ -602,12 +634,12 @@ export default function MemoryGame() {
               setDifficulty('easy');
               setGameState('worldComplete');
             }, 2000);
-          });
+          }, 'victory-hard');
         } else {
           // Completou todos os mundos
           leoSpeak("Isso aí amigão! Você é um verdadeiro mestre da memória! Completou todos os mundos!", () => {
             setGameState('gameComplete');
-          });
+          }, 'victory-complete');
         }
       }, 2000);
     }
@@ -628,7 +660,7 @@ export default function MemoryGame() {
           setIsTimerActive(true);
         }, 500);
       }, 2000);
-    });
+    }, 'game-over');
   };
 
   // Continuar para próximo mundo
