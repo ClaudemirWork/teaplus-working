@@ -63,7 +63,7 @@ const AVATAR_WORLDS = {
   }
 };
 
-// Configurações de dificuldade - CORRIGIDAS
+// Configurações de dificuldade
 const DIFFICULTY_SETTINGS = {
   easy: {
     name: 'Fácil',
@@ -150,10 +150,34 @@ export default function MemoryGame() {
     // Inicializar áudio
     const initAudio = async () => {
       try {
-        const { GameAudioManager } = await import('@/utils/gameAudioManager');
-        audioManagerRef.current = GameAudioManager.getInstance();
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        setIsReady(true);
+        // Forçar inicialização do áudio após interação do usuário
+        const enableAudio = () => {
+          const { GameAudioManager } = require('@/utils/gameAudioManager');
+          audioManagerRef.current = GameAudioManager.getInstance();
+          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+          setIsReady(true);
+          document.removeEventListener('click', enableAudio);
+          document.removeEventListener('touchstart', enableAudio);
+        };
+        
+        // Adicionar listeners para inicialização do áudio
+        document.addEventListener('click', enableAudio);
+        document.addEventListener('touchstart', enableAudio);
+        
+        // Timeout para garantir que o áudio seja inicializado mesmo sem interação
+        setTimeout(() => {
+          if (!isReady) {
+            try {
+              const { GameAudioManager } = require('@/utils/gameAudioManager');
+              audioManagerRef.current = GameAudioManager.getInstance();
+              audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+              setIsReady(true);
+            } catch (err) {
+              console.warn('Erro na inicialização de áudio:', err);
+              setIsReady(true);
+            }
+          }
+        }, 1000);
       } catch (err) {
         console.warn('Erro na inicialização de áudio:', err);
         setIsReady(true);
@@ -161,7 +185,7 @@ export default function MemoryGame() {
     };
     
     initAudio();
-  }, []);
+  }, [isReady]);
 
   // Função para criar e tocar sons
   const playSound = useCallback((type: 'flip' | 'match' | 'error' | 'victory') => {
@@ -220,14 +244,16 @@ export default function MemoryGame() {
     }
   }, [isSoundOn]);
 
-  // Função para o Leo falar - SIMPLIFICADA
+  // Função para o Leo falar - CORRIGIDA
   const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
     if (!isSoundOn || !audioManagerRef.current) {
+      console.log('Áudio desativado ou não inicializado, pulando fala do Leo');
       onEnd?.();
       return;
     }
     
     try {
+      console.log('Leo falando:', text);
       audioManagerRef.current.falarLeo(text, onEnd);
     } catch (error) {
       console.error('Erro ao chamar falarLeo:', error);
@@ -540,15 +566,18 @@ export default function MemoryGame() {
     setSelectedCards([]);
   };
 
-  // Handler da tela inicial - SIMPLIFICADO
+  // Handler da tela inicial - CORRIGIDO
   const handleStartIntro = async () => {
     if (isInteracting || !isReady) return;
     setIsInteracting(true);
     
     try {
+      // Garantir que o contexto de áudio está ativo
       if (audioContextRef.current?.state === 'suspended') {
         await audioContextRef.current.resume();
       }
+      
+      // Forçar inicialização do gerenciador de áudio
       if (audioManagerRef.current) {
         await audioManagerRef.current.forceInitialize();
       }
@@ -560,6 +589,7 @@ export default function MemoryGame() {
     } catch (error) {
       console.error('Erro ao inicializar áudio:', error);
       setIsInteracting(false);
+      // Mesmo com erro no áudio, continuar para a próxima tela
       setCurrentScreen('instructions');
     }
   };
@@ -649,7 +679,7 @@ export default function MemoryGame() {
     </div>
   );
 
-  // Tela de instruções - MODELO BUBBLE POP
+  // Tela de instruções - CORRIGIDA
   const InstructionsScreen = () => {
     const [leoFalando, setLeoFalando] = useState(true);
     const [falaConcluida, setFalaConcluida] = useState(false);
@@ -659,7 +689,11 @@ export default function MemoryGame() {
 
       async function falarFrase(frase: string) {
         return new Promise<void>(resolve => {
-          leoSpeak(frase, () => resolve());
+          console.log('Falando:', frase);
+          leoSpeak(frase, () => {
+            console.log('Frase concluída:', frase);
+            resolve();
+          });
         });
       }
 
@@ -681,14 +715,33 @@ export default function MemoryGame() {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
         
-        setFalaConcluida(true);
-        setLeoFalando(false);
+        if (!cancelled) {
+          console.log('Todas as instruções foram concluídas');
+          setFalaConcluida(true);
+          setLeoFalando(false);
+        }
       }
 
       narrarInstrucoes();
 
-      return () => { cancelled = true; };
+      return () => { 
+        cancelled = true;
+        console.log('Efeito de instrução limpo');
+      };
     }, []);
+
+    // Adicionar um fallback para garantir que o jogo possa começar mesmo se houver problemas com o áudio
+    useEffect(() => {
+      const fallbackTimer = setTimeout(() => {
+        if (!falaConcluida) {
+          console.log('Fallback: ativando botão após 15 segundos');
+          setFalaConcluida(true);
+          setLeoFalando(false);
+        }
+      }, 15000); // 15 segundos
+
+      return () => clearTimeout(fallbackTimer);
+    }, [falaConcluida]);
 
     return (
       <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-300 via-indigo-300 to-blue-300">
@@ -743,6 +796,13 @@ export default function MemoryGame() {
           >
             {leoFalando ? "Leo está explicando..." : "Vamos Começar a Aventura!"}
           </button>
+          
+          {/* Mensagem de fallback */}
+          {!falaConcluida && (
+            <div className="mt-4 text-sm text-gray-500">
+              Aguardando as instruções do Leo... Se demorar muito, o botão será ativado automaticamente.
+            </div>
+          )}
         </div>
       </div>
     );
@@ -863,7 +923,7 @@ export default function MemoryGame() {
                         }}
                       >
                         <div 
-                          className={`w-full h-full transition-transform duration-600 relative preserve-3d ${
+                          className={`w-full h-full transition-transform duration-600 relative ${
                             card.isFlipped || card.isMatched ? 'rotate-y-180' : ''
                           }`}
                           style={{ 
@@ -882,7 +942,7 @@ export default function MemoryGame() {
                           
                           {/* Frente da carta */}
                           <div 
-                            className={`absolute inset-0 w-full h-full bg-white rounded-xl p-1 rotate-y-180 backface-hidden border-2 ${
+                            className={`absolute inset-0 w-full h-full bg-white rounded-xl p-1 backface-hidden border-2 ${
                               card.isMatched ? 'border-green-400' : 'border-gray-200'
                             }`}
                             style={{ 
