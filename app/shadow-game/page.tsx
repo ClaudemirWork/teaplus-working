@@ -5,14 +5,11 @@ import Image from 'next/image';
 import { Trophy, Star, ArrowLeft, Volume2, VolumeX } from 'lucide-react';
 
 // ======================
-// TIPOS
+// TIPOS E DADOS
 // ======================
 type GameState = 'loading' | 'intro' | 'instructions' | 'phase-selection' | 'playing';
 type RoundType = 'imageToShadow' | 'shadowToImage';
 
-// ======================
-// LISTA DE IMAGENS
-// ======================
 const imageNames = [
  'abacate', 'abelha', 'abelha_voando', 'aguia', 'amigos',
  'arvore_natal', 'baleia', 'bicicleta', 'borboleta', 'cachorro',
@@ -61,7 +58,7 @@ export default function ShadowGamePage() {
  }, []);
 
  // ======================
- // VOZ DO LEO
+ // FUNÇÕES DE ÁUDIO
  // ======================
  const leoSpeak = (text: string, onEnd?: () => void) => {
   if (!soundEnabled || !audioManagerRef.current) {
@@ -76,8 +73,17 @@ export default function ShadowGamePage() {
   }
  };
 
+ const playSound = (soundName: string, volume: number = 0.5) => {
+    if (!soundEnabled || !audioManagerRef.current) return;
+    try {
+        audioManagerRef.current.playSoundEffect(soundName, volume);
+    } catch(err) {
+        console.error("Erro ao tocar som:", err);
+    }
+ }
+
  // ======================
- // RODADAS
+ // LÓGICA DO JOGO
  // ======================
  const startNewRound = (phase: number) => {
   let availableImages = [...imageNames];
@@ -88,6 +94,7 @@ export default function ShadowGamePage() {
   let roundType: RoundType = phase === 1 ? 'imageToShadow' : phase === 2 ? 'shadowToImage' : (Math.random() < 0.5 ? 'imageToShadow' : 'shadowToImage');
   let mainItem, correctAnswer, options;
 
+  // CORREÇÃO DOS CAMINHOS DAS IMAGENS
   if (roundType === 'imageToShadow') {
    mainItem = `/shadow-game/images/${correctImage}.webp`;
    correctAnswer = `/shadow-game/shadows/${correctImage}_black.webp`;
@@ -110,10 +117,9 @@ export default function ShadowGamePage() {
  };
 
  // ======================
- // TELAS
+ // TELAS (COMPONENTES)
  // ======================
 
- // Loading
  const LoadingScreen = () => (
   <div className="screen-container loading-screen">
    <h1 className="main-title">Jogo das Sombras</h1>
@@ -121,18 +127,14 @@ export default function ShadowGamePage() {
   </div>
  );
 
- // Intro
  const IntroScreen = () => {
   const handleClick = () => {
-   leoSpeak("Olá! Eu sou o Léo! Vamos jogar com sombras?", () => {
-    setGameState('instructions');
-   });
-   // fallback em 5s caso a voz não dispare
-   const fallback = setTimeout(() => setGameState('instructions'), 5000);
-   audioManagerRef.current.falarLeo("Olá! Eu sou o Léo! Vamos jogar com sombras?", () => {
-     clearTimeout(fallback);
-     setGameState('instructions');
-   });
+    playSound('click_start', 0.7);
+    const fallback = setTimeout(() => setGameState('instructions'), 5000);
+    leoSpeak("Olá! Eu sou o Léo! Vamos jogar com sombras?", () => {
+      clearTimeout(fallback);
+      setGameState('instructions');
+    });
   };
 
   return (
@@ -147,14 +149,14 @@ export default function ShadowGamePage() {
   );
  };
 
- // Instruções
  const InstructionsScreen = () => {
   const handleClick = () => {
-   const fallback = setTimeout(() => setGameState('phase-selection'), 5000);
-   leoSpeak("É super fácil! Clique na sombra certa para cada figura!", () => {
-     clearTimeout(fallback);
-     setGameState('phase-selection');
-   });
+    playSound('click_select');
+    const fallback = setTimeout(() => setGameState('phase-selection'), 5000);
+    leoSpeak("É super fácil! Clique na sombra certa para cada figura!", () => {
+      clearTimeout(fallback);
+      setGameState('phase-selection');
+    });
   };
 
   return (
@@ -170,29 +172,55 @@ export default function ShadowGamePage() {
   );
  };
 
- // Seleção de fase
- const PhaseSelectionScreen = () => (
-  <div className="screen-container phase-selection-screen">
-   <h2>Escolha seu desafio</h2>
-   <div className="phase-container">
-    <button onClick={() => { setSelectedPhase(1); setGameState('playing'); startNewRound(1); }}>🔍 Fase 1</button>
-    <button onClick={() => { setSelectedPhase(2); setGameState('playing'); startNewRound(2); }}>🌟 Fase 2</button>
-    <button onClick={() => { setSelectedPhase(3); setGameState('playing'); startNewRound(3); }}>🏆 Fase 3</button>
-   </div>
-  </div>
- );
+ const PhaseSelectionScreen = () => {
+    const handleSelect = (phase: number) => {
+        playSound('click_start');
+        setSelectedPhase(phase);
+        setScore(0);
+        setStreak(0);
 
- // Tela do jogo
+        const messages: {[key: number]: string} = {
+            1: "Fase 1: Detetive Júnior! Boa Sorte!",
+            2: "Fase 2: Mestre das Sombras! Ficou mais difícil!",
+            3: "Fase 3: Desafio Final! Para os melhores!"
+        };
+        leoSpeak(messages[phase]);
+
+        setGameState('playing');
+        startNewRound(phase);
+    };
+
+    return (
+        <div className="screen-container phase-selection-screen">
+            <h2>Escolha seu desafio</h2>
+            <div className="phase-container">
+                <button onClick={() => handleSelect(1)}>🔍 Fase 1</button>
+                <button onClick={() => handleSelect(2)}>🌟 Fase 2</button>
+                <button onClick={() => handleSelect(3)}>🏆 Fase 3</button>
+            </div>
+        </div>
+    );
+ };
+
  const GameScreen = () => {
   if (!roundData) return null;
 
   const handleOptionClick = (opt: string) => {
    if (opt === roundData.correctAnswer) {
+    playSound('correct_chime', 0.4);
     setScore(score + 100);
     setStreak(streak + 1);
-    leoSpeak("Muito bem!");
-    startNewRound(selectedPhase!);
+    
+    // Feedback de voz apenas em combos para não ser repetitivo
+    if ((streak + 1) % 5 === 0) {
+        leoSpeak(`Uau! Sequência de ${streak + 1}!`);
+    }
+
+    // Avança para a próxima rodada com um pequeno delay
+    setTimeout(() => startNewRound(selectedPhase!), 300);
+
    } else {
+    playSound('error_short', 0.4);
     setStreak(0);
     leoSpeak("Ops, tente de novo!");
    }
@@ -230,7 +258,7 @@ export default function ShadowGamePage() {
  };
 
  // ======================
- // RENDER
+ // RENDERIZADOR PRINCIPAL
  // ======================
  const renderContent = () => {
   switch (gameState) {
