@@ -228,7 +228,7 @@ export default function MemoryGame() {
     }
   }, [isSoundOn]);
 
-  // Função CORRIGIDA para o Leo falar (sem "corrida de cavalos")
+  // Função CORRIGIDA para o Leo falar (tempo adequado para crianças com TEA/TDAH)
   const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
     if (!isSoundOn || !audioManagerRef.current) {
       console.log('🔇 Áudio desativado, executando callback imediatamente');
@@ -238,15 +238,16 @@ export default function MemoryGame() {
     
     try {
       console.log('🎤 Leo falando:', text);
-      // TIMEOUT MAIS GENEROSO - baseado no tamanho do texto
-      const estimatedTime = Math.max(2000, text.length * 50); // ~50ms por caractere, mínimo 2s
+      // TIMEOUT GENEROSO - tempo suficiente para Leo falar com calma
+      const estimatedTime = Math.max(4000, text.length * 80); // ~80ms por caractere, mínimo 4s
       const timeout = setTimeout(() => {
-        console.log('⏰ Timeout na fala do Leo, prosseguindo...');
+        console.log('⏰ Leo terminou de falar (timeout)');
         onEnd?.();
       }, estimatedTime);
       
       audioManagerRef.current.falarLeo(text, () => {
         clearTimeout(timeout);
+        console.log('✅ Leo terminou de falar (callback)');
         onEnd?.();
       });
     } catch (error) {
