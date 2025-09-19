@@ -17,35 +17,40 @@ const AVATAR_WORLDS = {
     name: 'Mundo Inicial',
     emoji: '🌟',
     avatars: [
-      'Cartoon_2', 'Funny_1', 'Funny_4', 'Face_1', 'Face_4', 'Pet_2'
+      'Cartoon_2', 'Funny_1', 'Funny_4', 'Face_1', 'Face_4', 'Pet_2',
+      'Cartoon_1', 'Funny_2', 'Funny_3', 'Face_2', 'Face_3', 'Pet_1'
     ]
   },
   sports: {
     name: 'Arena dos Campeões',
     emoji: '⚽',
     avatars: [
-      'Basquete_1', 'Basquete_2', 'Futebol_1', 'Futebol_4', 'Chess_1', 'Chess_3'
+      'Basquete_1', 'Basquete_2', 'Futebol_1', 'Futebol_4', 'Chess_1', 'Chess_3',
+      'Basquete_3', 'Futebol_2', 'Futebol_3', 'Chess_2', 'Chess_4', 'Player_16bits_1'
     ]
   },
   fantasy: {
     name: 'Reino Encantado',
     emoji: '🏰',
     avatars: [
-      'Fada_2', 'Fada_4', 'princesa_1', 'princesa_2', 'Guerreiro_2', 'Guerreiro_3'
+      'Fada_2', 'Fada_4', 'princesa_1', 'princesa_2', 'Guerreiro_2', 'Guerreiro_3',
+      'Fada_1', 'Fada_3', 'princesa_3', 'princesa_4', 'Guerreiro_1', 'Guerreiro_4'
     ]
   },
   heroes: {
     name: 'Liga dos Heróis',
     emoji: '🦸',
     avatars: [
-      'Heroi_2', 'Heroi_4', 'Heroi_6', 'Heroi_8', 'Fighting_2', 'Fighting_3'
+      'Heroi_2', 'Heroi_4', 'Heroi_6', 'Heroi_8', 'Fighting_2', 'Fighting_3',
+      'Heroi_1', 'Heroi_3', 'Heroi_5', 'Heroi_7', 'Fighting_1', 'Fighting_4'
     ]
   },
   digital: {
     name: 'Mundo Digital',
     emoji: '🎮',
     avatars: [
-      'Minecraft_1', 'Minecraft_3', 'Roblox_2', 'Roblox_3', 'Player_16bits_2', 'Player_16bits_3'
+      'Minecraft_1', 'Minecraft_3', 'Roblox_2', 'Roblox_3', 'Player_16bits_2', 'Player_16bits_3',
+      'Minecraft_2', 'Minecraft_4', 'Roblox_1', 'Roblox_4', 'Player_16bits_4', 'Player_16bits_5'
     ]
   },
   multicultural: {
@@ -53,7 +58,8 @@ const AVATAR_WORLDS = {
     emoji: '🌍',
     avatars: [
       'menina_brasil_1', 'menino_brasil_2', 'menina_japao_3', 'menino_japao_2', 
-      'menina_indigena_2', 'menino_indigena_2'
+      'menina_indigena_2', 'menino_indigena_2', 'menina_brasil_2', 'menino_brasil_1',
+      'menina_japao_1', 'menino_japao_1', 'menina_indigena_1', 'menino_indigena_1'
     ]
   }
 };
@@ -139,7 +145,6 @@ const ConfettiEffect = React.memo(() => {
 // Componente de Trofeu Explodindo
 const TrophyExplosion = React.memo(() => {
   useEffect(() => {
-    // Confetti dourado para trofeu
     confetti({
       particleCount: 200,
       spread: 120,
@@ -175,7 +180,7 @@ export default function MemoryGame() {
   // Estados de progressão
   const [currentWorldIndex, setCurrentWorldIndex] = useState(0);
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
-  const [totalScore, setTotalScore] = useState(0); // Pontuação acumulada de todos os mundos
+  const [totalScore, setTotalScore] = useState(0);
   
   // Estados salvos
   const [totalPairsFound, setTotalPairsFound] = useState(0);
@@ -299,7 +304,7 @@ export default function MemoryGame() {
     }
   }, [isSoundOn]);
 
-  // Handlers das telas
+  // CORREÇÃO 1: Handler da tela inicial sem loop
   const handleStartIntro = async () => {
     if (isInteracting || !isReady) return;
     setIsInteracting(true);
@@ -313,6 +318,7 @@ export default function MemoryGame() {
   };
 
   const handleNextInstruction = () => {
+    if (isInteracting) return;
     setIsInteracting(true);
     leoSpeak("Vamos explorar mundos incríveis juntos! Começaremos pelo Mundo Inicial no modo fácil, depois médio, depois difícil. Quando completarmos um mundo inteiro, passaremos automaticamente para o próximo desafio. Vamos nessa jornada!", () => { 
       setIsInteracting(false);
@@ -322,7 +328,7 @@ export default function MemoryGame() {
 
   // Iniciar mundo atual
   const startCurrentWorld = () => {
-    setDifficulty('easy'); // Sempre começa no fácil
+    setDifficulty('easy');
     const worldData = getCurrentWorldData();
     leoSpeak(`Bem-vindo ao ${worldData.name}! Vamos começar no modo fácil!`, () => {
       setGameState('playing');
@@ -330,17 +336,30 @@ export default function MemoryGame() {
     });
   };
 
-  // Inicializar jogo
+  // CORREÇÃO 2: Inicializar jogo com número correto de cartas
   const initializeGame = useCallback(() => {
     const settings = DIFFICULTY_SETTINGS[difficulty];
     const world = getCurrentWorldData();
     
     if (!world) return;
     
-    const selectedAvatars = [...world.avatars]
+    console.log(`Iniciando jogo - Dificuldade: ${difficulty}, Pares: ${settings.pairs}`);
+    
+    // Garantir que temos avatares suficientes
+    const availableAvatars = [...world.avatars];
+    if (availableAvatars.length < settings.pairs) {
+      console.warn(`Não há avatares suficientes no mundo ${getCurrentWorld()}`);
+      return;
+    }
+    
+    // Selecionar exatamente o número correto de avatares únicos
+    const selectedAvatars = availableAvatars
       .sort(() => Math.random() - 0.5)
       .slice(0, settings.pairs);
     
+    console.log(`Avatares selecionados:`, selectedAvatars);
+    
+    // Criar exatamente 2 cartas para cada avatar (1 par)
     const gameCards: Card[] = [];
     selectedAvatars.forEach((avatar, index) => {
       gameCards.push(
@@ -349,8 +368,12 @@ export default function MemoryGame() {
       );
     });
     
+    console.log(`Total de cartas criadas: ${gameCards.length} (${gameCards.length / 2} pares)`);
+    
+    // Embaralhar as cartas
     const shuffledCards = gameCards.sort(() => Math.random() - 0.5);
     
+    // Reset do estado do jogo
     setCards(shuffledCards);
     setSelectedCards([]);
     setMoves(0);
@@ -368,18 +391,21 @@ export default function MemoryGame() {
     let timer: NodeJS.Timeout;
     if (isTimerActive && timeLeft > 0 && gameStarted) {
       timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-    } else if (timeLeft === 0 && gameStarted) {
+    } else if (timeLeft === 0 && gameStarted && gameState === 'playing') {
       handleGameOver();
     }
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [isTimerActive, timeLeft, gameStarted]);
+  }, [isTimerActive, timeLeft, gameStarted, gameState]);
 
-  // Verificar vitória
+  // CORREÇÃO 3: Verificar vitória corretamente
   useEffect(() => {
     const settings = DIFFICULTY_SETTINGS[difficulty];
-    if (matches === settings.pairs && gameStarted && gameState === 'playing') {
+    console.log(`Checando vitória - Matches: ${matches}, Required: ${settings.pairs}, GameStarted: ${gameStarted}, GameState: ${gameState}`);
+    
+    if (matches === settings.pairs && matches > 0 && gameStarted && gameState === 'playing') {
+      console.log('VITÓRIA DETECTADA!');
       handleVictory();
     }
   }, [matches, difficulty, gameStarted, gameState]);
@@ -444,6 +470,7 @@ export default function MemoryGame() {
         }
         
         const newMatches = matches + 1;
+        console.log(`Novo match! Total: ${newMatches}`);
         setMatches(newMatches);
         setScore(prev => prev + (100 * newCombo));
         setSelectedCards([]);
@@ -463,8 +490,9 @@ export default function MemoryGame() {
     }
   };
 
-  // Vitória
+  // CORREÇÃO 4: Lógica de vitória e progressão corrigida
   const handleVictory = () => {
+    console.log(`Vitória! Dificuldade atual: ${difficulty}`);
     setIsTimerActive(false);
     
     playSound('victory');
@@ -487,23 +515,29 @@ export default function MemoryGame() {
     if (difficulty === 'easy') {
       setTimeout(() => {
         leoSpeak("Parabéns! Agora vamos para o nível médio. Vai ficar mais desafiador!", () => {
+          console.log('Mudando para médio');
           setDifficulty('medium');
-          initializeGame();
           setTimeout(() => {
-            setGameStarted(true);
-            setIsTimerActive(true);
-          }, 500);
+            initializeGame();
+            setTimeout(() => {
+              setGameStarted(true);
+              setIsTimerActive(true);
+            }, 500);
+          }, 100);
         });
       }, 2000);
     } else if (difficulty === 'medium') {
       setTimeout(() => {
         leoSpeak("Incrível! Agora vamos para o modo difícil. Este é o último desafio deste mundo!", () => {
+          console.log('Mudando para difícil');
           setDifficulty('hard');
-          initializeGame();
           setTimeout(() => {
-            setGameStarted(true);
-            setIsTimerActive(true);
-          }, 500);
+            initializeGame();
+            setTimeout(() => {
+              setGameStarted(true);
+              setIsTimerActive(true);
+            }, 500);
+          }, 100);
         });
       }, 2000);
     } else {
@@ -537,12 +571,14 @@ export default function MemoryGame() {
     setIsTimerActive(false);
     
     leoSpeak("Que pena, o tempo acabou! Mas você fez um ótimo trabalho. Vamos tentar de novo?", () => {
-      // Reinicia a mesma fase
-      initializeGame();
+      // Reinicia a mesma fase após 2 segundos
       setTimeout(() => {
-        setGameStarted(true);
-        setIsTimerActive(true);
-      }, 1000);
+        initializeGame();
+        setTimeout(() => {
+          setGameStarted(true);
+          setIsTimerActive(true);
+        }, 500);
+      }, 2000);
     });
   };
 
@@ -582,7 +618,6 @@ export default function MemoryGame() {
 - Pontuação Total: ${totalScore} pontos
 - Pares Encontrados: ${totalPairsFound}`);
         
-        // Continua jogando ao invés de sair
         handleContinueToNextWorld();
       }
     } catch (error: any) {
@@ -682,7 +717,7 @@ export default function MemoryGame() {
           
           {/* Preview dos mundos */}
           <div className="grid grid-cols-3 gap-2 mb-6">
-            {WORLD_ORDER.map((worldKey, index) => {
+            {WORLD_ORDER.map((worldKey) => {
               const world = AVATAR_WORLDS[worldKey as keyof typeof AVATAR_WORLDS];
               return (
                 <div key={worldKey} className="bg-gray-100 rounded-lg p-2 text-center">
@@ -746,7 +781,7 @@ export default function MemoryGame() {
                   {getCurrentWorldData().emoji} {getCurrentWorldData().name}
                 </h1>
                 <p className="text-sm text-gray-600">
-                  {DIFFICULTY_SETTINGS[difficulty].emoji} {DIFFICULTY_SETTINGS[difficulty].name}
+                  {DIFFICULTY_SETTINGS[difficulty].emoji} {DIFFICULTY_SETTINGS[difficulty].name} - {DIFFICULTY_SETTINGS[difficulty].pairs} pares
                 </p>
               </div>
 
@@ -807,7 +842,7 @@ export default function MemoryGame() {
 
           <div className="bg-white/30 backdrop-blur rounded-2xl p-4">
             <div 
-              className="grid gap-3 max-w-2xl mx-auto"
+              className="grid gap-3 max-w-4xl mx-auto"
               style={{
                 gridTemplateColumns: `repeat(${DIFFICULTY_SETTINGS[difficulty].gridCols}, 1fr)`,
               }}
