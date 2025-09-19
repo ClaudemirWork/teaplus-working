@@ -583,7 +583,7 @@ export default function MemoryGame() {
     setCompletedWorlds([]);
   };
 
-  // Handler da tela inicial OTIMIZADO
+  // Handler da tela inicial CORRIGIDO (Leo termina de falar antes de prosseguir)
   const handleStartIntro = async () => {
     if (isInteracting || !isReady) return;
     setIsInteracting(true);
@@ -597,11 +597,24 @@ export default function MemoryGame() {
         await audioManagerRef.current.forceInitialize();
       }
 
-      // FALA MAIS CURTA E RÁPIDA
+      // AGUARDAR LEO TERMINAR DE FALAR COMPLETAMENTE
       leoSpeak("Olá! Sou o Leo! Vamos exercitar nossa memória!", () => {
-        setIsInteracting(false);
-        setCurrentScreen('instructions');
+        console.log('✅ Leo terminou de falar na tela inicial');
+        // DELAY ADICIONAL para garantir que terminou
+        setTimeout(() => {
+          setIsInteracting(false);
+          setCurrentScreen('instructions');
+        }, 500); // Meio segundo extra de segurança
       });
+      
+      // Fallback de segurança - se Leo demorar muito, continuar após 8 segundos
+      setTimeout(() => {
+        if (isInteracting) {
+          console.log('⏰ Fallback: Leo demorou muito, prosseguindo...');
+          setIsInteracting(false);
+          setCurrentScreen('instructions');
+        }
+      }, 8000);
     } catch (error) {
       console.error('Erro ao inicializar áudio:', error);
       setIsInteracting(false);
