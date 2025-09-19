@@ -220,27 +220,18 @@ export default function MemoryGame() {
     }
   }, [isSoundOn]);
 
-  // Função para o Leo falar
+  // Função para o Leo falar - SIMPLIFICADA
   const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
     if (!isSoundOn || !audioManagerRef.current) {
       onEnd?.();
       return;
     }
     
-    // Garantir que o callback seja chamado apenas uma vez
-    let called = false;
-    const wrappedCallback = () => {
-      if (!called) {
-        called = true;
-        onEnd?.();
-      }
-    };
-    
     try {
-      audioManagerRef.current.falarLeo(text, wrappedCallback);
+      audioManagerRef.current.falarLeo(text, onEnd);
     } catch (error) {
       console.error('Erro ao chamar falarLeo:', error);
-      wrappedCallback();
+      onEnd?.();
     }
   }, [isSoundOn]);
 
@@ -295,6 +286,12 @@ export default function MemoryGame() {
   const startActivity = () => {
     setCurrentScreen('game');
     initializeGame();
+    
+    // Falar após o jogo estar pronto
+    setTimeout(() => {
+      const worldData = getCurrentWorldData();
+      leoSpeak(`Bem-vindo ao ${worldData.name}! Vamos começar no modo fácil!`);
+    }, 500);
   };
 
   // Timer
@@ -543,6 +540,7 @@ export default function MemoryGame() {
     setSelectedCards([]);
   };
 
+  // Handler da tela inicial - SIMPLIFICADO
   const handleStartIntro = async () => {
     if (isInteracting || !isReady) return;
     setIsInteracting(true);
@@ -566,22 +564,7 @@ export default function MemoryGame() {
     }
   };
 
-  const handleNextInstruction = () => {
-    if (isInteracting) return;
-    setIsInteracting(true);
-    
-    try {
-      leoSpeak("Vamos explorar mundos incríveis juntos! Começaremos pelo Mundo Inicial no modo fácil, depois médio, depois difícil. Quando completarmos um mundo inteiro, passaremos automaticamente para o próximo desafio. Vamos nessa jornada!", () => {
-        setIsInteracting(false);
-        startActivity();
-      });
-    } catch (error) {
-      console.error('Erro ao reproduzir áudio:', error);
-      setIsInteracting(false);
-      startActivity();
-    }
-  };
-
+  // Continuar para próximo mundo
   const handleContinueToNextWorld = () => {
     setCurrentWorldIndex(prev => prev + 1);
     setCurrentDifficulty('easy');
@@ -666,53 +649,104 @@ export default function MemoryGame() {
     </div>
   );
 
-  const InstructionsScreen = () => (
-    <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-300 via-indigo-300 to-blue-300">
-      <div className="bg-white/95 rounded-3xl p-8 max-w-2xl shadow-2xl text-center backdrop-blur-sm">
-        <h2 className="text-4xl font-bold mb-6 text-indigo-600">Mundos da Memória</h2>
+  // Tela de instruções - MODELO BUBBLE POP
+  const InstructionsScreen = () => {
+    const [leoFalando, setLeoFalando] = useState(true);
+    const [falaConcluida, setFalaConcluida] = useState(false);
+
+    useEffect(() => {
+      let cancelled = false;
+
+      async function falarFrase(frase: string) {
+        return new Promise<void>(resolve => {
+          leoSpeak(frase, () => resolve());
+        });
+      }
+
+      async function narrarInstrucoes() {
+        setLeoFalando(true);
         
-        {/* Preview dos mundos */}
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          {WORLD_ORDER.map((worldKey) => {
-            const world = AVATAR_WORLDS[worldKey as keyof typeof AVATAR_WORLDS];
-            return (
-              <div key={worldKey} className="bg-gray-100 rounded-lg p-2 text-center">
-                <div className="text-2xl mb-1">{world.emoji}</div>
-                <div className="text-xs font-medium text-gray-600">{world.name}</div>
-              </div>
-            );
-          })}
-        </div>
+        const instrucoes = [
+          "Vamos explorar mundos incríveis juntos! Começaremos pelo Mundo Inicial no modo fácil, depois médio, depois difícil.",
+          "Clique nas cartas para virá-las e revelar os avatares!",
+          "Encontre os pares - duas cartas com o mesmo avatar!",
+          "Corra contra o tempo para encontrar todos os pares!",
+          "Faça combos encontrando pares consecutivos para mais pontos!",
+          "Quando completarmos um mundo inteiro, passaremos automaticamente para o próximo desafio."
+        ];
+
+        for (const frase of instrucoes) {
+          if (cancelled) return;
+          await falarFrase(frase);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
         
-        <div className="text-lg text-gray-700 space-y-6 mb-6 text-left">
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">🃏</span>
-            <span><b>Clique nas cartas</b> para virá-las e revelar os avatares!</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">👯</span>
-            <span><b>Encontre os pares</b> - duas cartas com o mesmo avatar!</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">⏰</span>
-            <span><b>Corra contra o tempo</b> para encontrar todos os pares!</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">🔥</span>
-            <span><b>Faça combos</b> encontrando pares consecutivos para mais pontos!</span>
-          </p>
-          <p className="flex items-center gap-4">
-            <span className="text-4xl">🌍</span>
-            <span><b>Explore diferentes mundos</b> com avatares únicos!</span>
-          </p>
-        </div>
-        
-        <div className="text-lg text-indigo-600 font-medium">
-          {isInteracting ? 'Leo está explicando...' : 'Preparando o jogo...'}
+        setFalaConcluida(true);
+        setLeoFalando(false);
+      }
+
+      narrarInstrucoes();
+
+      return () => { cancelled = true; };
+    }, []);
+
+    return (
+      <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-300 via-indigo-300 to-blue-300">
+        <div className="bg-white/95 rounded-3xl p-8 max-w-2xl w-full mx-4 shadow-2xl text-center backdrop-blur-sm">
+          <h2 className="text-4xl font-bold mb-6 text-indigo-600">Mundos da Memória</h2>
+          
+          {/* Preview dos mundos */}
+          <div className="grid grid-cols-3 gap-2 mb-6">
+            {WORLD_ORDER.map((worldKey) => {
+              const world = AVATAR_WORLDS[worldKey as keyof typeof AVATAR_WORLDS];
+              return (
+                <div key={worldKey} className="bg-gray-100 rounded-lg p-2 text-center">
+                  <div className="text-2xl mb-1">{world.emoji}</div>
+                  <div className="text-xs font-medium text-gray-600">{world.name}</div>
+                </div>
+              );
+            })}
+          </div>
+          
+          <div className="text-lg text-gray-700 space-y-6 mb-6 text-left">
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">🃏</span>
+              <span><b>Clique nas cartas</b> para virá-las e revelar os avatares!</span>
+            </p>
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">👯</span>
+              <span><b>Encontre os pares</b> - duas cartas com o mesmo avatar!</span>
+            </p>
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">⏰</span>
+              <span><b>Corra contra o tempo</b> para encontrar todos os pares!</span>
+            </p>
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">🔥</span>
+              <span><b>Faça combos</b> encontrando pares consecutivos para mais pontos!</span>
+            </p>
+            <p className="flex items-center gap-4">
+              <span className="text-4xl">🌍</span>
+              <span><b>Explore diferentes mundos</b> com avatares únicos!</span>
+            </p>
+          </div>
+          
+          <button
+            onClick={() => {
+              if (!leoFalando && falaConcluida) {
+                startActivity();
+              }
+            }}
+            disabled={!falaConcluida}
+            className={`w-full text-xl font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full py-4 shadow-xl
+              hover:scale-105 transition-transform ${!falaConcluida ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            {leoFalando ? "Leo está explicando..." : "Vamos Começar a Aventura!"}
+          </button>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const GameScreen = () => {
     return (
