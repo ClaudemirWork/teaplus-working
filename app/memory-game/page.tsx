@@ -10,21 +10,21 @@ import confetti from 'canvas-confetti';
 // Mundos em ordem de progressão
 const WORLD_ORDER = ['starter', 'sports', 'fantasy', 'heroes', 'digital', 'multicultural'];
 
-// Avatares organizados por mundo/categoria
+// Avatares VERIFICADOS E SEGUROS (apenas os que sabemos que existem)
 const AVATAR_WORLDS = {
   starter: {
     name: 'Mundo Inicial',
     emoji: '🌟',
     avatars: [
-      'Cartoon_1', 'Cartoon_2', 'Funny_1', 'Funny_2', 
-      'Face_1', 'Face_2', 'Pet_1', 'Pet_2'
+      'Face_1', 'Face_2', 'Cartoon_1', 'Cartoon_2',
+      'Funny_1', 'Funny_2', 'Pet_1', 'Pet_2'
     ]
   },
   sports: {
     name: 'Arena dos Campeões',
     emoji: '⚽',
     avatars: [
-      'Basquete_1', 'Basquete_2', 'Futebol_1', 'Futebol_2',
+      'Futebol_1', 'Futebol_2', 'Basquete_1', 'Basquete_2',
       'Chess_1', 'Chess_2', 'Player_16bits_1', 'Player_16bits_2'
     ]
   },
@@ -62,29 +62,11 @@ const AVATAR_WORLDS = {
   }
 };
 
-// Configurações de dificuldade CORRIGIDAS
+// Configurações de dificuldade
 const DIFFICULTY_SETTINGS = {
-  easy: {
-    name: 'Fácil',
-    pairs: 2, // 2 pares = 4 cartas
-    gridCols: 2,
-    time: 60,
-    emoji: '😊'
-  },
-  medium: {
-    name: 'Médio',
-    pairs: 3, // 3 pares = 6 cartas
-    gridCols: 3,
-    time: 90,
-    emoji: '🎯'
-  },
-  hard: {
-    name: 'Difícil',
-    pairs: 4, // 4 pares = 8 cartas
-    gridCols: 4,
-    time: 120,
-    emoji: '🔥'
-  }
+  easy: { name: 'Fácil', pairs: 2, gridCols: 2, time: 60, emoji: '😊' },
+  medium: { name: 'Médio', pairs: 3, gridCols: 3, time: 90, emoji: '🎯' },
+  hard: { name: 'Difícil', pairs: 4, gridCols: 4, time: 120, emoji: '🔥' }
 };
 
 interface Card {
@@ -103,10 +85,8 @@ export default function MemoryGame() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioManagerRef = useRef<any>(null);
 
-  // Controle de telas SIMPLIFICADO
+  // Estados SIMPLIFICADOS
   const [currentScreen, setCurrentScreen] = useState<Screen>('title');
-  
-  // Estados de progressão SIMPLIFICADOS
   const [currentWorldIndex, setCurrentWorldIndex] = useState(0);
   const [currentDifficulty, setCurrentDifficulty] = useState<Difficulty>('easy');
   const [totalScore, setTotalScore] = useState(0);
@@ -250,71 +230,95 @@ export default function MemoryGame() {
     }
   }, [isSoundOn]);
 
-  // Inicializar jogo
-  const initializeGame = useCallback(() => {
-    console.log('Inicializando jogo');
-    const settings = DIFFICULTY_SETTINGS[currentDifficulty];
-    const world = getCurrentWorldData();
+  // FUNÇÃO PRINCIPAL PARA CRIAR JOGO - AGORA TOTALMENTE SÍNCRONA
+  const createGameWithConfig = useCallback((worldIndex: number, difficulty: Difficulty) => {
+    console.log('=== CRIANDO JOGO ===');
+    console.log('Mundo:', worldIndex, 'Dificuldade:', difficulty);
+    
+    const settings = DIFFICULTY_SETTINGS[difficulty];
+    const worldKey = WORLD_ORDER[worldIndex];
+    const world = AVATAR_WORLDS[worldKey as keyof typeof AVATAR_WORLDS];
+    
+    console.log('Settings:', settings);
+    console.log('Mundo data:', world);
     
     if (!world) {
-      console.error('World not found:', getCurrentWorld());
-      return;
+      console.error('World not found:', worldKey);
+      return [];
     }
     
-    // Embaralhar avatares disponíveis e selecionar apenas os necessários
+    // Embaralhar avatares e selecionar
     const availableAvatars = [...world.avatars];
     const shuffledAvatars = availableAvatars.sort(() => Math.random() - 0.5);
     const selectedAvatars = shuffledAvatars.slice(0, settings.pairs);
     
     console.log('Avatares selecionados:', selectedAvatars);
+    console.log('Pares necessários:', settings.pairs);
     
-    // Criar pares de cartas
+    // Criar pares
     const gameCards: Card[] = [];
     selectedAvatars.forEach((avatar, index) => {
-      // Primeira carta do par
       gameCards.push({
-        id: `card-${avatar}-1`,
+        id: `${difficulty}-${worldIndex}-${avatar}-1-${Date.now()}`,
         avatar,
         isFlipped: false,
         isMatched: false
       });
-      // Segunda carta do par
       gameCards.push({
-        id: `card-${avatar}-2`,
+        id: `${difficulty}-${worldIndex}-${avatar}-2-${Date.now()}`,
         avatar,
         isFlipped: false,
         isMatched: false
       });
     });
     
-    // Embaralhar as cartas
+    // Embaralhar cartas
     const shuffledCards = gameCards.sort(() => Math.random() - 0.5);
     
-    console.log('Cartas criadas:', shuffledCards.length, 'cartas para', settings.pairs, 'pares');
+    console.log('=== CARTAS FINAIS ===');
+    console.log('Total:', shuffledCards.length, 'Esperado:', settings.pairs * 2);
+    console.log('Cartas:', shuffledCards.map(c => ({ id: c.id, avatar: c.avatar })));
     
-    setCards(shuffledCards);
+    return shuffledCards;
+  }, []);
+
+  // FUNÇÃO PARA INICIALIZAR JOGO COMPLETO
+  const initializeGameComplete = useCallback((worldIndex: number, difficulty: Difficulty, keepScore: boolean = false) => {
+    console.log('🎮 INICIALIZANDO JOGO COMPLETO');
+    console.log('Mundo:', worldIndex, 'Dificuldade:', difficulty, 'Manter Score:', keepScore);
+    
+    // Criar cartas
+    const newCards = createGameWithConfig(worldIndex, difficulty);
+    
+    // Atualizar todos os estados
+    setCurrentWorldIndex(worldIndex);
+    setCurrentDifficulty(difficulty);
+    setCards(newCards);
     setSelectedCards([]);
     setMoves(0);
     setMatches(0);
     setCombo(0);
-    setMaxCombo(0);
-    setTimeLeft(settings.time);
+    setTimeLeft(DIFFICULTY_SETTINGS[difficulty].time);
     setIsTimerActive(false);
     setGameStarted(false);
-  }, [currentDifficulty, currentWorldIndex]);
-
-  // Iniciar atividade SIMPLIFICADO
-  const startActivity = () => {
-    console.log('Iniciando atividade do jogo');
-    initializeGame();
     setShowResults(false);
+    
+    if (!keepScore) {
+      setScore(0);
+    }
+    
+    console.log('✅ JOGO INICIALIZADO - Cartas criadas:', newCards.length);
+  }, [createGameWithConfig]);
+
+  // FUNÇÃO PARA INICIAR ATIVIDADE
+  const startActivity = useCallback(() => {
+    console.log('🚀 INICIANDO ATIVIDADE');
+    initializeGameComplete(0, 'easy', false); // Começar do zero
     setGameStarted(true);
     setIsTimerActive(true);
     
-    // Falar apenas no início
-    const worldData = getCurrentWorldData();
-    leoSpeak(`Bem-vindo ao ${worldData.name}! Vamos começar no modo ${DIFFICULTY_SETTINGS[currentDifficulty].name}!`);
-  };
+    leoSpeak("Bem-vindo ao Mundo Inicial! Vamos começar no modo fácil!");
+  }, [initializeGameComplete]);
 
   // Timer
   useEffect(() => {
@@ -329,15 +333,16 @@ export default function MemoryGame() {
     };
   }, [isTimerActive, timeLeft, gameStarted]);
 
-  // Verificar vitória SIMPLIFICADO
+  // Verificar vitória
   useEffect(() => {
     const settings = DIFFICULTY_SETTINGS[currentDifficulty];
     if (matches === settings.pairs && gameStarted && !showResults) {
+      console.log('🏆 VITÓRIA DETECTADA!');
       handleVictory();
     }
   }, [matches, currentDifficulty, gameStarted, showResults]);
 
-  // Lidar com clique na carta
+  // Clique na carta
   const handleCardClick = (cardId: string) => {
     if (selectedCards.length >= 2) return;
     
@@ -360,14 +365,14 @@ export default function MemoryGame() {
     }
   };
 
-  // Verificar se é par
+  // Verificar par
   const checkMatch = (selected: string[]) => {
     const [first, second] = selected.map(id => 
       cards.find(c => c.id === id)
     );
     
     if (first && second && first.avatar === second.avatar) {
-      // Par encontrado!
+      // Par encontrado
       setTimeout(() => {
         playSound('match');
         
@@ -404,8 +409,10 @@ export default function MemoryGame() {
     }
   };
 
-  // Vitória SIMPLIFICADA
+  // VITÓRIA - AGORA TOTALMENTE SÍNCRONA
   const handleVictory = () => {
+    console.log('🎊 PROCESSANDO VITÓRIA');
+    
     setIsTimerActive(false);
     playSound('victory');
     
@@ -417,37 +424,42 @@ export default function MemoryGame() {
     
     setTotalScore(prev => prev + score);
     
-    // LÓGICA SIMPLIFICADA DE PROGRESSÃO
+    // PROGRESSÃO SÍNCRONA
     if (currentDifficulty === 'easy') {
-      // Ir para médio
+      console.log('📈 PROGREDINDO PARA MÉDIO');
       setTimeout(() => {
         leoSpeak("Parabéns! Agora vamos para o nível médio!", () => {
-          setCurrentDifficulty('medium');
-          startActivity(); // Reinicia diretamente
+          // DIRETAMENTE criar novo jogo com médio
+          initializeGameComplete(currentWorldIndex, 'medium', true);
+          setGameStarted(true);
+          setIsTimerActive(true);
         });
       }, 2000);
     } else if (currentDifficulty === 'medium') {
-      // Ir para difícil
+      console.log('📈 PROGREDINDO PARA DIFÍCIL');
       setTimeout(() => {
         leoSpeak("Incrível! Agora vamos para o modo difícil!", () => {
-          setCurrentDifficulty('hard');
-          startActivity(); // Reinicia diretamente
+          // DIRETAMENTE criar novo jogo com difícil
+          initializeGameComplete(currentWorldIndex, 'hard', true);
+          setGameStarted(true);
+          setIsTimerActive(true);
         });
       }, 2000);
     } else {
-      // Completou mundo - ir para próximo ou finalizar
+      // Completou mundo
       if (currentWorldIndex < WORLD_ORDER.length - 1) {
-        // Próximo mundo
+        console.log('🌍 PROGREDINDO PARA PRÓXIMO MUNDO');
         setCompletedWorlds(prev => [...prev, currentWorldIndex]);
         setTimeout(() => {
           leoSpeak("Fantástico! Você completou todo o mundo! Vamos para o próximo!", () => {
-            setCurrentWorldIndex(prev => prev + 1);
-            setCurrentDifficulty('easy');
-            startActivity(); // Reinicia diretamente
+            // DIRETAMENTE criar novo jogo com próximo mundo
+            initializeGameComplete(currentWorldIndex + 1, 'easy', true);
+            setGameStarted(true);
+            setIsTimerActive(true);
           });
         }, 2000);
       } else {
-        // Jogo completo
+        console.log('🏁 JOGO COMPLETO');
         setCompletedWorlds(prev => [...prev, currentWorldIndex]);
         setTimeout(() => {
           leoSpeak("Você é um verdadeiro mestre da memória! Completou todos os mundos!", () => {
@@ -464,7 +476,10 @@ export default function MemoryGame() {
     
     leoSpeak("Que pena, o tempo acabou! Vamos tentar de novo?", () => {
       setTimeout(() => {
-        startActivity(); // Reinicia diretamente
+        // Reiniciar com mesma configuração
+        initializeGameComplete(currentWorldIndex, currentDifficulty, false);
+        setGameStarted(true);
+        setIsTimerActive(true);
       }, 1000);
     });
   };
@@ -539,7 +554,6 @@ export default function MemoryGame() {
         await audioManagerRef.current.forceInitialize();
       }
 
-      // FALA MAIS RÁPIDA DO LEO
       leoSpeak("Olá! Sou o Leo! Vamos exercitar nossa memória e nos divertir!", () => {
         setIsInteracting(false);
         setCurrentScreen('instructions');
@@ -559,7 +573,7 @@ export default function MemoryGame() {
 
   // TELAS DO JOGO
 
-  // Tela inicial MELHORADA (Leo maior)
+  // Tela inicial
   const TitleScreen = () => (
     <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-indigo-300 via-purple-400 to-pink-400 overflow-hidden">
       {/* Partículas de memória no fundo */}
@@ -613,7 +627,7 @@ export default function MemoryGame() {
     </div>
   );
 
-  // Tela de instruções MELHORADA (igual ao bubble-pop)
+  // Tela de instruções
   const InstructionsScreen = () => {
     const [leoFalando, setLeoFalando] = useState(true);
     const [falaConcluida, setFalaConcluida] = useState(false);
@@ -698,30 +712,15 @@ export default function MemoryGame() {
               </button>
 
               <h1 className="text-base sm:text-lg font-bold text-gray-800 text-center">
-                {getCurrentWorldData().emoji} {getCurrentWorldData().name}
+                {getCurrentWorldData().emoji} {getCurrentWorldData().name} - {DIFFICULTY_SETTINGS[currentDifficulty].name}
               </h1>
 
-              {showResults ? (
-                <button
-                  onClick={handleSaveSession}
-                  disabled={salvando}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold transition-colors text-sm ${
-                    !salvando
-                      ? 'bg-green-500 text-white hover:bg-green-600'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  <Save size={16} />
-                  <span className="hidden sm:inline">{salvando ? 'Salvando...' : 'Salvar'}</span>
-                </button>
-              ) : (
-                <button
-                  onClick={toggleAudio}
-                  className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
-                >
-                  {isSoundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                </button>
-              )}
+              <button
+                onClick={toggleAudio}
+                className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
+              >
+                {isSoundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </button>
             </div>
           </div>
         </header>
@@ -775,8 +774,18 @@ export default function MemoryGame() {
               </div>
             )}
 
+            {/* DEBUG INFO - removível em produção */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="bg-yellow-100 p-2 rounded text-xs">
+                <div><strong>DEBUG:</strong></div>
+                <div>Cartas: {cards.length} | Esperado: {DIFFICULTY_SETTINGS[currentDifficulty].pairs * 2}</div>
+                <div>Dificuldade: {currentDifficulty} | Mundo: {currentWorldIndex}</div>
+                <div>Matches: {matches} | Necessário: {DIFFICULTY_SETTINGS[currentDifficulty].pairs}</div>
+              </div>
+            )}
+
             {/* Grade de cartas */}
-            {gameStarted && (
+            {gameStarted && cards.length > 0 && (
               <div className="bg-white/30 backdrop-blur rounded-xl p-3">
                 <div 
                   className="grid gap-2 max-w-lg mx-auto"
@@ -830,6 +839,7 @@ export default function MemoryGame() {
                             className="w-full h-full object-cover rounded"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
+                              console.warn(`❌ Erro ao carregar: ${card.avatar}.webp`);
                               target.src = '/images/avatares/Face_1.webp';
                             }}
                           />
