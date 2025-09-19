@@ -8,6 +8,9 @@ import Image from 'next/image';
 import confetti from 'canvas-confetti';
 import styles from './memory-game.module.css';
 
+// Mundos em ordem de progressão
+const WORLD_ORDER = ['starter', 'sports', 'fantasy', 'heroes', 'digital', 'multicultural'];
+
 // Avatares organizados por mundo/categoria
 const AVATAR_WORLDS = {
   starter: {
@@ -91,7 +94,7 @@ interface Card {
 }
 
 type Difficulty = 'easy' | 'medium' | 'hard';
-type GameState = 'loading' | 'intro' | 'instructions' | 'selection' | 'playing' | 'results';
+type GameState = 'loading' | 'intro' | 'instructions' | 'playing' | 'worldComplete' | 'gameComplete';
 
 // Componente de Confetti
 const ConfettiEffect = React.memo(() => {
@@ -133,6 +136,29 @@ const ConfettiEffect = React.memo(() => {
   return null;
 });
 
+// Componente de Trofeu Explodindo
+const TrophyExplosion = React.memo(() => {
+  useEffect(() => {
+    // Confetti dourado para trofeu
+    confetti({
+      particleCount: 200,
+      spread: 120,
+      origin: { y: 0.5 },
+      colors: ['#FFD700', '#FFA500', '#FFFF00', '#FF8C00']
+    });
+  }, []);
+  
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
+      <div className="text-center animate-pulse">
+        <Trophy className="w-32 h-32 text-yellow-400 mx-auto mb-4 animate-bounce" />
+        <h2 className="text-4xl font-bold text-white mb-2">MUNDO COMPLETO!</h2>
+        <p className="text-xl text-yellow-300">Preparando próximo desafio...</p>
+      </div>
+    </div>
+  );
+});
+
 export default function MemoryGame() {
   const router = useRouter();
   const supabase = createClient();
@@ -144,14 +170,18 @@ export default function MemoryGame() {
   const [isReady, setIsReady] = useState(false);
   const [isInteracting, setIsInteracting] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showTrophyExplosion, setShowTrophyExplosion] = useState(false);
+  
+  // Estados de progressão
+  const [currentWorldIndex, setCurrentWorldIndex] = useState(0);
+  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  const [totalScore, setTotalScore] = useState(0); // Pontuação acumulada de todos os mundos
   
   // Estados salvos
   const [totalPairsFound, setTotalPairsFound] = useState(0);
   const [bestScore, setBestScore] = useState(0);
   
-  // Estados do jogo
-  const [currentWorld, setCurrentWorld] = useState('starter');
-  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  // Estados do jogo atual
   const [cards, setCards] = useState<Card[]>([]);
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [moves, setMoves] = useState(0);
@@ -164,6 +194,10 @@ export default function MemoryGame() {
   const [gameStarted, setGameStarted] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [isSoundOn, setIsSoundOn] = useState(true);
+
+  // Getter para mundo atual
+  const getCurrentWorld = () => WORLD_ORDER[currentWorldIndex];
+  const getCurrentWorldData = () => AVATAR_WORLDS[getCurrentWorld() as keyof typeof AVATAR_WORLDS];
 
   // Inicialização
   useEffect(() => {
@@ -280,16 +314,17 @@ export default function MemoryGame() {
 
   const handleNextInstruction = () => {
     setIsInteracting(true);
-    leoSpeak("Clique nas cartas para virá-las e revelar os avatares. Encontre os pares, duas cartas com o mesmo avatar. Corra contra o tempo para encontrar todos os pares. Faça combos encontrando pares consecutivos para mais pontos. Explore diferentes mundos com avatares únicos!", () => { 
+    leoSpeak("Vamos explorar mundos incríveis juntos! Começaremos pelo Mundo Inicial no modo fácil, depois médio, depois difícil. Quando completarmos um mundo inteiro, passaremos automaticamente para o próximo desafio. Vamos nessa jornada!", () => { 
       setIsInteracting(false);
-      setGameState('selection'); 
+      startCurrentWorld();
     });
   };
 
-  const handleStartGame = () => {
-    setIsInteracting(true);
-    leoSpeak("Vamos começar pelo mundo inicial no fácil. Assim que completarmos, passaremos automaticamente para o médio e depois para o difícil. Vamos nessa jornada juntos!", () => {
-      setIsInteracting(false);
+  // Iniciar mundo atual
+  const startCurrentWorld = () => {
+    setDifficulty('easy'); // Sempre começa no fácil
+    const worldData = getCurrentWorldData();
+    leoSpeak(`Bem-vindo ao ${worldData.name}! Vamos começar no modo fácil!`, () => {
       setGameState('playing');
       initializeGame();
     });
@@ -298,7 +333,7 @@ export default function MemoryGame() {
   // Inicializar jogo
   const initializeGame = useCallback(() => {
     const settings = DIFFICULTY_SETTINGS[difficulty];
-    const world = AVATAR_WORLDS[currentWorld as keyof typeof AVATAR_WORLDS];
+    const world = getCurrentWorldData();
     
     if (!world) return;
     
@@ -326,7 +361,7 @@ export default function MemoryGame() {
     setTimeLeft(settings.time);
     setIsTimerActive(false);
     setGameStarted(false);
-  }, [difficulty, currentWorld]);
+  }, [difficulty, currentWorldIndex]);
 
   // Timer
   useEffect(() => {
@@ -440,17 +475,19 @@ export default function MemoryGame() {
     setTotalPairsFound(newPairs);
     localStorage.setItem('memoryGame_totalPairs', newPairs.toString());
     
-    if (score > bestScore) {
-      setBestScore(score);
-      localStorage.setItem('memoryGame_bestScore', score.toString());
+    const currentScore = totalScore + score;
+    setTotalScore(currentScore);
+    
+    if (currentScore > bestScore) {
+      setBestScore(currentScore);
+      localStorage.setItem('memoryGame_bestScore', currentScore.toString());
     }
     
-    // Progressão automática: Fácil → Médio → Difícil → Final
+    // Progressão: Fácil → Médio → Difícil → Próximo Mundo
     if (difficulty === 'easy') {
       setTimeout(() => {
         leoSpeak("Parabéns! Agora vamos para o nível médio. Vai ficar mais desafiador!", () => {
           setDifficulty('medium');
-          setGameState('playing');
           initializeGame();
           setTimeout(() => {
             setGameStarted(true);
@@ -460,9 +497,8 @@ export default function MemoryGame() {
       }, 2000);
     } else if (difficulty === 'medium') {
       setTimeout(() => {
-        leoSpeak("Incrível! Agora vamos para o modo difícil do mundo inicial. Este é o desafio final!", () => {
+        leoSpeak("Incrível! Agora vamos para o modo difícil. Este é o último desafio deste mundo!", () => {
           setDifficulty('hard');
-          setGameState('playing');
           initializeGame();
           setTimeout(() => {
             setGameStarted(true);
@@ -471,11 +507,25 @@ export default function MemoryGame() {
         });
       }, 2000);
     } else {
-      // Completou modo difícil - vai para tela final
+      // Completou modo difícil - próximo mundo ou fim
       setTimeout(() => {
-        leoSpeak("Isso aí amigão! Você é um verdadeiro mestre da memória! Completou todos os níveis!", () => {
-          setGameState('results');
-        });
+        if (currentWorldIndex < WORLD_ORDER.length - 1) {
+          // Há próximo mundo
+          setShowTrophyExplosion(true);
+          leoSpeak("Fantástico! Você completou todo o mundo! Vamos para o próximo desafio!", () => {
+            setTimeout(() => {
+              setShowTrophyExplosion(false);
+              setCurrentWorldIndex(prev => prev + 1);
+              setDifficulty('easy');
+              setGameState('worldComplete');
+            }, 2000);
+          });
+        } else {
+          // Completou todos os mundos
+          leoSpeak("Isso aí amigão! Você é um verdadeiro mestre da memória! Completou todos os mundos!", () => {
+            setGameState('gameComplete');
+          });
+        }
       }, 2000);
     }
     
@@ -485,18 +535,20 @@ export default function MemoryGame() {
   // Game Over
   const handleGameOver = () => {
     setIsTimerActive(false);
-    setGameState('results');
     
-    leoSpeak("Que pena, o tempo acabou! Mas você fez um ótimo trabalho. Vamos tentar de novo?");
-    
-    const newPairs = totalPairsFound + matches;
-    setTotalPairsFound(newPairs);
-    localStorage.setItem('memoryGame_totalPairs', newPairs.toString());
-    
-    if (score > bestScore) {
-      setBestScore(score);
-      localStorage.setItem('memoryGame_bestScore', score.toString());
-    }
+    leoSpeak("Que pena, o tempo acabou! Mas você fez um ótimo trabalho. Vamos tentar de novo?", () => {
+      // Reinicia a mesma fase
+      initializeGame();
+      setTimeout(() => {
+        setGameStarted(true);
+        setIsTimerActive(true);
+      }, 1000);
+    });
+  };
+
+  // Continuar para próximo mundo
+  const handleContinueToNextWorld = () => {
+    startCurrentWorld();
   };
 
   const handleSaveSession = async () => {
@@ -516,23 +568,22 @@ export default function MemoryGame() {
         .insert([{
           usuario_id: user.id,
           atividade_nome: 'Jogo da Memória',
-          pontuacao_final: score,
+          pontuacao_final: totalScore,
           data_fim: new Date().toISOString()
         }]);
 
       if (error) {
         alert(`Erro ao salvar: ${error.message}`);
       } else {
-        alert(`Sessão salva com sucesso!
+        alert(`Progresso salvo com sucesso!
 
-🧠 Resultado do Jogo da Memória:
-- Mundo: ${AVATAR_WORLDS[currentWorld as keyof typeof AVATAR_WORLDS].name}
-- Dificuldade: ${DIFFICULTY_SETTINGS[difficulty].name}
-- Pares Encontrados: ${matches}/${DIFFICULTY_SETTINGS[difficulty].pairs}
-- Pontuação: ${score} pontos
-- Combo Máximo: ${maxCombo}x`);
+🧠 Progresso do Jogo da Memória:
+- Mundos Completados: ${currentWorldIndex}/${WORLD_ORDER.length}
+- Pontuação Total: ${totalScore} pontos
+- Pares Encontrados: ${totalPairsFound}`);
         
-        router.push('/dashboard');
+        // Continua jogando ao invés de sair
+        handleContinueToNextWorld();
       }
     } catch (error: any) {
       alert(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
@@ -627,27 +678,37 @@ export default function MemoryGame() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-300 via-indigo-300 to-blue-300">
         <div className="bg-white/95 rounded-3xl p-6 sm:p-8 max-w-lg sm:max-w-2xl w-full shadow-2xl text-center backdrop-blur-sm">
-          <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6 text-indigo-600">Como Jogar</h2>
+          <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6 text-indigo-600">Mundos da Memória</h2>
+          
+          {/* Preview dos mundos */}
+          <div className="grid grid-cols-3 gap-2 mb-6">
+            {WORLD_ORDER.map((worldKey, index) => {
+              const world = AVATAR_WORLDS[worldKey as keyof typeof AVATAR_WORLDS];
+              return (
+                <div key={worldKey} className="bg-gray-100 rounded-lg p-2 text-center">
+                  <div className="text-2xl mb-1">{world.emoji}</div>
+                  <div className="text-xs font-medium text-gray-600">{world.name}</div>
+                </div>
+              );
+            })}
+          </div>
+          
           <div className="text-base sm:text-lg text-gray-700 space-y-4 sm:space-y-6 mb-4 sm:mb-6 text-left">
             <p className="flex items-center gap-3 sm:gap-4">
               <span className="text-2xl sm:text-4xl">🃏</span>
               <span><b>Clique nas cartas</b> para virá-las e revelar os avatares!</span>
             </p>
             <p className="flex items-center gap-3 sm:gap-4">
-              <span className="text-2xl sm:text-4xl">👯</span>
-              <span><b>Encontre os pares</b> - duas cartas com o mesmo avatar!</span>
+              <span className="text-2xl sm:text-4xl">🌍</span>
+              <span><b>Explore 6 mundos</b> - cada um com 3 níveis de dificuldade!</span>
             </p>
             <p className="flex items-center gap-3 sm:gap-4">
-              <span className="text-2xl sm:text-4xl">⏰</span>
-              <span><b>Corra contra o tempo</b> para encontrar todos os pares!</span>
+              <span className="text-2xl sm:text-4xl">🚀</span>
+              <span><b>Progressão automática</b> - complete cada mundo para avançar!</span>
             </p>
             <p className="flex items-center gap-3 sm:gap-4">
               <span className="text-2xl sm:text-4xl">🔥</span>
-              <span><b>Faça combos</b> encontrando pares consecutivos para mais pontos!</span>
-            </p>
-            <p className="flex items-center gap-3 sm:gap-4">
-              <span className="text-2xl sm:text-4xl">🌍</span>
-              <span><b>Explore diferentes mundos</b> com avatares únicos!</span>
+              <span><b>Faça combos</b> para ganhar mais pontos!</span>
             </p>
           </div>
           
@@ -656,90 +717,9 @@ export default function MemoryGame() {
             disabled={isInteracting}
             className="w-full text-lg sm:text-xl font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full py-3 sm:py-4 shadow-xl hover:scale-105 transition-transform disabled:opacity-60"
           >
-            {isInteracting ? 'Leo está explicando...' : 'Vamos Jogar!'}
+            {isInteracting ? 'Leo está explicando...' : 'Vamos Começar a Aventura!'}
           </button>
         </div>
-      </div>
-    );
-  }
-
-  if (gameState === 'selection') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200">
-        <header className="bg-white/90 backdrop-blur-sm border-b border-purple-200 sticky top-0 z-10">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6">
-            <div className="flex items-center justify-between h-16">
-              <button
-                onClick={() => setGameState('intro')}
-                className="flex items-center text-indigo-600 hover:text-indigo-700 transition-colors"
-              >
-                <ChevronLeft className="h-6 w-6" />
-                <span className="ml-1 font-medium text-sm sm:text-base">Voltar</span>
-              </button>
-
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800 text-center">
-                Jogo da Memória
-              </h1>
-
-              <div className="w-24"></div>
-            </div>
-          </div>
-        </header>
-
-        <main className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
-          <div className="bg-white/90 rounded-2xl p-4 shadow-xl border border-purple-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-bold text-gray-800 mb-3">Escolha o Mundo:</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(AVATAR_WORLDS).map(([key, world]) => (
-                    <button
-                      key={key}
-                      onClick={() => setCurrentWorld(key)}
-                      className={`p-3 rounded-xl text-sm font-medium transition-all ${
-                        currentWorld === key
-                          ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white scale-105'
-                          : 'bg-gray-100 hover:bg-gray-200'
-                      }`}
-                    >
-                      <div className="text-lg mb-1">{world.emoji}</div>
-                      <div className="text-xs">{world.name}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold text-gray-800 mb-3">Dificuldade:</h3>
-                <div className="space-y-2">
-                  {(['easy', 'medium', 'hard'] as const).map(level => (
-                    <button
-                      key={level}
-                      onClick={() => setDifficulty(level)}
-                      className={`w-full p-3 rounded-xl font-medium transition-all flex items-center justify-between ${
-                        difficulty === level
-                          ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white scale-105'
-                          : 'bg-gray-100 hover:bg-gray-200'
-                      }`}
-                    >
-                      <span>{DIFFICULTY_SETTINGS[level].emoji} {DIFFICULTY_SETTINGS[level].name}</span>
-                      <span className="text-sm">{DIFFICULTY_SETTINGS[level].pairs} pares</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-center">
-              <button
-                onClick={handleStartGame}
-                className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-lg font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
-              >
-                Começar Jogo!
-              </button>
-            </div>
-          </div>
-        </main>
       </div>
     );
   }
@@ -748,6 +728,7 @@ export default function MemoryGame() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200">
         {showConfetti && <ConfettiEffect />}
+        {showTrophyExplosion && <TrophyExplosion />}
         
         <header className="bg-white/90 backdrop-blur-sm border-b border-purple-200 sticky top-0 z-10">
           <div className="max-w-5xl mx-auto px-4 sm:px-6">
@@ -760,9 +741,14 @@ export default function MemoryGame() {
                 <span className="ml-1 font-medium">Voltar</span>
               </button>
 
-              <h1 className="text-xl font-bold text-gray-800 text-center">
-                Jogo da Memória
-              </h1>
+              <div className="text-center">
+                <h1 className="text-lg font-bold text-gray-800">
+                  {getCurrentWorldData().emoji} {getCurrentWorldData().name}
+                </h1>
+                <p className="text-sm text-gray-600">
+                  {DIFFICULTY_SETTINGS[difficulty].emoji} {DIFFICULTY_SETTINGS[difficulty].name}
+                </p>
+              </div>
 
               <button 
                 onClick={() => setIsSoundOn(!isSoundOn)} 
@@ -795,7 +781,7 @@ export default function MemoryGame() {
                 <Star className="w-5 h-5 text-yellow-500" fill="currentColor" />
                 <div>
                   <div className="text-xs text-gray-600">Pontos</div>
-                  <div className="font-bold text-yellow-600">{score}</div>
+                  <div className="font-bold text-yellow-600">{totalScore + score}</div>
                 </div>
               </div>
               {combo > 1 && (
@@ -858,68 +844,40 @@ export default function MemoryGame() {
     );
   }
 
-  if (gameState === 'results') {
+  if (gameState === 'worldComplete') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200 flex items-center justify-center p-4">
-        {showConfetti && <ConfettiEffect />}
+      <div className="min-h-screen bg-gradient-to-br from-green-200 via-blue-200 to-purple-200 flex items-center justify-center p-4">
+        <ConfettiEffect />
         
-        <div className={`bg-white/95 rounded-xl shadow-2xl p-8 backdrop-blur-sm border border-purple-200 max-w-lg w-full ${styles.animateFadeIn}`}>
-          <div className="text-center mb-6">
-            <div className="text-6xl mb-4 animate-bounce">
-              {matches === DIFFICULTY_SETTINGS[difficulty].pairs ? '🏆' : timeLeft > 0 ? '🎯' : '⏰'}
-            </div>
-            
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">
-              {matches === DIFFICULTY_SETTINGS[difficulty].pairs ? 'Parabéns! Você venceu!' : 
-              timeLeft > 0 ? 'Boa tentativa!' : 'Tempo Esgotado!'}
-            </h3>
-            
-            <p className="text-lg text-indigo-600 font-medium">
-              {AVATAR_WORLDS[currentWorld as keyof typeof AVATAR_WORLDS].name} • {DIFFICULTY_SETTINGS[difficulty].name}
-            </p>
-          </div>
+        <div className="bg-white/95 rounded-xl shadow-2xl p-8 backdrop-blur-sm border border-green-200 max-w-lg w-full text-center">
+          <Trophy className="w-24 h-24 text-yellow-500 mx-auto mb-4 animate-bounce" />
           
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
-              <div className="text-xl font-bold text-purple-800">{score}</div>
-              <div className="text-xs text-purple-600">Pontuação</div>
-            </div>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-              <div className="text-xl font-bold text-green-800">{matches}/{DIFFICULTY_SETTINGS[difficulty].pairs}</div>
-              <div className="text-xs text-green-600">Pares</div>
-            </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-              <div className="text-xl font-bold text-blue-800">{moves}</div>
-              <div className="text-xs text-blue-600">Movimentos</div>
-            </div>
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
-              <div className="text-xl font-bold text-orange-800">x{maxCombo}</div>
-              <div className="text-xs text-orange-600">Combo Máx</div>
-            </div>
-          </div>
+          <h3 className="text-3xl font-bold text-gray-800 mb-2">Mundo Completo!</h3>
+          
+          <p className="text-lg text-green-600 font-medium mb-6">
+            Próximo: {getCurrentWorldData().emoji} {getCurrentWorldData().name}
+          </p>
 
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <h4 className="font-bold text-gray-800 mb-3">📊 Desempenho:</h4>
-            <div className="flex justify-center gap-2">
-              {[1, 2, 3].map(star => (
-                <span key={star} className="text-3xl">
-                  {star <= Math.min(3, Math.ceil(score / 300)) ? '⭐' : '☆'}
-                </span>
-              ))}
+            <h4 className="font-bold text-gray-800 mb-3">Progresso Geral:</h4>
+            <div className="flex justify-center gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-800">{currentWorldIndex + 1}/{WORLD_ORDER.length}</div>
+                <div className="text-xs text-gray-600">Mundos</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-800">{totalScore}</div>
+                <div className="text-xs text-green-600">Pontos Total</div>
+              </div>
             </div>
           </div>
           
           <div className="flex flex-col space-y-3">
             <button
-              onClick={() => {
-                setGameState('playing');
-                initializeGame();
-                setGameStarted(true);
-                setIsTimerActive(true);
-              }}
+              onClick={handleContinueToNextWorld}
               className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105"
             >
-              🔄 Jogar Novamente
+              🚀 Continuar Aventura
             </button>
             
             <button
@@ -932,14 +890,66 @@ export default function MemoryGame() {
               }`}
             >
               <Save size={18} />
-              <span>{salvando ? 'Salvando...' : 'Salvar Sessão'}</span>
+              <span>{salvando ? 'Salvando...' : 'Salvar Progresso'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState === 'gameComplete') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gold-200 via-yellow-200 to-orange-200 flex items-center justify-center p-4">
+        <ConfettiEffect />
+        
+        <div className="bg-white/95 rounded-xl shadow-2xl p-8 backdrop-blur-sm border border-yellow-200 max-w-lg w-full text-center">
+          <div className="text-8xl mb-4 animate-pulse">🏆</div>
+          
+          <h3 className="text-4xl font-bold text-gray-800 mb-2">MESTRE DA MEMÓRIA!</h3>
+          
+          <p className="text-xl text-orange-600 font-medium mb-6">
+            Você completou todos os {WORLD_ORDER.length} mundos!
+          </p>
+
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-6 mb-6">
+            <h4 className="font-bold text-gray-800 mb-3">🌟 Conquista Final:</h4>
+            <div className="flex justify-center gap-6">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-orange-800">{totalScore}</div>
+                <div className="text-sm text-orange-600">Pontos Finais</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-800">{totalPairsFound}</div>
+                <div className="text-sm text-purple-600">Pares Totais</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex flex-col space-y-3">
+            <button
+              onClick={handleSaveSession}
+              disabled={salvando}
+              className={`flex items-center justify-center space-x-2 px-6 py-4 rounded-lg font-semibold transition-colors ${
+                !salvando
+                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:from-yellow-600 hover:to-orange-600'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <Save size={20} />
+              <span>{salvando ? 'Salvando...' : 'Salvar Conquista Final'}</span>
             </button>
             
             <button
-              onClick={() => setGameState('intro')}
+              onClick={() => {
+                setCurrentWorldIndex(0);
+                setDifficulty('easy');
+                setTotalScore(0);
+                setGameState('intro');
+              }}
               className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105"
             >
-              🏠 Menu Principal
+              🏠 Nova Jornada
             </button>
           </div>
         </div>
