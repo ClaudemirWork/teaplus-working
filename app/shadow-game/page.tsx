@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './shadowgame.css';
 import Image from 'next/image';
 import { Volume2, VolumeX, Trophy, Star, ArrowLeft, Zap, Flame, Award, Crown, Medal } from 'lucide-react';
-// Importamos apenas o TIPO do GameAudioManager, o que é 100% seguro para o build
 import type { GameAudioManager } from '@/utils/gameAudioManager';
 
 // --- DADOS DO JOGO (Mantidos do seu original) ---
@@ -36,24 +35,30 @@ export default function ShadowGamePage() {
   const [totalStars, setTotalStars] = useState(0);
   const [isReady, setIsReady] = useState(false); // Controla se o áudio está pronto
   const [isInteracting, setIsInteracting] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   const audioManagerRef = useRef<GameAudioManager | null>(null);
 
   // Efeito que carrega TUDO que depende do navegador de forma segura
   useEffect(() => {
     const initializeClientSide = async () => {
-      // Importa o AudioManager dinamicamente para não quebrar o build
-      const { GameAudioManager } = await import('@/utils/gameAudioManager');
-      audioManagerRef.current = GameAudioManager.getInstance();
+      try {
+        // Importa o AudioManager dinamicamente para não quebrar o build
+        const { GameAudioManager } = await import('@/utils/gameAudioManager');
+        audioManagerRef.current = GameAudioManager.getInstance();
 
-      // Carrega os dados do localStorage
-      const savedHighScore = localStorage.getItem('shadowGameHighScore');
-      const savedStars = localStorage.getItem('shadowGameTotalStars');
-      if (savedHighScore) setHighScore(parseInt(savedHighScore, 10));
-      if (savedStars) setTotalStars(parseInt(savedStars, 10));
-
-      // Avisa para a UI que o jogo está pronto para começar
-      setIsReady(true);
+        // Carrega os dados do localStorage
+        const savedHighScore = localStorage.getItem('shadowGameHighScore');
+        const savedStars = localStorage.getItem('shadowGameTotalStars');
+        if (savedHighScore) setHighScore(parseInt(savedHighScore, 10));
+        if (savedStars) setTotalStars(parseInt(savedStars, 10));
+      } catch (error) {
+        console.error("Erro ao inicializar áudio:", error);
+        setAudioError("Não foi possível carregar o áudio. O jogo continuará sem som.");
+      } finally {
+        // Avisa para a UI que o jogo está pronto para começar (mesmo com falhas)
+        setIsReady(true);
+      }
     };
 
     initializeClientSide();
@@ -65,12 +70,21 @@ export default function ShadowGamePage() {
       onEnd?.();
       return;
     }
-    audioManagerRef.current?.falarLeo(text, onEnd);
+    try {
+      audioManagerRef.current?.falarLeo(text, onEnd);
+    } catch (error) {
+      console.error("Erro ao reproduzir áudio do Leo:", error);
+      onEnd?.();
+    }
   }, [isReady, soundEnabled]);
 
   const playSound = useCallback((soundName: string, volume: number = 0.5) => {
     if (!isReady || !soundEnabled) return;
-    audioManagerRef.current?.playSoundEffect(soundName, volume);
+    try {
+      audioManagerRef.current?.playSoundEffect(soundName, volume);
+    } catch (error) {
+      console.error(`Erro ao reproduzir som ${soundName}:`, error);
+    }
   }, [isReady, soundEnabled]);
 
   const startNewRound = (phase: number) => {
@@ -155,15 +169,40 @@ export default function ShadowGamePage() {
   // --- COMPONENTES DE TELA ---
   const TitleScreen = () => {
     const handlePlayIntro = async () => {
-      if (isInteracting || !isReady) return;
+      if (isInteracting || !isReady) {
+        console.log("Botão desabilitado ou já em interação");
+        return;
+      }
+      
+      console.log("Botão clicado - Iniciando jogo");
       setIsInteracting(true);
       playSound('click_start', 0.7);
-      await audioManagerRef.current?.forceInitialize();
-      leoSpeak("Olá! Eu sou o Leo! Vamos jogar com sombras?", () => {
+      
+      try {
+        console.log("Forçando inicialização do áudio...");
+        await audioManagerRef.current?.forceInitialize();
+        
+        // Adicionar um timeout como fallback
+        const timeoutId = setTimeout(() => {
+          console.log("Timeout: prosseguindo sem áudio");
+          setGameState('instructions');
+          setIsInteracting(false);
+        }, 5000);
+        
+        console.log("Tentando fazer Leo falar...");
+        leoSpeak("Olá! Eu sou o Leo! Vamos jogar com sombras?", () => {
+          clearTimeout(timeoutId);
+          console.log("Leo terminou de falar, mudando para instruções");
+          setGameState('instructions');
+          setIsInteracting(false);
+        });
+      } catch (error) {
+        console.error("Erro durante a inicialização:", error);
         setGameState('instructions');
         setIsInteracting(false);
-      });
+      }
     };
+    
     return (
       <div className="screen-container title-screen">
         <div className="stars-bg"></div>
@@ -172,9 +211,33 @@ export default function ShadowGamePage() {
         </div>
         <h1 className="main-title">Jogo das Sombras</h1>
         <p className="subtitle">Associe cada imagem com sua sombra!</p>
-        <button onClick={handlePlayIntro} disabled={!isReady || isInteracting} className="start-button">
-          {!isReady ? 'Carregando Áudio...' : (isInteracting ? 'Ouvindo...' : 'Começar a Jogar')}
+        
+        {audioError && (
+          <div className="error-message" style={{ 
+            color: '#ff6a6a', 
+            backgroundColor: 'rgba(255,255,255,0.8)', 
+            padding: '10px', 
+            borderRadius: '10px', 
+            margin: '10px 0' 
+          }}>
+            {audioError}
+          </div>
+        )}
+        
+        <button 
+          onClick={handlePlayIntro} 
+          disabled={!isReady || isInteracting} 
+          className="start-button"
+        >
+          {!isReady ? 'Carregando...' : (isInteracting ? 'Iniciando...' : 'Começar a Jogar')}
         </button>
+        
+        {!isReady && (
+          <div className="loading-indicator" style={{ marginTop: '20px' }}>
+            <div className="spinner"></div>
+            <p>Preparando o jogo...</p>
+          </div>
+        )}
       </div>
     );
   };
