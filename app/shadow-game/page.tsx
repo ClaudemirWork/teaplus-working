@@ -4,6 +4,7 @@ import './shadowgame.css';
 import Image from 'next/image';
 import { Volume2, VolumeX, Trophy, Star, ArrowLeft, Zap, Flame, Award, Crown, Medal } from 'lucide-react';
 
+// (mantive sua lista reduzida como exemplo — coloque a sua completa)
 const imageNames = [
   'abacate', 'abelha', 'abelha_feliz', 'abelha_voando', 'abelhinha', 'aguia', 'amigos', 'apresentacao', 'arvore_natal', 'baleia',
   'bicicleta', 'borboleta', 'cachorro', 'casa', 'cavalo', 'elefante', 'flor', 'gato', 'girassol', 'leao',
@@ -38,7 +39,6 @@ export default function ShadowGamePage() {
   const audioManagerRef = useRef<any>(null);
   const hasInitialized = useRef(false);
 
-  // Inicialização
   useEffect(() => {
     const initializeGame = async () => {
       if (hasInitialized.current) return;
@@ -57,6 +57,7 @@ export default function ShadowGamePage() {
         try {
           const { GameAudioManager } = await import('@/utils/gameAudioManager');
           audioManagerRef.current = GameAudioManager.getInstance();
+          console.log('GameAudioManager inicializado (ref guardada).', audioManagerRef.current);
         } catch (error) {
           console.warn('GameAudioManager não disponível, continuando sem áudio:', error);
         }
@@ -71,28 +72,105 @@ export default function ShadowGamePage() {
     initializeGame();
   }, []);
 
+  // leoSpeak robusto: aceita callback, Promise ou HTMLAudioElement; garante fallback
   const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
-    if (!soundEnabled || !audioManagerRef.current) {
+    if (!soundEnabled) {
+      console.log('leoSpeak: som desativado, indo direto.');
       onEnd?.();
       return;
     }
-    try {
-      audioManagerRef.current.falarLeo(text, onEnd);
-    } catch (error) {
-      console.warn('Erro no leoSpeak:', error);
+
+    const mgr = audioManagerRef.current;
+    if (!mgr || !mgr.falarLeo) {
+      console.warn('leoSpeak: audioManager não disponível — fallback para onEnd imediato.');
       onEnd?.();
+      return;
     }
+
+    console.log('leoSpeak: chamando falarLeo ->', text);
+
+    let finished = false;
+    let fallbackTimer: number | undefined;
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      if (fallbackTimer) window.clearTimeout(fallbackTimer);
+      console.log('leoSpeak: finished -> executando onEnd.');
+      try { onEnd?.(); } catch (e) { console.warn('onEnd throw:', e); }
+    };
+
+    try {
+      const maybe = mgr.falarLeo(text, () => {
+        console.log('leoSpeak: callback de falarLeo foi chamado (via argumento).');
+        finish();
+      });
+
+      // Se retornar Promise
+      if (maybe && typeof maybe.then === 'function') {
+        console.log('leoSpeak: falarLeo retornou Promise — aguardando resolução.');
+        maybe.then(() => {
+          console.log('leoSpeak: Promise resolvida.');
+          finish();
+        }).catch((e: any) => {
+          console.warn('leoSpeak: Promise rejeitada:', e);
+          finish();
+        });
+      } else if (maybe && typeof maybe.addEventListener === 'function') {
+        // Se retornar um HTMLAudioElement ou similar
+        try {
+          const handler = () => {
+            console.log('leoSpeak: evento ended do audio retornado disparou.');
+            maybe.removeEventListener('ended', handler);
+            finish();
+          };
+          maybe.addEventListener('ended', handler);
+          console.log('leoSpeak: listener "ended" adicionado no retorno de falarLeo.');
+        } catch (e) {
+          console.warn('leoSpeak: não foi possível adicionar ended listener:', e);
+        }
+      } else {
+        console.log('leoSpeak: falarLeo retornou valor não tratável (ou undefined).');
+        // Ainda assim, confiaremos no fallback timer abaixo.
+      }
+    } catch (err) {
+      console.warn('leoSpeak: erro ao chamar falarLeo:', err);
+      finish();
+      return;
+    }
+
+    // Fallback: garante que a UI não fique presa caso nada invoque onEnd
+    fallbackTimer = window.setTimeout(() => {
+      console.warn('leoSpeak: fallback timeout acionado (5s). Avançando a UI.');
+      finish();
+    }, 5000);
   }, [soundEnabled]);
 
   const playSound = useCallback((soundName: string, volume: number = 0.5) => {
-    if (!soundEnabled || !audioManagerRef.current) return;
+    if (!soundEnabled) {
+      console.log('playSound: som desativado ->', soundName);
+      return;
+    }
+    if (!audioManagerRef.current || !audioManagerRef.current.playSoundEffect) {
+      console.warn('playSound: audioManager ou playSoundEffect não disponível -> tentando tocar via <audio> local.');
+      try {
+        const a = new Audio(`/audio/sounds/${soundName}.mp3`);
+        a.volume = volume;
+        a.play().catch(e => console.warn('playSound: erro ao tocar via audio fallback:', e));
+      } catch (e) {
+        console.warn('playSound: fallback falhou:', e);
+      }
+      return;
+    }
     try {
+      console.log('playSound: usando audioManager.playSoundEffect ->', soundName);
       audioManagerRef.current.playSoundEffect(soundName, volume);
     } catch (error) {
       console.warn('Erro no playSound:', error);
     }
   }, [soundEnabled]);
 
+  // restante da lógica de rounds (igual ao seu)
   const startNewRound = (phase: number) => {
     if (imageNames.length < 3) {
       console.error('Não há imagens suficientes para o jogo');
@@ -136,26 +214,24 @@ export default function ShadowGamePage() {
     setRoundData({ mainItem, options: shuffleArray(options), correctAnswer });
   };
 
-  // --- CORRIGIDO: garante que a introdução sempre avança ---
+  // handleIntroClick com logs
   const handleIntroClick = () => {
-    if (isIntroPlaying) return;
+    console.log('Intro button clicked');
+    if (isIntroPlaying) {
+      console.log('intro já tocando, ignorando click.');
+      return;
+    }
 
     setIsIntroPlaying(true);
     playSound('click_select');
 
-    let moved = false;
-    const goNext = () => {
-      if (moved) return;
-      moved = true;
+    leoSpeak("Olá! Eu sou o Léo! Vamos jogar com sombras?", () => {
+      console.log('Intro callback executado -> mudar para instructions.');
       setIsIntroPlaying(false);
       setGameState('instructions');
-    };
+    });
 
-    // tenta falar com o Leo
-    leoSpeak("Olá! Eu sou o Léo! Vamos jogar com sombras?", goNext);
-
-    // segurança: se o Azure falhar, avança de qualquer jeito
-    setTimeout(goNext, 5000);
+    // Nota: leoSpeak já tem fallback interno de 5s; repetição aqui não necessária
   };
 
   const handlePhaseSelect = (phase: number) => {
@@ -170,6 +246,7 @@ export default function ShadowGamePage() {
       3: "Desafio Final! Para os melhores!"
     };
 
+    // Não bloqueamos a UI aqui — mostramos a tela e a voz toca em paralelo
     leoSpeak(phaseMessages[phase]);
     setGameState('playing');
     startNewRound(phase);
@@ -230,7 +307,7 @@ export default function ShadowGamePage() {
     }
   };
 
-  // --- TELAS ---
+  // TELAS (idênticas à sua estrutura — mantive o mesmo markup)
   const LoadingScreen = () => (
     <div className="screen-container loading-screen">
       <div className="stars-bg"></div>
@@ -315,7 +392,7 @@ export default function ShadowGamePage() {
 
   const GameScreen = () => {
     if (!roundData) return null;
-
+    
     const comboIcons: { [key: string]: React.ElementType } = {
       '20': Crown,
       '15': Award,
@@ -323,10 +400,10 @@ export default function ShadowGamePage() {
       '5': Flame,
       '2': Zap
     };
-
+    
     const comboLevel = Object.keys(comboIcons).reverse().find(key => streak >= parseInt(key)) || '1';
     const ComboIcon = comboIcons[comboLevel] || Star;
-
+    
     return (
       <div className="playing-screen">
         <div className="top-bar">
