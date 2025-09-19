@@ -93,8 +93,6 @@ const GameCompleteScreen = ({ onPlayAgain, score }: { onPlayAgain: () => void, s
     const hasCelebrated = useRef(false);
     useEffect(() => {
         if (!hasCelebrated.current) {
-            // A comemoração acontece aqui, dentro do componente, uma única vez.
-            // A fala do Leo foi movida para o componente pai para garantir o controle.
             hasCelebrated.current = true;
         }
     }, []);
@@ -119,7 +117,8 @@ export default function ShadowGamePage() {
 
     const audioManagerRef = useRef<any>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
-    
+    const hasCelebratedCompletion = useRef(false);
+
     useEffect(() => {
         const init = async () => {
             try {
@@ -134,12 +133,65 @@ export default function ShadowGamePage() {
         init();
     }, []);
 
-    const playSynthSound = useCallback((type: SoundType) => { /* ...código sem alteração... */ }, [soundEnabled]);
+    const playSynthSound = useCallback((type: SoundType) => {
+        if (!soundEnabled || !audioContextRef.current) return;
+        const ctx = audioContextRef.current;
+        if (ctx.state === 'suspended') { ctx.resume(); }
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        gainNode.connect(ctx.destination);
+        oscillator.connect(gainNode);
+        switch (type) {
+            case 'correct':
+                oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(600, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+                oscillator.frequency.linearRampToValueAtTime(900, ctx.currentTime + 0.1);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.2);
+                break;
+            case 'error':
+                oscillator.type = 'square'; oscillator.frequency.setValueAtTime(200, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+                oscillator.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.15);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.2);
+                break;
+            case 'click':
+                oscillator.type = 'triangle'; oscillator.frequency.setValueAtTime(800, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.15, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.1);
+                break;
+            case 'combo':
+                 oscillator.type = 'triangle'; gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+                 [440, 550, 660, 880].forEach((freq, i) => { oscillator.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.07); });
+                 gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
+                 break;
+        }
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + 0.4);
+    }, [soundEnabled]);
+    
     const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
         if (!soundEnabled || !audioManagerRef.current) { onEnd?.(); return; }
         audioManagerRef.current.falarLeo(text, onEnd);
     }, [soundEnabled]);
-    const startNewRound = useCallback((phase: number) => { /* ...código sem alteração... */ }, []);
+    
+    const startNewRound = useCallback((phase: number) => {
+        let availableImages = [...imageNames];
+        const correctImage = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
+        const wrong1 = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
+        const wrong2 = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
+        let roundType: RoundType = phase === 1 ? 'imageToShadow' : phase === 2 ? 'shadowToImage' : (Math.random() < 0.5 ? 'imageToShadow' : 'shadowToImage');
+        let mainItem, correctAnswer, options;
+        if (roundType === 'imageToShadow') {
+            mainItem = `/shadow-game/images/${correctImage}.webp`;
+            correctAnswer = `/shadow-game/shadows/${correctImage}_black.webp`;
+            options = shuffleArray([correctAnswer, `/shadow-game/shadows/${wrong1}_black.webp`, `/shadow-game/shadows/${wrong2}_black.webp`]);
+        } else {
+            mainItem = `/shadow-game/shadows/${correctImage}_black.webp`;
+            correctAnswer = `/shadow-game/images/${correctImage}.webp`;
+            options = shuffleArray([correctAnswer, `/shadow-game/images/${wrong1}.webp`, `/shadow-game/images/${wrong2}.webp`]);
+        }
+        setRoundData({ mainItem, options, correctAnswer });
+    }, []);
 
     // Handlers
     const handleStartIntro = async () => {
@@ -147,30 +199,28 @@ export default function ShadowGamePage() {
         setIsInteracting(true);
         if (audioContextRef.current?.state === 'suspended') await audioContextRef.current.resume();
         if (audioManagerRef.current) await audioManagerRef.current.forceInitialize();
-        
         playSynthSound('click');
-        const fallback = setTimeout(() => {
-            setIsInteracting(false);
-            setGameState('instructions');
-        }, 4000); // Se a voz falhar, avança em 4s
-        
-        leoSpeak("Olá! Eu sou o Léo! Vamos jogar com sombras?", () => {
-            clearTimeout(fallback);
-            setIsInteracting(false);
-            setGameState('instructions');
-        });
+        const fallback = setTimeout(() => { setIsInteracting(false); setGameState('instructions'); }, 4000);
+        leoSpeak("Olá! Eu sou o Léo! Vamos jogar com sombras?", () => { clearTimeout(fallback); setIsInteracting(false); setGameState('instructions'); });
     };
     
     const handleNextInstruction = () => {
         playSynthSound('click');
         const fallback = setTimeout(() => setGameState('phase-selection'), 4000);
-        leoSpeak("É super fácil! Clique na sombra certa para cada figura!", () => {
-            clearTimeout(fallback);
-            setGameState('phase-selection');
-        });
+        leoSpeak("É super fácil! Clique na sombra certa para cada figura!", () => { clearTimeout(fallback); setGameState('phase-selection'); });
     };
 
-    const handlePhaseSelect = (phase: number) => { /* ...código sem alteração... */ };
+    const handlePhaseSelect = (phase: number) => {
+        playSynthSound('click');
+        setSelectedPhase(phase);
+        setScore(0);
+        setStreak(0);
+        setRoundCount(0);
+        const messages: {[key: number]: string} = { 1: "Fase 1: Detetive Júnior!", 2: "Fase 2: Mestre das Sombras!", 3: "Fase 3: Desafio Final!"};
+        leoSpeak(messages[phase]);
+        setGameState('playing');
+        startNewRound(phase);
+    };
 
     const handleOptionClick = (opt: string) => {
         if (opt === roundData?.correctAnswer) {
@@ -180,28 +230,15 @@ export default function ShadowGamePage() {
             setStreak(newStreak);
             setRoundCount(newRoundCount);
             playSynthSound('correct');
-
-            if (newStreak % 5 === 0 && newStreak > 0) {
-                setShowConfetti(true);
-                playSynthSound('combo');
-                setTimeout(() => setShowConfetti(false), 2000);
-            }
-
+            if (newStreak % 5 === 0 && newStreak > 0) { setShowConfetti(true); playSynthSound('combo'); setTimeout(() => setShowConfetti(false), 2000); }
             if (newRoundCount >= ROUNDS_PER_PHASE) {
                 if (selectedPhase === 3) { setGameState('gameComplete'); } 
                 else { setGameState('phaseComplete'); }
                 return;
             }
-            
-            const leoStreakPhrases: {[key:number]: string[]} = {
-                10: ["Aí sim, sequência de 10!", "Você tem olhar de águia! Já são 10!"],
-                20: ["Você é muito top, sequência de 20!", "Caramba! 20 acertos seguidos!", "Impossível, que sequência incrível!"],
-            };
+            const leoStreakPhrases: {[key:number]: string[]} = { 10: ["Aí sim, sequência de 10!", "Você tem olhar de águia! Já são 10!"], 20: ["Você é muito top, sequência de 20!", "Caramba! 20 acertos seguidos!", "Impossível, que sequência incrível!"] };
             const phrases = leoStreakPhrases[newStreak];
-            if (phrases) {
-                leoSpeak(phrases[Math.floor(Math.random() * phrases.length)]);
-            }
-            
+            if (phrases) { leoSpeak(phrases[Math.floor(Math.random() * phrases.length)]); }
             setTimeout(() => startNewRound(selectedPhase!), 300);
         } else {
             playSynthSound('error');
@@ -226,12 +263,14 @@ export default function ShadowGamePage() {
 
     const handlePlayAgain = () => {
         playSynthSound('click');
+        hasCelebratedCompletion.current = false;
         setGameState('phase-selection');
     };
 
     useEffect(() => {
-        if(gameState === 'gameComplete') {
+        if(gameState === 'gameComplete' && !hasCelebratedCompletion.current) {
             leoSpeak("Parabéns! Você se tornou um verdadeiro Mestre das Sombras!");
+            hasCelebratedCompletion.current = true;
         }
     }, [gameState, leoSpeak]);
 
@@ -250,3 +289,4 @@ export default function ShadowGamePage() {
 
     return (<main className="shadow-game-main">{renderContent()}</main>);
 }
+
