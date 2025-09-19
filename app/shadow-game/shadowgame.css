@@ -1,4 +1,4 @@
-/* shadowgame.css - Novo Layout Vibrante e Divertido */
+/* shadowgame.css - Layout Vibrante e Profissional */
 
 @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap');
 
@@ -78,7 +78,6 @@
     background-color: #a0a0a0;
     cursor: not-allowed;
 }
-
 
 /* --- TELA DE INTRO E INSTRUÇÕES --- */
 .intro-screen img, .explanation-screen img {
