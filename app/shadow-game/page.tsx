@@ -4,12 +4,10 @@ import './shadowgame.css';
 import Image from 'next/image';
 import { Volume2, VolumeX, Trophy, Star, ArrowLeft, Zap, Flame, Award, Crown, Medal } from 'lucide-react';
 
-// Array completo de imagens (exemplo - você deve completar com todas as suas imagens)
 const imageNames = [
   'abacate', 'abelha', 'abelha_feliz', 'abelha_voando', 'abelhinha', 'aguia', 'amigos', 'apresentacao', 'arvore_natal', 'baleia',
   'bicicleta', 'borboleta', 'cachorro', 'casa', 'cavalo', 'elefante', 'flor', 'gato', 'girassol', 'leao',
   'passaro', 'peixe', 'sol', 'tartaruga', 'urso', 'vaca', 'zebra', 'coelho', 'formiga', 'galinha'
-  // Adicione todas as suas imagens aqui
 ];
 
 const shuffleArray = (array: any[]) => {
@@ -40,17 +38,15 @@ export default function ShadowGamePage() {
   const audioManagerRef = useRef<any>(null);
   const hasInitialized = useRef(false);
 
-  // Inicialização simplificada
+  // Inicialização
   useEffect(() => {
     const initializeGame = async () => {
       if (hasInitialized.current) return;
       hasInitialized.current = true;
-      
+
       try {
-        // Aguarda um pouco para garantir que está no cliente
         await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Carrega dados salvos
+
         if (typeof window !== 'undefined') {
           const savedHighScore = localStorage.getItem('shadowGameHighScore');
           const savedStars = localStorage.getItem('shadowGameTotalStars');
@@ -58,7 +54,6 @@ export default function ShadowGamePage() {
           if (savedStars) setTotalStars(Number(savedStars));
         }
 
-        // Tenta inicializar o áudio (mas não bloqueia se falhar)
         try {
           const { GameAudioManager } = await import('@/utils/gameAudioManager');
           audioManagerRef.current = GameAudioManager.getInstance();
@@ -66,11 +61,10 @@ export default function ShadowGamePage() {
           console.warn('GameAudioManager não disponível, continuando sem áudio:', error);
         }
 
-        // Vai para a tela de introdução
         setGameState('intro');
       } catch (error) {
         console.error('Erro na inicialização:', error);
-        setGameState('intro'); // Continua mesmo com erro
+        setGameState('intro');
       }
     };
 
@@ -107,20 +101,20 @@ export default function ShadowGamePage() {
 
     setFeedback({});
     setPointsFeedback(null);
-    
+
     let availableImages = [...imageNames];
     const correctImageName = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
-    
+
     let roundType: RoundType;
     if (phase === 1) roundType = 'imageToShadow';
     else if (phase === 2) roundType = 'shadowToImage';
     else roundType = Math.random() < 0.5 ? 'imageToShadow' : 'shadowToImage';
-    
+
     const wrongImageName1 = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
     const wrongImageName2 = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
-    
+
     let mainItem: string, correctAnswer: string, options: string[];
-    
+
     if (roundType === 'imageToShadow') {
       mainItem = `/shadow-game/images/${correctImageName}.webp`;
       correctAnswer = `/shadow-game/shadows/${correctImageName}_black.webp`;
@@ -138,22 +132,30 @@ export default function ShadowGamePage() {
         `/shadow-game/images/${wrongImageName2}.webp`
       ];
     }
-    
+
     setRoundData({ mainItem, options: shuffleArray(options), correctAnswer });
   };
 
+  // --- CORRIGIDO: garante que a introdução sempre avança ---
   const handleIntroClick = () => {
     if (isIntroPlaying) return;
-    
+
     setIsIntroPlaying(true);
     playSound('click_select');
-    
-    leoSpeak("Olá! Eu sou o Léo! Vamos jogar com sombras?", () => {
-      setTimeout(() => {
-        setIsIntroPlaying(false);
-        setGameState('instructions');
-      }, 500);
-    });
+
+    let moved = false;
+    const goNext = () => {
+      if (moved) return;
+      moved = true;
+      setIsIntroPlaying(false);
+      setGameState('instructions');
+    };
+
+    // tenta falar com o Leo
+    leoSpeak("Olá! Eu sou o Léo! Vamos jogar com sombras?", goNext);
+
+    // segurança: se o Azure falhar, avança de qualquer jeito
+    setTimeout(goNext, 5000);
   };
 
   const handlePhaseSelect = (phase: number) => {
@@ -161,13 +163,13 @@ export default function ShadowGamePage() {
     setSelectedPhase(phase);
     setScore(0);
     setStreak(0);
-    
+
     const phaseMessages: { [key: number]: string } = {
       1: "Detetive Júnior! Vamos começar!",
       2: "Mestre das Sombras! Ficou mais difícil!",
       3: "Desafio Final! Para os melhores!"
     };
-    
+
     leoSpeak(phaseMessages[phase]);
     setGameState('playing');
     startNewRound(phase);
@@ -175,10 +177,10 @@ export default function ShadowGamePage() {
 
   const handleOptionClick = (clickedOption: string) => {
     if (Object.keys(feedback).length > 0 || !selectedPhase) return;
-    
+
     if (clickedOption === roundData?.correctAnswer) {
       playSound('correct_chime', 0.4);
-      
+
       const newStreak = streak + 1;
       let pointsGained = 100;
       if (newStreak >= 20) pointsGained = 3000;
@@ -186,37 +188,37 @@ export default function ShadowGamePage() {
       else if (newStreak >= 10) pointsGained = 1000;
       else if (newStreak >= 5) pointsGained = 500;
       else if (newStreak >= 2) pointsGained = 200;
-      
+
       const currentScore = score + pointsGained;
       setScore(currentScore);
       setStreak(newStreak);
       setPointsFeedback(`+${pointsGained}`);
-      
+
       const newTotalStars = totalStars + 1;
       setTotalStars(newTotalStars);
       if (typeof window !== 'undefined') {
         localStorage.setItem('shadowGameTotalStars', newTotalStars.toString());
       }
-      
+
       if (currentScore > highScore) {
         setHighScore(currentScore);
         if (typeof window !== 'undefined') {
           localStorage.setItem('shadowGameHighScore', currentScore.toString());
         }
       }
-      
+
       const comboMessages: { [key: number]: string } = {
         5: `UAU! Combo de ${newStreak} acertos!`,
         10: `INCRÍVEL! Sequência de ${newStreak}!`,
         15: `FANTÁSTICO! ${newStreak} seguidos!`,
         20: `LENDÁRIO! ${newStreak} acertos em sequência!`
       };
-      
+
       const comboMessageEntry = Object.entries(comboMessages).find(([key]) => newStreak === parseInt(key));
       if (comboMessageEntry) {
         leoSpeak(comboMessageEntry[1]);
       }
-      
+
       setFeedback({ [clickedOption]: 'correct' });
       setTimeout(() => startNewRound(selectedPhase), 1500);
     } else {
@@ -228,7 +230,7 @@ export default function ShadowGamePage() {
     }
   };
 
-  // TELA DE CARREGAMENTO
+  // --- TELAS ---
   const LoadingScreen = () => (
     <div className="screen-container loading-screen">
       <div className="stars-bg"></div>
@@ -240,7 +242,6 @@ export default function ShadowGamePage() {
     </div>
   );
 
-  // TELA DE INTRODUÇÃO
   const IntroScreen = () => (
     <div className="screen-container intro-screen">
       <div className="stars-bg"></div>
@@ -265,7 +266,6 @@ export default function ShadowGamePage() {
     </div>
   );
 
-  // TELA DE INSTRUÇÕES
   const InstructionsScreen = () => (
     <div className="screen-container explanation-screen">
       <div className="stars-bg"></div>
@@ -292,7 +292,6 @@ export default function ShadowGamePage() {
     </div>
   );
 
-  // TELA DE SELEÇÃO DE FASE
   const PhaseSelectionScreen = () => (
     <div className="screen-container phase-selection-screen">
       <div className="stars-bg"></div>
@@ -314,10 +313,9 @@ export default function ShadowGamePage() {
     </div>
   );
 
-  // TELA DE JOGO
   const GameScreen = () => {
     if (!roundData) return null;
-    
+
     const comboIcons: { [key: string]: React.ElementType } = {
       '20': Crown,
       '15': Award,
@@ -325,10 +323,10 @@ export default function ShadowGamePage() {
       '5': Flame,
       '2': Zap
     };
-    
+
     const comboLevel = Object.keys(comboIcons).reverse().find(key => streak >= parseInt(key)) || '1';
     const ComboIcon = comboIcons[comboLevel] || Star;
-    
+
     return (
       <div className="playing-screen">
         <div className="top-bar">
@@ -363,9 +361,8 @@ export default function ShadowGamePage() {
             alt="Item principal" 
             width={250} 
             height={250}
-            onError={(e) => {
+            onError={() => {
               console.error('Erro ao carregar imagem:', roundData.mainItem);
-              // Fallback ou recarregar round
             }}
           />
         </div>
@@ -382,7 +379,7 @@ export default function ShadowGamePage() {
                 alt={`Opção ${index + 1}`} 
                 width={100} 
                 height={100}
-                onError={(e) => {
+                onError={() => {
                   console.error('Erro ao carregar opção:', optionSrc);
                 }}
               />
