@@ -62,7 +62,7 @@ const AVATAR_WORLDS = {
   }
 };
 
-// Configurações de dificuldade
+// Configurações de dificuldade CORRIGIDAS
 const DIFFICULTY_SETTINGS = {
   easy: {
     name: 'Fácil',
@@ -95,7 +95,7 @@ interface Card {
 }
 
 type Difficulty = 'easy' | 'medium' | 'hard';
-type Screen = 'title' | 'instructions' | 'game' | 'worldComplete' | 'gameComplete';
+type Screen = 'title' | 'instructions' | 'game' | 'results';
 
 export default function MemoryGame() {
   const router = useRouter();
@@ -103,12 +103,14 @@ export default function MemoryGame() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioManagerRef = useRef<any>(null);
 
-  // Controle de telas
+  // Controle de telas SIMPLIFICADO
   const [currentScreen, setCurrentScreen] = useState<Screen>('title');
   
-  // Estados de progressão
+  // Estados de progressão SIMPLIFICADOS
   const [currentWorldIndex, setCurrentWorldIndex] = useState(0);
   const [currentDifficulty, setCurrentDifficulty] = useState<Difficulty>('easy');
+  const [totalScore, setTotalScore] = useState(0);
+  const [completedWorlds, setCompletedWorlds] = useState<number[]>([]);
   
   // Estados do jogo
   const [cards, setCards] = useState<Card[]>([]);
@@ -133,10 +135,8 @@ export default function MemoryGame() {
 
   // Inicialização
   useEffect(() => {
-    // Inicializar áudio
     const initAudio = async () => {
       try {
-        // Forçar inicialização do áudio após interação do usuário
         const enableAudio = () => {
           try {
             const { GameAudioManager } = require('@/utils/gameAudioManager');
@@ -151,11 +151,9 @@ export default function MemoryGame() {
           document.removeEventListener('touchstart', enableAudio);
         };
         
-        // Adicionar listeners para inicialização do áudio
         document.addEventListener('click', enableAudio);
         document.addEventListener('touchstart', enableAudio);
         
-        // Timeout para garantir que o áudio seja inicializado mesmo sem interação
         setTimeout(() => {
           if (!isReady) {
             try {
@@ -252,7 +250,7 @@ export default function MemoryGame() {
     }
   }, [isSoundOn]);
 
-  // Inicializar jogo - CORRIGIDA LÓGICA DOS PARES
+  // Inicializar jogo
   const initializeGame = useCallback(() => {
     console.log('Inicializando jogo');
     const settings = DIFFICULTY_SETTINGS[currentDifficulty];
@@ -293,7 +291,6 @@ export default function MemoryGame() {
     const shuffledCards = gameCards.sort(() => Math.random() - 0.5);
     
     console.log('Cartas criadas:', shuffledCards.length, 'cartas para', settings.pairs, 'pares');
-    console.log('Cartas:', shuffledCards.map(c => ({ id: c.id, avatar: c.avatar })));
     
     setCards(shuffledCards);
     setSelectedCards([]);
@@ -304,26 +301,19 @@ export default function MemoryGame() {
     setTimeLeft(settings.time);
     setIsTimerActive(false);
     setGameStarted(false);
-    setShowResults(false);
   }, [currentDifficulty, currentWorldIndex]);
 
-  // Iniciar atividade
+  // Iniciar atividade SIMPLIFICADO
   const startActivity = () => {
     console.log('Iniciando atividade do jogo');
-    setCurrentScreen('game');
-    
-    // Inicializar o jogo primeiro
     initializeGame();
+    setShowResults(false);
+    setGameStarted(true);
+    setIsTimerActive(true);
     
-    // Garantir que o jogo seja iniciado após um pequeno delay
-    setTimeout(() => {
-      setGameStarted(true);
-      setIsTimerActive(true);
-      
-      // Falar após o jogo estar pronto
-      const worldData = getCurrentWorldData();
-      leoSpeak(`Bem-vindo ao ${worldData.name}! Vamos começar no modo ${DIFFICULTY_SETTINGS[currentDifficulty].name}!`);
-    }, 500);
+    // Falar apenas no início
+    const worldData = getCurrentWorldData();
+    leoSpeak(`Bem-vindo ao ${worldData.name}! Vamos começar no modo ${DIFFICULTY_SETTINGS[currentDifficulty].name}!`);
   };
 
   // Timer
@@ -339,7 +329,7 @@ export default function MemoryGame() {
     };
   }, [isTimerActive, timeLeft, gameStarted]);
 
-  // Verificar vitória
+  // Verificar vitória SIMPLIFICADO
   useEffect(() => {
     const settings = DIFFICULTY_SETTINGS[currentDifficulty];
     if (matches === settings.pairs && gameStarted && !showResults) {
@@ -353,12 +343,6 @@ export default function MemoryGame() {
     
     const card = cards.find(c => c.id === cardId);
     if (!card || card.isFlipped || card.isMatched) return;
-    
-    // Iniciar timer no primeiro clique
-    if (!gameStarted) {
-      setGameStarted(true);
-      setIsTimerActive(true);
-    }
     
     playSound('flip');
     
@@ -399,13 +383,6 @@ export default function MemoryGame() {
           setMaxCombo(newCombo);
         }
         
-        // Falar combos especiais
-        if (newCombo === 3) {
-          leoSpeak("Muito bem! Combo de 3!");
-        } else if (newCombo === 5) {
-          leoSpeak("Incrível! Combo de 5 acertos seguidos!");
-        }
-        
         const newMatches = matches + 1;
         setMatches(newMatches);
         setScore(prev => prev + (100 * newCombo));
@@ -427,11 +404,9 @@ export default function MemoryGame() {
     }
   };
 
-  // Vitória
+  // Vitória SIMPLIFICADA
   const handleVictory = () => {
     setIsTimerActive(false);
-    setShowResults(true);
-    
     playSound('victory');
     
     confetti({
@@ -440,61 +415,57 @@ export default function MemoryGame() {
       origin: { y: 0.6 }
     });
     
-    // Verificar progressão
+    setTotalScore(prev => prev + score);
+    
+    // LÓGICA SIMPLIFICADA DE PROGRESSÃO
     if (currentDifficulty === 'easy') {
+      // Ir para médio
       setTimeout(() => {
-        leoSpeak("Parabéns! Agora vamos para o nível médio. Vai ficar mais desafiador!", () => {
+        leoSpeak("Parabéns! Agora vamos para o nível médio!", () => {
           setCurrentDifficulty('medium');
-          setTimeout(() => {
-            initializeGame();
-            setShowResults(false);
-            setGameStarted(true);
-            setIsTimerActive(true);
-          }, 500);
+          startActivity(); // Reinicia diretamente
         });
       }, 2000);
     } else if (currentDifficulty === 'medium') {
+      // Ir para difícil
       setTimeout(() => {
-        leoSpeak("Incrível! Agora vamos para o modo difícil. Este é o último desafio deste mundo!", () => {
+        leoSpeak("Incrível! Agora vamos para o modo difícil!", () => {
           setCurrentDifficulty('hard');
-          setTimeout(() => {
-            initializeGame();
-            setShowResults(false);
-            setGameStarted(true);
-            setIsTimerActive(true);
-          }, 500);
+          startActivity(); // Reinicia diretamente
         });
       }, 2000);
     } else {
-      // Completou todas as dificuldades do mundo atual
-      setTimeout(() => {
-        if (currentWorldIndex < WORLD_ORDER.length - 1) {
-          // Há próximo mundo
-          leoSpeak("Fantástico! Você completou todo o mundo! Vamos para o próximo desafio!", () => {
-            setCurrentScreen('worldComplete');
+      // Completou mundo - ir para próximo ou finalizar
+      if (currentWorldIndex < WORLD_ORDER.length - 1) {
+        // Próximo mundo
+        setCompletedWorlds(prev => [...prev, currentWorldIndex]);
+        setTimeout(() => {
+          leoSpeak("Fantástico! Você completou todo o mundo! Vamos para o próximo!", () => {
+            setCurrentWorldIndex(prev => prev + 1);
+            setCurrentDifficulty('easy');
+            startActivity(); // Reinicia diretamente
           });
-        } else {
-          // Completou todos os mundos
-          leoSpeak("Isso aí amigão! Você é um verdadeiro mestre da memória! Completou todos os mundos!", () => {
-            setCurrentScreen('gameComplete');
+        }, 2000);
+      } else {
+        // Jogo completo
+        setCompletedWorlds(prev => [...prev, currentWorldIndex]);
+        setTimeout(() => {
+          leoSpeak("Você é um verdadeiro mestre da memória! Completou todos os mundos!", () => {
+            setShowResults(true);
           });
-        }
-      }, 2000);
+        }, 2000);
+      }
     }
   };
 
   // Game Over
   const handleGameOver = () => {
     setIsTimerActive(false);
-    setShowResults(true);
     
-    leoSpeak("Que pena, o tempo acabou! Mas você fez um ótimo trabalho. Vamos tentar de novo?", () => {
+    leoSpeak("Que pena, o tempo acabou! Vamos tentar de novo?", () => {
       setTimeout(() => {
-        initializeGame();
-        setShowResults(false);
-        setGameStarted(true);
-        setIsTimerActive(true);
-      }, 2000);
+        startActivity(); // Reinicia diretamente
+      }, 1000);
     });
   };
 
@@ -516,7 +487,7 @@ export default function MemoryGame() {
         .insert([{
           usuario_id: user.id,
           atividade_nome: 'Jogo da Memória',
-          pontuacao_final: score,
+          pontuacao_final: totalScore,
           data_fim: new Date().toISOString()
         }]);
 
@@ -527,10 +498,8 @@ export default function MemoryGame() {
         alert(`Sessão salva com sucesso!
 
 🧠 Resultado do Jogo da Memória:
-- Mundo: ${getCurrentWorldData().name}
-- Dificuldade: ${DIFFICULTY_SETTINGS[currentDifficulty].name}
-- Pares Encontrados: ${matches}/${DIFFICULTY_SETTINGS[currentDifficulty].pairs}
-- Pontuação: ${score} pontos
+- Mundos Completados: ${completedWorlds.length}
+- Pontuação Total: ${totalScore} pontos
 - Combo Máximo: ${maxCombo}x`);
         
         router.push('/dashboard');
@@ -549,6 +518,11 @@ export default function MemoryGame() {
     setGameStarted(false);
     setCards([]);
     setSelectedCards([]);
+    setCurrentWorldIndex(0);
+    setCurrentDifficulty('easy');
+    setTotalScore(0);
+    setScore(0);
+    setCompletedWorlds([]);
   };
 
   // Handler da tela inicial
@@ -557,44 +531,35 @@ export default function MemoryGame() {
     setIsInteracting(true);
     
     try {
-      // Garantir que o contexto de áudio está ativo
       if (audioContextRef.current?.state === 'suspended') {
         await audioContextRef.current.resume();
       }
       
-      // Forçar inicialização do gerenciador de áudio
       if (audioManagerRef.current) {
         await audioManagerRef.current.forceInitialize();
       }
 
-      leoSpeak("Olá! Sou o Leo, e agora, vamos nos divertir e exercitar nossa memória. Vamos nos tornar um super cérebro!", () => {
+      // FALA MAIS RÁPIDA DO LEO
+      leoSpeak("Olá! Sou o Leo! Vamos exercitar nossa memória e nos divertir!", () => {
         setIsInteracting(false);
         setCurrentScreen('instructions');
       });
     } catch (error) {
       console.error('Erro ao inicializar áudio:', error);
       setIsInteracting(false);
-      // Mesmo com erro no áudio, continuar para a próxima tela
       setCurrentScreen('instructions');
     }
   };
 
-  // Continuar para próximo mundo
-  const handleContinueToNextWorld = () => {
-    setCurrentWorldIndex(prev => prev + 1);
-    setCurrentDifficulty('easy');
-    setCurrentScreen('game');
-    initializeGame();
-    
-    setTimeout(() => {
-      setGameStarted(true);
-      setIsTimerActive(true);
-      const worldData = getCurrentWorldData();
-      leoSpeak(`Bem-vindo ao ${worldData.name}! Vamos começar no modo fácil!`);
-    }, 500);
-  };
+  // Toggle de áudio
+  const toggleAudio = useCallback(() => {
+    const enabled = audioManagerRef.current?.toggleAudio() ?? true;
+    setIsSoundOn(enabled);
+  }, []);
 
   // TELAS DO JOGO
+
+  // Tela inicial MELHORADA (Leo maior)
   const TitleScreen = () => (
     <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-indigo-300 via-purple-400 to-pink-400 overflow-hidden">
       {/* Partículas de memória no fundo */}
@@ -620,9 +585,9 @@ export default function MemoryGame() {
           <Image 
             src="/images/mascotes/leo/leo_memoria.webp" 
             alt="Leo Memória" 
-            width={300} 
-            height={300} 
-            className="w-[200px] h-auto sm:w-[250px] md:w-[300px] drop-shadow-2xl" 
+            width={400} 
+            height={400} 
+            className="w-[300px] h-auto sm:w-[350px] md:w-[400px] drop-shadow-2xl" 
             priority 
             style={{ 
               filter: 'drop-shadow(0 0 20px rgba(79, 70, 229, 0.3))',
@@ -648,155 +613,77 @@ export default function MemoryGame() {
     </div>
   );
 
-  // Tela de instruções
+  // Tela de instruções MELHORADA (igual ao bubble-pop)
   const InstructionsScreen = () => {
     const [leoFalando, setLeoFalando] = useState(true);
     const [falaConcluida, setFalaConcluida] = useState(false);
-    const [jogoIniciado, setJogoIniciado] = useState(false);
+
+    const instrucoes = [
+      { emoji: '🃏', texto: "Clique nas cartas para virá-las e revelar os avatares!" },
+      { emoji: '👯', texto: "Encontre os pares - duas cartas com o mesmo avatar!" },
+      { emoji: '⏰', texto: "Corra contra o tempo para encontrar todos os pares!" },
+      { emoji: '🔥', texto: "Faça combos encontrando pares consecutivos para mais pontos!" },
+      { emoji: '🌍', texto: "Explore diferentes mundos com avatares únicos!" }
+    ];
 
     useEffect(() => {
       let cancelled = false;
 
       async function falarFrase(frase: string) {
         return new Promise<void>(resolve => {
-          console.log('Falando:', frase);
-          leoSpeak(frase, () => {
-            console.log('Frase concluída:', frase);
-            resolve();
-          });
+          leoSpeak(frase, () => resolve());
         });
       }
 
       async function narrarInstrucoes() {
         setLeoFalando(true);
         
-        const instrucoes = [
-          "Vamos explorar mundos incríveis juntos! Começaremos pelo Mundo Inicial no modo fácil, depois médio, depois difícil.",
-          "Clique nas cartas para virá-las e revelar os avatares!",
-          "Encontre os pares - duas cartas com o mesmo avatar!",
-          "Corra contra o tempo para encontrar todos os pares!",
-          "Faça combos encontrando pares consecutivos para mais pontos!",
-          "Quando completarmos um mundo inteiro, passaremos automaticamente para o próximo desafio."
-        ];
-
-        for (const frase of instrucoes) {
+        for (const item of instrucoes) {
           if (cancelled) return;
-          await falarFrase(frase);
+          await falarFrase(item.texto);
           await new Promise(resolve => setTimeout(resolve, 500));
         }
         
-        if (!cancelled) {
-          console.log('Todas as instruções foram concluídas');
-          setFalaConcluida(true);
-          setLeoFalando(false);
-          
-          // Iniciar o jogo automaticamente após as instruções
-          setTimeout(() => {
-            if (!cancelled && !jogoIniciado) {
-              console.log('Iniciando jogo automaticamente');
-              setJogoIniciado(true);
-              startActivity();
-            }
-          }, 1000);
-        }
+        setFalaConcluida(true);
+        setLeoFalando(false);
       }
 
       narrarInstrucoes();
 
-      return () => { 
-        cancelled = true;
-        console.log('Efeito de instrução limpo');
-      };
-    }, [jogoIniciado]);
-
-    // Adicionar um fallback para garantir que o jogo possa começar mesmo se houver problemas com o áudio
-    useEffect(() => {
-      const fallbackTimer = setTimeout(() => {
-        if (!falaConcluida && !jogoIniciado) {
-          console.log('Fallback: ativando botão após 15 segundos');
-          setFalaConcluida(true);
-          setLeoFalando(false);
-        }
-      }, 15000); // 15 segundos
-
-      return () => clearTimeout(fallbackTimer);
-    }, [falaConcluida, jogoIniciado]);
+      return () => { cancelled = true; };
+    }, []);
 
     return (
       <div className="relative w-full h-screen flex justify-center items-center p-4 bg-gradient-to-br from-purple-300 via-indigo-300 to-blue-300">
         <div className="bg-white/95 rounded-3xl p-6 max-w-2xl w-full mx-4 shadow-2xl text-center backdrop-blur-sm">
-          <h2 className="text-3xl font-bold mb-6 text-indigo-600">Mundos da Memória</h2>
+          <h2 className="text-3xl font-bold mb-6 text-indigo-600">Como Jogar</h2>
           
-          {/* Preview dos mundos */}
-          <div className="grid grid-cols-3 gap-2 mb-6">
-            {WORLD_ORDER.map((worldKey) => {
-              const world = AVATAR_WORLDS[worldKey as keyof typeof AVATAR_WORLDS];
-              return (
-                <div key={worldKey} className="bg-gray-100 rounded-lg p-2 text-center">
-                  <div className="text-2xl mb-1">{world.emoji}</div>
-                  <div className="text-xs font-medium text-gray-600">{world.name}</div>
-                </div>
-              );
-            })}
-          </div>
-          
-          <div className="text-base text-gray-700 space-y-4 mb-6 text-left">
-            <p className="flex items-center gap-3">
-              <span className="text-3xl">🃏</span>
-              <span><b>Clique nas cartas</b> para virá-las e revelar os avatares!</span>
-            </p>
-            <p className="flex items-center gap-3">
-              <span className="text-3xl">👯</span>
-              <span><b>Encontre os pares</b> - duas cartas com o mesmo avatar!</span>
-            </p>
-            <p className="flex items-center gap-3">
-              <span className="text-3xl">⏰</span>
-              <span><b>Corra contra o tempo</b> para encontrar todos os pares!</span>
-            </p>
-            <p className="flex items-center gap-3">
-              <span className="text-3xl">🔥</span>
-              <span><b>Faça combos</b> encontrando pares consecutivos para mais pontos!</span>
-            </p>
-            <p className="flex items-center gap-3">
-              <span className="text-3xl">🌍</span>
-              <span><b>Explore diferentes mundos</b> com avatares únicos!</span>
-            </p>
-          </div>
+          <ul className="text-base text-gray-700 space-y-4 mb-6 text-left list-none">
+            {instrucoes.map((item, idx) => (
+              <li key={idx}>
+                <span className="text-2xl mr-2">{item.emoji}</span>
+                <span>{item.texto}</span>
+              </li>
+            ))}
+          </ul>
           
           <button
             onClick={() => {
-              if (!leoFalando && falaConcluida && !jogoIniciado) {
-                setJogoIniciado(true);
-                startActivity();
-              }
+              setCurrentScreen('game');
+              startActivity();
             }}
-            disabled={!falaConcluida || jogoIniciado}
+            disabled={!falaConcluida}
             className={`w-full text-xl font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full py-4 shadow-xl
-              hover:scale-105 transition-transform ${(!falaConcluida || jogoIniciado) ? "opacity-50 cursor-not-allowed" : ""}`}
+              hover:scale-105 transition-transform ${!falaConcluida ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            {jogoIniciado ? "Iniciando jogo..." : (leoFalando ? "Leo está explicando..." : "Vamos Começar a Aventura!")}
+            {leoFalando ? "Aguarde o Leo terminar..." : "Vamos jogar! 🚀"}
           </button>
-          
-          {/* Mensagem de fallback */}
-          {!falaConcluida && (
-            <div className="mt-4 text-sm text-gray-500">
-              Aguardando as instruções do Leo... Se demorar muito, o botão será ativado automaticamente.
-            </div>
-          )}
         </div>
       </div>
     );
   };
 
   const GameScreen = () => {
-    // Garantir que o jogo seja iniciado quando a tela for carregada
-    useEffect(() => {
-      if (!gameStarted && cards.length === 0) {
-        console.log('Iniciando jogo na GameScreen');
-        initializeGame();
-      }
-    }, [gameStarted, cards.length, initializeGame]);
-
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200">
         <header className="bg-white/90 backdrop-blur-sm border-b border-purple-200 sticky top-0 z-10">
@@ -829,7 +716,7 @@ export default function MemoryGame() {
                 </button>
               ) : (
                 <button
-                  onClick={() => setIsSoundOn(!isSoundOn)}
+                  onClick={toggleAudio}
                   className="p-2 hover:bg-purple-100 rounded-lg transition-colors"
                 >
                   {isSoundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
@@ -840,326 +727,213 @@ export default function MemoryGame() {
         </header>
 
         <main className="p-3 sm:p-4 max-w-4xl mx-auto w-full">
-          {!showResults ? (
-            <div className="space-y-3">
-              {/* Status do jogo */}
-              {gameStarted && (
-                <div className="bg-white/90 rounded-xl p-3 shadow-lg border border-purple-200">
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-sm">
+          <div className="space-y-3">
+            {/* Status do jogo */}
+            {gameStarted && (
+              <div className="bg-white/90 rounded-xl p-3 shadow-lg border border-purple-200">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-sm">
+                  <div className="flex items-center justify-center gap-1">
+                    <Target className="w-4 h-4 text-purple-600" />
+                    <div>
+                      <div className="text-xs text-gray-600">Pares</div>
+                      <div className="font-bold text-purple-800">{matches}/{DIFFICULTY_SETTINGS[currentDifficulty].pairs}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-1">
+                    <div className="w-4 h-4 text-blue-600 flex items-center justify-center text-xs">🔄</div>
+                    <div>
+                      <div className="text-xs text-gray-600">Moves</div>
+                      <div className="font-bold text-blue-800">{moves}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-1">
+                    <div className="w-4 h-4 text-yellow-500 flex items-center justify-center text-xs">⭐</div>
+                    <div>
+                      <div className="text-xs text-gray-600">Pontos</div>
+                      <div className="font-bold text-yellow-600">{score}</div>
+                    </div>
+                  </div>
+                  {combo > 1 && (
                     <div className="flex items-center justify-center gap-1">
-                      <Target className="w-4 h-4 text-purple-600" />
+                      <div className="w-4 h-4 text-orange-500 flex items-center justify-center text-xs">🔥</div>
                       <div>
-                        <div className="text-xs text-gray-600">Pares</div>
-                        <div className="font-bold text-purple-800">{matches}/{DIFFICULTY_SETTINGS[currentDifficulty].pairs}</div>
+                        <div className="text-xs text-gray-600">Combo</div>
+                        <div className="font-bold text-orange-500 animate-pulse">x{combo}</div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-center gap-1">
-                      <div className="w-4 h-4 text-blue-600 flex items-center justify-center text-xs">🔄</div>
-                      <div>
-                        <div className="text-xs text-gray-600">Moves</div>
-                        <div className="font-bold text-blue-800">{moves}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-center gap-1">
-                      <div className="w-4 h-4 text-yellow-500 flex items-center justify-center text-xs">⭐</div>
-                      <div>
-                        <div className="text-xs text-gray-600">Pontos</div>
-                        <div className="font-bold text-yellow-600">{score}</div>
-                      </div>
-                    </div>
-                    {combo > 1 && (
-                      <div className="flex items-center justify-center gap-1">
-                        <div className="w-4 h-4 text-orange-500 flex items-center justify-center text-xs">🔥</div>
-                        <div>
-                          <div className="text-xs text-gray-600">Combo</div>
-                          <div className="font-bold text-orange-500 animate-pulse">x{combo}</div>
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-center gap-1">
-                      <Timer className={`w-4 h-4 ${timeLeft < 20 ? 'text-red-500' : 'text-green-600'}`} />
-                      <div>
-                        <div className="text-xs text-gray-600">Tempo</div>
-                        <div className={`font-bold ${timeLeft < 20 ? 'text-red-500 animate-pulse' : 'text-green-600'}`}>
-                          {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-                        </div>
+                  )}
+                  <div className="flex items-center justify-center gap-1">
+                    <Timer className={`w-4 h-4 ${timeLeft < 20 ? 'text-red-500' : 'text-green-600'}`} />
+                    <div>
+                      <div className="text-xs text-gray-600">Tempo</div>
+                      <div className={`font-bold ${timeLeft < 20 ? 'text-red-500 animate-pulse' : 'text-green-600'}`}>
+                        {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                       </div>
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Grade de cartas */}
-              {gameStarted && (
-                <div className="bg-white/30 backdrop-blur rounded-xl p-3">
-                  <div 
-                    className="grid gap-2 max-w-lg mx-auto"
-                    style={{
-                      gridTemplateColumns: `repeat(${DIFFICULTY_SETTINGS[currentDifficulty].gridCols}, 1fr)`,
-                    }}
-                  >
-                    {cards.map((card) => (
-                      <button
-                        key={card.id}
-                        onClick={() => handleCardClick(card.id)}
-                        disabled={card.isMatched}
-                        className={`aspect-square rounded-lg shadow-lg transition-all duration-300 transform relative overflow-hidden ${
-                          card.isMatched ? 'scale-95 opacity-75' : 'hover:scale-105 active:scale-95'
+            {/* Grade de cartas */}
+            {gameStarted && (
+              <div className="bg-white/30 backdrop-blur rounded-xl p-3">
+                <div 
+                  className="grid gap-2 max-w-lg mx-auto"
+                  style={{
+                    gridTemplateColumns: `repeat(${DIFFICULTY_SETTINGS[currentDifficulty].gridCols}, 1fr)`,
+                  }}
+                >
+                  {cards.map((card) => (
+                    <button
+                      key={card.id}
+                      onClick={() => handleCardClick(card.id)}
+                      disabled={card.isMatched}
+                      className={`aspect-square rounded-lg shadow-lg transition-all duration-300 transform relative overflow-hidden ${
+                        card.isMatched ? 'scale-95 opacity-75' : 'hover:scale-105 active:scale-95'
+                      }`}
+                      style={{ 
+                        perspective: '1000px',
+                      }}
+                    >
+                      <div 
+                        className={`w-full h-full transition-transform duration-600 relative ${
+                          card.isFlipped || card.isMatched ? 'rotate-y-180' : ''
                         }`}
                         style={{ 
-                          perspective: '1000px',
+                          transformStyle: 'preserve-3d',
+                          transform: card.isFlipped || card.isMatched ? 'rotateY(180deg)' : 'rotateY(0deg)'
                         }}
                       >
+                        {/* Verso da carta */}
                         <div 
-                          className={`w-full h-full transition-transform duration-600 relative ${
-                            card.isFlipped || card.isMatched ? 'rotate-y-180' : ''
+                          className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-400 to-purple-500 rounded-lg flex flex-col items-center justify-center text-white backface-hidden border-2 border-white/20"
+                          style={{ backfaceVisibility: 'hidden' }}
+                        >
+                          <div className="text-lg mb-1">🧠</div>
+                          <div className="text-xs font-bold">LudiTEA</div>
+                        </div>
+                        
+                        {/* Frente da carta */}
+                        <div 
+                          className={`absolute inset-0 w-full h-full bg-white rounded-lg p-1 backface-hidden border-2 ${
+                            card.isMatched ? 'border-green-400' : 'border-gray-200'
                           }`}
                           style={{ 
-                            transformStyle: 'preserve-3d',
-                            transform: card.isFlipped || card.isMatched ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                            backfaceVisibility: 'hidden',
+                            transform: 'rotateY(180deg)'
                           }}
                         >
-                          {/* Verso da carta */}
-                          <div 
-                            className="absolute inset-0 w-full h-full bg-gradient-to-br from-indigo-400 to-purple-500 rounded-lg flex flex-col items-center justify-center text-white backface-hidden border-2 border-white/20"
-                            style={{ backfaceVisibility: 'hidden' }}
-                          >
-                            <div className="text-lg mb-1">🧠</div>
-                            <div className="text-xs font-bold">LudiTEA</div>
-                          </div>
-                          
-                          {/* Frente da carta */}
-                          <div 
-                            className={`absolute inset-0 w-full h-full bg-white rounded-lg p-1 backface-hidden border-2 ${
-                              card.isMatched ? 'border-green-400' : 'border-gray-200'
-                            }`}
-                            style={{ 
-                              backfaceVisibility: 'hidden',
-                              transform: 'rotateY(180deg)'
+                          <img
+                            src={`/images/avatares/${card.avatar}.webp`}
+                            alt={`Avatar ${card.avatar}`}
+                            className="w-full h-full object-cover rounded"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/images/avatares/Face_1.webp';
                             }}
-                          >
-                            <img
-                              src={`/images/avatares/${card.avatar}.webp`}
-                              alt={`Avatar ${card.avatar}`}
-                              className="w-full h-full object-cover rounded"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = '/images/avatares/Face_1.webp';
-                              }}
-                            />
-                            {card.isMatched && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 rounded">
-                                <span className="text-2xl animate-bounce">✅</span>
-                              </div>
-                            )}
-                          </div>
+                          />
+                          {card.isMatched && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 rounded">
+                              <span className="text-2xl animate-bounce">✅</span>
+                            </div>
+                          )}
                         </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            // Tela de resultados
-            <div className="bg-white/95 rounded-xl shadow-2xl p-4 sm:p-6 backdrop-blur-sm border border-purple-200">
-              <div className="text-center mb-4">
-                <div className="text-4xl sm:text-5xl mb-3 animate-bounce">
-                  {timeLeft > 0 && matches === DIFFICULTY_SETTINGS[currentDifficulty].pairs ? '🏆' : 
-                  timeLeft > 0 ? '🎯' : '⏰'}
-                </div>
-                
-                <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
-                  {timeLeft > 0 && matches === DIFFICULTY_SETTINGS[currentDifficulty].pairs ? 'Parabéns! Você venceu!' : 
-                  timeLeft > 0 ? 'Boa tentativa!' : 'Tempo Esgotado!'}
-                </h3>
-                
-                <p className="text-sm sm:text-base text-indigo-600 font-medium">
-                  Mundo: {getCurrentWorldData().name} • 
-                  Dificuldade: {DIFFICULTY_SETTINGS[currentDifficulty].name}
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 text-center">
-                  <div className="text-lg font-bold text-purple-800">
-                    {score}
-                  </div>
-                  <div className="text-xs text-purple-600">Pontuação</div>
-                </div>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center">
-                  <div className="text-lg font-bold text-green-800">
-                    {matches}/{DIFFICULTY_SETTINGS[currentDifficulty].pairs}
-                  </div>
-                  <div className="text-xs text-green-600">Pares</div>
-                </div>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
-                  <div className="text-lg font-bold text-blue-800">
-                    {moves}
-                  </div>
-                  <div className="text-xs text-blue-600">Movimentos</div>
-                </div>
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 text-center">
-                  <div className="text-lg font-bold text-orange-800">
-                    x{maxCombo}
-                  </div>
-                  <div className="text-xs text-orange-600">Combo Máx</div>
-                </div>
-              </div>
-
-              {/* Performance */}
-              <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                <h4 className="font-bold text-gray-800 mb-2 text-sm">📊 Desempenho:</h4>
-                <div className="flex justify-center gap-2">
-                  {[1, 2, 3].map(star => (
-                    <span
-                      key={star}
-                      className="text-2xl"
-                    >
-                      {star <= Math.min(3, Math.ceil(score / 300)) ? '⭐' : '☆'}
-                    </span>
+                      </div>
+                    </button>
                   ))}
                 </div>
               </div>
-              
-              <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-3">
-                <button
-                  onClick={() => {
-                    initializeGame();
-                    setShowResults(false);
-                    setTimeout(() => {
-                      setGameStarted(true);
-                      setIsTimerActive(true);
-                    }, 500);
-                  }}
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-2 px-4 rounded-lg transition-all transform hover:scale-105 text-sm"
-                >
-                  🔄 Jogar Novamente
-                </button>
-                
-                <button
-                  onClick={voltarInicio}
-                  className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-2 px-4 rounded-lg transition-all transform hover:scale-105 text-sm"
-                >
-                  🏠 Menu Principal
-                </button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </main>
       </div>
     );
   };
 
-  // Tela de mundo completo
-  const WorldCompleteScreen = () => (
-    <div className="min-h-screen bg-gradient-to-br from-green-200 via-blue-200 to-purple-200 flex items-center justify-center p-4">
-      <div className="bg-white/95 rounded-xl shadow-2xl p-6 backdrop-blur-sm border border-green-200 max-w-md w-full text-center">
-        <div className="text-6xl mb-4 animate-pulse">🏆</div>
+  const ResultsScreen = () => (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 max-w-md w-full">
+        <div className="text-center mb-6">
+          <div className="text-5xl sm:text-6xl mb-4">
+            {completedWorlds.length === WORLD_ORDER.length ? '👑' : '🏆'}
+          </div>
+          <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
+            {completedWorlds.length === WORLD_ORDER.length ? 'MESTRE DA MEMÓRIA!' : 'Parabéns!'}
+          </h3>
+          <p className="text-sm text-gray-600">
+            Mundos completados: {completedWorlds.length}/{WORLD_ORDER.length}
+          </p>
+        </div>
         
-        <h3 className="text-2xl font-bold text-gray-800 mb-2">Mundo Completo!</h3>
-        
-        <p className="text-base text-green-600 font-medium mb-4">
-          Próximo: {AVATAR_WORLDS[WORLD_ORDER[currentWorldIndex + 1] as keyof typeof AVATAR_WORLDS]?.emoji} {AVATAR_WORLDS[WORLD_ORDER[currentWorldIndex + 1] as keyof typeof AVATAR_WORLDS]?.name}
-        </p>
-        
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <h4 className="font-bold text-gray-800 mb-2">Progresso Geral:</h4>
-          <div className="flex justify-center gap-4">
-            <div className="text-center">
-              <div className="text-xl font-bold text-purple-800">{currentWorldIndex + 1}/{WORLD_ORDER.length}</div>
-              <div className="text-xs text-gray-600">Mundos</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl font-bold text-green-800">{score}</div>
-              <div className="text-xs text-green-600">Pontos Total</div>
-            </div>
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
+            <div className="text-lg font-bold text-purple-800">{totalScore}</div>
+            <div className="text-xs text-purple-600">Pontuação Total</div>
+          </div>
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
+            <div className="text-lg font-bold text-orange-800">x{maxCombo}</div>
+            <div className="text-xs text-orange-600">Combo Máximo</div>
+          </div>
+        </div>
+
+        {/* Mundos completados */}
+        <div className="bg-gray-50 rounded-lg p-3 mb-4">
+          <h4 className="font-bold text-gray-800 mb-2 text-sm">🌍 Mundos Explorados:</h4>
+          <div className="flex gap-1">
+            {WORLD_ORDER.map((worldKey, index) => {
+              const world = AVATAR_WORLDS[worldKey as keyof typeof AVATAR_WORLDS];
+              return (
+                <div
+                  key={worldKey}
+                  className={`flex-1 h-8 rounded flex items-center justify-center text-xs font-bold ${
+                    completedWorlds.includes(index) ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-500'
+                  }`}
+                >
+                  {world.emoji}
+                </div>
+              );
+            })}
           </div>
         </div>
         
-        <div className="flex flex-col space-y-3">
+        <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-3">
           <button
-            onClick={handleContinueToNextWorld}
-            className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105"
+            onClick={voltarInicio}
+            className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-2 px-4 rounded-lg transition-all transform hover:scale-105 text-sm"
           >
-            🚀 Continuar Aventura
+            🔄 Jogar Novamente
           </button>
           
           <button
             onClick={handleSaveSession}
             disabled={salvando}
-            className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-semibold transition-colors ${
+            className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-lg font-semibold transition-colors text-sm ${
               !salvando
                 ? 'bg-blue-500 text-white hover:bg-blue-600'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            <Save size={18} />
-            <span>{salvando ? 'Salvando...' : 'Salvar Progresso'}</span>
+            <Save size={16} />
+            <span>{salvando ? 'Salvando...' : 'Salvar Sessão'}</span>
           </button>
         </div>
       </div>
     </div>
   );
 
-  // Tela de jogo completo
-  const GameCompleteScreen = () => (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-200 via-orange-200 to-red-200 flex items-center justify-center p-4">
-      <div className="bg-white/95 rounded-xl shadow-2xl p-6 backdrop-blur-sm border border-yellow-200 max-w-md w-full text-center">
-        <div className="text-6xl mb-4 animate-pulse">🏆</div>
-        
-        <h3 className="text-3xl font-bold text-gray-800 mb-2">MESTRE DA MEMÓRIA!</h3>
-        
-        <p className="text-lg text-orange-600 font-medium mb-4">
-          Você completou todos os {WORLD_ORDER.length} mundos!
-        </p>
-        
-        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4 mb-4">
-          <h4 className="font-bold text-gray-800 mb-2">🌟 Conquista Final:</h4>
-          <div className="flex justify-center gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-800">{score}</div>
-              <div className="text-sm text-orange-600">Pontos Finais</div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex flex-col space-y-3">
-          <button
-            onClick={handleSaveSession}
-            disabled={salvando}
-            className={`flex items-center justify-center space-x-2 px-6 py-4 rounded-lg font-semibold transition-colors ${
-              !salvando
-                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:from-yellow-600 hover:to-orange-600'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            <Save size={20} />
-            <span>{salvando ? 'Salvando...' : 'Salvar Conquista Final'}</span>
-          </button>
-          
-          <button
-            onClick={() => {
-              setCurrentWorldIndex(0);
-              setCurrentDifficulty('easy');
-              setScore(0);
-              setCurrentScreen('title');
-            }}
-            className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105"
-          >
-            🏠 Nova Jornada
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  // Efeito para detectar quando mostrar resultados
+  useEffect(() => {
+    if (showResults) {
+      setCurrentScreen('results');
+    }
+  }, [showResults]);
 
   // Renderização condicional das telas
   if (currentScreen === 'title') return <TitleScreen />;
   if (currentScreen === 'instructions') return <InstructionsScreen />;
   if (currentScreen === 'game') return <GameScreen />;
-  if (currentScreen === 'worldComplete') return <WorldCompleteScreen />;
-  if (currentScreen === 'gameComplete') return <GameCompleteScreen />;
+  if (currentScreen === 'results') return <ResultsScreen />;
   
   return null;
 }
