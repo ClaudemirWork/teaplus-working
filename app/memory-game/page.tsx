@@ -11,64 +11,63 @@ import styles from './memory-game.module.css';
 // Mundos em ordem de progressão
 const WORLD_ORDER = ['starter', 'sports', 'fantasy', 'heroes', 'digital', 'multicultural'];
 
-// Avatares organizados por mundo/categoria
+// Avatares organizados por mundo/categoria - CORRIGIDOS PARA EVITAR REPETIÇÃO
 const AVATAR_WORLDS = {
   starter: {
     name: 'Mundo Inicial',
     emoji: '',
     avatars: [
-      'Cartoon_2', 'Funny_1', 'Funny_4', 'Face_1', 'Face_4', 'Pet_2',
-      'Cartoon_1', 'Funny_2', 'Funny_3', 'Face_2', 'Face_3', 'Pet_1'
+      'Cartoon_1', 'Cartoon_2', 'Funny_1', 'Funny_2', 
+      'Face_1', 'Face_2', 'Pet_1', 'Pet_2'
     ]
   },
   sports: {
     name: 'Arena dos Campeões',
     emoji: '⚽',
     avatars: [
-      'Basquete_1', 'Basquete_2', 'Futebol_1', 'Futebol_4', 'Chess_1', 'Chess_3',
-      'Basquete_3', 'Futebol_2', 'Futebol_3', 'Chess_2', 'Chess_4', 'Player_16bits_1'
+      'Basquete_1', 'Basquete_2', 'Futebol_1', 'Futebol_2',
+      'Chess_1', 'Chess_2', 'Player_16bits_1', 'Player_16bits_2'
     ]
   },
   fantasy: {
     name: 'Reino Encantado',
     emoji: '🏰',
     avatars: [
-      'Fada_2', 'Fada_4', 'princesa_1', 'princesa_2', 'Guerreiro_2', 'Guerreiro_3',
-      'Fada_1', 'Fada_3', 'princesa_3', 'princesa_4', 'Guerreiro_1', 'Guerreiro_4'
+      'Fada_1', 'Fada_2', 'princesa_1', 'princesa_2',
+      'Guerreiro_1', 'Guerreiro_2', 'Fada_3', 'princesa_3'
     ]
   },
   heroes: {
     name: 'Liga dos Heróis',
     emoji: '',
     avatars: [
-      'Heroi_2', 'Heroi_4', 'Heroi_6', 'Heroi_8', 'Fighting_2', 'Fighting_3',
-      'Heroi_1', 'Heroi_3', 'Heroi_5', 'Heroi_7', 'Fighting_1', 'Fighting_4'
+      'Heroi_1', 'Heroi_2', 'Heroi_3', 'Heroi_4',
+      'Fighting_1', 'Fighting_2', 'Heroi_5', 'Fighting_3'
     ]
   },
   digital: {
     name: 'Mundo Digital',
     emoji: '🎮',
     avatars: [
-      'Minecraft_1', 'Minecraft_3', 'Roblox_2', 'Roblox_3', 'Player_16bits_2', 'Player_16bits_3',
-      'Minecraft_2', 'Minecraft_4', 'Roblox_1', 'Roblox_4', 'Player_16bits_4', 'Player_16bits_5'
+      'Minecraft_1', 'Minecraft_2', 'Roblox_1', 'Roblox_2',
+      'Player_16bits_3', 'Player_16bits_4', 'Minecraft_3', 'Roblox_3'
     ]
   },
   multicultural: {
     name: 'Aldeia Global',
     emoji: '🌍',
     avatars: [
-      'menina_brasil_1', 'menino_brasil_2', 'menina_japao_3', 'menino_japao_2',
-      'menina_indigena_2', 'menino_indigena_2', 'menina_brasil_2', 'menino_brasil_1',
-      'menina_japao_1', 'menina_japao_1', 'menina_indigena_1', 'menino_indigena_1'
+      'menina_brasil_1', 'menino_brasil_2', 'menina_japao_1', 'menino_japao_2',
+      'menina_indigena_1', 'menino_indigena_2', 'menina_brasil_3', 'menino_japao_3'
     ]
   }
 };
 
-// Configurações de dificuldade
+// Configurações de dificuldade - CORRIGIDAS
 const DIFFICULTY_SETTINGS = {
   easy: {
     name: 'Fácil',
-    pairs: 4,
+    pairs: 2, // 2 pares = 4 cartas
     gridCols: 4,
     gridRows: 2,
     time: 60,
@@ -76,7 +75,7 @@ const DIFFICULTY_SETTINGS = {
   },
   medium: {
     name: 'Médio',
-    pairs: 6,
+    pairs: 3, // 3 pares = 6 cartas
     gridCols: 4,
     gridRows: 3,
     time: 90,
@@ -84,7 +83,7 @@ const DIFFICULTY_SETTINGS = {
   },
   hard: {
     name: 'Difícil',
-    pairs: 8,
+    pairs: 4, // 4 pares = 8 cartas
     gridCols: 4,
     gridRows: 4,
     time: 120,
@@ -234,15 +233,19 @@ export default function MemoryGame() {
   // Leo falar - CORRIGIDO
   const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
     if (!isSoundOn || !audioManagerRef.current) {
+      console.log('🔇 Áudio desativado ou gerenciador não disponível, ignorando fala do Leo');
       onEnd?.();
       return;
     }
+    
+    console.log(`🗣️ Solicitando fala do Leo: "${text.substring(0, 30)}..."`);
     
     // Garantir que o callback seja chamado apenas uma vez
     let called = false;
     const wrappedCallback = () => {
       if (!called) {
         called = true;
+        console.log('✅ Callback do Leo chamado');
         onEnd?.();
       }
     };
@@ -250,7 +253,7 @@ export default function MemoryGame() {
     try {
       audioManagerRef.current.falarLeo(text, wrappedCallback);
     } catch (error) {
-      console.error('Erro ao chamar falarLeo:', error);
+      console.error('❌ Erro ao chamar falarLeo:', error);
       wrappedCallback();
     }
   }, [isSoundOn]);
@@ -323,7 +326,7 @@ export default function MemoryGame() {
     }
   }, [isSoundOn]);
 
-  // Handler da tela inicial - CORRIGIDO
+  // Handler da tela inicial
   const handleStartIntro = async () => {
     if (isInteracting || !isReady) return;
     setIsInteracting(true);
@@ -342,7 +345,7 @@ export default function MemoryGame() {
     }
   };
 
-  // Handler de instruções - CORRIGIDO
+  // Handler de instruções - SEM BOTÃO, TRANSIÇÃO AUTOMÁTICA
   const handleNextInstruction = () => {
     if (isInteracting) return;
     setIsInteracting(true);
@@ -358,7 +361,7 @@ export default function MemoryGame() {
     }
   };
 
-  // Iniciar mundo atual - CORRIGIDO
+  // Iniciar mundo atual
   const startCurrentWorld = () => {
     setDifficulty('easy');
     const worldData = getCurrentWorldData();
@@ -374,7 +377,7 @@ export default function MemoryGame() {
     }
   };
 
-  // Inicializar jogo
+  // Inicializar jogo - CORRIGIDO
   const initializeGame = useCallback(() => {
     const settings = DIFFICULTY_SETTINGS[difficulty];
     const world = getCurrentWorldData();
@@ -785,13 +788,10 @@ export default function MemoryGame() {
             </p>
           </div>
 
-          <button
-            onClick={handleNextInstruction}
-            disabled={isInteracting}
-            className="w-full text-lg sm:text-xl font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full py-3 sm:py-4 shadow-xl hover:scale-105 transition-transform disabled:opacity-60"
-          >
-            {isInteracting ? 'Leo está explicando...' : 'Vamos Começar a Aventura!'}
-          </button>
+          {/* Removemos o botão e deixamos apenas um indicador de que o jogo vai começar */}
+          <div className="text-lg text-indigo-600 font-medium">
+            {isInteracting ? 'Leo está explicando...' : 'Preparando o jogo...'}
+          </div>
         </div>
       </div>
     );
