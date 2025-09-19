@@ -7,7 +7,7 @@ import { Trophy, Star, ArrowLeft, Volume2, VolumeX } from 'lucide-react';
 // ======================
 // TIPOS E DADOS
 // ======================
-type GameState = 'loading' | 'intro' | 'instructions' | 'phase-selection' | 'playing';
+type GameState = 'loading' | 'intro' | 'instructions' | 'phase-selection' | 'playing' | 'phaseComplete' | 'gameComplete';
 type RoundType = 'imageToShadow' | 'shadowToImage';
 type SoundType = 'correct' | 'error' | 'click' | 'combo';
 
@@ -43,9 +43,7 @@ const shuffleArray = (array: any[]) => {
  return newArray;
 };
 
-// ======================
-// EFEITO DE CONFETE
-// ======================
+// Efeito de Confete
 const ConfettiEffect = () => {
     useEffect(() => {
         let canvas: HTMLCanvasElement | null = document.createElement('canvas');
@@ -108,6 +106,8 @@ const ConfettiEffect = () => {
     return null;
 };
 
+// AJUSTE FINAL: Alterado de 10 para 20
+const ROUNDS_PER_PHASE = 20;
 
 // ======================
 // COMPONENTE PRINCIPAL
@@ -120,13 +120,11 @@ export default function ShadowGamePage() {
  const [streak, setStreak] = useState(0);
  const [soundEnabled, setSoundEnabled] = useState(true);
  const [showConfetti, setShowConfetti] = useState(false);
+ const [roundCount, setRoundCount] = useState(0);
 
  const audioManagerRef = useRef<any>(null);
  const audioContextRef = useRef<AudioContext | null>(null);
 
- // ======================
- // INICIALIZAÇÃO
- // ======================
  useEffect(() => {
   const init = async () => {
    try {
@@ -143,18 +141,16 @@ export default function ShadowGamePage() {
   init();
  }, []);
 
- // ======================
- // FUNÇÕES DE ÁUDIO
- // ======================
  const playSynthSound = useCallback((type: SoundType) => {
     if (!soundEnabled || !audioContextRef.current) return;
     const ctx = audioContextRef.current;
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
-    
     gainNode.connect(ctx.destination);
     oscillator.connect(gainNode);
-    
     switch (type) {
         case 'correct':
             oscillator.type = 'sine';
@@ -185,7 +181,6 @@ export default function ShadowGamePage() {
              gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
              break;
     }
-
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + 0.4);
  }, [soundEnabled]);
@@ -198,9 +193,6 @@ export default function ShadowGamePage() {
   audioManagerRef.current.falarLeo(text, onEnd);
  }, [soundEnabled]);
 
- // ======================
- // LÓGICA DO JOGO
- // ======================
  const startNewRound = useCallback((phase: number) => {
   let availableImages = [...imageNames];
   const correctImage = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
@@ -227,29 +219,30 @@ export default function ShadowGamePage() {
  const LoadingScreen = () => (<div className="screen-container loading-screen"><h1 className="main-title">Jogo das Sombras</h1><p className="subtitle">Carregando...</p></div>);
 
  const IntroScreen = () => {
-  const handleClick = () => {
-    playSynthSound('click');
-    const fallback = setTimeout(() => setGameState('instructions'), 5000);
-    leoSpeak("Olá! Eu sou o Léo! Vamos jogar com sombras?", () => { clearTimeout(fallback); setGameState('instructions'); });
-  };
-  return (<div className="screen-container intro-screen"><Image src="/shadow-game/leo_abertura.webp" alt="Mascote Léo" width={250} height={250} priority /><h1 className="main-title">Jogo das Sombras</h1><p className="subtitle">Associe cada imagem com sua sombra!</p><button onClick={handleClick} className="start-button">Começar a Jogar</button></div>);
+    const handleClick = () => {
+      playSynthSound('click');
+      const fallback = setTimeout(() => setGameState('instructions'), 5000);
+      leoSpeak("Olá! Eu sou o Léo! Vamos jogar com sombras?", () => { clearTimeout(fallback); setGameState('instructions'); });
+    };
+    return (<div className="screen-container intro-screen"><Image src="/shadow-game/leo_abertura.webp" alt="Mascote Léo" width={250} height={250} priority /><h1 className="main-title">Jogo das Sombras</h1><p className="subtitle">Associe cada imagem com sua sombra!</p><button onClick={handleClick} className="start-button">Começar a Jogar</button></div>);
  };
-
+ 
  const InstructionsScreen = () => {
-  const handleClick = () => {
-    playSynthSound('click');
-    const fallback = setTimeout(() => setGameState('phase-selection'), 5000);
-    leoSpeak("É super fácil! Clique na sombra certa para cada figura!", () => { clearTimeout(fallback); setGameState('phase-selection'); });
-  };
-  return (<div className="screen-container explanation-screen"><Image src="/shadow-game/leo_abertura.webp" alt="Léo explicando" width={200} height={200} /><div className="speech-bubble"><p>É super fácil! Clique na sombra certa para cada figura!</p></div><button onClick={handleClick} className="start-button">Entendi, vamos lá!</button></div>);
+    const handleClick = () => {
+      playSynthSound('click');
+      const fallback = setTimeout(() => setGameState('phase-selection'), 5000);
+      leoSpeak("É super fácil! Clique na sombra certa para cada figura!", () => { clearTimeout(fallback); setGameState('phase-selection'); });
+    };
+    return (<div className="screen-container explanation-screen"><Image src="/shadow-game/leo_abertura.webp" alt="Léo explicando" width={200} height={200} /><div className="speech-bubble"><p>É super fácil! Clique na sombra certa para cada figura!</p></div><button onClick={handleClick} className="start-button">Entendi, vamos lá!</button></div>);
  };
-
+ 
  const PhaseSelectionScreen = () => {
     const handleSelect = (phase: number) => {
         playSynthSound('click');
         setSelectedPhase(phase);
         setScore(0);
         setStreak(0);
+        setRoundCount(0);
         const messages: {[key: number]: string} = { 1: "Fase 1: Detetive Júnior! Boa Sorte!", 2: "Fase 2: Mestre das Sombras! Ficou mais difícil!", 3: "Fase 3: Desafio Final! Para os melhores!"};
         leoSpeak(messages[phase]);
         setGameState('playing');
@@ -257,70 +250,84 @@ export default function ShadowGamePage() {
     };
     return (<div className="screen-container phase-selection-screen"><h2>Escolha seu desafio</h2><div className="phase-container"><button onClick={() => handleSelect(1)}>🔍 Fase 1</button><button onClick={() => handleSelect(2)}>🌟 Fase 2</button><button onClick={() => handleSelect(3)}>🏆 Fase 3</button></div></div>);
  };
-
+ 
  const GameScreen = () => {
   if (!roundData) return null;
-  
   const leoStreakPhrases: {[key:number]: string[]} = {
       10: ["Aí sim! Sequência de 10!", "Você tem olhos de águia! Já são 10!"],
       20: ["Você é muito top! Sequência de 20!", "Caramba! 20 acertos seguidos!"],
       30: ["Impossível! Você atingiu uma sequência incrível de 30!", "Ninguém te segura! 30 em seguida!"]
   };
-
   const handleOptionClick = (opt: string) => {
    if (opt === roundData.correctAnswer) {
     const newStreak = streak + 1;
+    const newRoundCount = roundCount + 1;
     setScore(score + 100);
     setStreak(newStreak);
-    
-    // NÍVEL 1 DE RECOMPENSA: Som de acerto sempre
+    setRoundCount(newRoundCount);
     playSynthSound('correct');
-
-    // NÍVEL 2 DE RECOMPENSA: Confete e som especial a cada 5
     if (newStreak % 5 === 0 && newStreak > 0) {
         setShowConfetti(true);
         playSynthSound('combo');
-        setTimeout(() => setShowConfetti(false), 2000); // Confete dura 2s
+        setTimeout(() => setShowConfetti(false), 2000);
     }
-
-    // NÍVEL 3 DE RECOMPENSA: Fala do Leo a cada 10
-    if (newStreak % 10 === 0 && newStreak > 0) {
+    if (newRoundCount >= ROUNDS_PER_PHASE) {
+        if (selectedPhase === 3) { setGameState('gameComplete'); } 
+        else { setGameState('phaseComplete'); }
+    } else {
         const phrases = leoStreakPhrases[newStreak];
         if (phrases) {
             leoSpeak(phrases[Math.floor(Math.random() * phrases.length)]);
         }
+        setTimeout(() => startNewRound(selectedPhase!), 300);
     }
-    
-    setTimeout(() => startNewRound(selectedPhase!), 300);
-
    } else {
     playSynthSound('error');
     setStreak(0);
     leoSpeak("Ops, tente de novo!");
    }
   };
-
   return (
    <div className="playing-screen">
     {showConfetti && <ConfettiEffect />}
     <div className="top-bar">
-     <button onClick={() => { playSynthSound('click'); setGameState('phase-selection'); }} className="back-button">
-      <ArrowLeft size={20} /> Voltar
-     </button>
-     <button onClick={() => { playSynthSound('click'); setSoundEnabled(!soundEnabled); }} className="sound-button">
-      {soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
-     </button>
+     <button onClick={() => { playSynthSound('click'); setGameState('phase-selection'); }} className="back-button"><ArrowLeft size={20} /> Fases</button>
+     <div className="progress-bar"><div className="progress-fill" style={{ width: `${(roundCount / ROUNDS_PER_PHASE) * 100}%` }}></div></div>
+     <button onClick={() => { playSynthSound('click'); setSoundEnabled(!soundEnabled); }} className="sound-button">{soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}</button>
     </div>
     <div className="main-item-container"><Image src={roundData.mainItem} alt="Item principal" width={250} height={250} /></div>
-    <div className="options-container">
-     {roundData.options.map((opt, i) => (<button key={i} onClick={() => handleOptionClick(opt)} className="option-button"><Image src={opt} alt={`Opção ${i + 1}`} width={100} height={100} /></button>))}
-    </div>
-    <div className="stats-display">
-     <div><Star color="#ffc700" fill="#ffc700" /> {streak}</div>
-     <div><Trophy color="#ff9a00" fill="#ff9a00" /> {score}</div>
-    </div>
+    <div className="options-container">{roundData.options.map((opt, i) => (<button key={i} onClick={() => handleOptionClick(opt)} className="option-button"><Image src={opt} alt={`Opção ${i + 1}`} width={100} height={100} /></button>))}</div>
+    <div className="stats-display"><div><Star color="#ffc700" fill="#ffc700" /> {streak}</div><div><Trophy color="#ff9a00" fill="#ff9a00" /> {score}</div></div>
    </div>
   );
+ };
+
+ const PhaseCompleteScreen = () => {
+    useEffect(() => {
+        const message = selectedPhase === 1 ? "Você já está supimpa, e pode ir para a fase 2. Vamos lá?" : "Caramba, você está a um passo de se tornar mestre das sombras, vamos para a fase final!";
+        leoSpeak(message);
+    }, []);
+    const goToNextPhase = () => {
+        playSynthSound('click');
+        const nextPhase = selectedPhase! + 1;
+        setSelectedPhase(nextPhase);
+        setRoundCount(0);
+        setStreak(0);
+        setGameState('playing');
+        startNewRound(nextPhase);
+    };
+    return (<div className="screen-container phase-complete-screen"><Image src="/shadow-game/leo_abertura.webp" alt="Léo Comemorando" width={250} height={250} /><h2 className="main-title">Fase Completa!</h2><button onClick={goToNextPhase} className="start-button">{selectedPhase === 1 ? 'Ir para Fase 2' : 'Ir para a Fase Final'}</button></div>);
+ };
+ 
+ const GameCompleteScreen = () => {
+    useEffect(() => {
+        leoSpeak("Parabéns! Você se tornou um verdadeiro Mestre das Sombras!");
+        setShowConfetti(true);
+        const timer = setTimeout(() => setShowConfetti(false), 4000);
+        return () => clearTimeout(timer);
+    }, []);
+    const playAgain = () => { playSynthSound('click'); setGameState('phase-selection'); };
+    return (<div className="screen-container game-complete-screen">{showConfetti && <ConfettiEffect />}<h2 className="main-title">CAMPEÃO!</h2><Trophy className="trophy-icon" size={200} /><p className="subtitle" style={{color: '#fff', marginTop: '1rem'}}>Você é um Mestre das Sombras!</p><p className="final-score">Pontuação Final: {score}</p><button onClick={playAgain} className="start-button">Jogar Novamente</button></div>);
  };
 
  const renderContent = () => {
@@ -330,6 +337,8 @@ export default function ShadowGamePage() {
    case 'instructions': return <InstructionsScreen />;
    case 'phase-selection': return <PhaseSelectionScreen />;
    case 'playing': return <GameScreen />;
+   case 'phaseComplete': return <PhaseCompleteScreen />;
+   case 'gameComplete': return <GameCompleteScreen />;
    default: return <LoadingScreen />;
   }
  };
