@@ -56,17 +56,20 @@ export default function ShadowGamePage() {
     const [isInteracting, setIsInteracting] = useState(false);
     const [currentNarration, setCurrentNarration] = useState("");
     
-    // Usamos um ref para a instância para evitar recriações
     const audioManagerRef = React.useRef<GameAudioManager | null>(null);
 
+    // CORREÇÃO: Este useEffect agora verifica se está no navegador antes de rodar
     useEffect(() => {
-        if (!audioManagerRef.current) {
-            audioManagerRef.current = GameAudioManager.getInstance();
+        // Esta verificação garante que o código abaixo só rode no navegador do usuário
+        if (typeof window !== 'undefined') {
+            if (!audioManagerRef.current) {
+                audioManagerRef.current = GameAudioManager.getInstance();
+            }
+            const savedHighScore = localStorage.getItem('shadowGameHighScore');
+            const savedStars = localStorage.getItem('shadowGameTotalStars');
+            if (savedHighScore) setHighScore(parseInt(savedHighScore, 10));
+            if (savedStars) setTotalStars(parseInt(savedStars, 10));
         }
-        const savedHighScore = localStorage.getItem('shadowGameHighScore');
-        const savedStars = localStorage.getItem('shadowGameTotalStars');
-        if (savedHighScore) setHighScore(parseInt(savedHighScore));
-        if (savedStars) setTotalStars(parseInt(savedStars));
     }, []);
 
     const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
@@ -78,7 +81,6 @@ export default function ShadowGamePage() {
         audioManagerRef.current?.playSoundEffect(soundName, volume);
     }, []);
     
-    // Efeito para gerenciar a transição da narração
     useEffect(() => {
         if (gameState === 'introWelcome') {
             leoSpeak("Olá! Eu sou o Leo! Preparado para um desafio de detetive com sombras?", () => {
@@ -92,20 +94,15 @@ export default function ShadowGamePage() {
         }
     }, [gameState, leoSpeak]);
 
-
     const handleIntro = useCallback(async () => {
         if (isInteracting) return;
         setIsInteracting(true);
         playSound('click_start', 0.7);
-        
         await audioManagerRef.current?.forceInitialize();
-        
-        // A lógica de fala agora é controlada pelo useEffect acima
         setGameState('introWelcome');
-        
     }, [isInteracting, playSound]);
 
-    const handlePhaseSelect = useCallback(async (phase: number) => {
+    const handlePhaseSelect = useCallback((phase: number) => {
         if (isInteracting) return;
         setIsInteracting(true);
         playSound('click_select');
@@ -217,7 +214,6 @@ export default function ShadowGamePage() {
                 return (
                     <div className="screen-container title-screen">
                         <div className="stars-bg"></div>
-                        {/* ANIMAÇÃO DE PULO REMOVIDA DAQUI */}
                         <div className="leo-container"> 
                             <Image src="/shadow-game/leo_abertura.webp" alt="Mascote Léo" width={300} height={300} priority />
                         </div>
