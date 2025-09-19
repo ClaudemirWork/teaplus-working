@@ -228,7 +228,7 @@ export default function MemoryGame() {
     }
   }, [isSoundOn]);
 
-  // Função OTIMIZADA para o Leo falar (com timeout reduzido)
+  // Função CORRIGIDA para o Leo falar (sem "corrida de cavalos")
   const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
     if (!isSoundOn || !audioManagerRef.current) {
       console.log('🔇 Áudio desativado, executando callback imediatamente');
@@ -238,11 +238,12 @@ export default function MemoryGame() {
     
     try {
       console.log('🎤 Leo falando:', text);
-      // TIMEOUT PARA FALA - se demorar mais que 500ms, prosseguir
+      // TIMEOUT MAIS GENEROSO - baseado no tamanho do texto
+      const estimatedTime = Math.max(2000, text.length * 50); // ~50ms por caractere, mínimo 2s
       const timeout = setTimeout(() => {
         console.log('⏰ Timeout na fala do Leo, prosseguindo...');
         onEnd?.();
-      }, 500);
+      }, estimatedTime);
       
       audioManagerRef.current.falarLeo(text, () => {
         clearTimeout(timeout);
@@ -670,7 +671,7 @@ export default function MemoryGame() {
     </div>
   );
 
-  // Tela de instruções OTIMIZADA
+  // Tela de instruções CORRIGIDA (sem "corrida de cavalos")
   const InstructionsScreen = () => {
     const [leoFalando, setLeoFalando] = useState(true);
     const [falaConcluida, setFalaConcluida] = useState(false);
@@ -687,7 +688,10 @@ export default function MemoryGame() {
 
       async function falarFrase(frase: string) {
         return new Promise<void>(resolve => {
-          leoSpeak(frase, () => resolve());
+          leoSpeak(frase, () => {
+            console.log('✅ Frase concluída:', frase);
+            resolve();
+          });
         });
       }
 
@@ -696,17 +700,34 @@ export default function MemoryGame() {
         
         for (const item of instrucoes) {
           if (cancelled) return;
+          console.log('🎯 Iniciando frase:', item.texto);
           await falarFrase(item.texto);
-          await new Promise(resolve => setTimeout(resolve, 300)); // REDUZIDO
+          // DELAY ADEQUADO entre frases para evitar sobreposição
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 1 segundo entre frases
         }
         
-        setFalaConcluida(true);
-        setLeoFalando(false);
+        if (!cancelled) {
+          console.log('🏁 Todas as instruções concluídas');
+          setFalaConcluida(true);
+          setLeoFalando(false);
+        }
       }
 
       narrarInstrucoes();
 
-      return () => { cancelled = true; };
+      // Fallback de segurança - se demorar mais que 20 segundos, liberar botão
+      const fallbackTimer = setTimeout(() => {
+        if (!falaConcluida) {
+          console.log('⏰ Fallback: liberando botão após 20s');
+          setFalaConcluida(true);
+          setLeoFalando(false);
+        }
+      }, 20000);
+
+      return () => { 
+        cancelled = true;
+        clearTimeout(fallbackTimer);
+      };
     }, []);
 
     return (
@@ -734,6 +755,13 @@ export default function MemoryGame() {
           >
             {leoFalando ? "Aguarde o Leo terminar..." : "Vamos jogar! 🚀"}
           </button>
+          
+          {/* Indicador de progresso das instruções */}
+          {leoFalando && (
+            <div className="mt-4 text-sm text-gray-500">
+              Leo está explicando as regras... 🎤
+            </div>
+          )}
         </div>
       </div>
     );
