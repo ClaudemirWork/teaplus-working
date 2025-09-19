@@ -3,11 +3,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './shadowgame.css';
 import Image from 'next/image';
 import { Volume2, VolumeX, Trophy, Star, ArrowLeft, Zap, Flame, Award, Crown, Medal } from 'lucide-react';
-import type { GameAudioManager } from '@/utils/gameAudioManager';
 
-// Substitua pelo array verdadeiro:
+// Array completo de imagens (exemplo - você deve completar com todas as suas imagens)
 const imageNames = [
-    'abacate', 'abelha', 'abelha_feliz', 'abelha_voando', 'abelhinha', 'aguia', 'amigos', 'apresentacao', 'arvore_natal', 'baleia', // ... etc
+  'abacate', 'abelha', 'abelha_feliz', 'abelha_voando', 'abelhinha', 'aguia', 'amigos', 'apresentacao', 'arvore_natal', 'baleia',
+  'bicicleta', 'borboleta', 'cachorro', 'casa', 'cavalo', 'elefante', 'flor', 'gato', 'girassol', 'leao',
+  'passaro', 'peixe', 'sol', 'tartaruga', 'urso', 'vaca', 'zebra', 'coelho', 'formiga', 'galinha'
+  // Adicione todas as suas imagens aqui
 ];
 
 const shuffleArray = (array: any[]) => {
@@ -19,11 +21,11 @@ const shuffleArray = (array: any[]) => {
   return newArray;
 };
 
-type GameState = 'titleScreen' | 'instructions' | 'phase-selection' | 'playing';
+type GameState = 'loading' | 'intro' | 'instructions' | 'phase-selection' | 'playing';
 type RoundType = 'imageToShadow' | 'shadowToImage';
 
 export default function ShadowGamePage() {
-  const [gameState, setGameState] = useState<GameState>('titleScreen');
+  const [gameState, setGameState] = useState<GameState>('loading');
   const [selectedPhase, setSelectedPhase] = useState<number | null>(null);
   const [roundData, setRoundData] = useState<{ mainItem: string; options: string[]; correctAnswer: string; } | null>(null);
   const [score, setScore] = useState(0);
@@ -33,74 +35,125 @@ export default function ShadowGamePage() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [highScore, setHighScore] = useState(0);
   const [totalStars, setTotalStars] = useState(0);
-  const [isReady, setIsReady] = useState(false);
-  const [isInteracting, setIsInteracting] = useState(false);
-  const [audioError, setAudioError] = useState<string | null>(null);
+  const [isIntroPlaying, setIsIntroPlaying] = useState(false);
 
-  const audioManagerRef = useRef<GameAudioManager | null>(null);
+  const audioManagerRef = useRef<any>(null);
+  const hasInitialized = useRef(false);
 
+  // Inicialização simplificada
   useEffect(() => {
-    const initializeClientSide = async () => {
+    const initializeGame = async () => {
+      if (hasInitialized.current) return;
+      hasInitialized.current = true;
+      
       try {
-        const { GameAudioManager } = await import('@/utils/gameAudioManager');
-        audioManagerRef.current = GameAudioManager.getInstance();
-        const savedHighScore = localStorage.getItem('shadowGameHighScore');
-        const savedStars = localStorage.getItem('shadowGameTotalStars');
-        if (savedHighScore) setHighScore(Number(savedHighScore));
-        if (savedStars) setTotalStars(Number(savedStars));
+        // Aguarda um pouco para garantir que está no cliente
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Carrega dados salvos
+        if (typeof window !== 'undefined') {
+          const savedHighScore = localStorage.getItem('shadowGameHighScore');
+          const savedStars = localStorage.getItem('shadowGameTotalStars');
+          if (savedHighScore) setHighScore(Number(savedHighScore));
+          if (savedStars) setTotalStars(Number(savedStars));
+        }
+
+        // Tenta inicializar o áudio (mas não bloqueia se falhar)
+        try {
+          const { GameAudioManager } = await import('@/utils/gameAudioManager');
+          audioManagerRef.current = GameAudioManager.getInstance();
+        } catch (error) {
+          console.warn('GameAudioManager não disponível, continuando sem áudio:', error);
+        }
+
+        // Vai para a tela de introdução
+        setGameState('intro');
       } catch (error) {
-        setAudioError("Não foi possível carregar o áudio. O jogo funcionará sem som.");
-      } finally {
-        setIsReady(true);
+        console.error('Erro na inicialização:', error);
+        setGameState('intro'); // Continua mesmo com erro
       }
     };
-    initializeClientSide();
+
+    initializeGame();
   }, []);
 
   const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
-    if (!isReady || !soundEnabled) {
+    if (!soundEnabled || !audioManagerRef.current) {
       onEnd?.();
       return;
     }
     try {
-      audioManagerRef.current?.falarLeo(text, onEnd);
+      audioManagerRef.current.falarLeo(text, onEnd);
     } catch (error) {
-      setAudioError("Problema com a voz do Leo! Verifique conexão ou chaves do Azure.");
+      console.warn('Erro no leoSpeak:', error);
       onEnd?.();
     }
-  }, [isReady, soundEnabled]);
+  }, [soundEnabled]);
 
   const playSound = useCallback((soundName: string, volume: number = 0.5) => {
-    if (!isReady || !soundEnabled) return;
+    if (!soundEnabled || !audioManagerRef.current) return;
     try {
-      audioManagerRef.current?.playSoundEffect(soundName, volume);
+      audioManagerRef.current.playSoundEffect(soundName, volume);
     } catch (error) {
-      setAudioError("Falha ao carregar efeitos sonoros.");
+      console.warn('Erro no playSound:', error);
     }
-  }, [isReady, soundEnabled]);
+  }, [soundEnabled]);
 
   const startNewRound = (phase: number) => {
+    if (imageNames.length < 3) {
+      console.error('Não há imagens suficientes para o jogo');
+      return;
+    }
+
     setFeedback({});
     setPointsFeedback(null);
+    
     let availableImages = [...imageNames];
     const correctImageName = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
+    
     let roundType: RoundType;
     if (phase === 1) roundType = 'imageToShadow';
     else if (phase === 2) roundType = 'shadowToImage';
     else roundType = Math.random() < 0.5 ? 'imageToShadow' : 'shadowToImage';
+    
     const wrongImageName1 = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
     const wrongImageName2 = availableImages.splice(Math.floor(Math.random() * availableImages.length), 1)[0];
+    
     let mainItem: string, correctAnswer: string, options: string[];
+    
     if (roundType === 'imageToShadow') {
       mainItem = `/shadow-game/images/${correctImageName}.webp`;
       correctAnswer = `/shadow-game/shadows/${correctImageName}_black.webp`;
-      options = [correctAnswer, `/shadow-game/shadows/${wrongImageName1}_black.webp`, `/shadow-game/shadows/${wrongImageName2}_black.webp`];
+      options = [
+        correctAnswer,
+        `/shadow-game/shadows/${wrongImageName1}_black.webp`,
+        `/shadow-game/shadows/${wrongImageName2}_black.webp`
+      ];
     } else {
       mainItem = `/shadow-game/shadows/${correctImageName}_black.webp`;
       correctAnswer = `/shadow-game/images/${correctImageName}.webp`;
-      options = [correctAnswer, `/shadow-game/images/${wrongImageName1}.webp`, `/shadow-game/images/${wrongImageName2}.webp`];
+      options = [
+        correctAnswer,
+        `/shadow-game/images/${wrongImageName1}.webp`,
+        `/shadow-game/images/${wrongImageName2}.webp`
+      ];
     }
+    
     setRoundData({ mainItem, options: shuffleArray(options), correctAnswer });
+  };
+
+  const handleIntroClick = () => {
+    if (isIntroPlaying) return;
+    
+    setIsIntroPlaying(true);
+    playSound('click_select');
+    
+    leoSpeak("Olá! Eu sou o Léo! Vamos jogar com sombras?", () => {
+      setTimeout(() => {
+        setIsIntroPlaying(false);
+        setGameState('instructions');
+      }, 500);
+    });
   };
 
   const handlePhaseSelect = (phase: number) => {
@@ -108,11 +161,13 @@ export default function ShadowGamePage() {
     setSelectedPhase(phase);
     setScore(0);
     setStreak(0);
+    
     const phaseMessages: { [key: number]: string } = {
-      1: "Detetive Júnior! Boa sorte!",
+      1: "Detetive Júnior! Vamos começar!",
       2: "Mestre das Sombras! Ficou mais difícil!",
       3: "Desafio Final! Para os melhores!"
     };
+    
     leoSpeak(phaseMessages[phase]);
     setGameState('playing');
     startNewRound(phase);
@@ -120,8 +175,10 @@ export default function ShadowGamePage() {
 
   const handleOptionClick = (clickedOption: string) => {
     if (Object.keys(feedback).length > 0 || !selectedPhase) return;
+    
     if (clickedOption === roundData?.correctAnswer) {
       playSound('correct_chime', 0.4);
+      
       const newStreak = streak + 1;
       let pointsGained = 100;
       if (newStreak >= 20) pointsGained = 3000;
@@ -129,23 +186,37 @@ export default function ShadowGamePage() {
       else if (newStreak >= 10) pointsGained = 1000;
       else if (newStreak >= 5) pointsGained = 500;
       else if (newStreak >= 2) pointsGained = 200;
+      
       const currentScore = score + pointsGained;
       setScore(currentScore);
       setStreak(newStreak);
       setPointsFeedback(`+${pointsGained}`);
+      
       const newTotalStars = totalStars + 1;
       setTotalStars(newTotalStars);
-      localStorage.setItem('shadowGameTotalStars', newTotalStars.toString());
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('shadowGameTotalStars', newTotalStars.toString());
+      }
+      
       if (currentScore > highScore) {
         setHighScore(currentScore);
-        localStorage.setItem('shadowGameHighScore', currentScore.toString());
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('shadowGameHighScore', currentScore.toString());
+        }
       }
+      
       const comboMessages: { [key: number]: string } = {
         5: `UAU! Combo de ${newStreak} acertos!`,
         10: `INCRÍVEL! Sequência de ${newStreak}!`,
+        15: `FANTÁSTICO! ${newStreak} seguidos!`,
+        20: `LENDÁRIO! ${newStreak} acertos em sequência!`
       };
+      
       const comboMessageEntry = Object.entries(comboMessages).find(([key]) => newStreak === parseInt(key));
-      if (comboMessageEntry) leoSpeak(comboMessageEntry[1]);
+      if (comboMessageEntry) {
+        leoSpeak(comboMessageEntry[1]);
+      }
+      
       setFeedback({ [clickedOption]: 'correct' });
       setTimeout(() => startNewRound(selectedPhase), 1500);
     } else {
@@ -157,119 +228,177 @@ export default function ShadowGamePage() {
     }
   };
 
-  // TELA DE TÍTULO
-  const TitleScreen = () => {
-    const handlePlayIntro = async () => {
-      setIsInteracting(true);
-      try {
-        await audioManagerRef.current?.forceInitialize();
-        const leoSpeakPromise = new Promise<void>((resolve) => {
-          leoSpeak("Olá! Eu sou o Leo! Vamos jogar com sombras?", resolve);
-        });
-        await Promise.race([
-          leoSpeakPromise,
-          new Promise(resolve => setTimeout(resolve, 5000)),
-        ]);
-        setGameState('instructions');
-      } catch (error) {
-        setAudioError("Falha ao inicializar som. Tente atualizar a página.");
-        setGameState('instructions');
-      } finally {
-        setIsInteracting(false);
-        setIsReady(true);
-      }
-    };
-
-    return (
-      <div className="screen-container title-screen">
-        <div className="stars-bg"></div>
-        <div className="leo-container">
-          <Image src="/shadow-game/leo_abertura.webp" alt="Mascote Léo" width={300} height={300} priority />
-        </div>
+  // TELA DE CARREGAMENTO
+  const LoadingScreen = () => (
+    <div className="screen-container loading-screen">
+      <div className="stars-bg"></div>
+      <div className="loading-indicator">
+        <div className="spinner"></div>
         <h1 className="main-title">Jogo das Sombras</h1>
-        <p className="subtitle">Associe cada imagem com sua sombra!</p>
-        {audioError && (
-          <div className="error-message">{audioError}</div>
-        )}
-        <button 
-          onClick={handlePlayIntro} 
-          disabled={!isReady || isInteracting}
-          className="start-button"
-        >
-          {!isReady ? 'Carregando...' : isInteracting ? 'Iniciando...' : 'Começar a Jogar'}
-        </button>
-        {!isReady && (
-          <div className="loading-indicator">
-            <div className="spinner"></div>
-            <p>Preparando o jogo...</p>
-          </div>
-        )}
+        <p>Preparando o jogo...</p>
       </div>
-    );
-  };
+    </div>
+  );
 
+  // TELA DE INTRODUÇÃO
+  const IntroScreen = () => (
+    <div className="screen-container intro-screen">
+      <div className="stars-bg"></div>
+      <div className="leo-container animate-float">
+        <Image 
+          src="/shadow-game/leo_abertura.webp" 
+          alt="Mascote Léo" 
+          width={300} 
+          height={300} 
+          priority 
+        />
+      </div>
+      <h1 className="main-title">Jogo das Sombras</h1>
+      <p className="subtitle">Associe cada imagem com sua sombra!</p>
+      <button 
+        onClick={handleIntroClick}
+        disabled={isIntroPlaying}
+        className={`start-button ${isIntroPlaying ? 'playing' : ''}`}
+      >
+        {isIntroPlaying ? 'Olá! Sou o Léo!' : 'Começar a Jogar'}
+      </button>
+    </div>
+  );
+
+  // TELA DE INSTRUÇÕES
   const InstructionsScreen = () => (
     <div className="screen-container explanation-screen">
       <div className="stars-bg"></div>
-      <div className="leo-container">
-        <Image src="/shadow-game/leo_abertura.webp" alt="Mascote Léo" width={200} height={200} />
+      <div className="leo-container animate-float">
+        <Image 
+          src="/shadow-game/leo_abertura.webp" 
+          alt="Mascote Léo explicando" 
+          width={200} 
+          height={200} 
+        />
       </div>
       <div className="speech-bubble">
         <p>É super fácil! Clique na sombra certa para cada figura e marque muitos pontos!</p>
       </div>
-      <button onClick={() => { playSound("click_select"); setGameState('phase-selection'); }} className="start-button" style={{ marginTop: '2rem' }}>
+      <button 
+        onClick={() => {
+          playSound("click_select");
+          setGameState('phase-selection');
+        }} 
+        className="start-button"
+      >
         Entendi, vamos lá!
       </button>
     </div>
   );
 
+  // TELA DE SELEÇÃO DE FASE
   const PhaseSelectionScreen = () => (
     <div className="screen-container phase-selection-screen">
+      <div className="stars-bg"></div>
       <h2>Escolha seu Desafio!</h2>
       <div className="phase-container">
         <button onClick={() => handlePhaseSelect(1)} className="phase-button phase-1">
-          <h3>Fase 1: Detetive Júnior</h3>
+          <h3>🔍 Fase 1: Detetive Júnior</h3>
           <p>Encontre a sombra correta para cada imagem.</p>
         </button>
         <button onClick={() => handlePhaseSelect(2)} className="phase-button phase-2">
-          <h3>Fase 2: Mestre das Sombras</h3>
+          <h3>🌟 Fase 2: Mestre das Sombras</h3>
           <p>Encontre a imagem correta para cada sombra.</p>
         </button>
         <button onClick={() => handlePhaseSelect(3)} className="phase-button phase-3">
-          <h3>Fase 3: Desafio Final!</h3>
+          <h3>🏆 Fase 3: Desafio Final!</h3>
           <p>Tudo misturado para testar suas habilidades!</p>
         </button>
       </div>
     </div>
   );
 
+  // TELA DE JOGO
   const GameScreen = () => {
     if (!roundData) return null;
-    const comboIcons: { [key: string]: React.ElementType } = { '20': Crown, '15': Award, '10': Medal, '5': Flame, '2': Zap };
+    
+    const comboIcons: { [key: string]: React.ElementType } = {
+      '20': Crown,
+      '15': Award,
+      '10': Medal,
+      '5': Flame,
+      '2': Zap
+    };
+    
     const comboLevel = Object.keys(comboIcons).reverse().find(key => streak >= parseInt(key)) || '1';
     const ComboIcon = comboIcons[comboLevel] || Star;
+    
     return (
       <div className="playing-screen">
         <div className="top-bar">
-          <button onClick={() => setGameState('phase-selection')} className="back-button"><ArrowLeft size={20} /> Fases</button>
-          <div className="score-display"><Trophy size={20} /> {score}</div>
-          <button onClick={() => setSoundEnabled(!soundEnabled)} className="sound-button">
+          <button 
+            onClick={() => setGameState('phase-selection')} 
+            className="back-button"
+          >
+            <ArrowLeft size={20} />
+            Fases
+          </button>
+          <div className="score-display">
+            <Trophy size={20} />
+            {score}
+          </div>
+          <button 
+            onClick={() => setSoundEnabled(!soundEnabled)} 
+            className="sound-button"
+          >
             {soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
           </button>
         </div>
-        {pointsFeedback && <div className="points-feedback fade-out-up">{pointsFeedback}</div>}
+
+        {pointsFeedback && (
+          <div className="points-feedback fade-out-up">
+            {pointsFeedback}
+          </div>
+        )}
+
         <div className="main-item-container">
-          <Image src={roundData.mainItem} alt="Item principal" width={250} height={250} />
+          <Image 
+            src={roundData.mainItem} 
+            alt="Item principal" 
+            width={250} 
+            height={250}
+            onError={(e) => {
+              console.error('Erro ao carregar imagem:', roundData.mainItem);
+              // Fallback ou recarregar round
+            }}
+          />
         </div>
+
         <div className="options-container">
           {roundData.options.map((optionSrc, index) => (
-            <button key={index} className={`option-button ${feedback[optionSrc] || ''}`} onClick={() => handleOptionClick(optionSrc)}>
-              <Image src={optionSrc} alt={`Opção ${index + 1}`} width={100} height={100} />
+            <button 
+              key={index} 
+              className={`option-button ${feedback[optionSrc] || ''}`} 
+              onClick={() => handleOptionClick(optionSrc)}
+            >
+              <Image 
+                src={optionSrc} 
+                alt={`Opção ${index + 1}`} 
+                width={100} 
+                height={100}
+                onError={(e) => {
+                  console.error('Erro ao carregar opção:', optionSrc);
+                }}
+              />
             </button>
           ))}
         </div>
+
         <div className="streak-display">
-          Combo: <ComboIcon className="combo-icon" /> {streak}x
+          <span>Combo:</span>
+          <ComboIcon className="combo-icon" />
+          <span>{streak}x</span>
+        </div>
+
+        <div className="stats-display">
+          <div>⭐ {totalStars}</div>
+          <div>🏆 Record: {highScore}</div>
         </div>
       </div>
     );
@@ -277,12 +406,18 @@ export default function ShadowGamePage() {
 
   const renderContent = () => {
     switch (gameState) {
+      case 'loading': return <LoadingScreen />;
+      case 'intro': return <IntroScreen />;
       case 'instructions': return <InstructionsScreen />;
       case 'phase-selection': return <PhaseSelectionScreen />;
       case 'playing': return <GameScreen />;
-      default: return <TitleScreen />;
+      default: return <LoadingScreen />;
     }
   };
 
-  return <main className="shadow-game-main">{renderContent()}</main>;
+  return (
+    <main className="shadow-game-main">
+      {renderContent()}
+    </main>
+  );
 }
