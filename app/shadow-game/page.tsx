@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './shadowgame.css';
 import Image from 'next/image';
 import { Volume2, VolumeX, Trophy, Star, ArrowLeft, Zap, Flame, Award, Crown, Medal } from 'lucide-react';
-import { GameAudioManager } from '@/utils/gameAudioManager'; // Verifique se o caminho está correto
+import { GameAudioManager } from '@/utils/gameAudioManager';
 
 // --- DADOS DO JOGO (Nomes das imagens) ---
 const imageNames = [
@@ -54,31 +54,131 @@ export default function ShadowGamePage() {
     const [highScore, setHighScore] = useState(0);
     const [totalStars, setTotalStars] = useState(0);
     const [isInteracting, setIsInteracting] = useState(false);
+    const [currentNarration, setCurrentNarration] = useState("");
     
-    const audioManager = useRef<GameAudioManager | null>(null);
+    // Usamos um ref para a instância para evitar recriações
+    const audioManagerRef = React.useRef<GameAudioManager | null>(null);
 
-    // Carregar estatísticas e inicializar o AudioManager
     useEffect(() => {
-        audioManager.current = GameAudioManager.getInstance();
+        if (!audioManagerRef.current) {
+            audioManagerRef.current = GameAudioManager.getInstance();
+        }
         const savedHighScore = localStorage.getItem('shadowGameHighScore');
         const savedStars = localStorage.getItem('shadowGameTotalStars');
         if (savedHighScore) setHighScore(parseInt(savedHighScore));
         if (savedStars) setTotalStars(parseInt(savedStars));
     }, []);
 
-    // Função de fala do Leo usando o AudioManager
-    const leoSpeak = useCallback(async (text: string, onEnd?: () => void) => {
-        if (audioManager.current) {
-            await audioManager.current.falarLeo(text, onEnd);
-        } else {
-            console.warn("AudioManager não está pronto.");
-            onEnd?.();
-        }
+    const leoSpeak = useCallback((text: string, onEnd?: () => void) => {
+        setCurrentNarration(text);
+        audioManagerRef.current?.falarLeo(text, onEnd);
     }, []);
 
     const playSound = useCallback((soundName: string, volume: number = 0.5) => {
-        audioManager.current?.playSoundEffect(soundName, volume);
+        audioManagerRef.current?.playSoundEffect(soundName, volume);
     }, []);
+    
+    // Efeito para gerenciar a transição da narração
+    useEffect(() => {
+        if (gameState === 'introWelcome') {
+            leoSpeak("Olá! Eu sou o Leo! Preparado para um desafio de detetive com sombras?", () => {
+                setGameState('introExplanation');
+            });
+        } else if (gameState === 'introExplanation') {
+            leoSpeak("É super fácil! Vou te mostrar uma figura, e você tem que achar a sombra certa. Vamos testar seus olhos de águia!", () => {
+                setIsInteracting(false);
+                setGameState('phaseSelection');
+            });
+        }
+    }, [gameState, leoSpeak]);
+
+
+    const handleIntro = useCallback(async () => {
+        if (isInteracting) return;
+        setIsInteracting(true);
+        playSound('click_start', 0.7);
+        
+        await audioManagerRef.current?.forceInitialize();
+        
+        // A lógica de fala agora é controlada pelo useEffect acima
+        setGameState('introWelcome');
+        
+    }, [isInteracting, playSound]);
+
+    const handlePhaseSelect = useCallback(async (phase: number) => {
+        if (isInteracting) return;
+        setIsInteracting(true);
+        playSound('click_select');
+        
+        setSelectedPhase(phase);
+        setScore(0);
+        setStreak(0);
+
+        const phaseMessages: { [key: number]: string } = {
+            1: "Fase 1: Detetive Júnior! Encontre a sombra de cada figura.",
+            2: "Fase 2: Mestre das Sombras! Agora, encontre a figura de cada sombra.",
+            3: "Fase 3: Desafio Final! Tudo misturado! Para os craques!"
+        };
+        
+        leoSpeak(phaseMessages[phase], () => {
+            setGameState('playing');
+            startNewRound(phase);
+            setIsInteracting(false);
+        });
+        
+    }, [isInteracting, playSound, leoSpeak, startNewRound]);
+
+    const handleOptionClick = useCallback((clickedOption: string) => {
+        if (Object.keys(feedback).length > 0 || !selectedPhase) return;
+        
+        if (clickedOption === roundData?.correctAnswer) {
+            playSound('correct_chime', 0.4);
+            const newStreak = streak + 1;
+            let pointsGained = 100;
+
+            const comboMessages: { [key: number]: string } = {
+                20: `Você está imparável! Super combo de ${newStreak} acertos! 3000 pontos!`,
+                15: `FANTÁSTICO! Combo de ${newStreak} acertos! 2000 pontos!`,
+                10: `INCRÍVEL! Combo de ${newStreak}! 1000 pontos!`,
+                5: `UAU! Combo de ${newStreak}! 500 pontos!`,
+                2: `Mandou bem! Sequência de ${newStreak}! 200 pontos!`,
+            };
+            
+            if (newStreak >= 20) pointsGained = 3000;
+            else if (newStreak >= 15) pointsGained = 2000;
+            else if (newStreak >= 10) pointsGained = 1000;
+            else if (newStreak >= 5) pointsGained = 500;
+            else if (newStreak >= 2) pointsGained = 200;
+
+            const currentScore = score + pointsGained;
+            setScore(currentScore);
+            setStreak(newStreak);
+            setPointsFeedback(`+${pointsGained}`);
+
+            const newTotalStars = totalStars + 1;
+            setTotalStars(newTotalStars);
+            localStorage.setItem('shadowGameTotalStars', newTotalStars.toString());
+
+            if (currentScore > highScore) {
+                setHighScore(currentScore);
+                localStorage.setItem('shadowGameHighScore', currentScore.toString());
+            }
+            
+            const comboMessageEntry = Object.entries(comboMessages).find(([key]) => newStreak === parseInt(key));
+            if(comboMessageEntry) {
+                leoSpeak(comboMessageEntry[1]);
+            }
+            
+            setFeedback({ [clickedOption]: 'correct' });
+            setTimeout(() => startNewRound(selectedPhase), 1500);
+        } else {
+            playSound('error_short', 0.4);
+            setStreak(0);
+            setFeedback({ [clickedOption]: 'incorrect' });
+            leoSpeak("Opa, essa não é a sombra certa. Tente de novo!");
+            setTimeout(() => setFeedback({}), 800);
+        }
+    }, [feedback, selectedPhase, roundData, streak, score, totalStars, highScore, leoSpeak, playSound, startNewRound]);
 
     const startNewRound = useCallback((phase: number) => {
         setFeedback({});
@@ -109,108 +209,16 @@ export default function ShadowGamePage() {
         setRoundData({ mainItem, options: shuffleArray(options), correctAnswer });
     }, []);
 
-    const handleIntro = useCallback(async () => {
-        if (isInteracting) return;
-        setIsInteracting(true);
-        playSound('click_start');
-        
-        await audioManager.current?.forceInitialize();
-        
-        setGameState('introWelcome');
-        await leoSpeak("Olá! Eu sou o Leo! Preparado para um desafio de detetive com sombras?");
-        await new Promise(r => setTimeout(r, 400));
-        
-        setGameState('introExplanation');
-        await leoSpeak("É super fácil! Vou te mostrar uma figura, e você tem que achar a sombra certa. Vamos testar seus olhos de águia!");
-        
-        setGameState('phaseSelection');
-        setIsInteracting(false);
-    }, [isInteracting, playSound, leoSpeak]);
-
-    const handlePhaseSelect = useCallback(async (phase: number) => {
-        if (isInteracting) return;
-        setIsInteracting(true);
-        playSound('click_select');
-        
-        setSelectedPhase(phase);
-        setScore(0);
-        setStreak(0);
-
-        const phaseMessages = {
-            1: "Fase 1: Detetive Júnior! Encontre a sombra de cada figura.",
-            2: "Fase 2: Mestre das Sombras! Agora, encontre a figura de cada sombra.",
-            3: "Fase 3: Desafio Final! Tudo misturado! Para os craques!"
-        };
-        await leoSpeak(phaseMessages[phase]);
-        
-        setGameState('playing');
-        startNewRound(phase);
-        setIsInteracting(false);
-    }, [isInteracting, playSound, leoSpeak, startNewRound]);
-
-    const handleOptionClick = useCallback((clickedOption: string) => {
-        if (Object.keys(feedback).length > 0 || !selectedPhase) return;
-        
-        if (clickedOption === roundData?.correctAnswer) {
-            playSound('correct_chime', 0.4);
-            const newStreak = streak + 1;
-            let pointsGained = 100;
-
-            const comboMessages = {
-                20: `Você está imparável! Super combo de ${newStreak} acertos! 3000 pontos!`,
-                15: `FANTÁSTICO! Combo de ${newStreak} acertos! 2000 pontos!`,
-                10: `INCRÍVEL! Combo de ${newStreak}! 1000 pontos!`,
-                5: `UAU! Combo de ${newStreak}! 500 pontos!`,
-                2: `Mandou bem! Sequência de ${newStreak}! 200 pontos!`,
-            };
-            
-            if (newStreak >= 20) pointsGained = 3000;
-            else if (newStreak >= 15) pointsGained = 2000;
-            else if (newStreak >= 10) pointsGained = 1000;
-            else if (newStreak >= 5) pointsGained = 500;
-            else if (newStreak >= 2) pointsGained = 200;
-
-            const currentScore = score + pointsGained;
-            setScore(currentScore);
-            setStreak(newStreak);
-            setPointsFeedback(`+${pointsGained}`);
-
-            const newTotalStars = totalStars + 1;
-            setTotalStars(newTotalStars);
-            localStorage.setItem('shadowGameTotalStars', newTotalStars.toString());
-
-            if (currentScore > highScore) {
-                setHighScore(currentScore);
-                localStorage.setItem('shadowGameHighScore', currentScore.toString());
-            }
-            
-            // Falar apenas em combos importantes para não ser repetitivo
-            const comboMessage = Object.entries(comboMessages).find(([key]) => newStreak === parseInt(key));
-            if(comboMessage) {
-                leoSpeak(comboMessage[1]);
-            }
-            
-            setFeedback({ [clickedOption]: 'correct' });
-            setTimeout(() => startNewRound(selectedPhase), 1500);
-        } else {
-            playSound('error_short', 0.4);
-            setStreak(0);
-            setFeedback({ [clickedOption]: 'incorrect' });
-            leoSpeak("Opa, essa não é a sombra certa. Tente de novo!");
-            setTimeout(() => setFeedback({}), 800);
-        }
-    }, [feedback, selectedPhase, roundData, streak, score, totalStars, highScore, leoSpeak, playSound, startNewRound]);
-
     // --- RENDERIZAÇÃO ---
     
     const renderContent = () => {
         switch (gameState) {
             case 'titleScreen':
-            case 'introWelcome':
                 return (
                     <div className="screen-container title-screen">
                         <div className="stars-bg"></div>
-                        <div className="leo-container animate-float">
+                        {/* ANIMAÇÃO DE PULO REMOVIDA DAQUI */}
+                        <div className="leo-container"> 
                             <Image src="/shadow-game/leo_abertura.webp" alt="Mascote Léo" width={300} height={300} priority />
                         </div>
                         <h1 className="main-title">Jogo das Sombras</h1>
@@ -220,6 +228,7 @@ export default function ShadowGamePage() {
                         </button>
                     </div>
                 );
+            case 'introWelcome':
             case 'introExplanation':
                  return (
                     <div className="screen-container explanation-screen">
@@ -228,7 +237,7 @@ export default function ShadowGamePage() {
                             <Image src="/shadow-game/leo_abertura.webp" alt="Mascote Léo" width={200} height={200} />
                         </div>
                         <div className="speech-bubble">
-                            <p>É super fácil! Vou te mostrar uma figura, e você tem que achar a sombra certa. Vamos testar seus olhos de águia!</p>
+                            <p>{currentNarration || "Preparando..."}</p>
                         </div>
                     </div>
                 );
@@ -254,7 +263,7 @@ export default function ShadowGamePage() {
                 );
             case 'playing':
                 if (!roundData) return <div>Carregando...</div>;
-                const comboIcons = { 20: Crown, 15: Award, 10: Medal, 5: Flame, 2: Zap };
+                const comboIcons: { [key: string]: React.ElementType } = { '20': Crown, '15': Award, '10': Medal, '5': Flame, '2': Zap };
                 const comboLevel = Object.keys(comboIcons).reverse().find(key => streak >= parseInt(key)) || '1';
                 const ComboIcon = comboIcons[comboLevel] || Star;
 
