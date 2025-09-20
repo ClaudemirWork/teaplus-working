@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
-import { azureTTS, speakWelcome, speakCompletion, speakLevelUp, toggleMute, isMuted } from '../utils/azureTTS';
+import { GameAudioManager } from '../utils/gameAudioManager';
 
 interface LeoMascotProps {
   isVisible?: boolean;
@@ -22,7 +22,7 @@ export default function LeoMascot({
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [volumeMuted, setVolumeMuted] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
 
   // Frases do Leo baseadas no humor
   const leoMessages = {
@@ -61,33 +61,26 @@ export default function LeoMascot({
   // Escolher imagem do Leo baseada no humor
   const getLeoImage = () => {
     const basePath = '/images/mascotes/leo/';
-    switch (mood) {
-      case 'excited':
-      case 'celebration':
-        return `${basePath}leo_forca_resultado.webp`;
-      case 'proud':
-        return `${basePath}leo_forca_resultado.webp`;
-      case 'encouraging':
-        return `${basePath}leo_forca_resultado.webp`;
-      default:
-        return `${basePath}leo_forca_resultado.webp`;
-    }
+    return `${basePath}leo_forca_resultado.webp`;
   };
 
-  // Falar mensagem
+  // Falar mensagem usando GameAudioManager
   const speakMessage = async (text: string) => {
     if (!text.trim()) return;
     
+    const audioManager = GameAudioManager.getInstance();
     setIsSpeaking(true);
+    
     try {
-      await azureTTS.speak(text, { priority: 'high', interrupt: true });
+      await audioManager.falarLeo(text, () => {
+        setIsSpeaking(false);
+        if (onMessageComplete) {
+          onMessageComplete();
+        }
+      }, 2); // Prioridade alta
     } catch (error) {
       console.log('Erro ao falar:', error);
-    } finally {
       setIsSpeaking(false);
-      if (onMessageComplete) {
-        onMessageComplete();
-      }
     }
   };
 
@@ -115,15 +108,17 @@ export default function LeoMascot({
     }
   }, [message]);
 
-  // Toggle mute
+  // Toggle mute usando GameAudioManager
   const handleToggleMute = () => {
-    const newMutedState = toggleMute();
-    setVolumeMuted(newMutedState);
+    const audioManager = GameAudioManager.getInstance();
+    const newState = audioManager.toggleAudio();
+    setAudioEnabled(newState);
   };
 
   // Verificar estado do mute
   useEffect(() => {
-    setVolumeMuted(isMuted());
+    const audioManager = GameAudioManager.getInstance();
+    setAudioEnabled(audioManager.getAudioEnabled());
   }, []);
 
   if (!isVisible) return null;
@@ -175,13 +170,13 @@ export default function LeoMascot({
           <button
             onClick={handleToggleMute}
             className={`mt-4 p-2 rounded-full transition-all ${
-              volumeMuted 
-                ? 'bg-red-100 text-red-500 hover:bg-red-200' 
-                : 'bg-blue-100 text-blue-500 hover:bg-blue-200'
+              audioEnabled 
+                ? 'bg-blue-100 text-blue-500 hover:bg-blue-200' 
+                : 'bg-red-100 text-red-500 hover:bg-red-200'
             }`}
-            title={volumeMuted ? 'Ativar som do Leo' : 'Silenciar Leo'}
+            title={audioEnabled ? 'Silenciar Leo' : 'Ativar som do Leo'}
           >
-            {volumeMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            {audioEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
           </button>
         )}
 
@@ -214,29 +209,6 @@ export default function LeoMascot({
   );
 }
 
-// Componente simplificado para modo criança
-export function LeoMascotChild({ 
-  mood = 'happy', 
-  message = '',
-  onMessageComplete 
-}: {
-  mood?: LeoMascotProps['mood'];
-  message?: string;
-  onMessageComplete?: () => void;
-}) {
-  return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <LeoMascot
-        isVisible={true}
-        mood={mood}
-        message={message}
-        showVolumeControl={false}
-        onMessageComplete={onMessageComplete}
-      />
-    </div>
-  );
-}
-
 // Hook para controlar Leo facilmente
 export function useLeoMascot() {
   const [leoMood, setLeoMood] = useState<LeoMascotProps['mood']>('happy');
@@ -246,7 +218,6 @@ export function useLeoMascot() {
   const celebrateTask = (taskName: string) => {
     setLeoMood('celebration');
     setLeoMessage(`Parabéns! Você completou: ${taskName}!`);
-    speakCompletion(taskName);
   };
 
   const encourageUser = () => {
@@ -257,13 +228,11 @@ export function useLeoMascot() {
   const celebrateLevelUp = (newLevel: number) => {
     setLeoMood('celebration');
     setLeoMessage(`Incrível! Você subiu para o nível ${newLevel}!`);
-    speakLevelUp(newLevel);
   };
 
   const greetUser = () => {
     setLeoMood('happy');
     setLeoMessage('Olá! Eu sou o Leo e vou te ajudar com sua rotina hoje!');
-    speakWelcome();
   };
 
   return {
