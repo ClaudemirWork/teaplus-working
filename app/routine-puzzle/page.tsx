@@ -13,6 +13,8 @@ import { useTaskCompletion } from './hooks/useTaskCompletion';
 import ChildMode from './components/ChildMode';
 import GameHUD from './components/GameHUD';
 import CelebrationOverlay from './components/CelebrationOverlay';
+import LeoMascot, { useLeoMascot } from './components/LeoMascot';
+import { speakTask, speakCompletion, speakLevelUp, toggleMute, isMuted } from './utils/azureTTS';
 
 export default function RoutineVisualPage() {
   const supabase = createClient();
@@ -28,6 +30,7 @@ export default function RoutineVisualPage() {
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const [volumeMuted, setVolumeMuted] = useState(false);
 
   // Hooks de gamificação
   const {
@@ -43,9 +46,22 @@ export default function RoutineVisualPage() {
     checkAchievements
   } = useGameState();
 
+  // Hook do Leo Mascot
+  const {
+    leoMood,
+    leoMessage,
+    showLeo,
+    celebrateTask,
+    encourageUser,
+    celebrateLevelUp,
+    greetUser,
+    setLeoMood,
+    setLeoMessage
+  } = useLeoMascot();
+
   // Hook de conclusão de tarefas
   const {
-    completeTask,
+    completeTask: originalCompleteTask,
     completeMultipleTasks,
     isDayCompleted,
     getDayStats,
@@ -60,9 +76,40 @@ export default function RoutineVisualPage() {
   } = useTaskCompletion({
     weeklyRoutine,
     setWeeklyRoutine,
-    onAddStars: addStars,
+    onAddStars: (amount) => {
+      const previousLevel = gameState.level;
+      addStars(amount);
+      
+      // Verificar se subiu de nível
+      setTimeout(() => {
+        const newLevel = Math.floor((gameState.stars + amount) / 50) + 1;
+        if (newLevel > previousLevel) {
+          celebrateLevelUp(newLevel);
+          speakLevelUp(newLevel);
+        }
+      }, 100);
+    },
     onRemoveStars: removeStars
   });
+
+  // Função melhorada para completar tarefa com Leo
+  const completeTask = (day: string, uniqueId: string) => {
+    const task = weeklyRoutine[day]?.find(t => t.uniqueId === uniqueId);
+    if (!task) return;
+
+    originalCompleteTask(day, uniqueId);
+    
+    // Se está completando (não descompletando)
+    if (!task.completed) {
+      // Leo celebra apenas no modo pai
+      if (userMode === 'parent') {
+        setTimeout(() => {
+          celebrateTask(task.name);
+          speakCompletion(task.name);
+        }, 500);
+      }
+    }
+  };
 
   // Detectar se é mobile
   useEffect(() => {
@@ -74,9 +121,20 @@ export default function RoutineVisualPage() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Verificar estado do mute
+  useEffect(() => {
+    setVolumeMuted(isMuted());
+  }, []);
+
   // Função para lidar com erro de imagem
   const handleImageError = (cardId: string) => {
     setImageErrors(prev => new Set(prev).add(cardId));
+  };
+
+  // Toggle mute
+  const handleToggleMute = () => {
+    const newMutedState = toggleMute();
+    setVolumeMuted(newMutedState);
   };
 
   // Funções auxiliares
@@ -329,6 +387,15 @@ export default function RoutineVisualPage() {
                 <GameHUD gameState={gameState} isChildMode={false} showDetails={false} />
                 
                 <button
+                  onClick={handleToggleMute}
+                  className={`p-2 rounded-full ${
+                    volumeMuted ? 'bg-red-100 text-red-500' : 'bg-blue-100 text-blue-500'
+                  }`}
+                >
+                  {volumeMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                </button>
+                
+                <button
                   onClick={() => setUserMode(userMode === 'parent' ? 'child' : 'parent')}
                   className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm"
                 >
@@ -539,6 +606,18 @@ export default function RoutineVisualPage() {
           </div>
         )}
 
+        {/* Leo Mascot no Mobile (modo pai) */}
+        {showLeo && (
+          <div className="fixed bottom-4 right-4 z-40">
+            <LeoMascot
+              isVisible={true}
+              mood={leoMood}
+              message={leoMessage}
+              showVolumeControl={false}
+            />
+          </div>
+        )}
+
         <CelebrationOverlay celebrationQueue={celebrationQueue} />
       </div>
     );
@@ -564,6 +643,16 @@ export default function RoutineVisualPage() {
             </h1>
             
             <div className="flex items-center gap-4">
+              <button
+                onClick={handleToggleMute}
+                className={`p-2 rounded-full ${
+                  volumeMuted ? 'bg-red-100 text-red-500' : 'bg-blue-100 text-blue-500'
+                }`}
+                title={volumeMuted ? 'Ativar som' : 'Silenciar'}
+              >
+                {volumeMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+              </button>
+              
               <button
                 onClick={() => setUserMode(userMode === 'parent' ? 'child' : 'parent')}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
@@ -610,8 +699,18 @@ export default function RoutineVisualPage() {
       <div className="max-w-7xl mx-auto p-4">
         <div className="grid grid-cols-4 gap-4">
           {/* GameHUD */}
-          <div className="col-span-1">
+          <div className="col-span-1 space-y-4">
             <GameHUD gameState={gameState} isChildMode={false} showDetails={true} />
+            
+            {/* Leo Mascot no Desktop */}
+            {showLeo && (
+              <LeoMascot
+                isVisible={true}
+                mood={leoMood}
+                message={leoMessage}
+                showVolumeControl={true}
+              />
+            )}
           </div>
 
           {/* Painel de Atividades */}
