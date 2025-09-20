@@ -1,16 +1,71 @@
-// Sistema de Text-to-Speech com Azure e fallback para Web Speech API
+// Sistema de Text-to-Speech com seleção inteligente de voz masculina
 class AzureTTSService {
   private isEnabled: boolean = true;
   private volume: number = 0.7;
   private isMuted: boolean = false;
+  private selectedVoice: SpeechSynthesisVoice | null = null;
 
-  // Configuração do Azure Speech (para futuro)
-  private azureConfig = {
-    subscriptionKey: process.env.NEXT_PUBLIC_AZURE_SPEECH_KEY || '',
-    region: process.env.NEXT_PUBLIC_AZURE_SPEECH_REGION || 'brazilsouth',
-    language: 'pt-BR',
-    voice: 'pt-BR-AntonioNeural' // Voz masculina brasileira para o Leo
-  };
+  constructor() {
+    // Inicializar vozes quando disponíveis
+    this.initializeVoices();
+  }
+
+  // Inicializar e selecionar melhor voz masculina
+  private initializeVoices(): void {
+    const loadVoices = () => {
+      const voices = window.speechSynthesis?.getVoices() || [];
+      this.selectedVoice = this.selectBestMaleVoice(voices);
+    };
+
+    // Carregar vozes imediatamente se disponíveis
+    loadVoices();
+    
+    // Também escutar evento de vozes carregadas
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }
+
+  // Selecionar melhor voz masculina brasileira
+  private selectBestMaleVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+    // Prioridade 1: Voz masculina brasileira específica
+    let voice = voices.find(v => 
+      v.lang.includes('pt-BR') && 
+      (v.name.toLowerCase().includes('male') || 
+       v.name.toLowerCase().includes('masculin') ||
+       v.name.toLowerCase().includes('antonio') ||
+       v.name.toLowerCase().includes('ricardo') ||
+       v.name.toLowerCase().includes('felipe'))
+    );
+
+    // Prioridade 2: Qualquer voz portuguesa (pode ser masculina)
+    if (!voice) {
+      voice = voices.find(v => v.lang.includes('pt-BR'));
+    }
+
+    // Prioridade 3: Voz portuguesa geral
+    if (!voice) {
+      voice = voices.find(v => v.lang.includes('pt'));
+    }
+
+    // Prioridade 4: Voz em inglês masculina (último recurso)
+    if (!voice) {
+      voice = voices.find(v => 
+        v.lang.includes('en') && 
+        (v.name.toLowerCase().includes('male') || 
+         v.name.toLowerCase().includes('david') ||
+         v.name.toLowerCase().includes('mark'))
+      );
+    }
+
+    // Último recurso: primeira voz disponível
+    if (!voice && voices.length > 0) {
+      voice = voices[0];
+    }
+
+    console.log('Leo Voice Selected:', voice?.name, voice?.lang);
+    return voice;
+  }
 
   // Método principal para falar texto
   async speak(text: string, options?: { 
@@ -22,7 +77,6 @@ class AzureTTSService {
     }
 
     try {
-      // Primeiro tenta Web Speech API (mais simples e funciona offline)
       if (this.isWebSpeechSupported()) {
         await this.speakWithWebAPI(text, options);
       } else {
@@ -33,7 +87,7 @@ class AzureTTSService {
     }
   }
 
-  // Web Speech API (fallback nativo do navegador)
+  // Web Speech API melhorada
   private async speakWithWebAPI(text: string, options?: any): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!window.speechSynthesis) {
@@ -48,26 +102,28 @@ class AzureTTSService {
 
       const utterance = new SpeechSynthesisUtterance(text);
       
-      // Configurar voz masculina em português brasileiro
-      const voices = window.speechSynthesis.getVoices();
-      const malePortugueseVoice = voices.find(voice => 
-        (voice.lang.includes('pt-BR') || voice.lang.includes('pt')) &&
-        (voice.name.toLowerCase().includes('male') || 
-         voice.name.toLowerCase().includes('antonio') ||
-         voice.name.toLowerCase().includes('ricardo'))
-      );
-      
-      if (malePortugueseVoice) {
-        utterance.voice = malePortugueseVoice;
+      // Usar voz selecionada ou tentar encontrar uma nova
+      if (this.selectedVoice) {
+        utterance.voice = this.selectedVoice;
+      } else {
+        // Tentar novamente selecionar voz se não encontrou antes
+        const voices = window.speechSynthesis.getVoices();
+        this.selectedVoice = this.selectBestMaleVoice(voices);
+        if (this.selectedVoice) {
+          utterance.voice = this.selectedVoice;
+        }
       }
 
       utterance.lang = 'pt-BR';
       utterance.volume = this.volume;
-      utterance.rate = 0.9; // Falar um pouco mais devagar para crianças
-      utterance.pitch = 0.9; // Tom mais grave e amigável para o Leo
+      utterance.rate = 0.85; // Mais devagar para crianças
+      utterance.pitch = 0.8; // Tom mais grave para Leo
 
       utterance.onend = () => resolve();
       utterance.onerror = (event) => reject(event.error);
+
+      // Log para debug
+      console.log('Leo falando:', text, 'Voz:', utterance.voice?.name);
 
       window.speechSynthesis.speak(utterance);
     });
@@ -80,7 +136,24 @@ class AzureTTSService {
            'SpeechSynthesisUtterance' in window;
   }
 
-  // Métodos de controle
+  // Listar vozes disponíveis (para debug)
+  getAvailableVoices(): SpeechSynthesisVoice[] {
+    return window.speechSynthesis?.getVoices() || [];
+  }
+
+  // Testar voz atual
+  async testVoice(): Promise<void> {
+    await this.speak('Olá! Eu sou o Leo e esta é minha voz!', { priority: 'high' });
+  }
+
+  // Forçar re-seleção de voz
+  refreshVoiceSelection(): void {
+    const voices = window.speechSynthesis?.getVoices() || [];
+    this.selectedVoice = this.selectBestMaleVoice(voices);
+    console.log('Nova voz selecionada:', this.selectedVoice?.name);
+  }
+
+  // Métodos de controle (mantidos iguais)
   setVolume(volume: number): void {
     this.volume = Math.max(0, Math.min(1, volume));
   }
@@ -113,7 +186,6 @@ class AzureTTSService {
     return this.isMuted;
   }
 
-  // Parar fala atual
   stop(): void {
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
@@ -163,3 +235,6 @@ export const speakDayComplete = () => azureTTS.speakDayCompleted();
 export const speakLevelUp = (level: number) => azureTTS.speakLevelUp(level);
 export const toggleMute = () => azureTTS.toggleMute();
 export const isMuted = () => azureTTS.isMutedState();
+export const testLeoVoice = () => azureTTS.testVoice();
+export const refreshVoice = () => azureTTS.refreshVoiceSelection();
+export const getVoices = () => azureTTS.getAvailableVoices();
