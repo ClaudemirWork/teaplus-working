@@ -5,7 +5,7 @@ import { Check, Star, ArrowRight } from 'lucide-react';
 import { WEEKDAYS } from '../data/categories';
 import type { RoutineItem } from '../types';
 import { LeoMascotChild, useLeoMascot } from './LeoMascot';
-import { speakTask, speakCompletion, speakDayComplete } from '../utils/azureTTS';
+import { GameAudioManager } from '@/utils/gameAudioManager';
 
 interface ChildModeProps {
   selectedDay: string;
