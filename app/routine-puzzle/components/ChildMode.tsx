@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { Check, Star, ArrowRight } from 'lucide-react';
 import { WEEKDAYS } from '../data/categories';
 import type { RoutineItem } from '../types';
-import { LeoMascotChild, useLeoMascot } from './LeoMascot';
+import LeoMascot, { useLeoMascot } from './LeoMascot';
 import { GameAudioManager } from '@/utils/gameAudioManager';
 
 interface ChildModeProps {
@@ -288,13 +288,17 @@ export default function ChildMode({
 
       {/* Leo Mascot */}
       {showLeo && (
-        <LeoMascotChild
-          mood={leoMood}
-          message={leoMessage}
-          onMessageComplete={() => {
-            // Callback quando Leo termina de falar
-          }}
-        />
+        <div className="fixed bottom-4 right-4 z-50">
+          <LeoMascot
+            isVisible={true}
+            mood={leoMood}
+            message={leoMessage}
+            showVolumeControl={false}
+            onMessageComplete={() => {
+              // Callback quando Leo termina de falar
+            }}
+          />
+        </div>
       )}
     </div>
   );
