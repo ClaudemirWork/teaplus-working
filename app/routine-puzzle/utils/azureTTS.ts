@@ -1,12 +1,13 @@
-// Sistema de Text-to-Speech com inicialização lazy para SSR
+// Sistema avançado de Text-to-Speech com seleção inteligente de voz masculina
 class AzureTTSService {
   private isEnabled: boolean = true;
   private volume: number = 0.7;
   private isMuted: boolean = false;
   private selectedVoice: SpeechSynthesisVoice | null = null;
   private isInitialized: boolean = false;
+  private availableVoices: SpeechSynthesisVoice[] = [];
+  private preferredVoiceId: string | null = null;
 
-  // NÃO inicializar no constructor para evitar SSR
   constructor() {
     // Inicialização será lazy
   }
@@ -21,63 +22,152 @@ class AzureTTSService {
     this.isInitialized = true;
   }
 
-  // Inicializar e selecionar melhor voz masculina
+  // Inicializar e catalogar todas as vozes disponíveis
   private initializeVoices(): void {
     if (typeof window === 'undefined' || !window.speechSynthesis) {
       return;
     }
 
     const loadVoices = () => {
-      const voices = window.speechSynthesis?.getVoices() || [];
-      this.selectedVoice = this.selectBestMaleVoice(voices);
+      this.availableVoices = window.speechSynthesis.getVoices();
+      console.log('🎤 Vozes disponíveis:', this.availableVoices.length);
+      
+      // Listar todas as vozes para debug
+      this.availableVoices.forEach((voice, index) => {
+        console.log(`${index + 1}. ${voice.name} (${voice.lang}) - ${voice.gender || 'unknown'}`);
+      });
+
+      this.selectedVoice = this.selectBestMaleVoice();
+      
+      if (this.selectedVoice) {
+        console.log('🎯 Voz do Leo selecionada:', this.selectedVoice.name, this.selectedVoice.lang);
+      } else {
+        console.log('⚠️ Nenhuma voz adequada encontrada');
+      }
     };
 
-    // Carregar vozes imediatamente se disponíveis
+    // Tentar carregar vozes imediatamente
     loadVoices();
     
-    // Também escutar evento de vozes carregadas
+    // Também escutar evento de vozes carregadas (alguns navegadores precisam)
     window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    // Forçar carregamento após 1 segundo se necessário
+    setTimeout(loadVoices, 1000);
   }
 
-  // Selecionar melhor voz masculina brasileira
-  private selectBestMaleVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
-    // Prioridade 1: Voz masculina brasileira específica
-    let voice = voices.find(v => 
-      v.lang.includes('pt-BR') && 
-      (v.name.toLowerCase().includes('male') || 
-       v.name.toLowerCase().includes('masculin') ||
-       v.name.toLowerCase().includes('antonio') ||
-       v.name.toLowerCase().includes('ricardo') ||
-       v.name.toLowerCase().includes('felipe'))
-    );
-
-    // Prioridade 2: Qualquer voz portuguesa (pode ser masculina)
-    if (!voice) {
-      voice = voices.find(v => v.lang.includes('pt-BR'));
+  // Algoritmo inteligente para selecionar voz masculina
+  private selectBestMaleVoice(): SpeechSynthesisVoice | null {
+    if (this.availableVoices.length === 0) {
+      return null;
     }
 
-    // Prioridade 3: Voz portuguesa geral
-    if (!voice) {
-      voice = voices.find(v => v.lang.includes('pt'));
-    }
-
-    // Prioridade 4: Voz em inglês masculina (último recurso)
-    if (!voice) {
-      voice = voices.find(v => 
-        v.lang.includes('en') && 
-        (v.name.toLowerCase().includes('male') || 
-         v.name.toLowerCase().includes('david') ||
-         v.name.toLowerCase().includes('mark'))
+    // Se usuário já escolheu uma voz, usar ela
+    if (this.preferredVoiceId) {
+      const preferredVoice = this.availableVoices.find(v => 
+        `${v.name}-${v.lang}` === this.preferredVoiceId
       );
+      if (preferredVoice) {
+        return preferredVoice;
+      }
     }
 
-    // Último recurso: primeira voz disponível
-    if (!voice && voices.length > 0) {
-      voice = voices[0];
+    // Critérios de prioridade para Leo (voz masculina)
+    const criteria = [
+      // 1º Prioridade: Vozes explicitamente masculinas em português brasileiro
+      {
+        filter: (v: SpeechSynthesisVoice) => 
+          v.lang.includes('pt-BR') && 
+          (v.name.toLowerCase().includes('male') || 
+           v.name.toLowerCase().includes('masculin') ||
+           v.name.toLowerCase().includes('antonio') ||
+           v.name.toLowerCase().includes('ricardo') ||
+           v.name.toLowerCase().includes('daniel') ||
+           v.name.toLowerCase().includes('felipe') ||
+           v.name.toLowerCase().includes('carlos') ||
+           v.name.toLowerCase().includes('marcos')),
+        priority: 10
+      },
+      
+      // 2º Prioridade: Qualquer voz brasileira (pode ser masculina)
+      {
+        filter: (v: SpeechSynthesisVoice) => v.lang.includes('pt-BR'),
+        priority: 8
+      },
+      
+      // 3º Prioridade: Voz portuguesa
+      {
+        filter: (v: SpeechSynthesisVoice) => v.lang.includes('pt-PT'),
+        priority: 6
+      },
+      
+      // 4º Prioridade: Qualquer português
+      {
+        filter: (v: SpeechSynthesisVoice) => v.lang.includes('pt'),
+        priority: 5
+      },
+      
+      // 5º Prioridade: Vozes masculinas em inglês
+      {
+        filter: (v: SpeechSynthesisVoice) => 
+          v.lang.includes('en') && 
+          (v.name.toLowerCase().includes('male') ||
+           v.name.toLowerCase().includes('david') ||
+           v.name.toLowerCase().includes('mark') ||
+           v.name.toLowerCase().includes('alex') ||
+           v.name.toLowerCase().includes('tom')),
+        priority: 3
+      },
+      
+      // 6º Prioridade: Primeira voz disponível
+      {
+        filter: () => true,
+        priority: 1
+      }
+    ];
+
+    // Encontrar melhor voz baseada nos critérios
+    for (const criterion of criteria) {
+      const candidates = this.availableVoices.filter(criterion.filter);
+      if (candidates.length > 0) {
+        // Se múltiplas candidatas, preferir a primeira
+        return candidates[0];
+      }
     }
 
-    console.log('Leo Voice Selected:', voice?.name, voice?.lang);
-    return voice;
+    return this.availableVoices[0] || null;
+  }
+
+  // Método para usuário escolher voz manualmente
+  setPreferredVoice(voiceId: string): void {
+    this.preferredVoiceId = voiceId;
+    const voice = this.availableVoices.find(v => 
+      `${v.name}-${v.lang}` === voiceId
+    );
+    
+    if (voice) {
+      this.selectedVoice = voice;
+      console.log('🎯 Nova voz do Leo:', voice.name);
+      
+      // Salvar preferência no localStorage
+      try {
+        localStorage.setItem('leo-preferred-voice', voiceId);
+      } catch (e) {
+        console.log('Não foi possível salvar preferência de voz');
+      }
+    }
+  }
+
+  // Carregar preferência salva
+  private loadPreferredVoice(): void {
+    try {
+      const saved = localStorage.getItem('leo-preferred-voice');
+      if (saved) {
+        this.preferredVoiceId = saved;
+      }
+    } catch (e) {
+      console.log('Não foi possível carregar preferência de voz');
+    }
   }
 
   // Método principal para falar texto
@@ -85,13 +175,11 @@ class AzureTTSService {
     priority?: 'low' | 'high';
     interrupt?: boolean;
   }): Promise<void> {
-    // Verificar se está no browser
     if (typeof window === 'undefined') {
       console.log('TTS: Não está no browser');
       return;
     }
 
-    // Inicializar se necessário
     this.ensureInitialized();
 
     if (this.isMuted || !this.isEnabled || !text.trim()) {
@@ -109,7 +197,7 @@ class AzureTTSService {
     }
   }
 
-  // Web Speech API melhorada
+  // Web Speech API otimizada
   private async speakWithWebAPI(text: string, options?: any): Promise<void> {
     return new Promise((resolve, reject) => {
       if (typeof window === 'undefined' || !window.speechSynthesis) {
@@ -117,35 +205,40 @@ class AzureTTSService {
         return;
       }
 
-      // Para navegadores que precisam de interrupção
+      // Interromper fala anterior se necessário
       if (options?.interrupt) {
         window.speechSynthesis.cancel();
       }
 
       const utterance = new SpeechSynthesisUtterance(text);
       
-      // Usar voz selecionada ou tentar encontrar uma nova
+      // Usar voz selecionada
       if (this.selectedVoice) {
         utterance.voice = this.selectedVoice;
+        console.log(`🎤 Leo falando com: ${this.selectedVoice.name}`);
       } else {
-        // Tentar novamente selecionar voz se não encontrou antes
-        const voices = window.speechSynthesis.getVoices();
-        this.selectedVoice = this.selectBestMaleVoice(voices);
-        if (this.selectedVoice) {
-          utterance.voice = this.selectedVoice;
-        }
+        console.log('⚠️ Usando voz padrão do sistema');
       }
 
+      // Configurações otimizadas para Leo
       utterance.lang = 'pt-BR';
       utterance.volume = this.volume;
-      utterance.rate = 0.85; // Mais devagar para crianças
-      utterance.pitch = 0.8; // Tom mais grave para Leo
+      utterance.rate = 0.9; // Velocidade natural
+      utterance.pitch = 0.85; // Tom ligeiramente mais grave para Leo
 
-      utterance.onend = () => resolve();
-      utterance.onerror = (event) => reject(event.error);
+      utterance.onend = () => {
+        console.log('✅ Leo terminou de falar');
+        resolve();
+      };
+      
+      utterance.onerror = (event) => {
+        console.error('❌ Erro na fala do Leo:', event.error);
+        reject(event.error);
+      };
 
-      // Log para debug
-      console.log('Leo falando:', text, 'Voz:', utterance.voice?.name);
+      utterance.onstart = () => {
+        console.log('🎙️ Leo começou a falar:', text);
+      };
 
       window.speechSynthesis.speak(utterance);
     });
@@ -158,27 +251,35 @@ class AzureTTSService {
            'SpeechSynthesisUtterance' in window;
   }
 
-  // Listar vozes disponíveis (para debug)
-  getAvailableVoices(): SpeechSynthesisVoice[] {
+  // Listar todas as vozes disponíveis para UI
+  getAvailableVoices(): Array<{id: string, name: string, lang: string, recommended?: boolean}> {
     if (typeof window === 'undefined') return [];
-    return window.speechSynthesis?.getVoices() || [];
-  }
-
-  // Testar voz atual
-  async testVoice(): Promise<void> {
-    await this.speak('Olá! Eu sou o Leo e esta é minha voz!', { priority: 'high' });
-  }
-
-  // Forçar re-seleção de voz
-  refreshVoiceSelection(): void {
-    if (typeof window === 'undefined') return;
     
-    const voices = window.speechSynthesis?.getVoices() || [];
-    this.selectedVoice = this.selectBestMaleVoice(voices);
-    console.log('Nova voz selecionada:', this.selectedVoice?.name);
+    return this.availableVoices.map(voice => ({
+      id: `${voice.name}-${voice.lang}`,
+      name: voice.name,
+      lang: voice.lang,
+      recommended: voice.lang.includes('pt-BR') && 
+                  (voice.name.toLowerCase().includes('male') || 
+                   voice.name.toLowerCase().includes('antonio') ||
+                   voice.name.toLowerCase().includes('daniel'))
+    }));
   }
 
-  // Métodos de controle
+  // Testar uma voz específica
+  async testVoice(voiceId: string): Promise<void> {
+    const originalVoice = this.selectedVoice;
+    this.setPreferredVoice(voiceId);
+    
+    try {
+      await this.speak('Olá! Eu sou o Leo. Esta é minha voz!', { priority: 'high', interrupt: true });
+    } catch (error) {
+      console.error('Erro ao testar voz:', error);
+      this.selectedVoice = originalVoice;
+    }
+  }
+
+  // Métodos de controle (mantidos)
   setVolume(volume: number): void {
     this.volume = Math.max(0, Math.min(1, volume));
   }
@@ -217,7 +318,7 @@ class AzureTTSService {
     }
   }
 
-  // Frases específicas do Leo para o routine-puzzle
+  // Frases específicas do Leo
   async speakTaskName(taskName: string): Promise<void> {
     await this.speak(`Próxima atividade: ${taskName}`, { priority: 'high' });
   }
@@ -229,7 +330,9 @@ class AzureTTSService {
       'Você conseguiu!',
       'Excelente trabalho!',
       'Que legal!',
-      'Leo está orgulhoso de você!'
+      'Leo está orgulhoso de você!',
+      'Fantástico!',
+      'Você é incrível!'
     ];
     
     const randomEncouragement = encouragements[Math.floor(Math.random() * encouragements.length)];
@@ -260,6 +363,6 @@ export const speakDayComplete = () => azureTTS.speakDayCompleted();
 export const speakLevelUp = (level: number) => azureTTS.speakLevelUp(level);
 export const toggleMute = () => azureTTS.toggleMute();
 export const isMuted = () => azureTTS.isMutedState();
-export const testLeoVoice = () => azureTTS.testVoice();
-export const refreshVoice = () => azureTTS.refreshVoiceSelection();
-export const getVoices = () => azureTTS.getAvailableVoices();
+export const testLeoVoice = () => azureTTS.testVoice;
+export const getAvailableVoices = () => azureTTS.getAvailableVoices();
+export const setLeoVoice = (voiceId: string) => azureTTS.setPreferredVoice(voiceId);
