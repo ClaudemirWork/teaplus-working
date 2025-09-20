@@ -1,17 +1,32 @@
-// Sistema de Text-to-Speech com seleção inteligente de voz masculina
+// Sistema de Text-to-Speech com inicialização lazy para SSR
 class AzureTTSService {
   private isEnabled: boolean = true;
   private volume: number = 0.7;
   private isMuted: boolean = false;
   private selectedVoice: SpeechSynthesisVoice | null = null;
+  private isInitialized: boolean = false;
 
+  // NÃO inicializar no constructor para evitar SSR
   constructor() {
-    // Inicializar vozes quando disponíveis
+    // Inicialização será lazy
+  }
+
+  // Inicialização lazy - só quando efetivamente usar
+  private ensureInitialized(): void {
+    if (this.isInitialized || typeof window === 'undefined') {
+      return;
+    }
+
     this.initializeVoices();
+    this.isInitialized = true;
   }
 
   // Inicializar e selecionar melhor voz masculina
   private initializeVoices(): void {
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      return;
+    }
+
     const loadVoices = () => {
       const voices = window.speechSynthesis?.getVoices() || [];
       this.selectedVoice = this.selectBestMaleVoice(voices);
@@ -21,9 +36,7 @@ class AzureTTSService {
     loadVoices();
     
     // Também escutar evento de vozes carregadas
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
+    window.speechSynthesis.onvoiceschanged = loadVoices;
   }
 
   // Selecionar melhor voz masculina brasileira
@@ -72,6 +85,15 @@ class AzureTTSService {
     priority?: 'low' | 'high';
     interrupt?: boolean;
   }): Promise<void> {
+    // Verificar se está no browser
+    if (typeof window === 'undefined') {
+      console.log('TTS: Não está no browser');
+      return;
+    }
+
+    // Inicializar se necessário
+    this.ensureInitialized();
+
     if (this.isMuted || !this.isEnabled || !text.trim()) {
       return;
     }
@@ -90,7 +112,7 @@ class AzureTTSService {
   // Web Speech API melhorada
   private async speakWithWebAPI(text: string, options?: any): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (!window.speechSynthesis) {
+      if (typeof window === 'undefined' || !window.speechSynthesis) {
         reject(new Error('SpeechSynthesis não suportado'));
         return;
       }
@@ -138,6 +160,7 @@ class AzureTTSService {
 
   // Listar vozes disponíveis (para debug)
   getAvailableVoices(): SpeechSynthesisVoice[] {
+    if (typeof window === 'undefined') return [];
     return window.speechSynthesis?.getVoices() || [];
   }
 
@@ -148,12 +171,14 @@ class AzureTTSService {
 
   // Forçar re-seleção de voz
   refreshVoiceSelection(): void {
+    if (typeof window === 'undefined') return;
+    
     const voices = window.speechSynthesis?.getVoices() || [];
     this.selectedVoice = this.selectBestMaleVoice(voices);
     console.log('Nova voz selecionada:', this.selectedVoice?.name);
   }
 
-  // Métodos de controle (mantidos iguais)
+  // Métodos de controle
   setVolume(volume: number): void {
     this.volume = Math.max(0, Math.min(1, volume));
   }
@@ -164,7 +189,7 @@ class AzureTTSService {
 
   mute(): void {
     this.isMuted = true;
-    if (window.speechSynthesis) {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
   }
@@ -187,7 +212,7 @@ class AzureTTSService {
   }
 
   stop(): void {
-    if (window.speechSynthesis) {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
   }
