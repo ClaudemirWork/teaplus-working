@@ -2,14 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Save, Clock, Calendar, Trophy, Star, Check, Plus, Volume2, VolumeX, ArrowRight, Award, Trash2, Edit2, Search, Filter, Users, Baby, X } from 'lucide-react';
+import { ChevronLeft, Save, Clock, Calendar, Trophy, Star, Check, Plus, Volume2, VolumeX, ArrowRight, Award, Trash2, Edit2, Search, Filter, Users, Baby, X, Bell } from 'lucide-react';
 import { createClient } from '@/utils/supabaseClient';
 import './styles.css';
 import { PECS_CARDS } from './data/pecsCards';
 import { CATEGORIES, WEEKDAYS, TIME_OPTIONS } from './data/categories';
 import type { RoutineItem, WeeklyRoutine } from './types';
-import { useGameState } from './hooks/useGameState';
-import { useTaskCompletion } from './hooks/useTaskCompletion';
+import { useGameSystem } from './hooks/useGameSystem';
 import ChildMode from './components/ChildMode';
 import GameHUD from './components/GameHUD';
 import CelebrationOverlay from './components/CelebrationOverlay';
@@ -20,6 +19,9 @@ export default function RoutineVisualPage() {
   const supabase = createClient();
   const audioManager = GameAudioManager.getInstance();
   
+  // Sistema de jogo unificado
+  const gameSystem = useGameSystem();
+  
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'instructions' | 'main'>('welcome');
   const [isMobile, setIsMobile] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('rotina');
@@ -29,24 +31,11 @@ export default function RoutineVisualPage() {
   const [userMode, setUserMode] = useState<'parent' | 'child'>('parent');
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [volumeMuted, setVolumeMuted] = useState(false);
-
-  // Hooks de gamificação
-  const {
-    gameState,
-    addStars,
-    removeStars,
-    incrementStreak,
-    resetStreak,
-    getStreakBonus,
-    resetDailyProgress,
-    checkLevelUp,
-    getLevelProgress,
-    checkAchievements
-  } = useGameState();
 
   // Hook do Leo Mascot
   const {
@@ -61,48 +50,25 @@ export default function RoutineVisualPage() {
     setLeoMessage
   } = useLeoMascot();
 
-  // Hook de conclusão de tarefas
-  const {
-    completeTask: originalCompleteTask,
-    completeMultipleTasks,
-    isDayCompleted,
-    getDayStats,
-    getWeekStats,
-    resetDay,
-    triggerCelebration,
-    checkDailyAchievements,
-    checkWeeklyAchievements,
-    getNextTask,
-    getTasksByPeriod,
-    celebrationQueue
-  } = useTaskCompletion({
-    weeklyRoutine,
-    setWeeklyRoutine,
-    onAddStars: (amount) => {
-      const previousLevel = gameState.level;
-      addStars(amount);
-      
-      // Verificar se subiu de nível
-      setTimeout(() => {
-        const newLevel = Math.floor((gameState.stars + amount) / 50) + 1;
-        if (newLevel > previousLevel) {
-          celebrateLevelUp(newLevel);
-          audioManager.falarLeo(`Incrível! Você subiu para o nível ${newLevel}!`);
-        }
-      }, 100);
-    },
-    onRemoveStars: removeStars
-  });
-
-  // Função melhorada para completar tarefa com Leo
+  // Função melhorada para completar tarefa com sistema unificado
   const completeTask = (day: string, uniqueId: string) => {
     const task = weeklyRoutine[day]?.find(t => t.uniqueId === uniqueId);
     if (!task) return;
 
-    originalCompleteTask(day, uniqueId);
+    // Atualizar rotina local
+    setWeeklyRoutine(prev => ({
+      ...prev,
+      [day]: prev[day]?.map(item => 
+        item.uniqueId === uniqueId 
+          ? { ...item, completed: !item.completed }
+          : item
+      ) || []
+    }));
     
-    // Se está completando (não descompletando)
     if (!task.completed) {
+      // Completando tarefa - usar sistema unificado
+      gameSystem.completeTask(task.name, task.category, day);
+      
       // Leo celebra apenas no modo pai
       if (userMode === 'parent') {
         setTimeout(() => {
@@ -110,6 +76,9 @@ export default function RoutineVisualPage() {
           audioManager.falarLeo(`Parabéns! Você completou: ${task.name}`);
         }, 500);
       }
+    } else {
+      // Descompletando tarefa
+      gameSystem.uncompleteTask(task.name, task.category);
     }
   };
 
@@ -127,6 +96,16 @@ export default function RoutineVisualPage() {
   useEffect(() => {
     setVolumeMuted(!audioManager.getAudioEnabled());
   }, []);
+
+  // Reagir a notificações de level up
+  useEffect(() => {
+    const levelUpNotifications = gameSystem.unreadNotifications.filter(n => n.type === 'level_up');
+    levelUpNotifications.forEach(notification => {
+      celebrateLevelUp(gameSystem.state.gameState.level);
+      audioManager.falarLeo(notification.message);
+      gameSystem.markNotificationAsRead(notification.id);
+    });
+  }, [gameSystem.unreadNotifications]);
 
   // Função para lidar com erro de imagem
   const handleImageError = (cardId: string) => {
@@ -229,7 +208,7 @@ export default function RoutineVisualPage() {
                 category: item.category,
                 completed: item.completed || false
               })),
-              total_points: gameState.stars,
+              total_points: gameSystem.state.gameState.stars,
               is_active: true,
               created_at: new Date().toISOString()
             };
@@ -339,6 +318,63 @@ export default function RoutineVisualPage() {
     );
   };
 
+  // Modal de Notificações
+  const NotificationsModal = () => {
+    if (!showNotifications) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-start justify-center pt-16">
+        <div className="bg-white rounded-2xl shadow-2xl w-11/12 max-w-md max-h-96 overflow-hidden">
+          <div className="p-4 border-b">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">Notificações</h3>
+              <button
+                onClick={() => setShowNotifications(false)}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          <div className="max-h-80 overflow-y-auto">
+            {gameSystem.state.notifications.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <Bell className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>Nenhuma notificação ainda</p>
+              </div>
+            ) : (
+              gameSystem.state.notifications.slice(0, 10).map(notification => (
+                <div
+                  key={notification.id}
+                  className={`p-4 border-b last:border-b-0 ${
+                    !notification.isRead ? 'bg-blue-50' : 'bg-white'
+                  }`}
+                  onClick={() => gameSystem.markNotificationAsRead(notification.id)}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl">{notification.icon}</div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-sm">{notification.title}</h4>
+                      <p className="text-sm text-gray-600 mb-1">{notification.message}</p>
+                      {notification.reward && (
+                        <div className="text-xs text-green-600 font-medium">
+                          +{notification.reward.stars} estrelas
+                        </div>
+                      )}
+                      <div className="text-xs text-gray-400">
+                        {new Date(notification.timestamp).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // TELA 1: Boas-vindas
   if (currentScreen === 'welcome') {
     return (
@@ -420,9 +456,9 @@ export default function RoutineVisualPage() {
           selectedDay={selectedDay}
           weeklyRoutine={weeklyRoutine}
           onCompleteTask={completeTask}
-          totalPoints={gameState.stars}
+          totalPoints={gameSystem.state.gameState.stars}
         />
-        <CelebrationOverlay celebrationQueue={celebrationQueue} />
+        <CelebrationOverlay celebrationQueue={gameSystem.state.notifications.filter(n => !n.isRead && n.type === 'achievement')} />
       </>
     );
   }
@@ -441,6 +477,19 @@ export default function RoutineVisualPage() {
               </h1>
               
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowNotifications(true)}
+                  className="relative p-2 bg-blue-100 text-blue-500 rounded-full text-xs"
+                  title="Notificações"
+                >
+                  <Bell className="w-4 h-4" />
+                  {gameSystem.unreadNotifications.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {gameSystem.unreadNotifications.length}
+                    </span>
+                  )}
+                </button>
+                
                 <button
                   onClick={() => setUserMode('child')}
                   className="p-2 bg-blue-500 text-white rounded-full text-xs"
@@ -473,10 +522,10 @@ export default function RoutineVisualPage() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                  {gameState.level}
+                  {gameSystem.state.gameState.level}
                 </div>
                 <div className="text-xs text-gray-600">
-                  Nível {gameState.level} • {gameState.dailyProgress} hoje • {gameState.streak} dias
+                  Nível {gameSystem.state.gameState.level} • {gameSystem.state.stats.totalTasksCompleted} total • {gameSystem.state.gameState.streak} dias
                 </div>
               </div>
               
@@ -680,12 +729,13 @@ export default function RoutineVisualPage() {
         )}
 
         <SearchModal />
-        <CelebrationOverlay celebrationQueue={celebrationQueue} />
+        <NotificationsModal />
+        <CelebrationOverlay celebrationQueue={gameSystem.state.notifications.filter(n => !n.isRead && n.type === 'achievement')} />
       </div>
     );
   }
 
-  // INTERFACE DESKTOP (MODO PAI) - Mantém layout original
+  // INTERFACE DESKTOP (MODO PAI) - Com sistema unificado
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       {/* Header Desktop */}
@@ -705,6 +755,19 @@ export default function RoutineVisualPage() {
             </h1>
             
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowNotifications(true)}
+                className="relative p-2 rounded-full bg-blue-100 text-blue-500"
+                title="Notificações"
+              >
+                <Bell className="w-5 h-5" />
+                {gameSystem.unreadNotifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {gameSystem.unreadNotifications.length}
+                  </span>
+                )}
+              </button>
+              
               <button
                 onClick={handleToggleMute}
                 className={`p-2 rounded-full ${
@@ -762,7 +825,7 @@ export default function RoutineVisualPage() {
         <div className="grid grid-cols-4 gap-4">
           {/* GameHUD */}
           <div className="col-span-1 space-y-4">
-            <GameHUD gameState={gameState} isChildMode={false} showDetails={true} />
+            <GameHUD gameState={gameSystem.state.gameState} isChildMode={false} showDetails={true} />
             
             {/* Leo Mascot no Desktop */}
             {showLeo && (
@@ -931,7 +994,8 @@ export default function RoutineVisualPage() {
         </div>
       </div>
 
-      <CelebrationOverlay celebrationQueue={celebrationQueue} />
+      <NotificationsModal />
+      <CelebrationOverlay celebrationQueue={gameSystem.state.notifications.filter(n => !n.isRead && n.type === 'achievement')} />
 
       <style jsx>{`
         .scrollbar-hide {
