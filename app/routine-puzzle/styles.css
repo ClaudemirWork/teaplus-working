@@ -1,4 +1,242 @@
-/* Animações e Efeitos Especiais */
+/* Reset e base */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f8fafc;
+  color: #1f2937;
+}
+
+/* Correção FORÇADA para texto invisível */
+.text-purple-600 {
+  color: #7c3aed !important;
+}
+
+.text-purple-500 {
+  color: #8b5cf6 !important;
+}
+
+.text-blue-600 {
+  color: #2563eb !important;
+}
+
+.text-blue-500 {
+  color: #3b82f6 !important;
+}
+
+.text-blue-800 {
+  color: #1e40af !important;
+}
+
+.text-gray-800 {
+  color: #1f2937 !important;
+}
+
+.text-gray-700 {
+  color: #374151 !important;
+}
+
+.text-gray-600 {
+  color: #4b5563 !important;
+}
+
+.text-gray-500 {
+  color: #6b7280 !important;
+}
+
+.text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.text-white {
+  color: #ffffff !important;
+}
+
+.text-green-600 {
+  color: #059669 !important;
+}
+
+.text-green-500 {
+  color: #10b981 !important;
+}
+
+.text-red-500 {
+  color: #ef4444 !important;
+}
+
+.text-yellow-600 {
+  color: #d97706 !important;
+}
+
+.text-yellow-500 {
+  color: #f59e0b !important;
+}
+
+.text-orange-600 {
+  color: #ea580c !important;
+}
+
+.text-orange-700 {
+  color: #c2410c !important;
+}
+
+.text-yellow-800 {
+  color: #92400e !important;
+}
+
+/* Força contraste em textos principais */
+h1, h2, h3, h4, h5, h6 {
+  color: #1f2937 !important;
+  font-weight: bold;
+}
+
+p {
+  color: #374151 !important;
+}
+
+span {
+  color: inherit;
+}
+
+/* Botões com texto visível */
+button {
+  color: inherit !important;
+}
+
+.bg-white {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+.bg-white p {
+  color: #1f2937 !important;
+}
+
+.bg-white span {
+  color: #1f2937 !important;
+}
+
+.bg-white h1, 
+.bg-white h2, 
+.bg-white h3, 
+.bg-white h4, 
+.bg-white h5, 
+.bg-white h6 {
+  color: #1f2937 !important;
+}
+
+/* Cards e containers */
+.bg-gray-50 {
+  background-color: #f9fafb !important;
+  color: #1f2937 !important;
+}
+
+.bg-gray-100 {
+  background-color: #f3f4f6 !important;
+  color: #1f2937 !important;
+}
+
+.bg-blue-50 {
+  background-color: #eff6ff !important;
+  color: #1e40af !important;
+}
+
+.bg-blue-100 {
+  background-color: #dbeafe !important;
+  color: #1e40af !important;
+}
+
+.bg-green-50 {
+  background-color: #ecfdf5 !important;
+  color: #065f46 !important;
+}
+
+.bg-purple-100 {
+  background-color: #ede9fe !important;
+  color: #5b21b6 !important;
+}
+
+.bg-yellow-50 {
+  background-color: #fffbeb !important;
+  color: #92400e !important;
+}
+
+.bg-yellow-100 {
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+/* Específico para mobile */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  h1 {
+    font-size: 1.5rem !important;
+    color: #1f2937 !important;
+  }
+  
+  h2 {
+    font-size: 1.25rem !important;
+    color: #1f2937 !important;
+  }
+  
+  h3 {
+    font-size: 1.125rem !important;
+    color: #1f2937 !important;
+  }
+  
+  p {
+    color: #374151 !important;
+  }
+  
+  .text-xs {
+    color: #6b7280 !important;
+  }
+  
+  .text-sm {
+    color: #4b5563 !important;
+  }
+  
+  .text-base {
+    color: #374151 !important;
+  }
+  
+  .text-lg {
+    color: #1f2937 !important;
+  }
+  
+  .text-xl {
+    color: #1f2937 !important;
+  }
+  
+  .text-2xl {
+    color: #1f2937 !important;
+  }
+  
+  .text-3xl {
+    color: #1f2937 !important;
+  }
+}
+
+/* Fix específico para Leo e balões de fala */
+.leo-balloon {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  border: 2px solid #3b82f6;
+}
+
+.leo-balloon p {
+  color: #1f2937 !important;
+}
+
+/* Animações */
 .fade-in {
   animation: fadeIn 0.5s ease-in;
 }
@@ -8,7 +246,32 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Sistema de Confetes */
+.bounce {
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.scale-hover:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+/* Confetti Animation */
 .confetti-container {
   position: fixed;
   top: 0;
@@ -16,22 +279,21 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 1000;
   overflow: hidden;
 }
 
 .confetti {
   position: absolute;
-  width: 10px;
-  height: 10px;
-  background: #f0f;
-  top: -10px;
-  animation: confettiFall 3s linear forwards;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: confetti-fall linear infinite;
 }
 
-@keyframes confettiFall {
+@keyframes confetti-fall {
   0% {
-    transform: translateY(0) rotate(0deg);
+    transform: translateY(-100vh) rotate(0deg);
     opacity: 1;
   }
   100% {
@@ -40,160 +302,256 @@
   }
 }
 
-/* Gema Dourada */
-.golden-gem-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.9);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 10000;
-  animation: fadeIn 0.5s;
-}
-
-.golden-gem {
-  font-size: 150px;
-  animation: gemSpin 2s ease-in-out;
-  filter: drop-shadow(0 0 50px gold);
-}
-
-@keyframes gemSpin {
-  0% { transform: scale(0) rotate(0deg); }
-  50% { transform: scale(1.2) rotate(180deg); }
-  100% { transform: scale(1) rotate(360deg); }
-}
-
-.gem-message {
-  color: #FFD700;
-  font-size: 2rem;
-  font-weight: bold;
-  text-align: center;
-  margin-top: 30px;
-  text-shadow: 0 0 30px rgba(255,215,0,0.8);
-  animation: textGlow 1.5s ease-in-out infinite alternate;
-}
-
-@keyframes textGlow {
-  from { text-shadow: 0 0 30px rgba(255,215,0,0.8); }
-  to { text-shadow: 0 0 50px rgba(255,215,0,1), 0 0 70px rgba(255,140,0,0.8); }
-}
-
-/* Dias da Semana */
-.weekday-tab {
-  transition: all 0.3s ease;
-}
-
-.weekday-tab.active {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-/* Timeline Semanal */
-.weekly-timeline {
-  position: relative;
-  padding-left: 100px;
-}
-
-.time-marker {
-  position: absolute;
-  left: 0;
-  width: 80px;
-  text-align: right;
-  padding-right: 20px;
-  font-weight: bold;
-  color: #4B5563;
-}
-
-.activity-card {
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.activity-card:hover {
-  transform: scale(1.05);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-}
-
-.activity-card.completed {
-  opacity: 0.7;
-  background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
-}
-
-/* Checkbox Customizado */
-.custom-checkbox {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #D1D5DB;
-  border-radius: 6px;
-  position: relative;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.custom-checkbox.checked {
-  background: #10B981;
-  border-color: #10B981;
-}
-
-.custom-checkbox.checked::after {
-  content: '✓';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-/* Animação de Estrelas */
+/* Stars Animation */
 .stars-celebration {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  z-index: 1000;
   pointer-events: none;
-  z-index: 9999;
 }
 
 .star {
   position: absolute;
-  font-size: 30px;
-  animation: starBurst 1s ease-out forwards;
+  font-size: 2rem;
+  animation: star-burst 1.5s ease-out forwards;
 }
 
-@keyframes starBurst {
+@keyframes star-burst {
   0% {
     transform: translate(0, 0) scale(0);
     opacity: 1;
   }
+  50% {
+    opacity: 1;
+  }
   100% {
-    transform: translate(var(--x), var(--y)) scale(1.5);
+    transform: translate(var(--x), var(--y)) scale(1);
     opacity: 0;
   }
 }
 
-/* Progresso Semanal */
-.progress-ring {
-  transform: rotate(-90deg);
+/* Golden Gem Animation */
+.golden-gem-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  pointer-events: none;
+  text-align: center;
 }
 
-.progress-ring-circle {
-  transition: stroke-dashoffset 0.5s ease;
+.golden-gem {
+  font-size: 5rem;
+  animation: gem-bounce 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px gold);
 }
 
-/* Badge de Conquista */
-.achievement-badge {
-  animation: badgeBounce 0.5s ease-out;
+@keyframes gem-bounce {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.2) rotate(5deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(-5deg);
+  }
+  75% {
+    transform: scale(1.2) rotate(5deg);
+  }
 }
 
-@keyframes badgeBounce {
-  0% { transform: scale(0); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+.gem-message {
+  margin-top: 20px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #f59e0b !important;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  animation: message-glow 1s ease-in-out infinite alternate;
+}
+
+@keyframes message-glow {
+  from {
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  }
+  to {
+    text-shadow: 0 0 10px #f59e0b, 2px 2px 4px rgba(0,0,0,0.3);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .golden-gem {
+    font-size: 3rem;
+  }
+  
+  .gem-message {
+    font-size: 1.25rem;
+  }
+  
+  .confetti {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .star {
+    font-size: 1.5rem;
+  }
+}
+
+/* Progress Bar Animations */
+.progress-bar {
+  transition: width 1s ease-in-out;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Utilities */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Shadows */
+.shadow-custom {
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Focus states */
+button:focus,
+input:focus,
+select:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  * {
+    color: #000000 !important;
+  }
+  
+  .bg-white {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  .text-white {
+    color: #ffffff !important;
+  }
+  
+  button {
+    border: 2px solid #000000 !important;
+  }
+}
+
+/* Dark mode support (if needed in future) */
+@media (prefers-color-scheme: dark) {
+  html[data-theme="auto"] {
+    color-scheme: dark;
+  }
+}
+
+/* Print styles */
+@media print {
+  .confetti-container,
+  .stars-celebration,
+  .golden-gem-container {
+    display: none !important;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Final override for any remaining invisible text */
+div, span, p, h1, h2, h3, h4, h5, h6, a, button, input, select, textarea, label {
+  color: inherit;
+}
+
+/* Specific fixes for common invisible text scenarios */
+.bg-gradient-to-br,
+.bg-gradient-to-r,
+.bg-gradient-to-l,
+.bg-gradient-to-t,
+.bg-gradient-to-b {
+  color: #1f2937 !important;
+}
+
+/* Ensure cards have visible text */
+[class*="bg-"] {
+  color: #1f2937;
+}
+
+[class*="bg-"][class*="white"] {
+  color: #1f2937 !important;
+}
+
+[class*="bg-"][class*="gray"] {
+  color: #1f2937 !important;
+}
+
+[class*="bg-"][class*="blue"] {
+  color: #1e40af !important;
+}
+
+[class*="bg-"][class*="purple"] {
+  color: #5b21b6 !important;
+}
+
+[class*="bg-"][class*="green"] {
+  color: #065f46 !important;
+}
+
+[class*="bg-"][class*="yellow"] {
+  color: #92400e !important;
+}
+
+[class*="bg-"][class*="red"] {
+  color: #991b1b !important;
 }
