@@ -1221,6 +1221,108 @@ export const LEO_CONTEXTUAL_MESSAGES: ContextualMessage[] = [
     trigger: 'professional_help_needed',
     category: 'troubleshooting',
     priority: 'medium'
+  },
+  
+  // ===== MOTIVAÇÃO (10 mensagens adicionais) =====
+  {
+    id: 'child_motivation_morning',
+    text: 'Bom dia! Um novo dia começa e você está pronto para mais aventuras na sua rotina!',
+    context: ['morning_time', 'child_mode'],
+    userMode: 'child',
+    progressLevel: 'beginner',
+    trigger: 'morning_greeting',
+    category: 'motivation',
+    priority: 'medium'
+  },
+  {
+    id: 'child_motivation_afternoon',
+    text: 'Tarde maravilhosa! Você está indo muito bem com suas atividades hoje!',
+    context: ['afternoon_time', 'child_mode'],
+    userMode: 'child',
+    progressLevel: 'beginner',
+    trigger: 'afternoon_check',
+    category: 'motivation',
+    priority: 'medium'
+  },
+  {
+    id: 'child_motivation_evening',
+    text: 'Noite chegando! Você foi incrível hoje completando suas tarefas. Hora de descansar!',
+    context: ['evening_time', 'child_mode'],
+    userMode: 'child',
+    progressLevel: 'beginner',
+    trigger: 'evening_completion',
+    category: 'motivation',
+    priority: 'medium'
+  },
+  {
+    id: 'child_encouragement_stars',
+    text: 'Quanto mais estrelas você ganha, mais forte fica nosso poder de amizade!',
+    context: ['child_mode', 'stars_gained'],
+    userMode: 'child',
+    progressLevel: 'intermediate',
+    trigger: 'star_collection',
+    category: 'motivation',
+    priority: 'medium'
+  },
+  {
+    id: 'child_challenge_complete',
+    text: 'Desafio completo! Você é um verdadeiro herói das rotinas!',
+    context: ['child_mode', 'challenge_completed'],
+    userMode: 'child',
+    progressLevel: 'intermediate',
+    trigger: 'challenge_success',
+    category: 'motivation',
+    priority: 'high'
+  },
+  {
+    id: 'parent_motivation_streak',
+    text: 'Uma semana de rotinas consistentes! Sua dedicação está fazendo uma diferença real no desenvolvimento.',
+    context: ['week_streak'],
+    userMode: 'parent',
+    progressLevel: 'intermediate',
+    trigger: 'weekly_streak',
+    category: 'motivation',
+    priority: 'high'
+  },
+  {
+    id: 'parent_motivation_resilience',
+    text: 'Mesmo com os desafios, vocês continuam avançando. Resiliência é a chave do sucesso!',
+    context: ['overcome_difficulty'],
+    userMode: 'parent',
+    progressLevel: 'intermediate',
+    trigger: 'resilience_shown',
+    category: 'motivation',
+    priority: 'high'
+  },
+  {
+    id: 'parent_motivation_child_progress',
+    text: 'O progresso do seu filho é visível! Cada pequeno avanço constrói a base para o futuro.',
+    context: ['child_development_jump'],
+    userMode: 'parent',
+    progressLevel: 'advanced',
+    trigger: 'development_milestone',
+    category: 'motivation',
+    priority: 'high'
+  },
+  {
+    id: 'parent_motivation_family_harmony',
+    text: 'A harmonia familiar está aumentando! Rotinas consistentes criam um ambiente mais tranquilo para todos.',
+    context: ['family_harmony_improving'],
+    userMode: 'parent',
+    progressLevel: 'advanced',
+    trigger: 'harmony_detected',
+    category: 'motivation',
+    priority: 'medium'
+  },
+  {
+    id: 'parent_motivation_expertise',
+    text: 'Você se tornou um especialista em rotinas! Sua intuição sobre o que funciona é impressionante.',
+    context: ['parent_expertise_evident'],
+    userMode: 'parent',
+    progressLevel: 'expert',
+    trigger: 'expertise_recognition',
+    category: 'motivation',
+    priority: 'high'
   }
 ];
 
@@ -1325,6 +1427,182 @@ export function setMessageCooldown(messageId: string): void {
   messageCooldowns.set(messageId, Date.now());
 }
 
+// Implementação concreta da interface LeoContextualInterface
+export class LeoContextualSystem implements LeoContextualInterface {
+  private userContext: UserContext;
+  private currentMessage: ContextualMessage | null = null;
+  private messageHistory: ContextualMessage[] = [];
+  private maxHistoryLength = 10;
+  
+  constructor(initialContext: UserContext) {
+    this.userContext = { ...initialContext };
+  }
+  
+  getCurrentMessage(): string {
+    if (!this.currentMessage) {
+      // Se não houver mensagem atual, tentar encontrar uma mensagem padrão
+      const defaultMessage = selectContextualMessage(
+        this.userContext,
+        'app_start'
+      );
+      
+      if (defaultMessage) {
+        this.currentMessage = defaultMessage;
+        this.addToHistory(defaultMessage);
+        setMessageCooldown(defaultMessage.id);
+      } else {
+        return "Olá! Eu sou o Leo, seu assistente de rotinas!";
+      }
+    }
+    
+    return this.currentMessage.text;
+  }
+  
+  getMenuOptions(): Array<{
+    id: string;
+    text: string;
+    icon: string;
+    action: () => void;
+  }> {
+    const baseOptions = [
+      {
+        id: 'help',
+        text: 'Ajuda',
+        icon: 'help_outline',
+        action: () => this.showMessageForTrigger('help_requested')
+      },
+      {
+        id: 'tips',
+        text: 'Dicas',
+        icon: 'lightbulb',
+        action: () => this.showMessageForTrigger('tips_requested')
+      },
+      {
+        id: 'progress',
+        text: 'Meu Progresso',
+        icon: 'trending_up',
+        action: () => this.showMessageForTrigger('progress_requested')
+      }
+    ];
+    
+    // Adicionar opções específicas baseadas no contexto
+    if (this.userContext.userMode === 'parent') {
+      baseOptions.push({
+        id: 'analytics',
+        text: 'Análises',
+        icon: 'analytics',
+        action: () => this.showMessageForTrigger('analytics_requested')
+      });
+    }
+    
+    if (this.userContext.progressLevel === 'beginner') {
+      baseOptions.push({
+        id: 'tutorial',
+        text: 'Tutorial',
+        icon: 'school',
+        action: () => this.showMessageForTrigger('tutorial_requested')
+      });
+    }
+    
+    return baseOptions;
+  }
+  
+  handleUserClick(option: string): void {
+    // Encontrar a opção correspondente e executar a ação
+    const menuOption = this.getMenuOptions().find(opt => opt.id === option);
+    if (menuOption) {
+      menuOption.action();
+    }
+  }
+  
+  updateContext(newContext: Partial<UserContext>): void {
+    this.userContext = { ...this.userContext, ...newContext };
+    
+    // Verificar se o nível de progresso mudou
+    const newProgressLevel = calculateProgressLevel(this.userContext);
+    if (newProgressLevel !== this.userContext.progressLevel) {
+      this.userContext.progressLevel = newProgressLevel;
+      this.showMessageForTrigger('level_changed');
+    }
+  }
+  
+  // Métodos auxiliares
+  private showMessageForTrigger(trigger: string): void {
+    const message = selectContextualMessage(this.userContext, trigger);
+    if (message && !isMessageOnCooldown(message.id)) {
+      this.currentMessage = message;
+      this.addToHistory(message);
+      setMessageCooldown(message.id);
+    }
+  }
+  
+  private addToHistory(message: ContextualMessage): void {
+    this.messageHistory.unshift(message);
+    if (this.messageHistory.length > this.maxHistoryLength) {
+      this.messageHistory.pop();
+    }
+  }
+  
+  // Métodos públicos para interação avançada
+  public triggerContextMessage(context: string[]): void {
+    const matchingMessages = LEO_CONTEXTUAL_MESSAGES.filter(msg => {
+      return (
+        (msg.userMode === 'both' || msg.userMode === this.userContext.userMode) &&
+        msg.progressLevel === this.userContext.progressLevel &&
+        context.every(ctx => msg.context.includes(ctx))
+      );
+    });
+    
+    if (matchingMessages.length > 0) {
+      // Ordenar por prioridade
+      const sortedMessages = matchingMessages.sort((a, b) => {
+        const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      });
+      
+      const message = sortedMessages[0];
+      if (!isMessageOnCooldown(message.id)) {
+        this.currentMessage = message;
+        this.addToHistory(message);
+        setMessageCooldown(message.id);
+      }
+    }
+  }
+  
+  public getMessageHistory(): ContextualMessage[] {
+    return [...this.messageHistory];
+  }
+  
+  public clearCurrentMessage(): void {
+    this.currentMessage = null;
+  }
+  
+  public resetCooldowns(): void {
+    messageCooldowns.clear();
+  }
+}
+
+// Função utilitária para criar um contexto inicial
+export function createInitialContext(): UserContext {
+  return {
+    userMode: 'parent',
+    progressLevel: 'beginner',
+    totalTasks: 0,
+    completionRate: 0,
+    streakDays: 0,
+    level: 1,
+    stars: 0,
+    daysUsing: 0,
+    timeOfDay: 'morning',
+    lastInteraction: new Date(),
+    recentActions: [],
+    problemIndicators: [],
+    achievements: [],
+    currentScreen: 'home',
+    hasCompletedTutorial: false
+  };
+}
+
 // Sistema de interface do Leo expandido
 export interface LeoContextualInterface {
   getCurrentMessage(): string;
@@ -1336,56 +1614,6 @@ export interface LeoContextualInterface {
   }>;
   handleUserClick(option: string): void;
   updateContext(newContext: Partial<UserContext>): void;
-}
-
-export default LEO_CONTEXTUAL_MESSAGES;
-export interface LeoContextualInterface {
-  getCurrentMessage(): string;
-  getMenuOptions(): Array<{
-    id: string;
-    text: string;
-    icon: string;
-    action: () => void;
-  }>;
-  handleUserClick(option: string): void;
-  updateContext(newContext: Partial<UserContext>): void;
-}
-
-// Função Azure TTS para síntese e reprodução da voz do Leo
-export async function speakLeoAzureTTS(messageText: string): Promise<void> {
-  const azureEndpoint = 'https://<SEU_ENDPOINT_REGION>.tts.speech.microsoft.com/cognitiveservices/v1';
-  const azureKey = '<SUA_CHAVE_AZURE_TTS>';
-
-  const xmlBody = `
-    <speak version='1.0' xml:lang='pt-BR'>
-      <voice xml:lang='pt-BR' xml:gender='Male' name='pt-BR-AntonioNeural'>
-        ${messageText}
-      </voice>
-    </speak>
-  `;
-
-  try {
-    const res = await fetch(azureEndpoint, {
-      method: 'POST',
-      headers: {
-        'Ocp-Apim-Subscription-Key': azureKey,
-        'Content-Type': 'application/ssml+xml',
-        'X-Microsoft-OutputFormat': 'audio-16khz-32kbitrate-mono-mp3',
-      },
-      body: xmlBody,
-    });
-
-    if (!res.ok) throw new Error('Erro no Azure TTS');
-    const audioBuffer = await res.arrayBuffer();
-    const blob = new Blob([audioBuffer], { type: 'audio/mp3' });
-    const url = window.URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    audio.play();
-
-    audio.addEventListener('ended', () => window.URL.revokeObjectURL(url));
-  } catch (e) {
-    console.error('Falha ao reproduzir voz Azure TTS', e);
-  }
 }
 
 export default LEO_CONTEXTUAL_MESSAGES;
