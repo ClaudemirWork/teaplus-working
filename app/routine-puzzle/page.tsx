@@ -14,10 +14,11 @@ import ChildMode from './components/ChildMode';
 import GameHUD from './components/GameHUD';
 import CelebrationOverlay from './components/CelebrationOverlay';
 import LeoMascot, { useLeoMascot } from './components/LeoMascot';
-import { speakTask, speakCompletion, speakLevelUp, toggleMute, isMuted } from './utils/azureTTS';
+import { GameAudioManager } from '@/utils/gameAudioManager';
 
 export default function RoutineVisualPage() {
   const supabase = createClient();
+  const audioManager = GameAudioManager.getInstance();
   
   const [currentScreen, setCurrentScreen] = useState<'welcome' | 'instructions' | 'main'>('welcome');
   const [isMobile, setIsMobile] = useState(false);
@@ -85,7 +86,7 @@ export default function RoutineVisualPage() {
         const newLevel = Math.floor((gameState.stars + amount) / 50) + 1;
         if (newLevel > previousLevel) {
           celebrateLevelUp(newLevel);
-          speakLevelUp(newLevel);
+          audioManager.falarLeo(`Incrível! Você subiu para o nível ${newLevel}!`);
         }
       }, 100);
     },
@@ -105,7 +106,7 @@ export default function RoutineVisualPage() {
       if (userMode === 'parent') {
         setTimeout(() => {
           celebrateTask(task.name);
-          speakCompletion(task.name);
+          audioManager.falarLeo(`Parabéns! Você completou: ${task.name}`);
         }, 500);
       }
     }
@@ -123,7 +124,7 @@ export default function RoutineVisualPage() {
 
   // Verificar estado do mute
   useEffect(() => {
-    setVolumeMuted(isMuted());
+    setVolumeMuted(!audioManager.getAudioEnabled());
   }, []);
 
   // Função para lidar com erro de imagem
@@ -133,8 +134,8 @@ export default function RoutineVisualPage() {
 
   // Toggle mute
   const handleToggleMute = () => {
-    const newMutedState = toggleMute();
-    setVolumeMuted(newMutedState);
+    const newEnabledState = audioManager.toggleAudio();
+    setVolumeMuted(!newEnabledState);
   };
 
   // Funções auxiliares
