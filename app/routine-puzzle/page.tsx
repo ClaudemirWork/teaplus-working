@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Save, Clock, Calendar, Trophy, Star, Check, Plus, Volume2, VolumeX, ArrowRight, Award, Trash2, Edit2, Search, Filter, Users, Baby } from 'lucide-react';
+import { ChevronLeft, Save, Clock, Calendar, Trophy, Star, Check, Plus, Volume2, VolumeX, ArrowRight, Award, Trash2, Edit2, Search, Filter, Users, Baby, X } from 'lucide-react';
 import { createClient } from '@/utils/supabaseClient';
 import './styles.css';
 import { PECS_CARDS } from './data/pecsCards';
@@ -28,6 +28,7 @@ export default function RoutineVisualPage() {
   const [viewMode, setViewMode] = useState<'activities' | 'schedule'>('activities');
   const [userMode, setUserMode] = useState<'parent' | 'child'>('parent');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showSearchModal, setShowSearchModal] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
@@ -284,6 +285,60 @@ export default function RoutineVisualPage() {
     return allActivities;
   };
 
+  // Modal de Busca
+  const SearchModal = () => {
+    if (!showSearchModal) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-start justify-center pt-16">
+        <div className="bg-white rounded-2xl shadow-2xl w-11/12 max-w-md max-h-96 overflow-hidden">
+          <div className="p-4 border-b">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">Buscar Atividade</h3>
+              <button
+                onClick={() => setShowSearchModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          <div className="p-4">
+            <input
+              type="text"
+              placeholder="Digite o nome da atividade..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full p-3 border rounded-xl text-base"
+              autoFocus
+            />
+          </div>
+          <div className="max-h-60 overflow-y-auto">
+            {getFilteredActivities().slice(0, 20).map(card => (
+              <button
+                key={card.id}
+                onClick={() => {
+                  addActivityToDay(card);
+                  setShowSearchModal(false);
+                  setSearchTerm('');
+                }}
+                className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 border-b last:border-b-0"
+              >
+                <img
+                  src={card.image}
+                  alt={card.name}
+                  className="w-12 h-12 object-contain"
+                  onError={() => handleImageError(card.id)}
+                />
+                <span className="font-medium">{card.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // TELA 1: Boas-vindas
   if (currentScreen === 'welcome') {
     return (
@@ -372,113 +427,117 @@ export default function RoutineVisualPage() {
     );
   }
 
-  // INTERFACE MOBILE (MODO PAI)
+  // INTERFACE MOBILE (MODO PAI) - HEADER COMPACTO
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
-        {/* Header Fixo */}
+        {/* Header Compacto */}
         <header className="bg-white shadow-lg sticky top-0 z-40">
           <div className="px-4 py-3">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-gray-800">
+            {/* Título e controles */}
+            <div className="flex items-center justify-between mb-3">
+              <h1 className="text-lg font-bold text-gray-800">
                 Minha Rotina
               </h1>
               
               <div className="flex items-center gap-2">
-                <GameHUD gameState={gameState} isChildMode={false} showDetails={false} />
-                
                 <button
-                  onClick={handleToggleMute}
-                  className={`p-2 rounded-full ${
-                    volumeMuted ? 'bg-red-100 text-red-500' : 'bg-blue-100 text-blue-500'
-                  }`}
+                  onClick={() => setUserMode('child')}
+                  className="p-2 bg-blue-500 text-white rounded-full text-xs"
+                  title="Modo Criança"
                 >
-                  {volumeMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </button>
-                
-                <button
-                  onClick={() => setUserMode(userMode === 'parent' ? 'child' : 'parent')}
-                  className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm"
-                >
-                  {userMode === 'parent' ? <Baby className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+                  <Baby className="w-4 h-4" />
                 </button>
                 
                 <button
                   onClick={() => setViewMode(viewMode === 'activities' ? 'schedule' : 'activities')}
-                  className="px-3 py-1 bg-purple-500 text-white rounded-full text-sm"
+                  className="p-2 bg-purple-500 text-white rounded-full text-xs"
+                  title={viewMode === 'activities' ? 'Ver Rotina' : 'Adicionar'}
                 >
-                  {viewMode === 'activities' ? 'Ver Rotina' : 'Add Atividades'}
+                  {viewMode === 'activities' ? <Calendar className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                </button>
+                
+                <button
+                  onClick={handleToggleMute}
+                  className={`p-2 rounded-full ${
+                    volumeMuted ? 'bg-red-100 text-red-500' : 'bg-orange-100 text-orange-500'
+                  }`}
+                  title={volumeMuted ? 'Ativar som' : 'Silenciar'}
+                >
+                  {volumeMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                 </button>
               </div>
             </div>
-          </div>
-        </header>
 
-        {/* Seletor de Dia */}
-        <div className="bg-white shadow-sm">
-          <div className="px-2 py-3">
-            <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+            {/* Progresso condensado + Busca */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  {gameState.level}
+                </div>
+                <div className="text-xs text-gray-600">
+                  Nível {gameState.level} • {gameState.dailyProgress} hoje • {gameState.streak} dias
+                </div>
+              </div>
+              
+              <button
+                onClick={() => setShowSearchModal(true)}
+                className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"
+                title="Buscar atividades"
+              >
+                <Search className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Dias da semana compactos */}
+            <div className="flex gap-2 mb-3">
               {WEEKDAYS.map(day => (
                 <button
                   key={day.id}
                   onClick={() => setSelectedDay(day.id)}
-                  className={`px-3 py-2 rounded-xl font-medium text-sm flex flex-col items-center min-w-[60px] transition-all ${
+                  className={`px-3 py-1.5 rounded-xl font-medium text-xs transition-all ${
                     selectedDay === day.id
-                      ? 'bg-purple-500 text-white scale-110'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  <span className="text-lg mb-1">{day.emoji}</span>
-                  <span className="text-xs">{day.short}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {viewMode === 'activities' ? (
-          // MODO ATIVIDADES
-          <div className="flex flex-col h-[calc(100vh-140px)]">
-            {/* Barra de Busca e Categorias */}
-            <div className="bg-white p-3 shadow-sm">
-              <div className="relative mb-3">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Buscar atividade..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border rounded-full text-sm"
-                />
-              </div>
-              
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                <button
-                  onClick={() => setSelectedCategory('all')}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${
-                    selectedCategory === 'all'
                       ? 'bg-purple-500 text-white'
                       : 'bg-gray-100 text-gray-700'
                   }`}
                 >
-                  🌟 Todas
+                  {day.short}
                 </button>
-                {CATEGORIES.map(cat => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${
-                      selectedCategory === cat.id
-                        ? 'bg-purple-500 text-white'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {cat.icon} {cat.name}
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
 
+            {/* Categorias compactas */}
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap ${
+                  selectedCategory === 'all'
+                    ? 'bg-purple-500 text-white'
+                    : 'bg-gray-100 text-gray-700'
+                }`}
+              >
+                🌟 Todas
+              </button>
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap ${
+                    selectedCategory === cat.id
+                      ? 'bg-purple-500 text-white'
+                      : 'bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  {cat.icon} {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </header>
+
+        {viewMode === 'activities' ? (
+          // MODO ATIVIDADES
+          <div className="flex flex-col h-[calc(100vh-180px)]">
             {/* Grid de Atividades */}
             <div className="flex-1 overflow-y-auto p-3">
               <div className="grid grid-cols-3 gap-2">
@@ -489,14 +548,14 @@ export default function RoutineVisualPage() {
                     className="bg-white rounded-xl p-3 shadow-sm active:scale-95 transition-transform"
                   >
                     {imageErrors.has(card.id) ? (
-                      <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center mb-2">
-                        <span className="text-3xl">📋</span>
+                      <div className="w-full h-16 bg-gray-200 rounded flex items-center justify-center mb-2">
+                        <span className="text-2xl">📋</span>
                       </div>
                     ) : (
                       <img
                         src={card.image}
                         alt={card.name}
-                        className="w-full h-20 object-contain mb-2"
+                        className="w-full h-16 object-contain mb-2"
                         onError={() => handleImageError(card.id)}
                       />
                     )}
@@ -508,6 +567,7 @@ export default function RoutineVisualPage() {
               </div>
             </div>
 
+            {/* Contador de atividades */}
             {weeklyRoutine[selectedDay]?.length > 0 && (
               <div className="bg-white border-t p-3">
                 <div className="flex items-center justify-between">
@@ -599,14 +659,6 @@ export default function RoutineVisualPage() {
           </div>
         )}
 
-        {showSuccessAnimation && (
-          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
-            <div className="bg-green-500 text-white px-6 py-3 rounded-full animate-bounce">
-              ✓ Adicionado!
-            </div>
-          </div>
-        )}
-
         {/* Leo Mascot no Mobile (modo pai) */}
         {showLeo && (
           <div className="fixed bottom-4 right-4 z-40">
@@ -619,12 +671,21 @@ export default function RoutineVisualPage() {
           </div>
         )}
 
+        {showSuccessAnimation && (
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+            <div className="bg-green-500 text-white px-6 py-3 rounded-full animate-bounce">
+              ✓ Adicionado!
+            </div>
+          </div>
+        )}
+
+        <SearchModal />
         <CelebrationOverlay celebrationQueue={celebrationQueue} />
       </div>
     );
   }
 
-  // INTERFACE DESKTOP (MODO PAI)
+  // INTERFACE DESKTOP (MODO PAI) - Mantém layout original
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       {/* Header Desktop */}
