@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
-import { GameAudioManager } from '../utils/gameAudioManager';
-
+import { GameAudioManager } from '@/utils/gameAudioManager';
 interface LeoMascotProps {
   isVisible?: boolean;
   mood?: 'happy' | 'excited' | 'proud' | 'encouraging' | 'celebration';
