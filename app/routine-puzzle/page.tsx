@@ -2,12 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Save, Clock, Calendar, Trophy, Star, Check, Plus, Volume2, VolumeX, ArrowRight, Award, Trash2, Edit2, Search, Filter } from 'lucide-react';
+import { ChevronLeft, Save, Clock, Calendar, Trophy, Star, Check, Plus, Volume2, VolumeX, ArrowRight, Award, Trash2, Edit2, Search, Filter, Users, Baby } from 'lucide-react';
 import { createClient } from '@/utils/supabaseClient';
 import './styles.css';
 import { PECS_CARDS } from './data/pecsCards';
 import { CATEGORIES, WEEKDAYS, TIME_OPTIONS } from './data/categories';
 import type { RoutineItem, WeeklyRoutine } from './types';
+import { useGameState } from './hooks/useGameState';
+import { useTaskCompletion } from './hooks/useTaskCompletion';
+import ChildMode from './components/ChildMode';
+import GameHUD from './components/GameHUD';
+import CelebrationOverlay from './components/CelebrationOverlay';
 
 export default function RoutineVisualPage() {
   const supabase = createClient();
@@ -18,11 +23,46 @@ export default function RoutineVisualPage() {
   const [selectedDay, setSelectedDay] = useState('segunda');
   const [weeklyRoutine, setWeeklyRoutine] = useState<WeeklyRoutine>({});
   const [viewMode, setViewMode] = useState<'activities' | 'schedule'>('activities');
-  const [totalPoints, setTotalPoints] = useState(0);
+  const [userMode, setUserMode] = useState<'parent' | 'child'>('parent');
   const [searchTerm, setSearchTerm] = useState('');
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+
+  // Hooks de gamificação
+  const {
+    gameState,
+    addStars,
+    removeStars,
+    incrementStreak,
+    resetStreak,
+    getStreakBonus,
+    resetDailyProgress,
+    checkLevelUp,
+    getLevelProgress,
+    checkAchievements
+  } = useGameState();
+
+  // Hook de conclusão de tarefas
+  const {
+    completeTask,
+    completeMultipleTasks,
+    isDayCompleted,
+    getDayStats,
+    getWeekStats,
+    resetDay,
+    triggerCelebration,
+    checkDailyAchievements,
+    checkWeeklyAchievements,
+    getNextTask,
+    getTasksByPeriod,
+    celebrationQueue
+  } = useTaskCompletion({
+    weeklyRoutine,
+    setWeeklyRoutine,
+    onAddStars: addStars,
+    onRemoveStars: removeStars
+  });
 
   // Detectar se é mobile
   useEffect(() => {
@@ -129,7 +169,7 @@ export default function RoutineVisualPage() {
                 category: item.category,
                 completed: item.completed || false
               })),
-              total_points: totalPoints,
+              total_points: gameState.stars,
               is_active: true,
               created_at: new Date().toISOString()
             };
@@ -258,7 +298,22 @@ export default function RoutineVisualPage() {
     );
   }
 
-  // INTERFACE MOBILE
+  // MODO CRIANÇA
+  if (userMode === 'child') {
+    return (
+      <>
+        <ChildMode
+          selectedDay={selectedDay}
+          weeklyRoutine={weeklyRoutine}
+          onCompleteTask={completeTask}
+          totalPoints={gameState.stars}
+        />
+        <CelebrationOverlay celebrationQueue={celebrationQueue} />
+      </>
+    );
+  }
+
+  // INTERFACE MOBILE (MODO PAI)
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
@@ -271,13 +326,14 @@ export default function RoutineVisualPage() {
               </h1>
               
               <div className="flex items-center gap-2">
-                {totalPoints > 0 && (
-                  <div className="bg-yellow-100 px-3 py-1 rounded-full">
-                    <span className="text-sm font-bold text-yellow-800">
-                      {totalPoints} ⭐
-                    </span>
-                  </div>
-                )}
+                <GameHUD gameState={gameState} isChildMode={false} showDetails={false} />
+                
+                <button
+                  onClick={() => setUserMode(userMode === 'parent' ? 'child' : 'parent')}
+                  className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm"
+                >
+                  {userMode === 'parent' ? <Baby className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+                </button>
                 
                 <button
                   onClick={() => setViewMode(viewMode === 'activities' ? 'schedule' : 'activities')}
@@ -441,6 +497,17 @@ export default function RoutineVisualPage() {
                       <div className="flex-1">
                         <p className="font-medium text-sm">{item.name}</p>
                       </div>
+
+                      <button
+                        onClick={() => completeTask(selectedDay, item.uniqueId)}
+                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
+                          item.completed
+                            ? 'bg-green-500 border-green-500 text-white'
+                            : 'bg-white border-gray-300'
+                        }`}
+                      >
+                        {item.completed && <Check className="w-4 h-4" />}
+                      </button>
                       
                       <button
                         onClick={() => removeActivity(selectedDay, item.uniqueId)}
@@ -471,11 +538,13 @@ export default function RoutineVisualPage() {
             </div>
           </div>
         )}
+
+        <CelebrationOverlay celebrationQueue={celebrationQueue} />
       </div>
     );
   }
 
-  // INTERFACE DESKTOP
+  // INTERFACE DESKTOP (MODO PAI)
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       {/* Header Desktop */}
@@ -495,10 +564,13 @@ export default function RoutineVisualPage() {
             </h1>
             
             <div className="flex items-center gap-4">
-              <div className="bg-yellow-100 px-4 py-2 rounded-lg">
-                <Trophy className="w-5 h-5 text-yellow-600 inline mr-2" />
-                <span className="font-bold text-yellow-800">{totalPoints} pts</span>
-              </div>
+              <button
+                onClick={() => setUserMode(userMode === 'parent' ? 'child' : 'parent')}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              >
+                {userMode === 'parent' ? <Baby className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+                {userMode === 'parent' ? 'Modo Criança' : 'Modo Pai'}
+              </button>
               
               <button
                 onClick={saveRoutine}
@@ -536,7 +608,12 @@ export default function RoutineVisualPage() {
 
       {/* Área Principal Desktop */}
       <div className="max-w-7xl mx-auto p-4">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
+          {/* GameHUD */}
+          <div className="col-span-1">
+            <GameHUD gameState={gameState} isChildMode={false} showDetails={true} />
+          </div>
+
           {/* Painel de Atividades */}
           <div className="col-span-1 bg-white rounded-xl shadow-lg p-4">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -583,17 +660,8 @@ export default function RoutineVisualPage() {
               ))}
             </div>
             
-            {/* Info sobre cards especiais */}
-            {selectedCategory === 'rotina' && (
-              <div className="bg-blue-50 rounded-lg p-2 mb-3">
-                <p className="text-xs text-blue-700">
-                  💡 Incluímos cards de clima, períodos do dia e dias da semana!
-                </p>
-              </div>
-            )}
-            
             {/* Grid de Cards */}
-            <div className="grid grid-cols-2 gap-2 max-h-[500px] overflow-y-auto">
+            <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
               {getFilteredActivities().map(card => (
                 <button
                   key={card.id}
@@ -676,6 +744,17 @@ export default function RoutineVisualPage() {
                         {CATEGORIES.find(c => c.id === item.category)?.name}
                       </p>
                     </div>
+
+                    <button
+                      onClick={() => completeTask(selectedDay, item.uniqueId)}
+                      className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
+                        item.completed
+                          ? 'bg-green-500 border-green-500 text-white'
+                          : 'bg-white border-gray-300 hover:border-green-400'
+                      }`}
+                    >
+                      {item.completed && <Check className="w-5 h-5" />}
+                    </button>
                     
                     <button
                       onClick={() => removeActivity(selectedDay, item.uniqueId)}
@@ -690,6 +769,8 @@ export default function RoutineVisualPage() {
           </div>
         </div>
       </div>
+
+      <CelebrationOverlay celebrationQueue={celebrationQueue} />
 
       <style jsx>{`
         .scrollbar-hide {
