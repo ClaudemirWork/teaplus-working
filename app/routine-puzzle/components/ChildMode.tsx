@@ -56,7 +56,7 @@ export default function ChildMode({
       setTimeout(() => {
         setLeoMood('celebration');
         setLeoMessage('Parabéns! Você completou todas as atividades do dia! Leo está muito orgulhoso!');
-        speakDayComplete();
+        GameAudioManager.getInstance().falarLeo('Parabéns! Você completou todas as atividades do dia! Leo está muito orgulhoso!');
       }, 1500);
     }
   }, [completedCount, totalCount]);
@@ -81,7 +81,7 @@ export default function ChildMode({
         
         if (remainingTasks.length > 0) {
           const nextTask = remainingTasks.sort((a, b) => a.time.localeCompare(b.time))[0];
-          speakTask(nextTask.name);
+          GameAudioManager.getInstance().falarLeo(`Próxima atividade: ${nextTask.name}`);
           setLeoMood('encouraging');
           setLeoMessage(`Próxima atividade: ${nextTask.name}`);
         }
@@ -92,7 +92,7 @@ export default function ChildMode({
   // Função para falar nome da próxima tarefa
   const handleNextTask = () => {
     if (nextTask) {
-      speakTask(nextTask.name);
+      GameAudioManager.getInstance().falarLeo(`Vamos fazer: ${nextTask.name}`);
       setLeoMood('encouraging');
       setLeoMessage(`Vamos fazer: ${nextTask.name}`);
     }
