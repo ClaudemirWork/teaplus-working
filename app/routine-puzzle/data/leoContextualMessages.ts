@@ -1,1619 +1,1230 @@
 // Sistema completo de mensagens contextuais do Leo
-// 120+ mensagens organizadas por contexto, progresso e modo de usuário
+// 120 frases organizadas por categoria e contexto de uso
 
-export interface ContextualMessage {
+export interface LeoContextualMessage {
   id: string;
   text: string;
-  context: string[];
+  context: string;
   userMode: 'parent' | 'child' | 'both';
-  progressLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  trigger: string;
-  category: 'tutorial' | 'guidance' | 'insight' | 'troubleshooting' | 'motivation';
+  triggerCondition: string;
   priority: 'low' | 'medium' | 'high';
-  cooldown?: number; // minutos antes de poder aparecer novamente
+  category: 'tutorial' | 'progress' | 'insights' | 'troubleshooting';
 }
 
-export const LEO_CONTEXTUAL_MESSAGES: ContextualMessage[] = [
+export const LEO_CONTEXTUAL_MESSAGES: Record<string, LeoContextualMessage[]> = {
   
-  // ===== TUTORIAL BÁSICO (25 mensagens) =====
-  {
-    id: 'welcome_first_time',
-    text: 'Olá! Sou o Leo e vou te ajudar a criar rotinas incríveis. Vamos começar juntos?',
-    context: ['first_visit'],
-    userMode: 'both',
-    progressLevel: 'beginner',
-    trigger: 'app_start',
-    category: 'tutorial',
-    priority: 'high'
-  },
-  {
-    id: 'select_day_tutorial',
-    text: 'Primeiro passo: escolha um dia da semana. Sugestão: comece com segunda-feira!',
-    context: ['no_day_selected'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'main_screen_load',
-    category: 'tutorial',
-    priority: 'high'
-  },
-  {
-    id: 'add_first_activity',
-    text: 'Agora toque em uma atividade para adicioná-la. Que tal começar com "Acordar"?',
-    context: ['day_selected', 'no_activities'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'empty_day_view',
-    category: 'tutorial',
-    priority: 'high'
-  },
-  {
-    id: 'first_activity_added',
-    text: 'Perfeito! Sua primeira atividade foi adicionada. Viu como apareceu na rotina?',
-    context: ['first_activity_added'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'activity_added',
-    category: 'tutorial',
-    priority: 'medium'
-  },
-  {
-    id: 'explain_time_slots',
-    text: 'O horário é definido automaticamente, mas você pode alterar clicando no relógio azul.',
-    context: ['has_activities', 'time_not_changed'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'view_schedule',
-    category: 'tutorial',
-    priority: 'medium'
-  },
-  {
-    id: 'how_to_complete_task',
-    text: 'Para marcar como feita, toque no círculo ao lado da atividade. Vai ganhar estrelas!',
-    context: ['has_activities', 'no_completed_tasks'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'schedule_view',
-    category: 'tutorial',
-    priority: 'high'
-  },
-  {
-    id: 'first_task_completed',
-    text: 'Incrível! Você completou sua primeira tarefa e ganhou 2 estrelas. Continue assim!',
-    context: ['first_task_completed'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'task_completion',
-    category: 'tutorial',
-    priority: 'high'
-  },
-  {
-    id: 'explain_stars_system',
-    text: 'As estrelas ajudam a subir de nível. A cada 50 estrelas você avança um nível!',
-    context: ['has_stars', 'level_1'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'star_gained',
-    category: 'tutorial',
-    priority: 'medium'
-  },
-  {
-    id: 'add_more_activities',
-    text: 'Sua rotina está ganhando forma! Adicione mais 2-3 atividades para completar o dia.',
-    context: ['has_few_activities'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'activity_count_check',
-    category: 'tutorial',
-    priority: 'medium'
-  },
-  {
-    id: 'explain_categories',
-    text: 'Use as categorias para encontrar atividades específicas: rotina, ações, comida, escola.',
-    context: ['using_all_category'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'category_selection',
-    category: 'tutorial',
-    priority: 'medium'
-  },
-  {
-    id: 'search_function_intro',
-    text: 'Não encontra uma atividade? Use a lupa para buscar pelo nome!',
-    context: ['many_activities_available'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'browsing_activities',
-    category: 'tutorial',
-    priority: 'low'
-  },
-  {
-    id: 'child_mode_intro',
-    text: 'Quer mostrar para a criança? Toque no ícone do bebê para ativar o Modo Criança!',
-    context: ['has_complete_routine'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'routine_ready',
-    category: 'tutorial',
-    priority: 'high'
-  },
-  {
-    id: 'child_welcome',
-    text: 'Olá, pequeno! Estou aqui para te ajudar com sua rotina. Cada tarefa que você fizer me deixa muito feliz!',
-    context: ['child_mode_first_time'],
-    userMode: 'child',
-    progressLevel: 'beginner',
-    trigger: 'child_mode_start',
-    category: 'tutorial',
-    priority: 'high'
-  },
-  {
-    id: 'child_explain_stars',
-    text: 'Viu as estrelinhas? Cada atividade que você completa me dá estrelas! Quanto mais, melhor!',
-    context: ['child_mode', 'has_stars'],
-    userMode: 'child',
-    progressLevel: 'beginner',
-    trigger: 'stars_visible',
-    category: 'tutorial',
-    priority: 'medium'
-  },
-  {
-    id: 'remove_activity_help',
-    text: 'Para remover uma atividade, toque no X vermelho ao lado dela na rotina.',
-    context: ['too_many_activities'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'overwhelmed_routine',
-    category: 'tutorial',
-    priority: 'medium'
-  },
-  {
-    id: 'save_routine_reminder',
-    text: 'Não esqueça de salvar sua rotina! Toque no botão verde "Salvar Rotina".',
-    context: ['unsaved_changes'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'routine_modified',
-    category: 'tutorial',
-    priority: 'medium'
-  },
-  {
-    id: 'copy_routine_intro',
-    text: 'Rotina pronta para um dia? Use "Copiar para..." para replicar em outros dias!',
-    context: ['complete_day_routine'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'day_complete',
-    category: 'tutorial',
-    priority: 'medium'
-  },
-  {
-    id: 'volume_control_help',
-    text: 'Se minha voz incomodar, use o botão do alto-falante para me silenciar temporariamente.',
-    context: ['audio_playing'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'frequent_audio',
-    category: 'tutorial',
-    priority: 'low'
-  },
-  {
-    id: 'notifications_intro',
-    text: 'O sino mostra suas conquistas! Toque nele para ver todos os seus sucessos.',
-    context: ['has_achievements'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'achievement_unlocked',
-    category: 'tutorial',
-    priority: 'medium'
-  },
-  {
-    id: 'morning_routine_suggestion',
-    text: 'Dica: rotinas matinais funcionam melhor com 3-4 atividades simples.',
-    context: ['morning_activities', 'many_morning_tasks'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'morning_overload',
-    category: 'tutorial',
-    priority: 'medium'
-  },
-  {
-    id: 'evening_routine_suggestion',
-    text: 'Rotinas noturnas ajudam a relaxar. Inclua banho, escovação e uma atividade calma.',
-    context: ['evening_activities', 'few_evening_tasks'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'incomplete_evening',
-    category: 'tutorial',
-    priority: 'medium'
-  },
-  {
-    id: 'weekend_different_routine',
-    text: 'Fins de semana podem ter rotinas diferentes! Menos compromissos, mais diversão.',
-    context: ['weekend_days'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'weekend_planning',
-    category: 'tutorial',
-    priority: 'low'
-  },
-  {
-    id: 'routine_consistency_tip',
-    text: 'Consistência é chave! Mantenha os mesmos horários todos os dias quando possível.',
-    context: ['varying_times'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'time_inconsistency',
-    category: 'tutorial',
-    priority: 'medium'
-  },
-  {
-    id: 'first_week_complete',
-    text: 'Parabéns! Você criou rotinas para a semana toda. Isso é um grande avanço!',
-    context: ['all_days_have_activities'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'week_complete',
-    category: 'tutorial',
-    priority: 'high'
-  },
-  {
-    id: 'graduation_to_intermediate',
-    text: 'Você dominou o básico! Agora posso te mostrar recursos mais avançados.',
-    context: ['ready_for_intermediate'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'progress_milestone',
-    category: 'tutorial',
-    priority: 'high'
-  },
+  // TUTORIAL BÁSICO (25 frases) - Primeiros passos e navegação
+  tutorial_basic: [
+    {
+      id: 'welcome_first_time',
+      text: 'Olá! Sou o Leo e vou te ajudar a criar rotinas incríveis. Toque em "Como usar" para começar!',
+      context: 'first_app_open',
+      userMode: 'both',
+      triggerCondition: 'first_visit',
+      priority: 'high',
+      category: 'tutorial'
+    },
+    {
+      id: 'explain_days_selection',
+      text: 'Veja esses botões coloridos? Cada um é um dia da semana. Toque em um para começar sua rotina!',
+      context: 'showing_weekdays',
+      userMode: 'both',
+      triggerCondition: 'first_interaction',
+      priority: 'high',
+      category: 'tutorial'
+    },
+    {
+      id: 'first_card_selection',
+      text: 'Perfeito! Agora toque em uma atividade para adicionar. Que tal começar com "Acordar"?',
+      context: 'first_card_add',
+      userMode: 'both',
+      triggerCondition: 'day_selected_no_activities',
+      priority: 'high',
+      category: 'tutorial'
+    },
+    {
+      id: 'explain_card_addition',
+      text: 'Ótimo! Você adicionou sua primeira atividade. Viu como ela apareceu na sua rotina?',
+      context: 'first_activity_added',
+      userMode: 'both',
+      triggerCondition: 'first_activity_created',
+      priority: 'medium',
+      category: 'tutorial'
+    },
+    {
+      id: 'explain_time_setting',
+      text: 'Cada atividade tem um horário. Toque no relógio azul para ajustar quando fazer!',
+      context: 'showing_time_feature',
+      userMode: 'parent',
+      triggerCondition: 'has_activities_no_time_change',
+      priority: 'medium',
+      category: 'tutorial'
+    },
+    {
+      id: 'first_completion_guide',
+      text: 'Agora toque no círculo verde para marcar como feita. Vai ganhar estrelas!',
+      context: 'teaching_completion',
+      userMode: 'both',
+      triggerCondition: 'has_uncompleted_tasks',
+      priority: 'high',
+      category: 'tutorial'
+    },
+    {
+      id: 'explain_stars_system',
+      text: 'Viu as estrelas? A cada atividade completada, você ganha pontos e sobe de nível!',
+      context: 'explaining_gamification',
+      userMode: 'both',
+      triggerCondition: 'first_task_completed',
+      priority: 'medium',
+      category: 'tutorial'
+    },
+    {
+      id: 'show_categories',
+      text: 'Use essas etiquetas coloridas para filtrar atividades: rotina, ações, comida, escola...',
+      context: 'teaching_categories',
+      userMode: 'parent',
+      triggerCondition: 'many_cards_visible',
+      priority: 'medium',
+      category: 'tutorial'
+    },
+    {
+      id: 'search_feature_intro',
+      text: 'Perdido entre tantas atividades? Toque na lupa para buscar algo específico!',
+      context: 'introducing_search',
+      userMode: 'parent',
+      triggerCondition: 'has_many_cards_unused',
+      priority: 'low',
+      category: 'tutorial'
+    },
+    {
+      id: 'child_mode_intro',
+      text: 'Quer que seu filho use sozinho? Toque no bebê para ativar o modo criança!',
+      context: 'introducing_child_mode',
+      userMode: 'parent',
+      triggerCondition: 'parent_mode_extended_use',
+      priority: 'medium',
+      category: 'tutorial'
+    },
+    {
+      id: 'explain_routine_building',
+      text: 'Uma rotina boa tem 3-7 atividades por período. Não precisa de muitas para começar!',
+      context: 'routine_building_tips',
+      userMode: 'parent',
+      triggerCondition: 'building_first_routine',
+      priority: 'medium',
+      category: 'tutorial'
+    },
+    {
+      id: 'morning_routine_suggestion',
+      text: 'Manhãs são importantes! Tente: acordar, escovar dentes, café da manhã e se vestir.',
+      context: 'morning_routine_help',
+      userMode: 'parent',
+      triggerCondition: 'empty_morning_time',
+      priority: 'medium',
+      category: 'tutorial'
+    },
+    {
+      id: 'evening_routine_suggestion',
+      text: 'Rotina noturna ajuda a dormir melhor: jantar, banho, escovar dentes, dormir.',
+      context: 'evening_routine_help',
+      userMode: 'parent',
+      triggerCondition: 'empty_evening_time',
+      priority: 'medium',
+      category: 'tutorial'
+    },
+    {
+      id: 'explain_visual_schedule',
+      text: 'Crianças autistas adoram rotinas visuais! Os cards coloridos ajudam a entender.',
+      context: 'autism_visual_benefits',
+      userMode: 'parent',
+      triggerCondition: 'multiple_activities_added',
+      priority: 'high',
+      category: 'tutorial'
+    },
+    {
+      id: 'consistency_importance',
+      text: 'O segredo é consistência! Melhor fazer 3 atividades todo dia que 10 só às vezes.',
+      context: 'teaching_consistency',
+      userMode: 'parent',
+      triggerCondition: 'irregular_completion_pattern',
+      priority: 'high',
+      category: 'tutorial'
+    },
+    {
+      id: 'save_routine_reminder',
+      text: 'Não esqueça! Toque em "Salvar" para guardar sua rotina na nuvem.',
+      context: 'save_reminder',
+      userMode: 'parent',
+      triggerCondition: 'unsaved_changes',
+      priority: 'medium',
+      category: 'tutorial'
+    },
+    {
+      id: 'copy_routine_tip',
+      text: 'Rotina pronta? Use "Copiar para..." para replicar em outros dias rapidinho!',
+      context: 'copy_feature_intro',
+      userMode: 'parent',
+      triggerCondition: 'routine_ready_one_day',
+      priority: 'medium',
+      category: 'tutorial'
+    },
+    {
+      id: 'sound_controls_intro',
+      text: 'Controle minha voz com o botão de som. Posso ficar quieto quando precisar!',
+      context: 'audio_controls',
+      userMode: 'parent',
+      triggerCondition: 'sound_feature_available',
+      priority: 'low',
+      category: 'tutorial'
+    },
+    {
+      id: 'mobile_desktop_tip',
+      text: 'Uso tanto no celular quanto no computador! Seus dados ficam sincronizados.',
+      context: 'cross_platform_usage',
+      userMode: 'parent',
+      triggerCondition: 'device_detection',
+      priority: 'low',
+      category: 'tutorial'
+    },
+    {
+      id: 'family_sharing_concept',
+      text: 'Toda família pode ajudar! Avós, cuidadores, todos usando a mesma rotina.',
+      context: 'family_coordination',
+      userMode: 'parent',
+      triggerCondition: 'established_routine',
+      priority: 'medium',
+      category: 'tutorial'
+    },
+    {
+      id: 'remove_activity_guide',
+      text: 'Mudou de ideia? Toque no lixinho vermelho para remover uma atividade.',
+      context: 'removal_instruction',
+      userMode: 'parent',
+      triggerCondition: 'many_activities_added',
+      priority: 'low',
+      category: 'tutorial'
+    },
+    {
+      id: 'weekly_view_intro',
+      text: 'Veja a semana toda! Cada dia pode ter uma rotina diferente, sem problemas.',
+      context: 'weekly_perspective',
+      userMode: 'parent',
+      triggerCondition: 'multiple_days_used',
+      priority: 'medium',
+      category: 'tutorial'
+    },
+    {
+      id: 'progress_tracking_intro',
+      text: 'Acompanhe o progresso! Estrelas mostram quanto seu filho está evoluindo.',
+      context: 'progress_explanation',
+      userMode: 'parent',
+      triggerCondition: 'some_tasks_completed',
+      priority: 'medium',
+      category: 'tutorial'
+    },
+    {
+      id: 'patience_encouragement',
+      text: 'Lembre-se: mudanças levam tempo. Celebre cada pequena vitória!',
+      context: 'patience_reminder',
+      userMode: 'parent',
+      triggerCondition: 'slow_adoption_detected',
+      priority: 'high',
+      category: 'tutorial'
+    },
+    {
+      id: 'help_always_available',
+      text: 'Precisa de ajuda? Toque em mim sempre que quiser dicas ou explicações!',
+      context: 'help_availability',
+      userMode: 'both',
+      triggerCondition: 'anytime',
+      priority: 'low',
+      category: 'tutorial'
+    }
+  ],
 
-  // ===== PROGRESSO INTERMEDIÁRIO (30 mensagens) =====
-  {
-    id: 'achievements_explanation',
-    text: 'Conquistas são marcos especiais! Cada uma dá estrelas extras e títulos únicos.',
-    context: ['level_2_reached'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'first_achievement',
-    category: 'guidance',
-    priority: 'high'
-  },
-  {
-    id: 'streak_system_intro',
-    text: 'Sequências são dias consecutivos usando o app. Quanto maior, mais bônus de estrelas!',
-    context: ['has_streak'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'streak_milestone',
-    category: 'guidance',
-    priority: 'medium'
-  },
-  {
-    id: 'level_benefits_explanation',
-    text: 'Cada nível novo desbloqueará mais recursos e conquistas especiais para vocês.',
-    context: ['level_up'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'level_gained',
-    category: 'guidance',
-    priority: 'medium'
-  },
-  {
-    id: 'daily_challenges_intro',
-    text: 'Desafios diários dão estrelas extras! Complete 5 tarefas hoje para o primeiro desafio.',
-    context: ['challenges_available'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'daily_challenge_start',
-    category: 'guidance',
-    priority: 'medium'
-  },
-  {
-    id: 'category_mastery_feedback',
-    text: 'Você está dominando atividades de alimentação! 8 de 10 concluídas esta semana.',
-    context: ['food_category_success'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'category_pattern',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'morning_struggle_identified',
-    text: 'Percebo que manhãs são desafiadoras. 68% das famílias melhoram reduzindo para 3 atividades matinais.',
-    context: ['morning_completion_low'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'pattern_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'weekend_vs_weekday_pattern',
-    text: 'Fins de semana têm 20% mais conclusões que dias úteis. Considere rotinas mais flexíveis durante a semana.',
-    context: ['weekend_better_performance'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'weekly_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'time_optimization_suggestion',
-    text: 'Atividades entre 14h-16h têm melhor taxa de conclusão. Considere mover tarefas difíceis para este horário.',
-    context: ['afternoon_success_pattern'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'timing_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'routine_density_feedback',
-    text: 'Sua rotina tem densidade ideal: 6-8 atividades por dia. Perfeito para manter engajamento!',
-    context: ['optimal_activity_count'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'routine_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'consistency_improvement_tip',
-    text: 'Variação de horários reduziu 15% esta semana. Consistência temporal melhora formação de hábitos.',
-    context: ['improved_time_consistency'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'consistency_check',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'child_engagement_positive',
-    text: 'Sua criança está super engajada! 85% de conclusão é excelente para desenvolvimento de autonomia.',
-    context: ['high_completion_rate'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'engagement_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'streak_break_recovery',
-    text: 'Sequência quebrou ontem, mas você já voltou hoje! Resiliência é fundamental no desenvolvimento.',
-    context: ['streak_recovered'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'streak_break',
-    category: 'guidance',
-    priority: 'medium'
-  },
-  {
-    id: 'school_routine_adaptation',
-    text: 'Rotina escolar se adapta automaticamente aos horários. Atividades matinais ficam mais cedo em dias letivos.',
-    context: ['school_activities_present'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'school_day_planning',
-    category: 'guidance',
-    priority: 'medium'
-  },
-  {
-    id: 'copy_routine_advanced',
-    text: 'Copiar rotinas mantém horários proporcionais. Rotina de segunda vira base para outros dias.',
-    context: ['routine_copying'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'copy_action',
-    category: 'guidance',
-    priority: 'low'
-  },
-  {
-    id: 'search_efficiency_tip',
-    text: 'Busca funciona com palavras parciais. Digite "ban" para encontrar "banho" mais rapidamente.',
-    context: ['frequent_searches'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'search_usage',
-    category: 'guidance',
-    priority: 'low'
-  },
-  {
-    id: 'notification_management_tip',
-    text: 'Muitas notificações? Você pode marcar como lidas tocando nelas. Assim mantém o histórico limpo.',
-    context: ['many_unread_notifications'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'notification_overload',
-    category: 'guidance',
-    priority: 'low'
-  },
-  {
-    id: 'child_motivation_system',
-    text: 'No modo criança, celebro automaticamente! Isso reforça comportamentos positivos através de feedback imediato.',
-    context: ['child_mode_usage'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'child_mode_explanation',
-    category: 'guidance',
-    priority: 'medium'
-  },
-  {
-    id: 'achievement_progress_update',
-    text: 'Você está 80% perto da conquista "Mestre das Tarefas"! Mais 10 atividades para desbloquear.',
-    context: ['achievement_near_completion'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'achievement_progress',
-    category: 'guidance',
-    priority: 'medium'
-  },
-  {
-    id: 'weekly_performance_summary',
-    text: 'Esta semana: 72% de conclusão, 3 conquistas novas, sequência de 5 dias. Evolução constante!',
-    context: ['week_end_summary'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'weekly_review',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'difficulty_adjustment_suggestion',
-    text: 'Taxa de conclusão baixa em atividades novas? Tente introduzir uma por vez para facilitar adaptação.',
-    context: ['new_activities_low_completion'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'difficulty_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'routine_evolution_feedback',
-    text: 'Sua rotina evoluiu 40% desde o início! Mais atividades, melhor distribuição temporal, maior consistência.',
-    context: ['routine_maturity'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'evolution_milestone',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'child_independence_growth',
-    text: 'Criança está marcando mais atividades sozinha! Sinais de crescimento da autonomia.',
-    context: ['child_self_completion_increase'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'independence_growth',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'seasonal_routine_adaptation',
-    text: 'Horários de luz natural afetam rotinas. Considere ajustar atividades matinais conforme estação.',
-    context: ['seasonal_timing_impact'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'seasonal_analysis',
-    category: 'insight',
-    priority: 'low'
-  },
-  {
-    id: 'social_routine_benefits',
-    text: 'Atividades sociais na rotina aumentaram 30%! Interação social é fundamental para desenvolvimento.',
-    context: ['social_activities_increase'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'social_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'routine_flexibility_balance',
-    text: 'Equilíbrio perfeito: 70% atividades fixas, 30% flexíveis. Estrutura com adaptabilidade.',
-    context: ['routine_flexibility_optimal'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'flexibility_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'milestone_50_tasks',
-    text: 'Marco histórico: 50 tarefas completadas! Isso representa semanas de crescimento e desenvolvimento.',
-    context: ['50_tasks_completed'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'milestone_achievement',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'parent_child_cooperation',
-    text: 'Vocês são uma equipe incrível! Colaboração entre pai/mãe e criança está cada vez melhor.',
-    context: ['good_cooperation_pattern'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'cooperation_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'ready_for_advanced_features',
-    text: 'Você dominou os recursos intermediários! Pronto para funcionalidades avançadas de análise.',
-    context: ['intermediate_mastery'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'advancement_ready',
-    category: 'guidance',
-    priority: 'high'
-  },
-  {
-    id: 'child_celebration_level_up',
-    text: 'Uau! Subimos de nível juntos! Você é incrível e cada dia fica melhor na sua rotina!',
-    context: ['level_up'],
-    userMode: 'child',
-    progressLevel: 'intermediate',
-    trigger: 'child_level_up',
-    category: 'motivation',
-    priority: 'high'
-  },
-  {
-    id: 'child_streak_celebration',
-    text: 'Você fez atividades 5 dias seguidos! Que campeão! Estou muito orgulhoso de você!',
-    context: ['streak_milestone'],
-    userMode: 'child',
-    progressLevel: 'intermediate',
-    trigger: 'child_streak',
-    category: 'motivation',
-    priority: 'high'
-  },
+  // PROGRESSO INTERMEDIÁRIO (30 frases) - Sistema de conquistas e gamificação
+  progress_intermediate: [
+    {
+      id: 'first_level_up',
+      text: 'Parabéns! Você subiu para o nível 2! Continue assim para desbloquear mais conquistas!',
+      context: 'level_progression',
+      userMode: 'both',
+      triggerCondition: 'level_up_to_2',
+      priority: 'high',
+      category: 'progress'
+    },
+    {
+      id: 'stars_explanation',
+      text: 'Cada estrela vale muito! 50 estrelas = próximo nível. Você está no caminho certo!',
+      context: 'stars_system_deep',
+      userMode: 'both',
+      triggerCondition: 'accumulated_some_stars',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'achievement_unlocked_first',
+      text: 'Primeira conquista desbloqueada! Toque no sino para ver todas suas medalhas.',
+      context: 'first_achievement',
+      userMode: 'both',
+      triggerCondition: 'first_achievement_earned',
+      priority: 'high',
+      category: 'progress'
+    },
+    {
+      id: 'streak_started',
+      text: 'Você começou uma sequência! Completar atividades todo dia ganha bônus especiais.',
+      context: 'streak_mechanics',
+      userMode: 'both',
+      triggerCondition: 'streak_day_2',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'week_warrior_close',
+      text: 'Faltam só 3 dias para a conquista "Guerreiro da Semana"! Não desista agora!',
+      context: 'streak_encouragement',
+      userMode: 'both',
+      triggerCondition: 'streak_day_4',
+      priority: 'high',
+      category: 'progress'
+    },
+    {
+      id: 'streak_bonus_earned',
+      text: 'Sequência de 7 dias! Você ganhou 10 estrelas de bônus! Incrível!',
+      context: 'streak_reward',
+      userMode: 'both',
+      triggerCondition: 'streak_week_complete',
+      priority: 'high',
+      category: 'progress'
+    },
+    {
+      id: 'daily_challenge_intro',
+      text: 'Desafios diários apareceram! Complete para ganhar estrelas extras hoje.',
+      context: 'daily_challenges',
+      userMode: 'both',
+      triggerCondition: 'challenges_available',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'task_master_approaching',
+      text: 'Você já completou 35 atividades! Faltam 15 para virar "Mestre das Tarefas"!',
+      context: 'achievement_progress',
+      userMode: 'both',
+      triggerCondition: 'tasks_completed_35',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'level_3_benefits',
+      text: 'Nível 3 desbloqueado! Agora você tem acesso a análises de padrão da rotina.',
+      context: 'level_benefits',
+      userMode: 'parent',
+      triggerCondition: 'level_up_to_3',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'notifications_intro',
+      text: 'O sino vermelho mostra conquistas novas! Toque para ver todo seu progresso.',
+      context: 'notification_system',
+      userMode: 'both',
+      triggerCondition: 'unread_notifications',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'category_master_food',
+      text: 'Você dominou as atividades de alimentação! 90% de conclusão esta semana.',
+      context: 'category_mastery',
+      userMode: 'both',
+      triggerCondition: 'food_category_high_completion',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'morning_person_achievement',
+      text: 'Você é uma pessoa matinal! 14 dias seguidos completando atividades antes das 10h.',
+      context: 'time_based_achievement',
+      userMode: 'both',
+      triggerCondition: 'morning_routine_consistent',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'consistency_champion',
+      text: 'Campeão da consistência! 21 dias usando o app. Isso vira hábito real!',
+      context: 'usage_consistency',
+      userMode: 'both',
+      triggerCondition: 'daily_usage_21_days',
+      priority: 'high',
+      category: 'progress'
+    },
+    {
+      id: 'perfect_day_achieved',
+      text: 'Dia perfeito! Você completou 100% das atividades hoje. Que dedicação!',
+      context: 'perfect_completion',
+      userMode: 'both',
+      triggerCondition: 'all_tasks_completed_today',
+      priority: 'high',
+      category: 'progress'
+    },
+    {
+      id: 'routine_architect',
+      text: 'Arquiteto de rotinas! Você criou rotinas para todos os dias da semana.',
+      context: 'routine_completion',
+      userMode: 'parent',
+      triggerCondition: 'all_days_have_activities',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'star_collector_100',
+      text: 'Coletor de estrelas! 100 estrelas conquistadas. Você está brilhando!',
+      context: 'milestone_achievement',
+      userMode: 'both',
+      triggerCondition: 'stars_reached_100',
+      priority: 'high',
+      category: 'progress'
+    },
+    {
+      id: 'comeback_after_break',
+      text: 'Que bom te ver de volta! Todo mundo tem pausas. O importante é recomeçar.',
+      context: 'return_encouragement',
+      userMode: 'both',
+      triggerCondition: 'return_after_absence',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'weekend_warrior',
+      text: 'Guerreiro do fim de semana! Manter rotina no sábado e domingo é especial.',
+      context: 'weekend_engagement',
+      userMode: 'both',
+      triggerCondition: 'weekend_activity_completion',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'progress_week_summary',
+      text: 'Resumo da semana: 85% de conclusão! Que evolução incrível desde o início.',
+      context: 'weekly_summary',
+      userMode: 'both',
+      triggerCondition: 'week_end_high_completion',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'achievement_hunter',
+      text: 'Caçador de conquistas! Você desbloqueou 5 medalhas diferentes. Impressionante!',
+      context: 'multiple_achievements',
+      userMode: 'both',
+      triggerCondition: 'achievements_unlocked_5',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'social_sharing_suggestion',
+      text: 'Progresso incrível! Que tal compartilhar suas conquistas com a família?',
+      context: 'sharing_encouragement',
+      userMode: 'parent',
+      triggerCondition: 'major_milestone_reached',
+      priority: 'low',
+      category: 'progress'
+    },
+    {
+      id: 'level_5_mastery',
+      text: 'Nível 5! Você agora é um mestre em rotinas. Parabéns pela dedicação!',
+      context: 'high_level_achievement',
+      userMode: 'both',
+      triggerCondition: 'level_up_to_5',
+      priority: 'high',
+      category: 'progress'
+    },
+    {
+      id: 'custom_routine_expert',
+      text: 'Expert em personalização! Você ajustou horários mais de 20 vezes.',
+      context: 'customization_mastery',
+      userMode: 'parent',
+      triggerCondition: 'many_time_adjustments',
+      priority: 'low',
+      category: 'progress'
+    },
+    {
+      id: 'month_milestone',
+      text: 'Um mês de jornada! Rotinas viraram parte natural do dia. Que transformação!',
+      context: 'long_term_usage',
+      userMode: 'both',
+      triggerCondition: 'usage_30_days',
+      priority: 'high',
+      category: 'progress'
+    },
+    {
+      id: 'challenge_completionist',
+      text: 'Você completou todos os desafios desta semana! Estrelas extras merecidas.',
+      context: 'challenge_mastery',
+      userMode: 'both',
+      triggerCondition: 'all_weekly_challenges_done',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'routine_variety_master',
+      text: 'Mestre da variedade! Você usa mais de 30 tipos diferentes de atividades.',
+      context: 'diversity_achievement',
+      userMode: 'parent',
+      triggerCondition: 'high_activity_variety',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'early_bird_title',
+      text: 'Madrugador oficial! 2 semanas completando rotina matinal antes das 8h.',
+      context: 'time_consistency',
+      userMode: 'both',
+      triggerCondition: 'consistent_early_routine',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'progress_visualization',
+      text: 'Veja seu gráfico de progresso! A linha só vai subindo. Que crescimento!',
+      context: 'progress_analysis',
+      userMode: 'parent',
+      triggerCondition: 'progress_graph_available',
+      priority: 'low',
+      category: 'progress'
+    },
+    {
+      id: 'family_coordination_success',
+      text: 'Coordenação familiar nota 10! Múltiplos dispositivos usando a mesma rotina.',
+      context: 'multi_device_usage',
+      userMode: 'parent',
+      triggerCondition: 'family_sharing_detected',
+      priority: 'medium',
+      category: 'progress'
+    },
+    {
+      id: 'legendary_status_approaching',
+      text: 'Status lendário se aproxima! Continue assim para conquistas épicas.',
+      context: 'high_tier_progress',
+      userMode: 'both',
+      triggerCondition: 'approaching_legendary_achievements',
+      priority: 'high',
+      category: 'progress'
+    }
+  ],
 
-  // ===== INSIGHTS AVANÇADOS (40 mensagens) =====
-  {
-    id: 'comprehensive_week_analysis',
-    text: 'Análise semanal completa: picos de energia às 10h e 15h, quedas às 13h e 18h. Otimize tarefas difíceis nos picos.',
-    context: ['advanced_analytics_available'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'deep_analysis_request',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'behavioral_pattern_recognition',
-    text: 'Padrão identificado: resistência inicial diminui 60% após 3ª repetição da mesma atividade no mesmo horário.',
-    context: ['habit_formation_visible'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'behavior_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'executive_function_development',
-    text: 'Funções executivas melhorando: planejamento +25%, organização +40%, autocontrole +15% nas últimas 4 semanas.',
-    context: ['executive_skills_tracking'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'cognitive_development_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'sensory_preference_analysis',
-    text: 'Preferências sensoriais detectadas: atividades visuais 85% conclusão vs auditivas 65%. Adapte estratégias.',
-    context: ['sensory_patterns_visible'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'sensory_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'transition_difficulty_insights',
-    text: 'Transições mais difíceis: brincadeira→estudos (40% resistência) vs estudos→brincadeira (10% resistência).',
-    context: ['transition_data_available'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'transition_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'optimal_routine_density',
-    text: 'Densidade ótima identificada: 1 atividade a cada 90 minutos maximiza conclusão sem sobrecarga cognitiva.',
-    context: ['density_optimization_data'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'optimization_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'motivation_cycle_patterns',
-    text: 'Ciclos motivacionais: picos a cada 3-4 dias, vale no 7º dia. Planeje atividades desafiadoras nos picos.',
-    context: ['motivation_tracking_available'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'motivation_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'environmental_factor_correlation',
-    text: 'Correlação ambiente-performance: dias ensolarados +20% conclusão, chuva -15%. Ajuste expectativas.',
-    context: ['environmental_correlation_visible'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'environmental_analysis',
-    category: 'insight',
-    priority: 'low'
-  },
-  {
-    id: 'cognitive_load_optimization',
-    text: 'Carga cognitiva otimizada: atividades complexas pela manhã (9-11h), simples à tarde (15-17h).',
-    context: ['cognitive_load_data'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'cognitive_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'social_skills_progression',
-    text: 'Habilidades sociais evoluindo: iniciativa +30%, cooperação +45%, comunicação +20% em atividades sociais.',
-    context: ['social_skills_tracking'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'social_development_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'routine_personalization_success',
-    text: 'Personalização 95% efetiva: rotina adaptada ao perfil sensorial e preferências comportamentais específicas.',
-    context: ['high_personalization_success'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'personalization_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'independence_trajectory_positive',
-    text: 'Trajetória de independência acelerada: autogestão +60% comparado a baseline de entrada no app.',
-    context: ['independence_growth_significant'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'independence_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'stress_indicator_monitoring',
-    text: 'Indicadores de stress baixos: 90% das atividades completadas sem sinais de sobrecarga emocional.',
-    context: ['stress_monitoring_positive'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'stress_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'learning_velocity_acceleration',
-    text: 'Velocidade de aprendizado aumentou 40%: novas atividades integradas 2x mais rápido que inicialmente.',
-    context: ['learning_acceleration_visible'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'learning_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'routine_resilience_high',
-    text: 'Resiliência da rotina alta: 85% de manutenção mesmo com mudanças imprevistas (feriados, doenças).',
-    context: ['routine_resilience_demonstrated'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'resilience_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'family_dynamics_improvement',
-    text: 'Dinâmica familiar otimizada: conflitos relacionados à rotina reduziram 70% desde implementação.',
-    context: ['family_harmony_improved'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'family_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'predictive_behavior_modeling',
-    text: 'Modelo preditivo sugere: nova atividade "arte" terá 80% aceitação se introduzida às 16h nas quartas.',
-    context: ['predictive_model_available'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'prediction_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'sensory_integration_progress',
-    text: 'Integração sensorial melhorada: tolerância a variações aumentou 50%, flexibilidade cognitiva +35%.',
-    context: ['sensory_integration_improvement'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'sensory_development_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'executive_planning_mastery',
-    text: 'Planejamento executivo quase dominado: antecipação de tarefas +80%, organização temporal +70%.',
-    context: ['executive_planning_advanced'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'executive_mastery_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'routine_complexity_readiness',
-    text: 'Pronto para maior complexidade: pode lidar com rotinas de 10-12 atividades sem perda de performance.',
-    context: ['complexity_readiness_achieved'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'complexity_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'generalization_skills_emerging',
-    text: 'Habilidades de generalização emergindo: aplicação de rotinas em novos contextos (escola, casa de familiares).',
-    context: ['generalization_visible'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'generalization_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'self_advocacy_development',
-    text: 'Auto-advocacia se desenvolvendo: criança expressa preferências e limites de forma mais clara.',
-    context: ['self_advocacy_emerging'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'advocacy_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'routine_innovation_suggestions',
-    text: 'Sugestões de inovação: introduzir "tempo livre estruturado" para fomentar criatividade dentro da previsibilidade.',
-    context: ['innovation_opportunity'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'innovation_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'long_term_development_trajectory',
-    text: 'Trajetória de longo prazo positiva: marcos de desenvolvimento atingidos 6 meses antes do esperado.',
-    context: ['long_term_success_indicators'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'long_term_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'peer_comparison_positive',
-    text: 'Comparação com pares TEA: 90th percentil em organização, 85th em independência, 80th em flexibilidade.',
-    context: ['peer_comparison_available'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'peer_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'routine_mastery_achievement',
-    text: 'Maestria em rotinas atingida: criança pode co-criar e modificar rotinas com mínima supervisão.',
-    context: ['mastery_level_achieved'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'mastery_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'transition_to_adolescence_prep',
-    text: 'Preparação para adolescência: habilidades de autogestão sólidas facilitarão transições futuras.',
-    context: ['adolescence_prep_relevant'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'future_planning_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'family_system_optimization',
-    text: 'Sistema familiar otimizado: todos os membros reportam redução de stress e aumento de previsibilidade.',
-    context: ['family_system_improved'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'family_system_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'routine_art_form_achieved',
-    text: 'Rotina como forma de arte: equilíbrio perfeito entre estrutura e flexibilidade, previsibilidade e novidade.',
-    context: ['routine_artistry_achieved'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'artistry_analysis',
-    category: 'insight',
-    priority: 'low'
-  },
-  {
-    id: 'expertise_level_recognition',
-    text: 'Nível de expertise reconhecido: você poderia mentorear outras famílias no desenvolvimento de rotinas.',
-    context: ['expertise_level_achieved'],
-    userMode: 'parent',
-    progressLevel: 'expert',
-    trigger: 'expertise_recognition',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'predictive_success_high_confidence',
-    text: 'Confiança preditiva alta: 95% de certeza que habilidades desenvolvidas persistirão longo prazo.',
-    context: ['predictive_confidence_high'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'prediction_confidence_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'routine_legacy_building',
-    text: 'Construindo legado: habilidades organizacionais se tornarão base para sucesso acadêmico e profissional futuro.',
-    context: ['legacy_building_visible'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'legacy_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'neuroplasticity_evidence',
-    text: 'Evidência de neuroplasticidade: padrões cerebrais se reorganizaram para maior eficiência executiva.',
-    context: ['neuroplasticity_indicators'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'neuroplasticity_analysis',
-    category: 'insight',
-    priority: 'low'
-  },
-  {
-    id: 'routine_ecosystem_mastery',
-    text: 'Ecossistema de rotinas dominado: home, escola, terapias integradas em sistema coeso e flexível.',
-    context: ['ecosystem_integration_complete'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'ecosystem_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'advanced_self_regulation',
-    text: 'Autorregulação avançada: criança monitora próprio estado emocional e ajusta rotina autonomamente.',
-    context: ['advanced_self_regulation_visible'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'self_regulation_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'innovation_in_routine_design',
-    text: 'Inovação em design de rotinas: vocês criaram soluções únicas que outros poderiam beneficiar.',
-    context: ['innovation_demonstrated'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'innovation_recognition',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'mastery_plateau_achieved',
-    text: 'Platô de maestria atingido: performance consistentemente alta, pronta para novos desafios.',
-    context: ['mastery_plateau_reached'],
-    userMode: 'parent',
-    progressLevel: 'expert',
-    trigger: 'plateau_analysis',
-    category: 'insight',
-    priority: 'medium'
-  },
-  {
-    id: 'routine_wisdom_development',
-    text: 'Sabedoria em rotinas desenvolvida: intuição sobre o que funciona superou necessidade de orientação externa.',
-    context: ['wisdom_level_achieved'],
-    userMode: 'parent',
-    progressLevel: 'expert',
-    trigger: 'wisdom_analysis',
-    category: 'insight',
-    priority: 'high'
-  },
-  {
-    id: 'child_expert_level_celebration',
-    text: 'Você virou um expert em sua própria rotina! Agora você ensina o Leo sobre o que funciona melhor!',
-    context: ['child_expertise_achieved'],
-    userMode: 'child',
-    progressLevel: 'advanced',
-    trigger: 'child_expertise_recognition',
-    category: 'motivation',
-    priority: 'high'
-  },
-  {
-    id: 'child_routine_artist',
-    text: 'Você é um artista das rotinas! Cada dia você pinta sua rotina com cores diferentes e especiais!',
-    context: ['child_routine_creativity'],
-    userMode: 'child',
-    progressLevel: 'advanced',
-    trigger: 'child_creativity_recognition',
-    category: 'motivation',
-    priority: 'medium'
-  },
+  // INSIGHTS AVANÇADOS (40 frases) - Análise de padrões e otimização
+  insights_advanced: [
+    {
+      id: 'morning_struggle_pattern',
+      text: 'Notei que manhãs são desafiadoras. 68% das famílias melhoram reduzindo atividades matinais para 3.',
+      context: 'pattern_analysis',
+      userMode: 'parent',
+      triggerCondition: 'morning_low_completion_rate',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'optimal_routine_length',
+      text: 'Análise: rotinas com 5-7 atividades têm 40% mais conclusão que rotinas muito longas.',
+      context: 'optimization_suggestion',
+      userMode: 'parent',
+      triggerCondition: 'routine_too_long',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'weekend_consistency_impact',
+      text: 'Famílias que mantêm rotina no fim de semana têm 60% mais sucesso durante a semana.',
+      context: 'consistency_insight',
+      userMode: 'parent',
+      triggerCondition: 'weekend_pattern_analysis',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'time_spacing_optimization',
+      text: 'Atividades espaçadas por 30-45 minutos funcionam melhor que muito próximas.',
+      context: 'timing_optimization',
+      userMode: 'parent',
+      triggerCondition: 'activities_too_close',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'category_balance_suggestion',
+      text: 'Rotina equilibrada: 40% cuidados pessoais, 30% alimentação, 20% lazer, 10% estudos.',
+      context: 'balance_analysis',
+      userMode: 'parent',
+      triggerCondition: 'unbalanced_categories',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'success_time_identification',
+      text: 'Seu filho tem 90% de sucesso entre 14h-16h. Considere atividades importantes neste horário.',
+      context: 'peak_performance_time',
+      userMode: 'parent',
+      triggerCondition: 'time_performance_pattern',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'transition_time_suggestion',
+      text: 'Crianças TEA precisam de 5-10 minutos entre atividades para transição mental.',
+      context: 'autism_specific_insight',
+      userMode: 'parent',
+      triggerCondition: 'rapid_transitions_detected',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'visual_schedule_effectiveness',
+      text: 'Rotinas visuais aumentam independência em 70% das crianças autistas após 3 semanas.',
+      context: 'visual_benefits_data',
+      userMode: 'parent',
+      triggerCondition: 'sustained_usage',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'reward_system_optimization',
+      text: 'Recompensas funcionam melhor quando são imediatas. Estrelas instantâneas são ideais.',
+      context: 'reward_timing',
+      userMode: 'parent',
+      triggerCondition: 'gamification_usage',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'routine_flexibility_balance',
+      text: 'Estrutura com flexibilidade: 80% da rotina fixa, 20% adaptável ao dia funciona melhor.',
+      context: 'flexibility_insight',
+      userMode: 'parent',
+      triggerCondition: 'routine_modifications',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'bedtime_routine_impact',
+      text: 'Rotina noturna consistente melhora o sono em 85% dos casos dentro de 2 semanas.',
+      context: 'sleep_routine_benefits',
+      userMode: 'parent',
+      triggerCondition: 'evening_routine_established',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'sensory_break_suggestion',
+      text: 'Detectei sobrecarga possível. Considere atividades sensoriais calmas entre tarefas intensas.',
+      context: 'sensory_insight',
+      userMode: 'parent',
+      triggerCondition: 'intensive_activity_sequence',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'choice_autonomy_benefit',
+      text: 'Permitir escolha de 2-3 atividades aumenta cooperação em 50% das situações.',
+      context: 'autonomy_insight',
+      userMode: 'parent',
+      triggerCondition: 'resistance_patterns',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'predictability_importance',
+      text: 'Mudanças na rotina funcionam melhor quando avisadas com 24h de antecedência.',
+      context: 'predictability_insight',
+      userMode: 'parent',
+      triggerCondition: 'routine_changes_detected',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'energy_level_mapping',
+      text: 'Seu filho tem mais energia às 10h e 15h. Atividades físicas funcionam melhor nesses horários.',
+      context: 'energy_pattern_analysis',
+      userMode: 'parent',
+      triggerCondition: 'activity_completion_patterns',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'meltdown_prevention_timing',
+      text: 'Padrão detectado: dificuldades aparecem após 4 atividades seguidas. Considere pausas.',
+      context: 'overwhelm_prevention',
+      userMode: 'parent',
+      triggerCondition: 'completion_rate_drop',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'social_routine_benefits',
+      text: 'Atividades em família 2x por semana aumentam motivação geral em 45%.',
+      context: 'social_engagement_impact',
+      userMode: 'parent',
+      triggerCondition: 'social_activities_added',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'seasonal_adaptation_suggestion',
+      text: 'Inverno chegando: rotinas internas funcionam melhor. Considere mais atividades em casa.',
+      context: 'seasonal_adaptation',
+      userMode: 'parent',
+      triggerCondition: 'seasonal_change_detected',
+      priority: 'low',
+      category: 'insights'
+    },
+    {
+      id: 'motivation_peak_identification',
+      text: 'Segundas-feiras têm 30% mais resistência. Comece a semana com atividades preferidas.',
+      context: 'weekly_motivation_pattern',
+      userMode: 'parent',
+      triggerCondition: 'monday_struggle_pattern',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'gradual_increase_suggestion',
+      text: 'Adicione 1 atividade nova por semana. Mudanças graduais têm 80% mais aceitação.',
+      context: 'change_management',
+      userMode: 'parent',
+      triggerCondition: 'rapid_routine_expansion',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'communication_style_insight',
+      text: 'Instruções de 3-5 palavras funcionam melhor que explicações longas para seu filho.',
+      context: 'communication_optimization',
+      userMode: 'parent',
+      triggerCondition: 'instruction_complexity_analysis',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'interest_based_motivation',
+      text: 'Incorporar interesses especiais aumenta engajamento em 90%. Que tal temas favoritos?',
+      context: 'special_interests_integration',
+      userMode: 'parent',
+      triggerCondition: 'motivation_challenges',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'caregiver_coordination_benefit',
+      text: 'Múltiplos cuidadores usando mesma rotina reduzem ansiedade em 65% dos casos.',
+      context: 'consistency_across_caregivers',
+      userMode: 'parent',
+      triggerCondition: 'multiple_users_detected',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'celebration_timing_optimization',
+      text: 'Celebrações funcionam melhor imediatamente após conclusão, não no final do dia.',
+      context: 'celebration_timing',
+      userMode: 'parent',
+      triggerCondition: 'delayed_recognition_pattern',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'routine_complexity_warning',
+      text: 'Atenção: rotinas com mais de 10 atividades têm taxa de abandono 3x maior.',
+      context: 'complexity_warning',
+      userMode: 'parent',
+      triggerCondition: 'routine_too_complex',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'breakthrough_pattern_recognition',
+      text: 'Padrão interessante: avanços acontecem após 3 semanas de consistência. Continue!',
+      context: 'breakthrough_timing',
+      userMode: 'parent',
+      triggerCondition: 'three_week_milestone',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'environmental_factor_insight',
+      text: 'Ambientes organizados aumentam conclusão de tarefas em 40%. Considere preparar o espaço.',
+      context: 'environmental_optimization',
+      userMode: 'parent',
+      triggerCondition: 'environmental_analysis',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'stress_indicator_detection',
+      text: 'Padrão de stress detectado nos finais de semana. Considere rotinas mais relaxadas.',
+      context: 'stress_pattern_analysis',
+      userMode: 'parent',
+      triggerCondition: 'weekend_completion_drop',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'success_building_strategy',
+      text: 'Estratégia: comece com atividades que já faz bem, depois adicione desafios gradualmente.',
+      context: 'confidence_building',
+      userMode: 'parent',
+      triggerCondition: 'low_confidence_pattern',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'peer_comparison_insight',
+      text: 'Sua família está acima da média: 78% de conclusão vs 65% de outras famílias.',
+      context: 'comparative_performance',
+      userMode: 'parent',
+      triggerCondition: 'above_average_performance',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'long_term_benefit_reminder',
+      text: 'Rotinas estruturadas na infância reduzem ansiedade na adolescência em 60%.',
+      context: 'long_term_benefits',
+      userMode: 'parent',
+      triggerCondition: 'motivation_reminder_needed',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'adaptation_speed_insight',
+      text: 'Seu filho adapta-se a mudanças em 4-5 dias. Planeje transições considerando este tempo.',
+      context: 'adaptation_timeline',
+      userMode: 'parent',
+      triggerCondition: 'adaptation_pattern_analysis',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'independence_milestone_recognition',
+      text: 'Marco importante: 70% das atividades feitas independentemente. Incrível evolução!',
+      context: 'independence_tracking',
+      userMode: 'parent',
+      triggerCondition: 'independence_milestone',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'personalization_effectiveness',
+      text: 'Personalização funcionou: rotinas adaptadas têm 50% mais sucesso que padrões genéricos.',
+      context: 'personalization_validation',
+      userMode: 'parent',
+      triggerCondition: 'customization_success',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'crisis_prevention_insight',
+      text: 'Rotinas previnem 80% das crises. Continue investindo na estrutura diária.',
+      context: 'crisis_prevention',
+      userMode: 'parent',
+      triggerCondition: 'crisis_reduction_observed',
+      priority: 'high',
+      category: 'insights'
+    },
+    {
+      id: 'family_harmony_impact',
+      text: 'Rotinas estruturadas aumentaram harmonia familiar em 75% segundo estudos similares.',
+      context: 'family_impact_analysis',
+      userMode: 'parent',
+      triggerCondition: 'family_routine_established',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'cognitive_load_optimization',
+      text: 'Reduzir decisões diárias libera energia mental para aprendizado e desenvolvimento.',
+      context: 'cognitive_benefits',
+      userMode: 'parent',
+      triggerCondition: 'routine_automation_achieved',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'progress_acceleration_tip',
+      text: 'Dica avançada: fotografar momentos de sucesso cria reforço visual poderoso.',
+      context: 'advanced_strategy',
+      userMode: 'parent',
+      triggerCondition: 'advanced_user_detected',
+      priority: 'low',
+      category: 'insights'
+    },
+    {
+      id: 'sibling_coordination_benefit',
+      text: 'Irmãos seguindo rotinas similares reduzem conflitos em 55% das situações.',
+      context: 'sibling_dynamics',
+      userMode: 'parent',
+      triggerCondition: 'multiple_children_detected',
+      priority: 'medium',
+      category: 'insights'
+    },
+    {
+      id: 'mastery_recognition',
+      text: 'Nível de maestria atingido! Vocês agora são referência em rotinas estruturadas.',
+      context: 'mastery_achievement',
+      userMode: 'parent',
+      triggerCondition: 'expert_level_reached',
+      priority: 'high',
+      category: 'insights'
+    }
+  ],
 
-  // ===== TROUBLESHOOTING (25 mensagens) =====
-  {
-    id: 'app_loading_slow',
-    text: 'App carregando devagar? Tente fechar outros aplicativos ou reiniciar o navegador.',
-    context: ['performance_issues'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'slow_loading_detected',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
-  {
-    id: 'sound_not_working',
-    text: 'Não está ouvindo minha voz? Verifique se o volume está ligado e se não ativou o modo silencioso.',
-    context: ['audio_issues'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'audio_problem_detected',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
-  {
-    id: 'data_not_saving',
-    text: 'Rotina não está salvando? Verifique sua conexão com internet e tente salvar novamente.',
-    context: ['save_issues'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'save_failure_detected',
-    category: 'troubleshooting',
-    priority: 'high'
-  },
-  {
-    id: 'child_resistance_initial',
-    text: 'Criança resistindo à rotina? É normal no início. Comece com 2-3 atividades favoritas.',
-    context: ['child_resistance'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'resistance_pattern',
-    category: 'troubleshooting',
-    priority: 'high'
-  },
-  {
-    id: 'routine_too_complex',
-    text: 'Rotina muito complexa? Simplifique para 4-5 atividades essenciais e aumente gradualmente.',
-    context: ['complexity_overwhelm'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'overwhelm_detected',
-    category: 'troubleshooting',
-    priority: 'high'
-  },
-  {
-    id: 'time_management_issues',
-    text: 'Horários não funcionando? Crianças TEA se beneficiam de intervalos de 15-30 minutos entre atividades.',
-    context: ['timing_problems'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'timing_issues_detected',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
-  {
-    id: 'motivation_drop',
-    text: 'Motivação em queda? Introduza uma atividade nova e prazerosa para renovar o interesse.',
-    context: ['engagement_drop'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'motivation_decline',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
-  {
-    id: 'weekend_routine_disruption',
-    text: 'Fins de semana bagunçam a rotina? Mantenha 2-3 atividades-âncora (refeições, sono) mesmo no weekend.',
-    context: ['weekend_problems'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'weekend_disruption',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
-  {
-    id: 'school_routine_conflict',
-    text: 'Conflito entre rotina escolar e doméstica? Sincronize horários de refeições e sono.',
-    context: ['school_conflict'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'school_home_mismatch',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
-  {
-    id: 'seasonal_adjustment_needed',
-    text: 'Mudança de estação afetando rotina? Ajuste horários gradualmente (15 min por dia).',
-    context: ['seasonal_disruption'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'seasonal_impact',
-    category: 'troubleshooting',
-    priority: 'low'
-  },
-  {
-    id: 'sibling_interference',
-    text: 'Irmãos interferindo na rotina? Crie atividades paralelas ou momentos individuais.',
-    context: ['sibling_issues'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'sibling_disruption',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
-  {
-    id: 'regression_after_progress',
-    text: 'Regressão após progresso é normal. Volte ao nível anterior por alguns dias antes de avançar.',
-    context: ['regression_detected'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'performance_regression',
-    category: 'troubleshooting',
-    priority: 'high'
-  },
-  {
-    id: 'overstimulation_signs',
-    text: 'Sinais de sobreestimulação? Reduza atividades simultâneas e aumente pausas sensoriais.',
-    context: ['overstimulation_detected'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'sensory_overload',
-    category: 'troubleshooting',
-    priority: 'high'
-  },
-  {
-    id: 'routine_rigidity_excessive',
-    text: 'Rotina muito rígida? Introduza "flexibilidade planejada" - 1 elemento que pode mudar diariamente.',
-    context: ['excessive_rigidity'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'rigidity_concern',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
-  {
-    id: 'transition_anxiety_management',
-    text: 'Ansiedade nas transições? Use timer visual e avisos de 5-2-1 minutos antes da mudança.',
-    context: ['transition_anxiety'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'transition_stress',
-    category: 'troubleshooting',
-    priority: 'high'
-  },
-  {
-    id: 'perfectionism_paralysis',
-    text: 'Perfeccionismo paralisando? Celebre "quase feito" e "tentativa" tanto quanto "perfeito".',
-    context: ['perfectionism_detected'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'perfectionist_paralysis',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
-  {
-    id: 'routine_dependence_concern',
-    text: 'Preocupado com dependência da rotina? Introduza micro-variações para manter flexibilidade cognitiva.',
-    context: ['dependence_concern'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'dependence_worry',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
-  {
-    id: 'social_situation_adaptation',
-    text: 'Dificuldade em adaptar rotina a situações sociais? Crie "rotina portátil" com 3 elementos essenciais.',
-    context: ['social_adaptation_issues'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'social_challenge',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
-  {
-    id: 'technology_overwhelming',
-    text: 'App muito complexo? Use modo simplificado: foque apenas em adicionar e completar atividades.',
-    context: ['technology_overwhelm'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'tech_confusion',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
-  {
-    id: 'family_consistency_issues',
-    text: 'Família inconsistente com rotina? Estabeleça 3 regras não-negociáveis que todos seguem.',
-    context: ['family_inconsistency'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'consistency_problems',
-    category: 'troubleshooting',
-    priority: 'high'
-  },
-  {
-    id: 'emergency_routine_disruption',
-    text: 'Emergência disruptiva? Mantenha pelo menos horário de refeições e sono. Reconstrua gradualmente.',
-    context: ['emergency_disruption'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'emergency_impact',
-    category: 'troubleshooting',
-    priority: 'high'
-  },
-  {
-    id: 'plateau_in_progress',
-    text: 'Estagnação no progresso? Normal após crescimento rápido. Mantenha estabilidade, crescimento virá.',
-    context: ['progress_plateau'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'plateau_frustration',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
-  {
-    id: 'burnout_prevention',
-    text: 'Sinais de burnout familiar? Simplifique rotina por 1 semana, foque apenas no essencial.',
-    context: ['burnout_risk'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'burnout_detection',
-    category: 'troubleshooting',
-    priority: 'high'
-  },
-  {
-    id: 'app_reset_needed',
-    text: 'Problemas persistentes? Às vezes um reset completo ajuda. Dados importantes ficarão salvos.',
-    context: ['persistent_issues'],
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    trigger: 'multiple_problems',
-    category: 'troubleshooting',
-    priority: 'low'
-  },
-  {
-    id: 'professional_consultation_suggestion',
-    text: 'Desafios complexos persistindo? Considere consultar terapeuta ocupacional especializado em rotinas.',
-    context: ['complex_challenges'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'professional_help_needed',
-    category: 'troubleshooting',
-    priority: 'medium'
-  },
+  // TROUBLESHOOTING (25 frases) - Resolução de problemas comuns
+  troubleshooting: [
+    {
+      id: 'streak_broken_comfort',
+      text: 'Sequência quebrada? Não tem problema! Todo mundo tem dias difíceis. Recomeçe hoje mesmo.',
+      context: 'streak_interruption',
+      userMode: 'both',
+      triggerCondition: 'streak_reset',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'low_motivation_today',
+      text: 'Dia difícil? Que tal completar só 1 atividade hoje? Pequenos passos ainda são progresso.',
+      context: 'motivation_dip',
+      userMode: 'both',
+      triggerCondition: 'low_completion_day',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'resistance_to_new_activity',
+      text: 'Resistência a atividades novas é normal. Tente introduzir gradualmente, sem pressão.',
+      context: 'activity_resistance',
+      userMode: 'parent',
+      triggerCondition: 'new_activity_skipped',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'routine_overwhelming',
+      text: 'Rotina pesada demais? Remova 2-3 atividades. Melhor poucos sucessos que muitas frustrações.',
+      context: 'overwhelm_solution',
+      userMode: 'parent',
+      triggerCondition: 'multiple_skips',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'time_pressure_solution',
+      text: 'Pressão de tempo? Atividades podem ser flexíveis. O importante é fazer, não a hora exata.',
+      context: 'timing_flexibility',
+      userMode: 'parent',
+      triggerCondition: 'timing_struggles',
+      priority: 'medium',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'technology_resistance',
+      text: 'Criança resistente ao app? Deixe ela explorar livremente primeiro, sem objetivos.',
+      context: 'app_resistance',
+      userMode: 'parent',
+      triggerCondition: 'child_mode_avoidance',
+      priority: 'medium',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'perfectionism_counter',
+      text: 'Não precisa ser perfeito! 70% de conclusão já é um sucesso incrível para rotinas.',
+      context: 'perfectionism_relief',
+      userMode: 'parent',
+      triggerCondition: 'perfectionist_pattern',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'regression_explanation',
+      text: 'Retrocessos são parte do processo. Após progressos, é normal ter alguns dias difíceis.',
+      context: 'regression_normalization',
+      userMode: 'parent',
+      triggerCondition: 'performance_regression',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'meltdown_prevention',
+      text: 'Sinais de sobrecarga detectados. Pause, respire, e volte quando estiver mais calmo.',
+      context: 'meltdown_intervention',
+      userMode: 'parent',
+      triggerCondition: 'rapid_failures',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'inconsistent_caregivers',
+      text: 'Diferentes cuidadores, diferentes abordagens? Converse sobre manter consistência.',
+      context: 'caregiver_coordination',
+      userMode: 'parent',
+      triggerCondition: 'inconsistent_patterns',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'seasonal_mood_impact',
+      text: 'Mudança de estação afeta humor. Ajuste expectativas e seja mais flexível temporariamente.',
+      context: 'seasonal_adjustment',
+      userMode: 'parent',
+      triggerCondition: 'seasonal_behavior_change',
+      priority: 'medium',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'sleep_disruption_impact',
+      text: 'Sono ruim afeta tudo. Priorize descanso antes de cobrar atividades complexas.',
+      context: 'sleep_factor',
+      userMode: 'parent',
+      triggerCondition: 'tired_pattern_detected',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'social_anxiety_accommodation',
+      text: 'Atividades sociais difíceis? Comece com 1 pessoa conhecida antes de grupos maiores.',
+      context: 'social_anxiety_help',
+      userMode: 'parent',
+      triggerCondition: 'social_activity_avoidance',
+      priority: 'medium',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'sensory_overload_solution',
+      text: 'Sobrecarga sensorial? Crie espaço calmo e reduza estímulos durante atividades.',
+      context: 'sensory_management',
+      userMode: 'parent',
+      triggerCondition: 'sensory_overwhelm_signs',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'change_anxiety_relief',
+      text: 'Ansiedade com mudanças? Avise antecipadamente e mantenha pelo menos 2 atividades iguais.',
+      context: 'change_management',
+      userMode: 'parent',
+      triggerCondition: 'change_resistance',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'sibling_jealousy_solution',
+      text: 'Irmão com ciúmes da atenção? Crie momentos especiais para cada um separadamente.',
+      context: 'sibling_dynamics',
+      userMode: 'parent',
+      triggerCondition: 'sibling_interference',
+      priority: 'medium',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'parent_stress_acknowledgment',
+      text: 'Você parece cansado. Cuide-se também - pais descansados ajudam melhor.',
+      context: 'parent_wellbeing',
+      userMode: 'parent',
+      triggerCondition: 'parent_stress_indicators',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'plateau_breakthrough',
+      text: 'Estagnação é normal após progresso. Mude 1 pequena coisa para quebrar o padrão.',
+      context: 'plateau_management',
+      userMode: 'parent',
+      triggerCondition: 'progress_plateau',
+      priority: 'medium',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'external_stress_impact',
+      text: 'Stress externo (escola, mudanças) afeta rotinas. Seja mais flexível temporariamente.',
+      context: 'external_factors',
+      userMode: 'parent',
+      triggerCondition: 'external_stress_detected',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'comparison_trap_warning',
+      text: 'Evite comparar com outras crianças. Cada um tem seu ritmo e suas necessidades únicas.',
+      context: 'comparison_prevention',
+      userMode: 'parent',
+      triggerCondition: 'comparison_behavior',
+      priority: 'high',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'backup_plan_suggestion',
+      text: 'Dias caóticos acontecem. Tenha uma "rotina mínima" de 2-3 atividades essenciais.',
+      context: 'contingency_planning',
+      userMode: 'parent',
+      triggerCondition: 'chaotic_day_pattern',
+      priority: 'medium',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'professional_support_suggestion',
+      text: 'Dificuldades persistem há 3+ semanas? Considere conversar com terapeuta ocupacional.',
+      context: 'professional_referral',
+      userMode: 'parent',
+      triggerCondition: 'persistent_difficulties',
+      priority: 'medium',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'celebration_fatigue_solution',
+      text: 'Criança não se anima mais com recompensas? Varie os tipos de celebração.',
+      context: 'reward_refresh',
+      userMode: 'parent',
+      triggerCondition: 'reward_system_fatigue',
+      priority: 'medium',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'routine_staleness_fix',
+      text: 'Rotina ficou monótona? Substitua 1 atividade por algo novo e interessante.',
+      context: 'routine_refresh',
+      userMode: 'parent',
+      triggerCondition: 'routine_boredom',
+      priority: 'medium',
+      category: 'troubleshooting'
+    },
+    {
+      id: 'reset_encouragement',
+      text: 'Às vezes é melhor recomeçar do zero. Não é fracasso, é estratégia inteligente.',
+      context: 'reset_normalization',
+      userMode: 'parent',
+      triggerCondition: 'consider_reset',
+      priority: 'medium',
+      category: 'troubleshooting'
+    }
+  ]
+};
+
+// Função para obter mensagem contextual baseada em condições
+export function getLeoContextualMessage(
+  triggerCondition: string,
+  userMode: 'parent' | 'child' | 'both' = 'both',
+  category?: 'tutorial' | 'progress' | 'insights' | 'troubleshooting'
+): LeoContextualMessage | null {
   
-  // ===== MOTIVAÇÃO (10 mensagens adicionais) =====
-  {
-    id: 'child_motivation_morning',
-    text: 'Bom dia! Um novo dia começa e você está pronto para mais aventuras na sua rotina!',
-    context: ['morning_time', 'child_mode'],
-    userMode: 'child',
-    progressLevel: 'beginner',
-    trigger: 'morning_greeting',
-    category: 'motivation',
-    priority: 'medium'
-  },
-  {
-    id: 'child_motivation_afternoon',
-    text: 'Tarde maravilhosa! Você está indo muito bem com suas atividades hoje!',
-    context: ['afternoon_time', 'child_mode'],
-    userMode: 'child',
-    progressLevel: 'beginner',
-    trigger: 'afternoon_check',
-    category: 'motivation',
-    priority: 'medium'
-  },
-  {
-    id: 'child_motivation_evening',
-    text: 'Noite chegando! Você foi incrível hoje completando suas tarefas. Hora de descansar!',
-    context: ['evening_time', 'child_mode'],
-    userMode: 'child',
-    progressLevel: 'beginner',
-    trigger: 'evening_completion',
-    category: 'motivation',
-    priority: 'medium'
-  },
-  {
-    id: 'child_encouragement_stars',
-    text: 'Quanto mais estrelas você ganha, mais forte fica nosso poder de amizade!',
-    context: ['child_mode', 'stars_gained'],
-    userMode: 'child',
-    progressLevel: 'intermediate',
-    trigger: 'star_collection',
-    category: 'motivation',
-    priority: 'medium'
-  },
-  {
-    id: 'child_challenge_complete',
-    text: 'Desafio completo! Você é um verdadeiro herói das rotinas!',
-    context: ['child_mode', 'challenge_completed'],
-    userMode: 'child',
-    progressLevel: 'intermediate',
-    trigger: 'challenge_success',
-    category: 'motivation',
-    priority: 'high'
-  },
-  {
-    id: 'parent_motivation_streak',
-    text: 'Uma semana de rotinas consistentes! Sua dedicação está fazendo uma diferença real no desenvolvimento.',
-    context: ['week_streak'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'weekly_streak',
-    category: 'motivation',
-    priority: 'high'
-  },
-  {
-    id: 'parent_motivation_resilience',
-    text: 'Mesmo com os desafios, vocês continuam avançando. Resiliência é a chave do sucesso!',
-    context: ['overcome_difficulty'],
-    userMode: 'parent',
-    progressLevel: 'intermediate',
-    trigger: 'resilience_shown',
-    category: 'motivation',
-    priority: 'high'
-  },
-  {
-    id: 'parent_motivation_child_progress',
-    text: 'O progresso do seu filho é visível! Cada pequeno avanço constrói a base para o futuro.',
-    context: ['child_development_jump'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'development_milestone',
-    category: 'motivation',
-    priority: 'high'
-  },
-  {
-    id: 'parent_motivation_family_harmony',
-    text: 'A harmonia familiar está aumentando! Rotinas consistentes criam um ambiente mais tranquilo para todos.',
-    context: ['family_harmony_improving'],
-    userMode: 'parent',
-    progressLevel: 'advanced',
-    trigger: 'harmony_detected',
-    category: 'motivation',
-    priority: 'medium'
-  },
-  {
-    id: 'parent_motivation_expertise',
-    text: 'Você se tornou um especialista em rotinas! Sua intuição sobre o que funciona é impressionante.',
-    context: ['parent_expertise_evident'],
-    userMode: 'parent',
-    progressLevel: 'expert',
-    trigger: 'expertise_recognition',
-    category: 'motivation',
-    priority: 'high'
+  // Buscar em todas as categorias se não especificada
+  const categoriesToSearch = category 
+    ? [LEO_CONTEXTUAL_MESSAGES[`${category}_${category === 'tutorial' ? 'basic' : category === 'progress' ? 'intermediate' : 'advanced'}`] || LEO_CONTEXTUAL_MESSAGES[category]]
+    : Object.values(LEO_CONTEXTUAL_MESSAGES).flat();
+  
+  for (const categoryMessages of (category ? [categoriesToSearch] : Object.values(LEO_CONTEXTUAL_MESSAGES))) {
+    if (!Array.isArray(categoryMessages)) continue;
+    
+    for (const message of categoryMessages) {
+      if (message.triggerCondition === triggerCondition &&
+          (message.userMode === userMode || message.userMode === 'both')) {
+        return message;
+      }
+    }
   }
-];
+  
+  return null;
+}
 
-// Sistema de contexto para determinar qual mensagem usar
+// Função para obter mensagem aleatória de uma categoria
+export function getRandomLeoMessage(
+  category: 'tutorial' | 'progress' | 'insights' | 'troubleshooting',
+  userMode: 'parent' | 'child' | 'both' = 'both'
+): LeoContextualMessage | null {
+  
+  const categoryKey = category === 'tutorial' ? 'tutorial_basic' :
+                     category === 'progress' ? 'progress_intermediate' :
+                     category === 'insights' ? 'insights_advanced' :
+                     'troubleshooting';
+  
+  const messages = LEO_CONTEXTUAL_MESSAGES[categoryKey]?.filter(
+    msg => msg.userMode === userMode || msg.userMode === 'both'
+  ) || [];
+  
+  if (messages.length === 0) return null;
+  
+  return messages[Math.floor(Math.random() * messages.length)];
+}
+
+// Função para obter mensagens por prioridade
+export function getLeoMessagesByPriority(
+  priority: 'low' | 'medium' | 'high',
+  userMode: 'parent' | 'child' | 'both' = 'both'
+): LeoContextualMessage[] {
+  
+  return Object.values(LEO_CONTEXTUAL_MESSAGES)
+    .flat()
+    .filter(msg => 
+      msg.priority === priority && 
+      (msg.userMode === userMode || msg.userMode === 'both')
+    );
+}
+
+// Função para buscar mensagem por ID específico
+export function getLeoMessageById(messageId: string): LeoContextualMessage | null {
+  for (const categoryMessages of Object.values(LEO_CONTEXTUAL_MESSAGES)) {
+    for (const message of categoryMessages) {
+      if (message.id === messageId) {
+        return message;
+      }
+    }
+  }
+  return null;
+}
+
+// Sistema de contexto inteligente para decidir qual mensagem usar
 export interface UserContext {
-  userMode: 'parent' | 'child';
-  progressLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  totalTasks: number;
-  completionRate: number;
-  streakDays: number;
+  totalTasksCompleted: number;
+  currentStreak: number;
   level: number;
   stars: number;
   daysUsing: number;
+  lastCompletionRate: number;
   timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night';
-  lastInteraction: Date;
-  recentActions: string[];
-  problemIndicators: string[];
-  achievements: string[];
-  currentScreen: string;
-  hasCompletedTutorial: boolean;
+  isFirstTime: boolean;
+  recentPattern: 'struggling' | 'improving' | 'consistent' | 'exceptional';
 }
 
-// Função para selecionar mensagem contextual apropriada
-export function selectContextualMessage(
-  userContext: UserContext,
-  trigger: string,
-  availableMessages?: ContextualMessage[]
-): ContextualMessage | null {
+export function getContextualLeoMessage(
+  context: UserContext,
+  userMode: 'parent' | 'child' | 'both' = 'both'
+): LeoContextualMessage | null {
   
-  const messages = availableMessages || LEO_CONTEXTUAL_MESSAGES;
-  
-  // Filtrar mensagens por contexto do usuário
-  const relevantMessages = messages.filter(message => {
-    // Verificar modo de usuário
-    if (message.userMode !== 'both' && message.userMode !== userContext.userMode) {
-      return false;
-    }
-    
-    // Verificar nível de progresso
-    if (message.progressLevel !== userContext.progressLevel) {
-      return false;
-    }
-    
-    // Verificar trigger
-    if (message.trigger !== trigger) {
-      return false;
-    }
-    
-    return true;
-  });
-  
-  if (relevantMessages.length === 0) {
-    return null;
+  // Lógica para determinar a mensagem mais apropriada baseada no contexto
+  if (context.isFirstTime) {
+    return getLeoContextualMessage('first_visit', userMode, 'tutorial');
   }
   
-  // Ordenar por prioridade e selecionar o melhor
-  const sortedMessages = relevantMessages.sort((a, b) => {
-    const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
-    return priorityOrder[b.priority] - priorityOrder[a.priority];
-  });
+  if (context.totalTasksCompleted === 1) {
+    return getLeoContextualMessage('first_task_completed', userMode, 'tutorial');
+  }
   
-  return sortedMessages[0];
+  if (context.totalTasksCompleted === 50) {
+    return getLeoContextualMessage('tasks_completed_50', userMode, 'progress');
+  }
+  
+  if (context.recentPattern === 'struggling') {
+    return getRandomLeoMessage('troubleshooting', userMode);
+  }
+  
+  if (context.recentPattern === 'exceptional') {
+    return getRandomLeoMessage('insights', userMode);
+  }
+  
+  if (context.level >= 3) {
+    return getRandomLeoMessage('insights', userMode);
+  }
+  
+  // Default para mensagens de progresso
+  return getRandomLeoMessage('progress', userMode);
 }
-
-// Função para determinar nível de progresso baseado em métricas
-export function calculateProgressLevel(userContext: UserContext): 'beginner' | 'intermediate' | 'advanced' | 'expert' {
-  const {
-    totalTasks,
-    completionRate,
-    streakDays,
-    level,
-    daysUsing
-  } = userContext;
-  
-  // Lógica para determinar nível
-  if (totalTasks < 10 || level < 2 || daysUsing < 7) {
-    return 'beginner';
-  }
-  
-  if (totalTasks < 50 || level < 5 || streakDays < 7 || completionRate < 70) {
-    return 'intermediate';
-  }
-  
-  if (totalTasks < 200 || level < 10 || streakDays < 30 || completionRate < 85) {
-    return 'advanced';
-  }
-  
-  return 'expert';
-}
-
-// Cooldown para evitar spam de mensagens
-const messageCooldowns = new Map<string, number>();
-
-export function isMessageOnCooldown(messageId: string): boolean {
-  const cooldownTime = messageCooldowns.get(messageId);
-  if (!cooldownTime) return false;
-  
-  return Date.now() - cooldownTime < (5 * 60 * 1000); // 5 minutos padrão
-}
-
-export function setMessageCooldown(messageId: string): void {
-  messageCooldowns.set(messageId, Date.now());
-}
-
-// Implementação concreta da interface LeoContextualInterface
-export class LeoContextualSystem implements LeoContextualInterface {
-  private userContext: UserContext;
-  private currentMessage: ContextualMessage | null = null;
-  private messageHistory: ContextualMessage[] = [];
-  private maxHistoryLength = 10;
-  
-  constructor(initialContext: UserContext) {
-    this.userContext = { ...initialContext };
-  }
-  
-  getCurrentMessage(): string {
-    if (!this.currentMessage) {
-      // Se não houver mensagem atual, tentar encontrar uma mensagem padrão
-      const defaultMessage = selectContextualMessage(
-        this.userContext,
-        'app_start'
-      );
-      
-      if (defaultMessage) {
-        this.currentMessage = defaultMessage;
-        this.addToHistory(defaultMessage);
-        setMessageCooldown(defaultMessage.id);
-      } else {
-        return "Olá! Eu sou o Leo, seu assistente de rotinas!";
-      }
-    }
-    
-    return this.currentMessage.text;
-  }
-  
-  getMenuOptions(): Array<{
-    id: string;
-    text: string;
-    icon: string;
-    action: () => void;
-  }> {
-    const baseOptions = [
-      {
-        id: 'help',
-        text: 'Ajuda',
-        icon: 'help_outline',
-        action: () => this.showMessageForTrigger('help_requested')
-      },
-      {
-        id: 'tips',
-        text: 'Dicas',
-        icon: 'lightbulb',
-        action: () => this.showMessageForTrigger('tips_requested')
-      },
-      {
-        id: 'progress',
-        text: 'Meu Progresso',
-        icon: 'trending_up',
-        action: () => this.showMessageForTrigger('progress_requested')
-      }
-    ];
-    
-    // Adicionar opções específicas baseadas no contexto
-    if (this.userContext.userMode === 'parent') {
-      baseOptions.push({
-        id: 'analytics',
-        text: 'Análises',
-        icon: 'analytics',
-        action: () => this.showMessageForTrigger('analytics_requested')
-      });
-    }
-    
-    if (this.userContext.progressLevel === 'beginner') {
-      baseOptions.push({
-        id: 'tutorial',
-        text: 'Tutorial',
-        icon: 'school',
-        action: () => this.showMessageForTrigger('tutorial_requested')
-      });
-    }
-    
-    return baseOptions;
-  }
-  
-  handleUserClick(option: string): void {
-    // Encontrar a opção correspondente e executar a ação
-    const menuOption = this.getMenuOptions().find(opt => opt.id === option);
-    if (menuOption) {
-      menuOption.action();
-    }
-  }
-  
-  updateContext(newContext: Partial<UserContext>): void {
-    this.userContext = { ...this.userContext, ...newContext };
-    
-    // Verificar se o nível de progresso mudou
-    const newProgressLevel = calculateProgressLevel(this.userContext);
-    if (newProgressLevel !== this.userContext.progressLevel) {
-      this.userContext.progressLevel = newProgressLevel;
-      this.showMessageForTrigger('level_changed');
-    }
-  }
-  
-  // Métodos auxiliares
-  private showMessageForTrigger(trigger: string): void {
-    const message = selectContextualMessage(this.userContext, trigger);
-    if (message && !isMessageOnCooldown(message.id)) {
-      this.currentMessage = message;
-      this.addToHistory(message);
-      setMessageCooldown(message.id);
-    }
-  }
-  
-  private addToHistory(message: ContextualMessage): void {
-    this.messageHistory.unshift(message);
-    if (this.messageHistory.length > this.maxHistoryLength) {
-      this.messageHistory.pop();
-    }
-  }
-  
-  // Métodos públicos para interação avançada
-  public triggerContextMessage(context: string[]): void {
-    const matchingMessages = LEO_CONTEXTUAL_MESSAGES.filter(msg => {
-      return (
-        (msg.userMode === 'both' || msg.userMode === this.userContext.userMode) &&
-        msg.progressLevel === this.userContext.progressLevel &&
-        context.every(ctx => msg.context.includes(ctx))
-      );
-    });
-    
-    if (matchingMessages.length > 0) {
-      // Ordenar por prioridade
-      const sortedMessages = matchingMessages.sort((a, b) => {
-        const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
-        return priorityOrder[b.priority] - priorityOrder[a.priority];
-      });
-      
-      const message = sortedMessages[0];
-      if (!isMessageOnCooldown(message.id)) {
-        this.currentMessage = message;
-        this.addToHistory(message);
-        setMessageCooldown(message.id);
-      }
-    }
-  }
-  
-  public getMessageHistory(): ContextualMessage[] {
-    return [...this.messageHistory];
-  }
-  
-  public clearCurrentMessage(): void {
-    this.currentMessage = null;
-  }
-  
-  public resetCooldowns(): void {
-    messageCooldowns.clear();
-  }
-}
-
-// Função utilitária para criar um contexto inicial
-export function createInitialContext(): UserContext {
-  return {
-    userMode: 'parent',
-    progressLevel: 'beginner',
-    totalTasks: 0,
-    completionRate: 0,
-    streakDays: 0,
-    level: 1,
-    stars: 0,
-    daysUsing: 0,
-    timeOfDay: 'morning',
-    lastInteraction: new Date(),
-    recentActions: [],
-    problemIndicators: [],
-    achievements: [],
-    currentScreen: 'home',
-    hasCompletedTutorial: false
-  };
-}
-
-// Sistema de interface do Leo expandido
-export interface LeoContextualInterface {
-  getCurrentMessage(): string;
-  getMenuOptions(): Array<{
-    id: string;
-    text: string;
-    icon: string;
-    action: () => void;
-  }>;
-  handleUserClick(option: string): void;
-  updateContext(newContext: Partial<UserContext>): void;
-}
-
-export default LEO_CONTEXTUAL_MESSAGES;
