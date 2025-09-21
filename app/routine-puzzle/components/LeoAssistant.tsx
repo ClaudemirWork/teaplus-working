@@ -1,5 +1,5 @@
 // Componente visual do assistente Leo
-// Interface conversacional + Avatar animado + Controles TTS
+// Interface conversacional + Avatar animado + Controles TTS + Auto-Hide
 
 import React, { useState, useEffect } from 'react';
 import { Volume2, VolumeX, MessageCircle, X, Lightbulb, Star, Settings } from 'lucide-react';
@@ -31,6 +31,7 @@ export function LeoAssistant({
 }: LeoAssistantProps) {
   
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [avatarState, setAvatarState] = useState<keyof typeof LEO_AVATAR_STATES>('idle');
   const [showSettings, setShowSettings] = useState(false);
@@ -62,13 +63,26 @@ export function LeoAssistant({
     }
   }, [isLoading, currentMessage]);
 
-  // Auto-expansão quando há mensagem
+  // Auto-expansão quando há mensagem nova
   useEffect(() => {
     if (currentMessage && enableAutoTriggers) {
       setIsExpanded(true);
+      setIsCollapsed(false); // Garantir que sai do modo colapsado
       trackMessageShown(currentMessage.id, currentMessage.trigger);
     }
   }, [currentMessage, enableAutoTriggers, trackMessageShown]);
+
+  // Auto-hide: colapsar após 10 segundos
+  useEffect(() => {
+    if (currentMessage && isExpanded && !isCollapsed) {
+      const autoHideTimer = setTimeout(() => {
+        setIsCollapsed(true);
+        setIsExpanded(false);
+      }, 10000); // 10 segundos
+
+      return () => clearTimeout(autoHideTimer);
+    }
+  }, [currentMessage, isExpanded, isCollapsed]);
 
   // Posicionamento CSS
   const positionClasses = {
@@ -84,6 +98,7 @@ export function LeoAssistant({
     }
     dismissMessage();
     setIsExpanded(false);
+    setIsCollapsed(true);
     onMessageDismiss?.();
   };
 
@@ -99,15 +114,47 @@ export function LeoAssistant({
     trackMessageInteraction(currentMessage?.id || 'settings', 'tts_toggle');
   };
 
+  const handleIndicatorClick = () => {
+    setIsCollapsed(false);
+    setIsExpanded(true);
+    if (currentMessage) {
+      trackMessageInteraction(currentMessage.id, 'expanded_from_indicator');
+    }
+  };
+
   // Menu de triggers manuais (modo debug)
   const debugTriggers = [
     'app_start', 'task_completion', 'level_up', 'streak_achievement',
     'main_screen_load', 'empty_day_view', 'activity_added'
   ];
 
-  return (
-    <div className={`fixed z-50 ${positionClasses[position]}`}>
+  // Componente do Indicador Pequeno
+  const SmallIndicator = () => (
+    <button
+      onClick={handleIndicatorClick}
+      className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 shadow-lg hover:scale-110 transition-all duration-300 flex items-center justify-center relative"
+      title="Leo tem uma mensagem para você!"
+    >
+      <span className="text-lg">🦁</span>
       
+      {/* Indicador de nova mensagem */}
+      {currentMessage && (
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse">
+          <span className="sr-only">Nova mensagem</span>
+        </div>
+      )}
+      
+      {/* Anel de notificação */}
+      {currentMessage && (
+        <div className="absolute inset-0 rounded-full border-2 border-blue-300 animate-ping">
+        </div>
+      )}
+    </button>
+  );
+
+  // Componente do Leo Completo
+  const FullLeoAssistant = () => (
+    <>
       {/* Balão de mensagem */}
       {isExpanded && currentMessage && (
         <div className="mb-4 max-w-sm bg-white rounded-2xl shadow-lg border-2 border-blue-200 relative animate-bounce-in">
@@ -128,6 +175,7 @@ export function LeoAssistant({
                 onClick={handleSpeak}
                 disabled={isLoading}
                 className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                title="Ouvir mensagem"
               >
                 {isLoading ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -140,6 +188,7 @@ export function LeoAssistant({
               <button
                 onClick={handleDismiss}
                 className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                title="Dispensar mensagem"
               >
                 <X className="w-4 h-4 text-white" />
               </button>
@@ -189,6 +238,7 @@ export function LeoAssistant({
               ? 'bg-gradient-to-br from-blue-500 to-purple-600 animate-pulse' 
               : 'bg-gradient-to-br from-blue-400 to-purple-500 hover:scale-110'
           } flex items-center justify-center`}
+          title={isExpanded ? 'Fechar Leo' : 'Abrir Leo'}
         >
           <span className="text-2xl">
             {LEO_AVATAR_STATES[avatarState]}
@@ -204,7 +254,7 @@ export function LeoAssistant({
 
         {/* Menu de configurações */}
         {showSettings && (
-          <div className="absolute bottom-full mb-2 right-0 bg-white rounded-lg shadow-lg border p-3 min-w-48">
+          <div className="absolute bottom-full mb-2 right-0 bg-white rounded-lg shadow-lg border p-3 min-w-48 z-10">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm text-gray-700">Voz automática</label>
@@ -245,13 +295,26 @@ export function LeoAssistant({
         <button
           onClick={() => setShowSettings(!showSettings)}
           className="absolute -top-2 -left-2 w-6 h-6 bg-gray-500 hover:bg-gray-600 rounded-full flex items-center justify-center transition-colors"
+          title="Configurações do Leo"
         >
           <Settings className="w-3 h-3 text-white" />
         </button>
       </div>
+    </>
+  );
+
+  return (
+    <div className={`fixed z-50 ${positionClasses[position]}`}>
+      
+      {/* Mostrar indicador pequeno ou Leo completo */}
+      {isCollapsed ? (
+        <SmallIndicator />
+      ) : (
+        <FullLeoAssistant />
+      )}
 
       {/* Erro display */}
-      {error && (
+      {error && !isCollapsed && (
         <div className="absolute bottom-full mb-2 right-0 bg-red-100 border border-red-300 text-red-700 px-3 py-2 rounded-lg text-sm max-w-xs">
           {error}
         </div>
@@ -279,5 +342,16 @@ export const leoAssistantStyles = `
 
 .animate-bounce-in {
   animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.animate-ping {
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
 }
 `;
