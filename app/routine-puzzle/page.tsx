@@ -15,6 +15,11 @@ import CelebrationOverlay from './components/CelebrationOverlay';
 import LeoMascot, { useLeoMascot } from './components/LeoMascot';
 import { GameAudioManager } from '@/utils/gameAudioManager';
 
+// Importações do sistema de mensagens contextuais do Leo
+import { LeoAssistant } from './components/LeoAssistant';
+import { useLeoMessages } from './hooks/useLeoMessages';
+import { UserContext } from './data/leoContextualMessages';
+
 export default function RoutineVisualPage() {
   const supabase = createClient();
   const audioManager = GameAudioManager.getInstance();
@@ -37,7 +42,19 @@ export default function RoutineVisualPage() {
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [volumeMuted, setVolumeMuted] = useState(false);
 
-  // Hook do Leo Mascot
+  // Estados para tracking do usuário (Leo)
+  const [userStats, setUserStats] = useState({
+    totalTasks: 0,
+    completedTasks: 0,
+    streakDays: 0,
+    level: 1,
+    stars: 0,
+    daysUsing: 0,
+    firstTimeUser: true,
+    lastActivity: new Date()
+  });
+
+  // Hook do Leo Mascot (existente)
   const {
     leoMood,
     leoMessage,
@@ -50,7 +67,76 @@ export default function RoutineVisualPage() {
     setLeoMessage
   } = useLeoMascot();
 
-  // Função melhorada para completar tarefa com sistema unificado
+  // Calcular contexto do usuário para o sistema de mensagens do Leo
+  const userContext: UserContext = {
+    userMode: userMode,
+    totalTasks: userStats.totalTasks,
+    completedTasks: userStats.completedTasks,
+    completionRate: userStats.totalTasks > 0 ? (userStats.completedTasks / userStats.totalTasks) * 100 : 0,
+    streakDays: userStats.streakDays,
+    level: gameSystem.state.gameState.level,
+    stars: gameSystem.state.gameState.stars,
+    daysUsing: userStats.daysUsing,
+    lastActivity: userStats.lastActivity,
+    progressLevel: 'beginner' // será calculado automaticamente pelo hook
+  };
+
+  // Hook do sistema de mensagens contextuais do Leo
+  const {
+    currentMessage,
+    triggerMessage,
+    speakMessage,
+    dismissMessage,
+    messageHistory,
+    isLoading: leoIsLoading,
+    error: leoError
+  } = useLeoMessages({ 
+    userContext, 
+    enableTTS: !volumeMuted, 
+    debugMode: process.env.NODE_ENV === 'development' 
+  });
+
+  // Sincronizar estatísticas com gameSystem
+  useEffect(() => {
+    setUserStats(prev => ({
+      ...prev,
+      level: gameSystem.state.gameState.level,
+      stars: gameSystem.state.gameState.stars,
+      totalTasks: gameSystem.state.stats.totalTasksCompleted,
+      completedTasks: gameSystem.state.stats.totalTasksCompleted,
+      streakDays: gameSystem.state.gameState.streak
+    }));
+  }, [gameSystem.state]);
+
+  // Carregar estatísticas do localStorage
+  useEffect(() => {
+    const savedStats = localStorage.getItem('routine-puzzle-user-stats');
+    if (savedStats) {
+      const parsed = JSON.parse(savedStats);
+      setUserStats(prev => ({
+        ...prev,
+        ...parsed,
+        firstTimeUser: false
+      }));
+    }
+  }, []);
+
+  // Salvar estatísticas no localStorage
+  useEffect(() => {
+    localStorage.setItem('routine-puzzle-user-stats', JSON.stringify(userStats));
+  }, [userStats]);
+
+  // Trigger de primeira visita
+  useEffect(() => {
+    if (userStats.firstTimeUser && currentScreen === 'main') {
+      setTimeout(() => {
+        triggerMessage('app_start');
+        setUserStats(prev => ({ ...prev, firstTimeUser: false }));
+      }, 1000);
+    }
+  }, [currentScreen, userStats.firstTimeUser, triggerMessage]);
+
+  // Função melhorada para completar tarefa com sistema unificado + Leo
   const completeTask = (day: string, uniqueId: string) => {
     const task = weeklyRoutine[day]?.find(t => t.uniqueId === uniqueId);
     if (!task) return;
@@ -69,7 +155,19 @@ export default function RoutineVisualPage() {
       // Completando tarefa - usar sistema unificado
       gameSystem.completeTask(task.name, task.category, day);
       
-      // Leo celebra apenas no modo pai
+      // Atualizar estatísticas do usuário
+      setUserStats(prev => ({
+        ...prev,
+        completedTasks: prev.completedTasks + 1,
+        lastActivity: new Date()
+      }));
+      
+      // Trigger do Leo para tarefa completada
+      setTimeout(() => {
+        triggerMessage('task_completion');
+      }, 500);
+      
+      // Leo celebra apenas no modo pai (comportamento existente)
       if (userMode === 'parent') {
         setTimeout(() => {
           celebrateTask(task.name);
@@ -79,6 +177,12 @@ export default function RoutineVisualPage() {
     } else {
       // Descompletando tarefa
       gameSystem.uncompleteTask(task.name, task.category);
+      
+      setUserStats(prev => ({
+        ...prev,
+        completedTasks: Math.max(0, prev.completedTasks - 1),
+        lastActivity: new Date()
+      }));
     }
   };
 
@@ -104,8 +208,13 @@ export default function RoutineVisualPage() {
       celebrateLevelUp(gameSystem.state.gameState.level);
       audioManager.falarLeo(notification.message);
       gameSystem.markNotificationAsRead(notification.id);
+      
+      // Trigger do Leo para level up
+      setTimeout(() => {
+        triggerMessage('level_up');
+      }, 1000);
     });
-  }, [gameSystem.unreadNotifications]);
+  }, [gameSystem.unreadNotifications, triggerMessage]);
 
   // Função para lidar com erro de imagem
   const handleImageError = (cardId: string) => {
@@ -166,6 +275,18 @@ export default function RoutineVisualPage() {
       )
     }));
     
+    // Atualizar estatísticas
+    setUserStats(prev => ({
+      ...prev,
+      totalTasks: prev.totalTasks + 1,
+      lastActivity: new Date()
+    }));
+    
+    // Trigger do Leo para atividade adicionada
+    setTimeout(() => {
+      triggerMessage('activity_added');
+    }, 300);
+    
     // Animação de sucesso
     setShowSuccessAnimation(true);
     setTimeout(() => setShowSuccessAnimation(false), 1000);
@@ -175,6 +296,12 @@ export default function RoutineVisualPage() {
     setWeeklyRoutine(prev => ({
       ...prev,
       [day]: prev[day]?.filter(item => item.uniqueId !== uniqueId) || []
+    }));
+    
+    setUserStats(prev => ({
+      ...prev,
+      totalTasks: Math.max(0, prev.totalTasks - 1),
+      lastActivity: new Date()
     }));
   };
 
@@ -219,6 +346,11 @@ export default function RoutineVisualPage() {
           }
         }
         
+        // Trigger do Leo para rotina salva
+        setTimeout(() => {
+          triggerMessage('routine_saved');
+        }, 500);
+        
         alert('Rotina salva com sucesso!');
       }
     } catch (error) {
@@ -242,6 +374,26 @@ export default function RoutineVisualPage() {
       [toDay]: newRoutine
     }));
   };
+
+  // Trigger para dia vazio
+  useEffect(() => {
+    const currentDayActivities = weeklyRoutine[selectedDay] || [];
+    if (currentDayActivities.length === 0 && !userStats.firstTimeUser) {
+      const timer = setTimeout(() => {
+        triggerMessage('empty_day_view');
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedDay, weeklyRoutine, userStats.firstTimeUser, triggerMessage]);
+
+  // Trigger para mudança de tela principal
+  useEffect(() => {
+    if (currentScreen === 'main' && !userStats.firstTimeUser) {
+      setTimeout(() => {
+        triggerMessage('main_screen_load');
+      }, 1000);
+    }
+  }, [currentScreen, userStats.firstTimeUser, triggerMessage]);
 
   // Filtrar atividades
   const getFilteredActivities = () => {
@@ -459,11 +611,22 @@ export default function RoutineVisualPage() {
           totalPoints={gameSystem.state.gameState.stars}
         />
         <CelebrationOverlay celebrationQueue={gameSystem.state.notifications.filter(n => !n.isRead && n.type === 'achievement')} />
+        
+        {/* Leo Assistant no modo criança (apenas visual) */}
+        <LeoAssistant 
+          userContext={userContext}
+          position="bottom-right"
+          enableAutoTriggers={true}
+          debugMode={process.env.NODE_ENV === 'development'}
+          onMessageDismiss={() => {
+            console.log('Leo message dismissed in child mode');
+          }}
+        />
       </>
     );
   }
 
-  // INTERFACE MOBILE (MODO PAI) - HEADER COMPACTO
+  // INTERFACE MOBILE (MODO PAI) - Header COMPACTO
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
@@ -720,6 +883,17 @@ export default function RoutineVisualPage() {
           </div>
         )}
 
+        {/* Leo Assistant no Mobile */}
+        <LeoAssistant 
+          userContext={userContext}
+          position="bottom-left"
+          enableAutoTriggers={true}
+          debugMode={process.env.NODE_ENV === 'development'}
+          onMessageDismiss={() => {
+            console.log('Leo message dismissed on mobile');
+          }}
+        />
+
         {showSuccessAnimation && (
           <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
             <div className="bg-green-500 text-white px-6 py-3 rounded-full animate-bounce">
@@ -735,7 +909,7 @@ export default function RoutineVisualPage() {
     );
   }
 
-  // INTERFACE DESKTOP (MODO PAI) - Com sistema unificado
+  // INTERFACE DESKTOP (MODO PAI) - Com sistema unificado + Leo
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       {/* Header Desktop */}
@@ -993,6 +1167,17 @@ export default function RoutineVisualPage() {
           </div>
         </div>
       </div>
+
+      {/* Leo Assistant no Desktop */}
+      <LeoAssistant 
+        userContext={userContext}
+        position="bottom-right"
+        enableAutoTriggers={true}
+        debugMode={process.env.NODE_ENV === 'development'}
+        onMessageDismiss={() => {
+          console.log('Leo message dismissed on desktop');
+        }}
+      />
 
       <NotificationsModal />
       <CelebrationOverlay celebrationQueue={gameSystem.state.notifications.filter(n => !n.isRead && n.type === 'achievement')} />
